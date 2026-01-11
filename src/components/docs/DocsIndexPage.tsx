@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Book, ArrowRight, ArrowLeft, Sun, Moon, Bot } from 'lucide-react'
 import { docsNav } from './DocsLayout'
+import { useMeta } from '../../hooks/useMeta'
 
 interface DocsIndexPageProps {
   onNavigate: (page: string) => void
@@ -10,6 +11,14 @@ interface DocsIndexPageProps {
 
 export default function DocsIndexPage({ onNavigate, onBack }: DocsIndexPageProps) {
   const [isDark, setIsDark] = useState(false)
+
+  // Set page-specific meta tags
+  useMeta({
+    title: 'Arc Documentation',
+    description: 'Everything you need to create beautiful architecture diagrams with Arc.',
+    image: '/og-docs.png',
+    url: '/docs',
+  })
 
   return (
     <div

@@ -29,6 +29,7 @@ export default function QuickstartPage({ currentPage, onNavigate, onBack }: Quic
       currentPage={currentPage}
       onNavigate={onNavigate}
       onBack={onBack}
+      ogImage="/og-docs-quickstart.png"
     >
       <h2 id="install">Installation</h2>
       <p>

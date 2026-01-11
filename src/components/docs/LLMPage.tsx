@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { Copy, Check, Bot, FileText, Code, Palette, ArrowLeft } from 'lucide-react'
+import { useMeta } from '../../hooks/useMeta'
 
 interface LLMPageProps {
   currentPage: string
@@ -230,6 +231,14 @@ const microservicesArchitecture: ArcDiagramData = {
 
 export default function LLMPage({ currentPage, onNavigate, onBack }: LLMPageProps) {
   const [copied, setCopied] = useState(false)
+
+  // Set page-specific meta tags
+  useMeta({
+    title: 'LLM & Agent Reference | Arc Docs',
+    description: 'Agent-friendly documentation for AI-assisted diagram generation with Arc.',
+    image: '/og-docs-llm.png',
+    url: '/docs/llm',
+  })
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(fullDocumentation)

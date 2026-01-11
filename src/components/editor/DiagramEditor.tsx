@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react'
 import { EditorProvider, useEditor, useDiagram, useEditorState, useMeta } from './EditorProvider'
+import { useMeta as usePageMeta } from '../../hooks/useMeta'
 import TopBar from './TopBar'
 import FloatingToolbar from './FloatingToolbar'
 import DiagramCanvas from './DiagramCanvas'
@@ -97,6 +98,14 @@ function EditorContent({ isDark, onToggleTheme }) {
   const meta = useMeta()
   const [showShare, setShowShare] = useState(false)
   const [viewportBounds, setViewportBounds] = useState(null)
+
+  // Set page-specific meta tags
+  usePageMeta({
+    title: 'Arc Editor | Visual Diagram Builder',
+    description: 'Drag-and-drop diagram builder with real-time preview and JSON export.',
+    image: '/og-editor.png',
+    url: '/editor',
+  })
 
   const handleNew = useCallback(() => {
     if (meta.isDirty && !window.confirm('Discard unsaved changes?')) return

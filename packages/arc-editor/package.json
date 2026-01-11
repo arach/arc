@@ -1,0 +1,50 @@
+{
+  "name": "@arach/arc-editor",
+  "version": "0.1.0",
+  "description": "Visual editor for creating Arc architecture diagrams",
+  "type": "module",
+  "bin": {
+    "arc-editor": "./bin/arc-editor.js"
+  },
+  "files": [
+    "bin",
+    "dist"
+  ],
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "open": "^10.1.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.1.18",
+    "@types/express": "^5.0.2",
+    "@types/react": "^19.2.5",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.1",
+    "lucide-react": "^0.562.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "tailwindcss": "^4.1.18",
+    "typescript": "^5.9.3",
+    "vite": "^7.2.4"
+  },
+  "keywords": [
+    "arc",
+    "diagram",
+    "editor",
+    "architecture",
+    "cli"
+  ],
+  "author": "arach",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/arach/arc.git",
+    "directory": "packages/arc-editor"
+  },
+  "homepage": "https://github.com/arach/arc#readme"
+}

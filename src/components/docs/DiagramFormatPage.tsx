@@ -31,6 +31,7 @@ export default function DiagramFormatPage({ currentPage, onNavigate, onBack }: D
       currentPage={currentPage}
       onNavigate={onNavigate}
       onBack={onBack}
+      ogImage="/og-docs-format.png"
     >
       <h2 id="overview">Overview</h2>
       <p>

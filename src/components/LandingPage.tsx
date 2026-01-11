@@ -4,6 +4,7 @@ import ArcDiagram, { type ThemeId } from './ArcDiagram'
 import ArcArchitectureNext from './ArcArchitectureNext'
 import architectureDiagram from './diagrams/architecture.diagram'
 import { getThemeList } from '../utils/themes'
+import { useMeta } from '../hooks/useMeta'
 
 const schemaReference = `interface ArcDiagramData {
   id?: string                    // Unique diagram identifier
@@ -181,6 +182,14 @@ type LandingPageProps = {
 }
 
 export default function LandingPage({ onLaunchEditor }: LandingPageProps) {
+  // Set page-specific meta tags
+  useMeta({
+    title: 'Arc | Visual Diagram Editor',
+    description: 'Design architecture diagrams visually. Drag-and-drop interface with clean JSON export.',
+    image: '/og-landing.png',
+    url: '/',
+  })
+
   return (
     <div className="arc-landing">
       <div className="arc-shell">
