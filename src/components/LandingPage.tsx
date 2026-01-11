@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import ArcDiagram from './ArcDiagram'
 import ArcArchitectureNext from './ArcArchitectureNext'
 import architectureDiagram from './diagrams/architecture.diagram'
@@ -24,21 +25,81 @@ const architectureMarkup = `const diagram: ArcDiagramData = {
     editor:    { x: 50,  y: 50,  size: 'l' },
     templates: { x: 70,  y: 200, size: 'm' },
     model:     { x: 340, y: 150, size: 'm' },
+    exporters: { x: 340, y: 280, size: 'm' },
+    docs:      { x: 600, y: 150, size: 'm' },
   },
   nodeData: {
-    editor:    { icon: 'Monitor', name: 'Arc Editor',    color: 'violet' },
-    templates: { icon: 'Grid3X3', name: 'Templates',     color: 'amber' },
-    model:     { icon: 'Layers',  name: 'Diagram Model', color: 'blue' },
+    editor:    { icon: 'Monitor',  name: 'Arc Editor',    subtitle: 'Canvas UI',      color: 'violet' },
+    templates: { icon: 'Grid3X3',  name: 'Templates',     subtitle: 'Themes',         color: 'amber' },
+    model:     { icon: 'Layers',   name: 'Diagram Model', subtitle: 'JSON / TS',      color: 'blue' },
+    exporters: { icon: 'Upload',   name: 'Exporters',     subtitle: 'SVG / PNG / TS', color: 'emerald' },
+    docs:      { icon: 'FileCode', name: 'Docs + Apps',   subtitle: 'Consumers',      color: 'zinc' },
   },
   connectors: [
-    { from: 'editor',    to: 'model', style: 'diagram' },
-    { from: 'templates', to: 'model', style: 'themes' },
+    { from: 'editor',    to: 'model',     fromAnchor: 'right',  toAnchor: 'left', style: 'diagram' },
+    { from: 'templates', to: 'model',     fromAnchor: 'right',  toAnchor: 'left', style: 'themes' },
+    { from: 'model',     to: 'docs',      fromAnchor: 'right',  toAnchor: 'left', style: 'publish' },
+    { from: 'model',     to: 'exporters', fromAnchor: 'bottom', toAnchor: 'top',  style: 'export' },
   ],
   connectorStyles: {
-    diagram: { color: 'violet', label: 'diagram' },
-    themes:  { color: 'amber',  label: 'themes' },
+    diagram: { color: 'violet',  strokeWidth: 2, label: 'diagram' },
+    themes:  { color: 'amber',   strokeWidth: 2, label: 'themes' },
+    publish: { color: 'blue',    strokeWidth: 2, label: 'publish' },
+    export:  { color: 'emerald', strokeWidth: 2, label: 'export' },
   },
 }`
+
+function highlightCode(code: string): string {
+  return code
+    .replace(/\b(const|let|var|function|return|export|default|import|from|type)\b/g, '<span class="hl-keyword">$1</span>')
+    .replace(/'([^']*)'/g, '<span class="hl-string">\'$1\'</span>')
+    .replace(/\b(\d+)\b/g, '<span class="hl-number">$1</span>')
+    .replace(/(\w+)(\s*:)/g, '<span class="hl-property">$1</span>$2')
+    .replace(/(\/\/.*)/g, '<span class="hl-comment">$1</span>')
+    .replace(/:\s*(ArcDiagramData)/g, ': <span class="hl-type">$1</span>')
+}
+
+function DiagramShowcase() {
+  const [view, setView] = useState<'diagram' | 'source'>('diagram')
+
+  return (
+    <div className="arc-diagram-shell">
+      <div className="arc-diagram-full">
+        <div className="arc-view-toggle">
+          <button
+            className={`arc-view-btn ${view === 'diagram' ? 'active' : ''}`}
+            onClick={() => setView('diagram')}
+          >
+            Diagram
+          </button>
+          <button
+            className={`arc-view-btn ${view === 'source' ? 'active' : ''}`}
+            onClick={() => setView('source')}
+          >
+            Source
+          </button>
+        </div>
+        {view === 'diagram' ? (
+          <div className="arc-diagram-scroll">
+            <ArcDiagram data={architectureDiagram} theme="light" className="min-w-[860px]" />
+          </div>
+        ) : (
+          <div className="arc-showcase-code" style={{ margin: 0, borderRadius: '16px' }}>
+            <div className="arc-showcase-code-header">
+              <span className="arc-showcase-dot arc-showcase-dot-red" />
+              <span className="arc-showcase-dot arc-showcase-dot-yellow" />
+              <span className="arc-showcase-dot arc-showcase-dot-green" />
+              <span className="arc-showcase-filename">architecture.diagram.ts</span>
+            </div>
+            <pre className="arc-showcase-pre">
+              <code dangerouslySetInnerHTML={{ __html: highlightCode(architectureMarkup) }} />
+            </pre>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
 
 type LandingPageProps = {
   onLaunchEditor: () => void
@@ -141,32 +202,20 @@ export default function LandingPage({ onLaunchEditor }: LandingPageProps) {
               easy to maintain and makes outputs reliable for documentation pipelines.
             </p>
           </div>
-          <div className="arc-diagram-shell">
-            <div className="arc-diagram-full">
-              <div className="arc-diagram-scroll">
-                <ArcDiagram data={architectureDiagram} className="min-w-[960px]" />
+          <DiagramShowcase />
+          <div className="arc-diagram-details arc-reveal arc-delay-1">
+            <div className="arc-grid">
+              <div className="arc-card">
+                <h3>Editor surface</h3>
+                <p>Canvas, layers, and properties stay fast with a single reducer.</p>
               </div>
-              <details className="arc-markup">
-                <summary>View diagram markup</summary>
-                <pre className="arc-code">
-                  <code>{architectureMarkup}</code>
-                </pre>
-              </details>
-            </div>
-            <div className="arc-diagram-details arc-reveal arc-delay-1">
-              <div className="arc-grid">
-                <div className="arc-card">
-                  <h3>Editor surface</h3>
-                  <p>Canvas, layers, and properties stay fast with a single reducer.</p>
-                </div>
-                <div className="arc-card">
-                  <h3>Diagram model</h3>
-                  <p>All nodes, connectors, and styles live in one serialized object.</p>
-                </div>
-                <div className="arc-card">
-                  <h3>Export pipeline</h3>
-                  <p>Generate shareable configs or image exports for docs and decks.</p>
-                </div>
+              <div className="arc-card">
+                <h3>Diagram model</h3>
+                <p>All nodes, connectors, and styles live in one serialized object.</p>
+              </div>
+              <div className="arc-card">
+                <h3>Export pipeline</h3>
+                <p>Generate shareable configs or image exports for docs and decks.</p>
               </div>
             </div>
           </div>

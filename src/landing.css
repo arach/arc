@@ -660,6 +660,36 @@
 .hl-comment { color: #6e7781; font-style: italic; }
 .hl-type { color: #8250df; }
 
+/* View toggle */
+.arc-view-toggle {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+
+.arc-view-btn {
+  padding: 8px 16px;
+  border: 1px solid var(--arc-border);
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--arc-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.arc-view-btn:hover {
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--arc-ink);
+}
+
+.arc-view-btn.active {
+  background: var(--arc-ink);
+  color: white;
+  border-color: var(--arc-ink);
+}
+
 @media (max-width: 720px) {
   .arc-topbar-inner {
     flex-direction: column;
