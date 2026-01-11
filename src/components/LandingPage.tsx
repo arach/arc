@@ -51,12 +51,18 @@ const architectureMarkup = `const diagram: ArcDiagramData = {
 
 function highlightCode(code: string): string {
   return code
-    .replace(/\b(const|let|var|function|return|export|default|import|from|type)\b/g, '<span class="hl-keyword">$1</span>')
-    .replace(/'([^']*)'/g, '<span class="hl-string">\'$1\'</span>')
-    .replace(/\b(\d+)\b/g, '<span class="hl-number">$1</span>')
+    // Properties first (word followed by colon) - this captures 'from:', 'to:', etc.
     .replace(/(\w+)(\s*:)/g, '<span class="hl-property">$1</span>$2')
+    // Then keywords (only at start of line or after specific contexts)
+    .replace(/^(\s*)(const|let|var|type)\b/gm, '$1<span class="hl-keyword">$2</span>')
+    // Strings
+    .replace(/'([^']*)'/g, '<span class="hl-string">\'$1\'</span>')
+    // Numbers
+    .replace(/\b(\d+)\b/g, '<span class="hl-number">$1</span>')
+    // Comments
     .replace(/(\/\/.*)/g, '<span class="hl-comment">$1</span>')
-    .replace(/:\s*(ArcDiagramData)/g, ': <span class="hl-type">$1</span>')
+    // Type annotation
+    .replace(/: <span class="hl-property">ArcDiagramData<\/span>/g, ': <span class="hl-type">ArcDiagramData</span>')
 }
 
 function DiagramShowcase() {

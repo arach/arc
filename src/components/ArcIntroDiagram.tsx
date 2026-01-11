@@ -47,10 +47,10 @@ export default function ArcIntroDiagram() {
 
 function highlightCode(code: string): string {
   return code
-    .replace(/\b(const|let|var|function|return|export|default|import|from|type)\b/g, '<span class="hl-keyword">$1</span>')
+    .replace(/(\w+)(\s*:)/g, '<span class="hl-property">$1</span>$2')
+    .replace(/^(\s*)(const|let|var|type)\b/gm, '$1<span class="hl-keyword">$2</span>')
     .replace(/'([^']*)'/g, '<span class="hl-string">\'$1\'</span>')
     .replace(/\b(\d+)\b/g, '<span class="hl-number">$1</span>')
-    .replace(/(\w+)(\s*:)/g, '<span class="hl-property">$1</span>$2')
     .replace(/(\/\/.*)/g, '<span class="hl-comment">$1</span>')
-    .replace(/:\s*(ArcDiagramData)/g, ': <span class="hl-type">$1</span>')
+    .replace(/: <span class="hl-property">ArcDiagramData<\/span>/g, ': <span class="hl-type">ArcDiagramData</span>')
 }
