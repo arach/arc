@@ -4,6 +4,10 @@ node_modules
 # Build output
 dist
 dist-ssr
+*.tsbuildinfo
+
+# Package builds (monorepo)
+packages/*/dist
 
 # Logs
 logs
@@ -35,3 +39,12 @@ Thumbs.db
 
 # Claude Code
 .claude
+
+# Test coverage
+coverage
+
+# Turbo
+.turbo
+
+# Puppeteer cache
+.cache
