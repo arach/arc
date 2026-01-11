@@ -639,28 +639,26 @@
 
 .arc-showcase-pre {
   margin: 0;
-  padding: 20px 24px;
+  padding: 16px 20px;
   overflow: auto;
-  font-size: 13px;
-  line-height: 1.7;
+  font-size: 12.5px;
+  line-height: 1.5;
   font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
   background: transparent;
+  color: var(--arc-ink);
 }
 
-.arc-showcase-pre > div {
-  display: flex;
-  gap: 16px;
+.arc-showcase-pre code {
+  white-space: pre;
 }
 
-.arc-line-number {
-  display: inline-block;
-  width: 24px;
-  text-align: right;
-  color: var(--arc-muted);
-  opacity: 0.5;
-  user-select: none;
-  flex-shrink: 0;
-}
+/* Syntax highlighting */
+.hl-keyword { color: #cf222e; font-weight: 500; }
+.hl-string { color: #0a3069; }
+.hl-number { color: #0550ae; }
+.hl-property { color: #116329; }
+.hl-comment { color: #6e7781; font-style: italic; }
+.hl-type { color: #8250df; }
 
 @media (max-width: 720px) {
   .arc-topbar-inner {
