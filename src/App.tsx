@@ -1,42 +1,65 @@
 import { useEffect, useState } from 'react'
+import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom'
 import DiagramEditor from './components/editor/DiagramEditor'
 import LandingPage from './components/LandingPage'
+import Docs from './components/docs/Docs'
 import './landing.css'
 
-const EDITOR_HASH = '#editor'
-
-function App() {
+function EditorPage() {
   const [isDark, setIsDark] = useState(true)
-  const [activeView, setActiveView] = useState<'landing' | 'editor'>(() =>
-    window.location.hash === EDITOR_HASH ? 'editor' : 'landing',
-  )
+  const navigate = useNavigate()
 
   useEffect(() => {
-    const handleHashChange = () => {
-      setActiveView(window.location.hash === EDITOR_HASH ? 'editor' : 'landing')
-    }
-    window.addEventListener('hashchange', handleHashChange)
-    return () => window.removeEventListener('hashchange', handleHashChange)
-  }, [])
-
-  // Apply dark mode class to document when editor is active.
-  useEffect(() => {
-    if (activeView === 'editor' && isDark) {
+    if (isDark) {
       document.documentElement.classList.add('dark')
     } else {
       document.documentElement.classList.remove('dark')
     }
-  }, [activeView, isDark])
+  }, [isDark])
 
-  const handleLaunchEditor = () => {
-    window.location.hash = EDITOR_HASH
-  }
-
-  if (activeView === 'landing') {
-    return <LandingPage onLaunchEditor={handleLaunchEditor} />
-  }
+  // Clean up dark mode when leaving editor
+  useEffect(() => {
+    return () => {
+      document.documentElement.classList.remove('dark')
+    }
+  }, [])
 
   return <DiagramEditor isDark={isDark} onToggleTheme={() => setIsDark(!isDark)} />
+}
+
+function LandingPageWrapper() {
+  const navigate = useNavigate()
+
+  // Ensure dark mode is removed on landing page
+  useEffect(() => {
+    document.documentElement.classList.remove('dark')
+  }, [])
+
+  return <LandingPage onLaunchEditor={() => navigate('/editor')} />
+}
+
+function DocsWrapper() {
+  const navigate = useNavigate()
+
+  // Ensure dark mode is removed on docs
+  useEffect(() => {
+    document.documentElement.classList.remove('dark')
+  }, [])
+
+  return <Docs onBack={() => navigate('/')} />
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<LandingPageWrapper />} />
+        <Route path="/editor" element={<EditorPage />} />
+        <Route path="/docs" element={<DocsWrapper />} />
+        <Route path="/docs/:page" element={<DocsWrapper />} />
+      </Routes>
+    </BrowserRouter>
+  )
 }
 
 export default App

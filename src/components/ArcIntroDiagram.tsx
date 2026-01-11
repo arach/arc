@@ -37,7 +37,7 @@ export default function ArcIntroDiagram() {
   return (
     <div className="arc-showcase">
       <div className="arc-showcase-diagram">
-        <ArcDiagram data={diagram} theme="light" />
+        <ArcDiagram data={diagram} mode="light" />
       </div>
       <div className="arc-showcase-code">
         <div className="arc-showcase-code-header">

@@ -2,6 +2,7 @@
 import React, { useState, useCallback } from 'react'
 import * as LucideIcons from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
+import { getTheme, type ThemeId, type Theme } from '../utils/themes'
 
 // ============================================
 // Types
@@ -68,29 +69,9 @@ const NODE_SIZES: Record<NodeSize, { width: number; height: number }> = {
   s: { width: 110, height: 48 },
 }
 
-export type DiagramTheme = 'dark' | 'light'
-
-const COLORS_DARK: Record<DiagramColor, { border: string; bg: string; icon: string; stroke: string }> = {
-  violet:  { border: 'border-violet-400/50',  bg: 'bg-violet-500/10',  icon: 'text-violet-400',  stroke: '#a78bfa' },
-  emerald: { border: 'border-emerald-400/50', bg: 'bg-emerald-500/10', icon: 'text-emerald-400', stroke: '#34d399' },
-  blue:    { border: 'border-blue-400/50',    bg: 'bg-blue-500/10',    icon: 'text-blue-400',    stroke: '#60a5fa' },
-  amber:   { border: 'border-amber-400/50',   bg: 'bg-amber-500/10',   icon: 'text-amber-400',   stroke: '#fbbf24' },
-  sky:     { border: 'border-sky-400/50',     bg: 'bg-sky-500/10',     icon: 'text-sky-400',     stroke: '#38bdf8' },
-  zinc:    { border: 'border-zinc-600',       bg: 'bg-zinc-800/50',    icon: 'text-zinc-400',    stroke: '#71717a' },
-  rose:    { border: 'border-rose-400/50',    bg: 'bg-rose-500/10',    icon: 'text-rose-400',    stroke: '#fb7185' },
-  orange:  { border: 'border-orange-400/50',  bg: 'bg-orange-500/10',  icon: 'text-orange-400',  stroke: '#fb923c' },
-}
-
-const COLORS_LIGHT: Record<DiagramColor, { border: string; bg: string; icon: string; stroke: string }> = {
-  violet:  { border: 'border-violet-300',  bg: 'bg-gradient-to-br from-violet-50 to-violet-100/50',   icon: 'text-violet-600',  stroke: '#8b5cf6' },
-  emerald: { border: 'border-emerald-300', bg: 'bg-gradient-to-br from-emerald-50 to-emerald-100/50', icon: 'text-emerald-600', stroke: '#10b981' },
-  blue:    { border: 'border-blue-300',    bg: 'bg-gradient-to-br from-blue-50 to-blue-100/50',       icon: 'text-blue-600',    stroke: '#3b82f6' },
-  amber:   { border: 'border-amber-300',   bg: 'bg-gradient-to-br from-amber-50 to-amber-100/50',     icon: 'text-amber-600',   stroke: '#f59e0b' },
-  sky:     { border: 'border-sky-300',     bg: 'bg-gradient-to-br from-sky-50 to-sky-100/50',         icon: 'text-sky-600',     stroke: '#0ea5e9' },
-  zinc:    { border: 'border-zinc-300',    bg: 'bg-gradient-to-br from-zinc-50 to-zinc-100/50',       icon: 'text-zinc-600',    stroke: '#71717a' },
-  rose:    { border: 'border-rose-300',    bg: 'bg-gradient-to-br from-rose-50 to-rose-100/50',       icon: 'text-rose-600',    stroke: '#f43f5e' },
-  orange:  { border: 'border-orange-300',  bg: 'bg-gradient-to-br from-orange-50 to-orange-100/50',   icon: 'text-orange-600',  stroke: '#f97316' },
-}
+// Mode = light/dark appearance, Theme = color palette
+export type DiagramMode = 'dark' | 'light'
+export { type ThemeId } from '../utils/themes'
 
 // ============================================
 // Components
@@ -99,18 +80,18 @@ const COLORS_LIGHT: Record<DiagramColor, { border: string; bg: string; icon: str
 interface NodeProps {
   node: NodePosition
   data: NodeData
-  theme: DiagramTheme
+  mode: DiagramMode
+  themeColors: Theme['light'] | Theme['dark']
 }
 
-function Node({ node, data, theme }: NodeProps) {
+function Node({ node, data, mode, themeColors }: NodeProps) {
   const size = NODE_SIZES[node.size]
-  const colors = theme === 'light' ? COLORS_LIGHT : COLORS_DARK
-  const color = colors[data.color] || colors.zinc
+  const color = themeColors.palette[data.color] || themeColors.palette.zinc
   const Icon = (LucideIcons as unknown as Record<string, LucideIcon>)[data.icon] || LucideIcons.Box
 
   const isLarge = node.size === 'l'
   const isSmall = node.size === 's'
-  const isLight = theme === 'light'
+  const isLight = mode === 'light'
 
   return (
     <div
@@ -131,18 +112,18 @@ function Node({ node, data, theme }: NodeProps) {
           <Icon className={`${isLarge ? 'w-5 h-5' : isSmall ? 'w-3 h-3' : 'w-4 h-4'} ${color.icon}`} />
         </div>
         <div className="min-w-0">
-          <div className={`font-semibold ${isLight ? 'text-zinc-900' : 'text-white'} ${isLarge ? 'text-sm' : isSmall ? 'text-[10px]' : 'text-xs'}`}>
+          <div className={`font-semibold ${themeColors.text.primary} ${isLarge ? 'text-sm' : isSmall ? 'text-[10px]' : 'text-xs'}`}>
             {data.name}
           </div>
           {data.subtitle && (
-            <div className={`font-mono ${isLight ? 'text-zinc-500' : 'text-zinc-500'} ${isSmall ? 'text-[8px]' : 'text-[10px]'}`}>
+            <div className={`font-mono ${themeColors.text.muted} ${isSmall ? 'text-[8px]' : 'text-[10px]'}`}>
               {data.subtitle}
             </div>
           )}
         </div>
       </div>
       {data.description && !isSmall && (
-        <div className={`mt-1.5 ${isLight ? 'text-zinc-600' : 'text-zinc-400'} ${isLarge ? 'text-[11px]' : 'text-[10px]'}`}>
+        <div className={`mt-1.5 ${themeColors.text.secondary} ${isLarge ? 'text-[11px]' : 'text-[10px]'}`}>
           {data.description}
         </div>
       )}
@@ -178,19 +159,18 @@ interface ConnectorProps {
   connectorIndex: number
   nodes: Record<string, NodePosition>
   styles: Record<string, ConnectorStyle>
-  theme: DiagramTheme
+  themeColors: Theme['light'] | Theme['dark']
 }
 
-function ConnectorPath({ connector, connectorIndex, nodes, styles, theme }: ConnectorProps) {
+function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors }: ConnectorProps) {
   const fromNode = nodes[connector.from]
   const toNode = nodes[connector.to]
   if (!fromNode || !toNode) return null
 
-  const colors = theme === 'light' ? COLORS_LIGHT : COLORS_DARK
   const style = styles[connector.style] || { color: 'zinc', strokeWidth: 2 }
   const from = getAnchorPoint(fromNode, connector.fromAnchor)
   const to = getAnchorPoint(toNode, connector.toAnchor)
-  const color = colors[style.color]?.stroke || colors.zinc.stroke
+  const color = themeColors.palette[style.color]?.stroke || themeColors.palette.zinc.stroke
   const gradientId = `connector-gradient-${connectorIndex}`
 
   // Calculate path
@@ -305,12 +285,12 @@ interface ZoomControlsProps {
   onZoomIn: () => void
   onZoomOut: () => void
   onReset: () => void
-  theme: DiagramTheme
+  mode: DiagramMode
 }
 
-function ZoomControls({ zoom, onZoomIn, onZoomOut, onReset, theme }: ZoomControlsProps) {
+function ZoomControls({ zoom, onZoomIn, onZoomOut, onReset, mode }: ZoomControlsProps) {
   const { ZoomIn, ZoomOut } = LucideIcons
-  const isLight = theme === 'light'
+  const isLight = mode === 'light'
 
   return (
     <div className={`absolute bottom-3 right-3 flex items-center backdrop-blur-sm rounded-md z-10 ${
@@ -361,12 +341,17 @@ interface ArcDiagramProps {
   data: ArcDiagramData
   className?: string
   interactive?: boolean  // Enable zoom/pan controls
-  theme?: DiagramTheme
+  mode?: DiagramMode     // Light/dark appearance
+  theme?: ThemeId        // Color palette theme
 }
 
-export default function ArcDiagram({ data, className = '', interactive = true, theme = 'dark' }: ArcDiagramProps) {
+export default function ArcDiagram({ data, className = '', interactive = true, mode = 'dark', theme = 'default' }: ArcDiagramProps) {
   const { id, layout, nodes, nodeData, connectors, connectorStyles } = data
-  const isLight = theme === 'light'
+  const isLight = mode === 'light'
+
+  // Resolve theme colors based on mode
+  const themeData = getTheme(theme)
+  const themeColors = isLight ? themeData.light : themeData.dark
 
   // Zoom & pan state
   const [zoom, setZoom] = useState(1)
@@ -422,11 +407,7 @@ export default function ArcDiagram({ data, className = '', interactive = true, t
 
   return (
     <div
-      className={`rounded-2xl overflow-hidden relative ${
-        isLight
-          ? 'bg-white/80 border border-zinc-200 shadow-lg'
-          : 'bg-zinc-950 border border-zinc-800'
-      } ${className}`}
+      className={`rounded-2xl overflow-hidden relative ${themeColors.background.container} ${className}`}
       onWheel={handleWheel}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
@@ -446,14 +427,15 @@ export default function ArcDiagram({ data, className = '', interactive = true, t
       >
         {/* Grid background - extends beyond content for pan */}
         <div
-          className={isLight ? 'absolute opacity-[0.35]' : 'absolute opacity-[0.08]'}
+          className="absolute"
           style={{
             top: -2000,
             left: -2000,
             width: layout.width + 4000,
             height: layout.height + 4000,
-            backgroundImage: `radial-gradient(circle, ${isLight ? 'rgba(16, 21, 24, 0.12)' : '#71717a'} 1px, transparent 1px)`,
-            backgroundSize: '24px 24px',
+            backgroundImage: `radial-gradient(circle, ${themeColors.background.grid.color} 1px, transparent 1px)`,
+            backgroundSize: `${themeColors.background.grid.size}px ${themeColors.background.grid.size}px`,
+            opacity: themeColors.background.grid.opacity,
           }}
         />
 
@@ -469,14 +451,14 @@ export default function ArcDiagram({ data, className = '', interactive = true, t
               connectorIndex={i}
               nodes={nodes}
               styles={connectorStyles}
-              theme={theme}
+              themeColors={themeColors}
             />
           ))}
         </svg>
 
         {/* Nodes */}
         {Object.entries(nodes).map(([nodeId, node]) => (
-          <Node key={nodeId} node={node} data={nodeData[nodeId]} theme={theme} />
+          <Node key={nodeId} node={node} data={nodeData[nodeId]} mode={mode} themeColors={themeColors} />
         ))}
       </div>
 
@@ -484,9 +466,7 @@ export default function ArcDiagram({ data, className = '', interactive = true, t
 
       {/* Diagram ID - bottom left */}
       {id && (
-        <div className={`absolute bottom-3 left-3 font-mono text-[9px] tracking-wider z-10 ${
-          isLight ? 'text-zinc-400' : 'text-zinc-600'
-        }`}>
+        <div className={`absolute bottom-3 left-3 font-mono text-[9px] tracking-wider z-10 ${themeColors.text.muted}`}>
           {id}
         </div>
       )}
@@ -498,7 +478,7 @@ export default function ArcDiagram({ data, className = '', interactive = true, t
           onZoomIn={handleZoomIn}
           onZoomOut={handleZoomOut}
           onReset={handleReset}
-          theme={theme}
+          mode={mode}
         />
       )}
     </div>

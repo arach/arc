@@ -1,21 +1,40 @@
 import { useState } from 'react'
-import ArcDiagram from './ArcDiagram'
+import { Link } from 'react-router-dom'
+import ArcDiagram, { type ThemeId } from './ArcDiagram'
 import ArcArchitectureNext from './ArcArchitectureNext'
 import architectureDiagram from './diagrams/architecture.diagram'
+import { getThemeList } from '../utils/themes'
 
-const sampleConfig = `const diagram = {
-  layout: { width: 1200, height: 700 },
-  nodes: {
-    api: { x: 80, y: 120, size: 'm' },
-    web: { x: 360, y: 120, size: 'm' },
-  },
-  nodeData: {
-    api: { name: 'API', icon: 'Server', color: 'emerald' },
-    web: { name: 'Web App', icon: 'Monitor', color: 'violet' },
-  },
-  connectors: [
-    { from: 'web', to: 'api', fromAnchor: 'right', toAnchor: 'left', style: 'http' },
-  ],
+const schemaReference = `interface ArcDiagramData {
+  id?: string                    // Unique diagram identifier
+  layout: {
+    width: number               // Canvas width in pixels
+    height: number              // Canvas height in pixels
+  }
+  nodes: Record<string, {
+    x: number                   // X position
+    y: number                   // Y position
+    size: 's' | 'm' | 'l'       // Node size variant
+  }>
+  nodeData: Record<string, {
+    icon: LucideIconName        // Icon from lucide-react
+    name: string                // Primary label
+    subtitle?: string           // Secondary label
+    color: DiagramColor         // Accent color
+  }>
+  connectors: Array<{
+    from: string                // Source node ID
+    to: string                  // Target node ID
+    fromAnchor: AnchorPosition  // left | right | top | bottom
+    toAnchor: AnchorPosition    // Connection endpoint
+    style: string               // Reference to connectorStyles
+  }>
+  connectorStyles?: Record<string, {
+    color: DiagramColor         // Line color
+    strokeWidth: number         // Line thickness (1-4)
+    label?: string              // Optional label on line
+    dashed?: boolean            // Dashed line style
+  }>
 }`
 
 const architectureMarkup = `const diagram: ArcDiagramData = {
@@ -49,7 +68,20 @@ const architectureMarkup = `const diagram: ArcDiagramData = {
   },
 }`
 
-function highlightCode(code: string): string {
+function highlightCode(code: string, isSchema = false): string {
+  if (isSchema) {
+    return code
+      // Comments first (preserve them)
+      .replace(/(\/\/.*)/g, '<span class="hl-comment">$1</span>')
+      // Keywords
+      .replace(/\b(interface|type|string|number|boolean|Array|Record)\b/g, '<span class="hl-keyword">$1</span>')
+      // Type names (capitalized words not followed by colon)
+      .replace(/\b([A-Z][a-zA-Z]+)(?!:)/g, '<span class="hl-type">$1</span>')
+      // Properties (word followed by optional ? and colon)
+      .replace(/(\w+)(\??:)/g, '<span class="hl-property">$1</span>$2')
+      // String literals
+      .replace(/'([^']*)'/g, '<span class="hl-string">\'$1\'</span>')
+  }
   return code
     // Properties first (word followed by colon) - this captures 'from:', 'to:', etc.
     .replace(/(\w+)(\s*:)/g, '<span class="hl-property">$1</span>$2')
@@ -67,7 +99,9 @@ function highlightCode(code: string): string {
 
 function DiagramShowcase() {
   const [view, setView] = useState<'diagram' | 'source'>('diagram')
-  const [theme, setTheme] = useState<'light' | 'dark'>('light')
+  const [mode, setMode] = useState<'light' | 'dark'>('light')
+  const [theme, setTheme] = useState<ThemeId>('default')
+  const themes = getThemeList()
 
   return (
     <div className="arc-diagram-shell">
@@ -88,27 +122,41 @@ function DiagramShowcase() {
             </button>
           </div>
           {view === 'diagram' && (
-            <div className="arc-theme-toggle">
-              <button
-                className={`arc-theme-btn ${theme === 'light' ? 'active' : ''}`}
-                onClick={() => setTheme('light')}
-                title="Light mode"
-              >
-                ☀
-              </button>
-              <button
-                className={`arc-theme-btn ${theme === 'dark' ? 'active' : ''}`}
-                onClick={() => setTheme('dark')}
-                title="Dark mode"
-              >
-                ☾
-              </button>
+            <div className="arc-controls-right">
+              <div className="arc-theme-selector">
+                {themes.map((t) => (
+                  <button
+                    key={t.id}
+                    className={`arc-theme-chip ${theme === t.id ? 'active' : ''}`}
+                    onClick={() => setTheme(t.id as ThemeId)}
+                    title={t.description}
+                  >
+                    {t.name}
+                  </button>
+                ))}
+              </div>
+              <div className="arc-theme-toggle">
+                <button
+                  className={`arc-theme-btn ${mode === 'light' ? 'active' : ''}`}
+                  onClick={() => setMode('light')}
+                  title="Light mode"
+                >
+                  ☀
+                </button>
+                <button
+                  className={`arc-theme-btn ${mode === 'dark' ? 'active' : ''}`}
+                  onClick={() => setMode('dark')}
+                  title="Dark mode"
+                >
+                  ☾
+                </button>
+              </div>
             </div>
           )}
         </div>
         {view === 'diagram' ? (
           <div className="arc-diagram-scroll">
-            <ArcDiagram data={architectureDiagram} theme={theme} className="min-w-[860px]" />
+            <ArcDiagram data={architectureDiagram} mode={mode} theme={theme} className="min-w-[860px]" />
           </div>
         ) : (
           <div className="arc-showcase-code" style={{ margin: 0, borderRadius: '16px' }}>
@@ -146,7 +194,7 @@ export default function LandingPage({ onLaunchEditor }: LandingPageProps) {
             <nav className="arc-nav">
               <a href="#overview">Why Arc</a>
               <a href="#architecture">Architecture</a>
-              <a href="#docs">Docs</a>
+              <Link to="/docs">Docs</Link>
             </nav>
             <div className="arc-topbar-actions">
               <span className="arc-chip">Declarative</span>
@@ -171,9 +219,9 @@ export default function LandingPage({ onLaunchEditor }: LandingPageProps) {
                 <button type="button" className="arc-button" onClick={onLaunchEditor}>
                   Try the live editor
                 </button>
-                <a className="arc-button secondary" href="#docs">
+                <Link className="arc-button secondary" to="/docs">
                   Read the intro docs
-                </a>
+                </Link>
               </div>
             </div>
             <div className="arc-hero-card arc-reveal arc-delay-1">
@@ -189,6 +237,21 @@ export default function LandingPage({ onLaunchEditor }: LandingPageProps) {
                 <span>Ship-ready</span>
                 <strong>SVG, PNG, JSON, TS</strong>
               </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="arc-quickstart">
+          <div className="arc-quickstart-inner">
+            <div className="arc-quickstart-text">
+              <h2>Get started in seconds</h2>
+              <p>Install Arc and start creating diagrams</p>
+            </div>
+            <div className="arc-quickstart-install">
+              <code>npx @arach/arc init</code>
+              <button type="button" className="arc-copy-btn" onClick={() => navigator.clipboard.writeText('npx @arach/arc init')}>
+                Copy
+              </button>
             </div>
           </div>
         </section>
@@ -261,37 +324,47 @@ export default function LandingPage({ onLaunchEditor }: LandingPageProps) {
 
         <section className="arc-section">
           <div className="arc-section-header">
-            <h2>Declarative design, human-readable</h2>
+            <h2>Human-readable, agent-friendly</h2>
             <p>
-              The output is designed for review. Keep diagrams in Git, update them alongside code,
-              and reuse them in any UI that consumes Arc configs.
+              The schema is designed for humans to review and agents to write. Keep diagrams in Git,
+              generate them programmatically, and consume them in any UI.
             </p>
           </div>
-          <pre className="arc-code">
-            <code>{sampleConfig}</code>
-          </pre>
+          <div className="arc-showcase-code" style={{ margin: 0, borderRadius: '16px' }}>
+            <div className="arc-showcase-code-header">
+              <span className="arc-showcase-dot arc-showcase-dot-red" />
+              <span className="arc-showcase-dot arc-showcase-dot-yellow" />
+              <span className="arc-showcase-dot arc-showcase-dot-green" />
+              <span className="arc-showcase-filename">types.d.ts</span>
+            </div>
+            <pre className="arc-showcase-pre">
+              <code dangerouslySetInnerHTML={{ __html: highlightCode(schemaReference, true) }} />
+            </pre>
+          </div>
         </section>
 
         <section className="arc-section" id="docs">
           <div className="arc-section-header">
-            <h2>Introductory docs</h2>
+            <h2>Documentation</h2>
             <p>Start here for the mental model, then dive deeper into the architecture.</p>
           </div>
-          <div className="arc-doc-links">
-            <a className="arc-doc-link" href="docs/intro.md">
-              <div>
-                <strong>Introduction to Arc</strong>
-                <span>What it is, key concepts, and quickstart commands.</span>
-              </div>
-              <span>docs/intro.md</span>
-            </a>
-            <a className="arc-doc-link" href="docs/architecture/">
-              <div>
-                <strong>Architecture overview</strong>
-                <span>State flow, major modules, and exporter responsibilities.</span>
-              </div>
-              <span>docs/architecture/</span>
-            </a>
+          <div className="arc-doc-grid">
+            <Link className="arc-doc-card" to="/docs/overview">
+              <strong>Overview</strong>
+              <span>Introduction to Arc</span>
+            </Link>
+            <Link className="arc-doc-card" to="/docs/quickstart">
+              <strong>Quickstart</strong>
+              <span>Get up and running</span>
+            </Link>
+            <Link className="arc-doc-card" to="/docs/diagram-format">
+              <strong>Diagram Format</strong>
+              <span>Data structure reference</span>
+            </Link>
+            <Link className="arc-doc-card" to="/docs/themes">
+              <strong>Themes</strong>
+              <span>Color palettes</span>
+            </Link>
           </div>
         </section>
 
