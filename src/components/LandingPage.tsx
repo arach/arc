@@ -1,10 +1,59 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import ArcDiagram, { type ThemeId } from './ArcDiagram'
+import { Package, Zap, Shield, Rabbit, Settings, Copy, Check } from 'lucide-react'
+import ArcDiagram, { type ThemeId, type ArcDiagramData } from './ArcDiagram'
 import ArcArchitectureNext from './ArcArchitectureNext'
 import architectureDiagram from './diagrams/architecture.diagram'
 import { getThemeList } from '../utils/themes'
 import { useMeta } from '../hooks/useMeta'
+
+type PackageManager = 'npm' | 'pnpm' | 'yarn' | 'bun'
+
+const packageManagers: Record<PackageManager, { icon: typeof Package; command: string }> = {
+  npm: { icon: Package, command: 'npx @arach/arc init' },
+  pnpm: { icon: Zap, command: 'pnpm dlx @arach/arc init' },
+  yarn: { icon: Shield, command: 'yarn dlx @arach/arc init' },
+  bun: { icon: Rabbit, command: 'bunx @arach/arc init' },
+}
+
+const packageManagerOrder: PackageManager[] = ['npm', 'pnpm', 'yarn', 'bun']
+
+// Hero diagram - system architecture example
+const heroDiagram: ArcDiagramData = {
+  id: 'ARC.HERO.001',
+  layout: { width: 440, height: 240 },
+  nodes: {
+    app: { x: 20, y: 15, size: 's' },
+    engine: { x: 20, y: 105, size: 's' },
+    server: { x: 180, y: 15, size: 's' },
+    cloud: { x: 180, y: 155, size: 's' },
+    mobile: { x: 320, y: 15, size: 's' },
+    watch: { x: 320, y: 105, size: 's' },
+  },
+  nodeData: {
+    app: { icon: 'Monitor', name: 'App', color: 'violet' },
+    engine: { icon: 'Cpu', name: 'Engine', color: 'blue' },
+    server: { icon: 'Server', name: 'Server', color: 'amber' },
+    cloud: { icon: 'Cloud', name: 'Cloud', color: 'sky' },
+    mobile: { icon: 'Smartphone', name: 'Mobile', color: 'zinc' },
+    watch: { icon: 'Watch', name: 'Watch', color: 'zinc' },
+  },
+  connectors: [
+    { from: 'app', to: 'engine', fromAnchor: 'bottom', toAnchor: 'top', style: 'internal' },
+    { from: 'app', to: 'server', fromAnchor: 'right', toAnchor: 'left', style: 'http' },
+    { from: 'server', to: 'mobile', fromAnchor: 'right', toAnchor: 'left', style: 'api' },
+    { from: 'mobile', to: 'watch', fromAnchor: 'bottom', toAnchor: 'top', style: 'sync' },
+    { from: 'engine', to: 'cloud', fromAnchor: 'right', toAnchor: 'left', style: 'cloud' },
+    { from: 'watch', to: 'cloud', fromAnchor: 'bottom', toAnchor: 'right', style: 'cloud', curve: 'natural' },
+  ],
+  connectorStyles: {
+    internal: { color: 'violet', strokeWidth: 2, dashed: true },
+    http: { color: 'amber', strokeWidth: 2, label: 'HTTP' },
+    api: { color: 'sky', strokeWidth: 2 },
+    sync: { color: 'zinc', strokeWidth: 1 },
+    cloud: { color: 'sky', strokeWidth: 1, dashed: true },
+  },
+}
 
 const schemaReference = `interface ArcDiagramData {
   id?: string                    // Unique diagram identifier
@@ -182,6 +231,15 @@ type LandingPageProps = {
 }
 
 export default function LandingPage({ onLaunchEditor }: LandingPageProps) {
+  const [pkgManager, setPkgManager] = useState<PackageManager>('npm')
+  const [copied, setCopied] = useState(false)
+
+  const copyCommand = async () => {
+    await navigator.clipboard.writeText(packageManagers[pkgManager].command)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
   // Set page-specific meta tags
   useMeta({
     title: 'Arc | Visual Diagram Editor',
@@ -198,127 +256,117 @@ export default function LandingPage({ onLaunchEditor }: LandingPageProps) {
             <div className="arc-brand">
               <span className="arc-brand-mark" aria-hidden="true" />
               <span className="arc-brand-name">Arc</span>
-              <span className="arc-brand-sub">Diagram Studio</span>
             </div>
             <nav className="arc-nav">
               <a href="#overview">Why Arc</a>
               <a href="#architecture">Architecture</a>
               <Link to="/docs">Docs</Link>
             </nav>
-            <div className="arc-topbar-actions">
-              <span className="arc-chip">Declarative</span>
-              <button type="button" className="arc-button" onClick={onLaunchEditor}>
-                Launch Editor
-              </button>
-            </div>
           </div>
         </header>
 
         <section className="arc-hero" id="overview">
+          <h1 className="arc-hero-headline arc-reveal">Architecture diagrams that live in your codebase.</h1>
           <div className="arc-hero-grid">
-            <div className="arc-reveal">
-              <div className="arc-eyebrow">Architecture, by design</div>
-              <h1>Arc makes architecture diagrams readable, versionable, and ready for docs.</h1>
+            <div className="arc-hero-text arc-reveal arc-delay-1">
               <p>
-                Arc is a visual editor that outputs a clean, declarative model. Design the system
-                once, export to TypeScript or JSON, and reuse it across documentation sites,
-                onboarding decks, and product briefs.
+                Declarative diagrams your AI agent can draft and you can refine visually.
+                Export as TypeScript or JSON—versionable, reviewable, ready for docs.
               </p>
+              <ul className="arc-hero-features">
+                <li>Design once, render anywhere</li>
+                <li>SVG, PNG, and JSON exports</li>
+                <li>Git-friendly declarative format</li>
+                <li>Let agents draft your diagrams and edit alongside them to get pixel perfect outputs</li>
+              </ul>
               <div className="arc-hero-actions">
                 <button type="button" className="arc-button" onClick={onLaunchEditor}>
-                  Try the live editor
+                  Try Arc Editor
                 </button>
                 <Link className="arc-button secondary" to="/docs">
-                  Read the intro docs
+                  Docs
                 </Link>
               </div>
             </div>
-            <div className="arc-hero-card arc-reveal arc-delay-1">
-              <div className="arc-hero-stat">
-                <span>Design once</span>
-                <strong>Export everywhere</strong>
-              </div>
-              <div className="arc-hero-stat">
-                <span>Declarative</span>
-                <strong>Diff-friendly configs</strong>
-              </div>
-              <div className="arc-hero-stat">
-                <span>Ship-ready</span>
-                <strong>SVG, PNG, JSON, TS</strong>
+            <div className="arc-hero-visual arc-reveal arc-delay-1">
+              <ArcDiagram data={heroDiagram} mode="light" theme="default" />
+            </div>
+          </div>
+        </section>
+
+        <section className="arc-why-section">
+          <div className="arc-why-inner">
+            <div className="arc-why-content">
+              <h2>Why Arc exists</h2>
+              <p>
+                Architecture diagrams usually die in slide decks. Arc keeps the diagram in the same
+                place as the product: in code, in docs, and in the repo.
+              </p>
+              <ul className="arc-why-list">
+                <li><strong>Design with confidence</strong> — Canvas for nodes, connections, groups, and images</li>
+                <li><strong>Ship declarative outputs</strong> — Export configs you can lint, review, and CI</li>
+                <li><strong>Templates that scale</strong> — Curated themes, consistent styling across teams</li>
+                <li><strong>Share the story</strong> — SVG/PNG exports for decks and live docs</li>
+              </ul>
+            </div>
+            <div className="arc-get-started">
+              <h3>Get started in seconds</h3>
+              <div className="arc-install">
+                <div className="arc-install-tabs">
+                  {packageManagerOrder.map((pm) => {
+                    const Icon = packageManagers[pm].icon
+                    return (
+                      <button
+                        key={pm}
+                        type="button"
+                        className={`arc-install-tab ${pkgManager === pm ? 'active' : ''}`}
+                        onClick={() => setPkgManager(pm)}
+                      >
+                        <Icon className="arc-install-icon" />
+                        <span>{pm.toUpperCase()}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+                <div className="arc-install-command">
+                  <code>{packageManagers[pkgManager].command}</code>
+                  <button type="button" className="arc-install-copy" onClick={copyCommand}>
+                    {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         </section>
 
-        <section className="arc-quickstart">
-          <div className="arc-quickstart-inner">
-            <div className="arc-quickstart-text">
-              <h2>Get started in seconds</h2>
-              <p>Install Arc and start creating diagrams</p>
+        <div className="arc-architecture-section">
+          <section className="arc-section" id="architecture">
+            <div className="arc-section-header">
+              <h2>Arc architecture at a glance</h2>
+              <p>
+                Arc keeps the editor experience separate from the model and exporters. That makes it
+                easy to maintain and makes outputs reliable for documentation pipelines.
+              </p>
             </div>
-            <div className="arc-quickstart-install">
-              <code>npx @arach/arc init</code>
-              <button type="button" className="arc-copy-btn" onClick={() => navigator.clipboard.writeText('npx @arach/arc init')}>
-                Copy
-              </button>
-            </div>
-          </div>
-        </section>
-
-        <section className="arc-section">
-          <div className="arc-section-header">
-            <h2>Why Arc exists</h2>
-            <p>
-              Architecture diagrams usually die in slide decks. Arc keeps the diagram in the same
-              place as the product: in code, in docs, and in the repo.
-            </p>
-          </div>
-          <div className="arc-grid">
-            <div className="arc-card arc-reveal">
-              <h3>Design with confidence</h3>
-              <p>Use the canvas to place nodes, connections, groups, and images quickly.</p>
-            </div>
-            <div className="arc-card arc-reveal arc-delay-1">
-              <h3>Ship declarative outputs</h3>
-              <p>Export configs you can lint, review, and reuse in CI-driven docs.</p>
-            </div>
-            <div className="arc-card arc-reveal arc-delay-2">
-              <h3>Templates that scale</h3>
-              <p>Start from curated templates and keep styling consistent across teams.</p>
-            </div>
-            <div className="arc-card arc-reveal arc-delay-3">
-              <h3>Share the story</h3>
-              <p>Generate SVG/PNG exports for decks and live docs in a single click.</p>
-            </div>
-          </div>
-        </section>
-
-        <section className="arc-section" id="architecture">
-          <div className="arc-section-header">
-            <h2>Arc architecture at a glance</h2>
-            <p>
-              Arc keeps the editor experience separate from the model and exporters. That makes it
-              easy to maintain and makes outputs reliable for documentation pipelines.
-            </p>
-          </div>
-          <DiagramShowcase />
-          <div className="arc-diagram-details arc-reveal arc-delay-1">
-            <div className="arc-grid">
-              <div className="arc-card">
-                <h3>Editor surface</h3>
-                <p>Canvas, layers, and properties stay fast with a single reducer.</p>
-              </div>
-              <div className="arc-card">
-                <h3>Diagram model</h3>
-                <p>All nodes, connectors, and styles live in one serialized object.</p>
-              </div>
-              <div className="arc-card">
-                <h3>Export pipeline</h3>
-                <p>Generate shareable configs or image exports for docs and decks.</p>
+            <DiagramShowcase />
+            <div className="arc-diagram-details arc-reveal arc-delay-1">
+              <div className="arc-grid">
+                <div className="arc-card">
+                  <h3>Editor surface</h3>
+                  <p>Canvas, layers, and properties stay fast with a single reducer.</p>
+                </div>
+                <div className="arc-card">
+                  <h3>Diagram model</h3>
+                  <p>All nodes, connectors, and styles live in one serialized object.</p>
+                </div>
+                <div className="arc-card">
+                  <h3>Export pipeline</h3>
+                  <p>Generate shareable configs or image exports for docs and decks.</p>
+                </div>
               </div>
             </div>
-          </div>
-        </section>
+          </section>
+        </div>
 
         <section className="arc-section" id="architecture-next">
           <div className="arc-section-header">

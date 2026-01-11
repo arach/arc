@@ -7,7 +7,7 @@ interface MetaProps {
   url?: string
 }
 
-const BASE_URL = 'https://arach.github.io/arc'
+const BASE_URL = 'https://arc.jdi.sh'
 
 export function useMeta({ title, description, image, url }: MetaProps) {
   useEffect(() => {
