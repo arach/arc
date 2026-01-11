@@ -1,3 +1,4 @@
+import { Highlight, themes } from 'prism-react-renderer'
 import ArcDiagram from './ArcDiagram'
 import diagram from './diagrams/architecture-next.diagram'
 
@@ -31,7 +32,12 @@ const sourceCode = `const diagram: ArcDiagramData = {
 export default function ArcArchitectureNext() {
   return (
     <div className="arc-showcase">
-      {/* Code panel */}
+      {/* Diagram section */}
+      <div className="arc-showcase-diagram">
+        <ArcDiagram data={diagram} />
+      </div>
+
+      {/* Code section below */}
       <div className="arc-showcase-code">
         <div className="arc-showcase-code-header">
           <span className="arc-showcase-dot arc-showcase-dot-red" />
@@ -39,14 +45,20 @@ export default function ArcArchitectureNext() {
           <span className="arc-showcase-dot arc-showcase-dot-green" />
           <span className="arc-showcase-filename">architecture.diagram.ts</span>
         </div>
-        <pre className="arc-showcase-pre">
-          <code>{sourceCode}</code>
-        </pre>
-      </div>
-
-      {/* Diagram panel */}
-      <div className="arc-showcase-diagram">
-        <ArcDiagram data={diagram} />
+        <Highlight theme={themes.github} code={sourceCode} language="typescript">
+          {({ style, tokens, getLineProps, getTokenProps }) => (
+            <pre className="arc-showcase-pre" style={{ ...style, background: 'transparent' }}>
+              {tokens.map((line, i) => (
+                <div key={i} {...getLineProps({ line })}>
+                  <span className="arc-line-number">{i + 1}</span>
+                  {line.map((token, key) => (
+                    <span key={key} {...getTokenProps({ token })} />
+                  ))}
+                </div>
+              ))}
+            </pre>
+          )}
+        </Highlight>
       </div>
     </div>
   )
