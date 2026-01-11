@@ -1,44 +1,51 @@
 import ArcDiagram from './ArcDiagram'
 import diagram from './diagrams/architecture-next.diagram'
 
-// Clean source representation for display
+// Actual source that generates the diagram
 const sourceCode = `const diagram: ArcDiagramData = {
   id: 'ARC.ARCH.002',
   layout: { width: 920, height: 440 },
   nodes: {
-    core:    { x: 360, y: 170, size: 'l' },
-    editor:  { x: 60,  y: 100, size: 'm' },
-    exports: { x: 660, y: 100, size: 'm' },
+    core:       { x: 360, y: 170, size: 'l' },
+    editor:     { x: 60,  y: 100, size: 'm' },
+    templates:  { x: 70,  y: 280, size: 's' },
+    automation: { x: 375, y: 50,  size: 's' },
+    exports:    { x: 660, y: 100, size: 'm' },
+    consumers:  { x: 660, y: 280, size: 'm' },
   },
   nodeData: {
-    core:    { icon: 'Layers',  name: 'Arc Core',  color: 'emerald' },
-    editor:  { icon: 'Monitor', name: 'Editor UI', color: 'orange' },
-    exports: { icon: 'Upload',  name: 'Exporters', color: 'blue' },
+    core:       { icon: 'Layers',   name: 'Arc Core',    color: 'emerald' },
+    editor:     { icon: 'Monitor',  name: 'Editor UI',   color: 'orange' },
+    templates:  { icon: 'Grid3X3',  name: 'Templates',   color: 'amber' },
+    automation: { icon: 'Wand2',    name: 'Automation',  color: 'emerald' },
+    exports:    { icon: 'Upload',   name: 'Exporters',   color: 'blue' },
+    consumers:  { icon: 'FileCode', name: 'Docs + Apps', color: 'zinc' },
   },
   connectors: [
-    { from: 'editor', to: 'core',    style: 'solid' },
-    { from: 'core',   to: 'exports', style: 'solid' },
+    { from: 'editor',     to: 'core',      style: 'solid' },
+    { from: 'templates',  to: 'core',      style: 'dashed' },
+    { from: 'automation', to: 'core',      style: 'dashed' },
+    { from: 'core',       to: 'exports',   style: 'solid' },
+    { from: 'core',       to: 'consumers', style: 'solid' },
   ],
   connectorStyles: {
-    solid: { color: 'zinc', strokeWidth: 2 },
+    solid:  { color: 'zinc', strokeWidth: 2 },
+    dashed: { color: 'zinc', strokeWidth: 2, dashed: true },
   },
 }`
 
 export default function ArcArchitectureNext() {
   return (
     <div className="arc-showcase">
-      {/* Diagram section */}
       <div className="arc-showcase-diagram">
         <ArcDiagram data={diagram} theme="light" />
       </div>
-
-      {/* Code section below */}
       <div className="arc-showcase-code">
         <div className="arc-showcase-code-header">
           <span className="arc-showcase-dot arc-showcase-dot-red" />
           <span className="arc-showcase-dot arc-showcase-dot-yellow" />
           <span className="arc-showcase-dot arc-showcase-dot-green" />
-          <span className="arc-showcase-filename">architecture.diagram.ts</span>
+          <span className="arc-showcase-filename">architecture-next.diagram.ts</span>
         </div>
         <pre className="arc-showcase-pre">
           <code dangerouslySetInnerHTML={{ __html: highlightCode(sourceCode) }} />
