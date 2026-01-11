@@ -68,7 +68,10 @@ export default function CodeBlock({
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const highlightedCode = highlightCode(code, language)
+  // Don't syntax highlight bash/terminal - just escape HTML
+  const highlightedCode = language === 'bash'
+    ? escapeHtml(code)
+    : highlightCode(code, language)
 
   return (
     <div
@@ -77,6 +80,8 @@ export default function CodeBlock({
         background: 'rgba(255, 255, 255, 0.85)',
         border: '1px solid rgba(16, 21, 24, 0.12)',
         boxShadow: '0 10px 24px rgba(16, 23, 32, 0.1)',
+        maxWidth: '100%',
+        minWidth: 0,
       }}
     >
       {/* Header with traffic lights and filename */}
@@ -123,23 +128,32 @@ export default function CodeBlock({
       </div>
 
       {/* Code content */}
-      <div className="overflow-x-auto">
+      <div
+        className="code-scroll-container"
+        style={{
+          overflowX: 'auto',
+          maxWidth: '100%',
+        }}
+      >
         <pre
-          className="p-4"
           style={{
             margin: 0,
-            fontSize: '13px',
-            lineHeight: 1.6,
+            padding: '16px',
+            fontSize: '12px',
+            lineHeight: 1.7,
             fontFamily: "'JetBrains Mono', 'SF Mono', 'Monaco', monospace",
             color: '#101518',
             background: 'transparent',
+            whiteSpace: 'pre',
+            wordBreak: 'normal',
+            overflowWrap: 'normal',
           }}
         >
-          <code dangerouslySetInnerHTML={{ __html: highlightedCode }} />
+          <code style={{ display: 'block' }} dangerouslySetInnerHTML={{ __html: highlightedCode }} />
         </pre>
       </div>
 
-      {/* Syntax highlighting styles matching landing page */}
+      {/* Syntax highlighting and scrollbar styles */}
       <style>{`
         .hl-keyword { color: #cf222e; font-weight: 500; }
         .hl-string { color: #0a3069; }
@@ -147,6 +161,21 @@ export default function CodeBlock({
         .hl-property { color: #116329; }
         .hl-comment { color: #6e7781; font-style: italic; }
         .hl-type { color: #8250df; }
+
+        .code-scroll-container::-webkit-scrollbar {
+          height: 8px;
+        }
+        .code-scroll-container::-webkit-scrollbar-track {
+          background: rgba(16, 21, 24, 0.04);
+          border-radius: 4px;
+        }
+        .code-scroll-container::-webkit-scrollbar-thumb {
+          background: rgba(16, 21, 24, 0.15);
+          border-radius: 4px;
+        }
+        .code-scroll-container::-webkit-scrollbar-thumb:hover {
+          background: rgba(16, 21, 24, 0.25);
+        }
       `}</style>
     </div>
   )

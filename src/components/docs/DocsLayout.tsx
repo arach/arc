@@ -524,6 +524,9 @@ export default function DocsLayout({
           font-size: 15px;
           line-height: 1.75;
           color: var(--prose-body);
+          overflow-wrap: break-word;
+          word-wrap: break-word;
+          min-width: 0;
         }
 
         .docs-prose h2 {
@@ -573,7 +576,7 @@ export default function DocsLayout({
 
         .docs-prose code {
           font-family: 'JetBrains Mono', 'SF Mono', monospace;
-          font-size: 13px;
+          font-size: 12px;
           padding: 2px 6px;
           border-radius: 4px;
           background: var(--prose-code-bg);
