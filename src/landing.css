@@ -587,6 +587,82 @@
   }
 }
 
+/* Code + Diagram Showcase */
+.arc-showcase {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 24px;
+  align-items: stretch;
+  margin: 32px 0;
+}
+
+.arc-showcase-code {
+  background: #1e1e1e;
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.arc-showcase-code-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 16px;
+  background: #2d2d2d;
+  border-bottom: 1px solid #3d3d3d;
+}
+
+.arc-showcase-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.arc-showcase-dot-red { background: #ff5f56; }
+.arc-showcase-dot-yellow { background: #ffbd2e; }
+.arc-showcase-dot-green { background: #27ca40; }
+
+.arc-showcase-filename {
+  margin-left: 10px;
+  font-size: 12px;
+  color: #888;
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+}
+
+.arc-showcase-pre {
+  margin: 0;
+  padding: 16px;
+  overflow: auto;
+  flex: 1;
+  font-size: 12px;
+  line-height: 1.6;
+  color: #d4d4d4;
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+}
+
+.arc-showcase-pre code {
+  white-space: pre;
+}
+
+.arc-showcase-diagram {
+  min-height: 400px;
+}
+
+.arc-showcase-diagram > div {
+  height: 100%;
+}
+
+@media (max-width: 1024px) {
+  .arc-showcase {
+    grid-template-columns: 1fr;
+  }
+
+  .arc-showcase-code {
+    max-height: 300px;
+  }
+}
+
 @media (max-width: 720px) {
   .arc-topbar-inner {
     flex-direction: column;
