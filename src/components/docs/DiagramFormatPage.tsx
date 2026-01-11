@@ -1,5 +1,6 @@
 import React from 'react'
 import DocsLayout, { type DocSection } from './DocsLayout'
+import CodeBlock from './CodeBlock'
 
 const sections: DocSection[] = [
   { id: 'overview', title: 'Overview', level: 2 },
@@ -43,41 +44,47 @@ export default function DiagramFormatPage({ currentPage, onNavigate, onBack }: D
         Every Arc diagram has five main sections:
       </p>
 
-      <pre className="bg-zinc-900 text-zinc-100 p-4 rounded-lg overflow-x-auto">
-        <code>{`const diagram: ArcDiagramData = {
+      <CodeBlock
+        language="typescript"
+        code={`const diagram: ArcDiagramData = {
   id: 'MY.DIAGRAM.001',      // Optional identifier
   layout: { ... },           // Canvas dimensions
   nodes: { ... },            // Node positions and sizes
   nodeData: { ... },         // Node content (labels, icons, colors)
   connectors: [ ... ],       // Lines between nodes
   connectorStyles: { ... },  // Named styles for connectors
-}`}</code>
-      </pre>
+}`}
+        showLineNumbers={false}
+      />
 
       <h3 id="layout">Layout</h3>
       <p>
         The <code>layout</code> object defines the canvas dimensions:
       </p>
 
-      <pre className="bg-zinc-900 text-zinc-100 p-4 rounded-lg overflow-x-auto">
-        <code>{`layout: {
+      <CodeBlock
+        language="typescript"
+        code={`layout: {
   width: 800,   // Canvas width in pixels
   height: 400,  // Canvas height in pixels
-}`}</code>
-      </pre>
+}`}
+        showLineNumbers={false}
+      />
 
       <h3 id="nodes">Nodes</h3>
       <p>
         The <code>nodes</code> object maps node IDs to their positions:
       </p>
 
-      <pre className="bg-zinc-900 text-zinc-100 p-4 rounded-lg overflow-x-auto">
-        <code>{`nodes: {
+      <CodeBlock
+        language="typescript"
+        code={`nodes: {
   frontend: { x: 50,  y: 100, size: 'l' },  // Large node
   api:      { x: 300, y: 100, size: 'm' },  // Medium node
   cache:    { x: 300, y: 250, size: 's' },  // Small node
-}`}</code>
-      </pre>
+}`}
+        showLineNumbers={false}
+      />
 
       <p>
         Node IDs are your choice—use descriptive names that make the config readable.
@@ -94,8 +101,9 @@ export default function DiagramFormatPage({ currentPage, onNavigate, onBack }: D
         The <code>nodeData</code> object defines the content for each node:
       </p>
 
-      <pre className="bg-zinc-900 text-zinc-100 p-4 rounded-lg overflow-x-auto">
-        <code>{`nodeData: {
+      <CodeBlock
+        language="typescript"
+        code={`nodeData: {
   frontend: {
     icon: 'Monitor',           // Lucide icon name
     name: 'Frontend',          // Primary label
@@ -108,8 +116,9 @@ export default function DiagramFormatPage({ currentPage, onNavigate, onBack }: D
     name: 'API Gateway',
     color: 'emerald',
   },
-}`}</code>
-      </pre>
+}`}
+        showLineNumbers={false}
+      />
 
       <p>
         Available colors: <code>violet</code>, <code>emerald</code>, <code>blue</code>,
@@ -121,8 +130,9 @@ export default function DiagramFormatPage({ currentPage, onNavigate, onBack }: D
         The <code>connectors</code> array defines lines between nodes:
       </p>
 
-      <pre className="bg-zinc-900 text-zinc-100 p-4 rounded-lg overflow-x-auto">
-        <code>{`connectors: [
+      <CodeBlock
+        language="typescript"
+        code={`connectors: [
   {
     from: 'frontend',       // Source node ID
     to: 'api',              // Target node ID
@@ -138,8 +148,9 @@ export default function DiagramFormatPage({ currentPage, onNavigate, onBack }: D
     style: 'cache',
     curve: 'natural',       // Optional: curved line
   },
-]`}</code>
-      </pre>
+]`}
+        showLineNumbers={false}
+      />
 
       <p>
         Anchor positions: <code>left</code>, <code>right</code>, <code>top</code>, <code>bottom</code>,
@@ -151,8 +162,9 @@ export default function DiagramFormatPage({ currentPage, onNavigate, onBack }: D
         The <code>connectorStyles</code> object defines named styles for connectors:
       </p>
 
-      <pre className="bg-zinc-900 text-zinc-100 p-4 rounded-lg overflow-x-auto">
-        <code>{`connectorStyles: {
+      <CodeBlock
+        language="typescript"
+        code={`connectorStyles: {
   http: {
     color: 'violet',      // Line color
     strokeWidth: 2,       // Line thickness
@@ -165,16 +177,19 @@ export default function DiagramFormatPage({ currentPage, onNavigate, onBack }: D
     label: 'Redis',
     dashed: true,
   },
-}`}</code>
-      </pre>
+}`}
+        showLineNumbers={false}
+      />
 
       <h2 id="complete-example">Complete Example</h2>
       <p>
         Here's a complete diagram configuration:
       </p>
 
-      <pre className="bg-zinc-900 text-zinc-100 p-4 rounded-lg overflow-x-auto text-sm">
-        <code>{`import type { ArcDiagramData } from './ArcDiagram'
+      <CodeBlock
+        language="typescript"
+        filename="src/diagrams/web-architecture.ts"
+        code={`import type { ArcDiagramData } from '@arach/arc'
 
 const diagram: ArcDiagramData = {
   id: 'ARCH.WEB.001',
@@ -207,16 +222,17 @@ const diagram: ArcDiagramData = {
   },
 }
 
-export default diagram`}</code>
-      </pre>
+export default diagram`}
+      />
 
       <h2 id="types">TypeScript Types</h2>
       <p>
         Arc exports all types for full TypeScript support:
       </p>
 
-      <pre className="bg-zinc-900 text-zinc-100 p-4 rounded-lg overflow-x-auto text-sm">
-        <code>{`import type {
+      <CodeBlock
+        language="typescript"
+        code={`import type {
   ArcDiagramData,
   NodePosition,
   NodeData,
@@ -228,8 +244,9 @@ export default diagram`}</code>
   AnchorPosition,   // 'left' | 'right' | 'top' | ...
   DiagramMode,      // 'light' | 'dark'
   ThemeId,          // 'default' | 'warm' | 'cool' | 'mono'
-} from './ArcDiagram'`}</code>
-      </pre>
+} from '@arach/arc'`}
+        showLineNumbers={false}
+      />
     </DocsLayout>
   )
 }

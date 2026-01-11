@@ -5,6 +5,7 @@ import OverviewPage from './OverviewPage'
 import QuickstartPage from './QuickstartPage'
 import DiagramFormatPage from './DiagramFormatPage'
 import ThemesPage from './ThemesPage'
+import LLMPage from './LLMPage'
 
 interface DocsProps {
   onBack: () => void
@@ -40,6 +41,8 @@ export default function Docs({ onBack }: DocsProps) {
       return <DiagramFormatPage {...pageProps} />
     case 'themes':
       return <ThemesPage {...pageProps} />
+    case 'llm':
+      return <LLMPage {...pageProps} />
     // Add more pages here as they're created:
     // case 'templates':
     //   return <TemplatesPage {...pageProps} />

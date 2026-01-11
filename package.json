@@ -8,7 +8,8 @@
     "build": "tsc && vite build",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "generate-og": "node scripts/generate-og.js"
   },
   "dependencies": {
     "@base-ui/react": "^1.0.0",
@@ -27,6 +28,9 @@
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
     "lucide-react": "^0.562.0",
+    "puppeteer": "^24.34.0",
+    "satori": "^0.18.3",
+    "sharp": "^0.34.5",
     "tailwindcss": "^4.1.18",
     "typescript": "^5.9.3",
     "vite": "^7.2.4"

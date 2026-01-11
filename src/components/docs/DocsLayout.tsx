@@ -1,9 +1,11 @@
 "use client"
 import React, { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import {
   ArrowLeft, Book, Lightbulb, Boxes, FileCode, Palette,
-  Layers, Upload, Menu, X, ChevronRight, Sun, Moon
+  Layers, Upload, Menu, X, ChevronRight, Sun, Moon, Copy, Check, Bot
 } from 'lucide-react'
+import { useMeta } from '../../hooks/useMeta'
 
 // Navigation structure for all docs
 export const docsNav = [
@@ -68,21 +70,25 @@ function DocsSidebar({
       )}
 
       {/* Sidebar */}
-      <aside className={`
-        fixed top-14 left-0 bottom-0 w-72
-        ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'}
-        border-r overflow-y-auto z-50
-        transform transition-transform duration-200 ease-in-out
-        lg:translate-x-0 lg:z-30
-        ${isOpen ? 'translate-x-0' : '-translate-x-full'}
-      `}>
-        <div className="p-6">
+      <aside
+        className={`
+          fixed top-14 left-0 bottom-0 w-72 z-50
+          transform transition-transform duration-200 ease-in-out
+          lg:translate-x-0 lg:z-30
+          ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+        `}
+        style={{
+          background: isDark ? '#0f1214' : 'rgba(247, 243, 236, 0.95)',
+          borderRight: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(16, 21, 24, 0.1)'}`,
+          backdropFilter: 'blur(12px)',
+        }}
+      >
+        <div className="p-6 overflow-y-auto h-full">
           {/* Back to docs index */}
           <button
             onClick={() => onNavigate('index')}
-            className={`flex items-center gap-2 text-sm font-medium mb-6 ${
-              isDark ? 'text-zinc-400 hover:text-zinc-200' : 'text-zinc-600 hover:text-zinc-900'
-            }`}
+            className="flex items-center gap-2 text-sm font-medium mb-6 transition-colors"
+            style={{ color: isDark ? '#9ca3af' : '#5c676c' }}
           >
             <Book className="w-4 h-4" />
             Documentation
@@ -92,9 +98,10 @@ function DocsSidebar({
           <nav className="space-y-8">
             {docsNav.map((group) => (
               <div key={group.title}>
-                <h3 className={`text-xs font-bold uppercase tracking-wider mb-3 ${
-                  isDark ? 'text-zinc-500' : 'text-zinc-400'
-                }`}>
+                <h3
+                  className="text-[11px] font-semibold uppercase tracking-[0.15em] mb-3"
+                  style={{ color: isDark ? '#6b7280' : '#5c676c' }}
+                >
                   {group.title}
                 </h3>
                 <ul className="space-y-1">
@@ -108,17 +115,16 @@ function DocsSidebar({
                             onNavigate(item.id)
                             onClose()
                           }}
-                          className={`
-                            w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors text-left
-                            ${isActive
-                              ? isDark
-                                ? 'bg-violet-500/20 text-violet-400 font-medium'
-                                : 'bg-violet-50 text-violet-700 font-medium'
-                              : isDark
-                                ? 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
-                                : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900'
-                            }
-                          `}
+                          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors text-left"
+                          style={{
+                            background: isActive
+                              ? isDark ? 'rgba(240, 124, 79, 0.15)' : 'rgba(240, 124, 79, 0.1)'
+                              : 'transparent',
+                            color: isActive
+                              ? '#f07c4f'
+                              : isDark ? '#9ca3af' : '#2e3538',
+                            fontWeight: isActive ? 600 : 400,
+                          }}
                         >
                           <Icon className="w-4 h-4 flex-shrink-0" />
                           <span>{item.title}</span>
@@ -163,13 +169,19 @@ function TableOfContents({ sections, isDark }: { sections: DocSection[], isDark:
   if (!sections || sections.length === 0) return null
 
   return (
-    <aside className={`hidden xl:block fixed top-14 right-0 w-64 h-[calc(100vh-3.5rem)] overflow-y-auto border-l ${
-      isDark ? 'border-zinc-800 bg-zinc-900' : 'border-zinc-200 bg-white'
-    }`}>
-      <div className="p-6">
-        <h4 className={`text-xs font-bold uppercase tracking-wider mb-4 ${
-          isDark ? 'text-zinc-500' : 'text-zinc-400'
-        }`}>
+    <aside
+      className="hidden xl:block fixed top-14 right-0 w-56 h-[calc(100vh-56px)] overflow-y-auto"
+      style={{
+        background: isDark ? 'rgba(15, 18, 20, 0.8)' : 'rgba(247, 243, 236, 0.8)',
+        borderLeft: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(16, 21, 24, 0.08)'}`,
+        backdropFilter: 'blur(8px)',
+      }}
+    >
+      <div className="p-5">
+        <h4
+          className="text-[10px] font-semibold uppercase tracking-[0.2em] mb-4"
+          style={{ color: isDark ? '#6b7280' : '#5c676c' }}
+        >
           On this page
         </h4>
         <nav>
@@ -178,16 +190,14 @@ function TableOfContents({ sections, isDark }: { sections: DocSection[], isDark:
               <li key={section.id}>
                 <a
                   href={`#${section.id}`}
-                  className={`
-                    block text-sm transition-colors
-                    ${section.level === 3 ? 'pl-3' : 'pl-0'}
-                    ${activeSection === section.id
-                      ? 'text-violet-500 font-medium'
-                      : isDark
-                        ? 'text-zinc-500 hover:text-zinc-300'
-                        : 'text-zinc-500 hover:text-zinc-900'
-                    }
-                  `}
+                  className="block text-[13px] transition-colors leading-snug"
+                  style={{
+                    paddingLeft: section.level === 3 ? '12px' : '0',
+                    color: activeSection === section.id
+                      ? '#f07c4f'
+                      : isDark ? '#9ca3af' : '#5c676c',
+                    fontWeight: activeSection === section.id ? 500 : 400,
+                  }}
                 >
                   {section.title}
                 </a>
@@ -198,23 +208,6 @@ function TableOfContents({ sections, isDark }: { sections: DocSection[], isDark:
       </div>
     </aside>
   )
-}
-
-// Badge color definitions
-const badgeColorsLight: Record<string, string> = {
-  violet: 'border-violet-200 bg-violet-50 text-violet-700',
-  emerald: 'border-emerald-200 bg-emerald-50 text-emerald-700',
-  blue: 'border-blue-200 bg-blue-50 text-blue-700',
-  amber: 'border-amber-200 bg-amber-50 text-amber-700',
-  rose: 'border-rose-200 bg-rose-50 text-rose-700',
-}
-
-const badgeColorsDark: Record<string, string> = {
-  violet: 'border-violet-500/30 bg-violet-500/20 text-violet-400',
-  emerald: 'border-emerald-500/30 bg-emerald-500/20 text-emerald-400',
-  blue: 'border-blue-500/30 bg-blue-500/20 text-blue-400',
-  amber: 'border-amber-500/30 bg-amber-500/20 text-amber-400',
-  rose: 'border-rose-500/30 bg-rose-500/20 text-rose-400',
 }
 
 // Main layout wrapper
@@ -228,6 +221,8 @@ interface DocsLayoutProps {
   currentPage: string
   onNavigate: (page: string) => void
   onBack: () => void
+  markdown?: string
+  ogImage?: string
 }
 
 export default function DocsLayout({
@@ -235,61 +230,137 @@ export default function DocsLayout({
   title,
   description,
   badge,
-  badgeColor = 'violet',
+  badgeColor = 'accent',
   sections = [],
   currentPage,
   onNavigate,
   onBack,
+  markdown,
+  ogImage,
 }: DocsLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isDark, setIsDark] = useState(false)
+  const [copied, setCopied] = useState<'markdown' | 'agent' | null>(null)
+  const [copyMenuOpen, setCopyMenuOpen] = useState(false)
+
+  // Set page-specific meta tags
+  useMeta({
+    title: title ? `${title} | Arc Docs` : 'Arc Documentation',
+    description: description,
+    image: ogImage || '/og-docs.png',
+    url: `/docs/${currentPage}`,
+  })
+
+  const handleCopyMarkdown = async () => {
+    if (markdown) {
+      await navigator.clipboard.writeText(markdown)
+      setCopied('markdown')
+      setCopyMenuOpen(false)
+      setTimeout(() => setCopied(null), 2000)
+    }
+  }
+
+  const handleCopyForAgent = async () => {
+    // Create an LLM-friendly version with context
+    const agentContent = `# ${title}\n\n${description || ''}\n\n${markdown || ''}`
+    await navigator.clipboard.writeText(agentContent)
+    setCopied('agent')
+    setCopyMenuOpen(false)
+    setTimeout(() => setCopied(null), 2000)
+  }
+
+  // Badge colors matching the landing page palette
+  const badgeStyles: Record<string, { bg: string, border: string, text: string }> = {
+    accent: { bg: 'rgba(240, 124, 79, 0.1)', border: 'rgba(240, 124, 79, 0.3)', text: '#f07c4f' },
+    teal: { bg: 'rgba(31, 122, 101, 0.1)', border: 'rgba(31, 122, 101, 0.3)', text: '#1f7a65' },
+    blue: { bg: 'rgba(46, 95, 165, 0.1)', border: 'rgba(46, 95, 165, 0.3)', text: '#2e5fa5' },
+    gold: { bg: 'rgba(208, 156, 54, 0.1)', border: 'rgba(208, 156, 54, 0.3)', text: '#d09c36' },
+  }
+
+  const currentBadge = badgeStyles[badgeColor] || badgeStyles.accent
 
   return (
-    <div className={`min-h-screen ${isDark ? 'bg-zinc-950' : 'bg-zinc-50'}`}>
+    <div
+      className="min-h-screen"
+      style={{
+        fontFamily: "'Space Grotesk', 'Segoe UI', sans-serif",
+        background: isDark ? '#0a0c0e' : '#f7f3ec',
+        color: isDark ? '#e5e7eb' : '#101518',
+      }}
+    >
       {/* Top navigation */}
-      <nav className={`fixed top-0 left-0 right-0 z-50 h-14 backdrop-blur-md border-b ${
-        isDark ? 'bg-zinc-900/90 border-zinc-800' : 'bg-white/90 border-zinc-200'
-      }`}>
+      <nav
+        className="fixed top-0 left-0 right-0 z-50 h-14"
+        style={{
+          backdropFilter: 'blur(12px)',
+          background: isDark ? 'rgba(10, 12, 14, 0.9)' : 'rgba(247, 243, 236, 0.9)',
+          borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(16, 21, 24, 0.08)'}`,
+        }}
+      >
         <div className="h-full px-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             {/* Mobile menu button */}
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className={`lg:hidden p-2 -ml-2 ${isDark ? 'text-zinc-400 hover:text-zinc-200' : 'text-zinc-500 hover:text-zinc-900'}`}
+              className="lg:hidden p-2 -ml-2 transition-colors"
+              style={{ color: isDark ? '#9ca3af' : '#5c676c' }}
             >
               {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
 
-            <button
-              onClick={onBack}
-              className={`flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider transition-colors group ${
-                isDark ? 'text-zinc-500 hover:text-white' : 'text-zinc-500 hover:text-black'
-              }`}
+            {/* Brand */}
+            <Link
+              to="/docs"
+              className="flex items-baseline gap-2 transition-colors"
+              style={{ fontFamily: "'Fraunces', serif" }}
+            >
+              <span
+                className="w-2.5 h-2.5 rounded-full"
+                style={{
+                  background: '#f07c4f',
+                  boxShadow: '0 0 0 4px rgba(240, 124, 79, 0.2)',
+                }}
+              />
+              <span className="text-lg font-semibold" style={{ color: isDark ? '#f3f4f6' : '#101518' }}>
+                Arc
+              </span>
+            </Link>
+
+            {/* Divider */}
+            <span
+              className="hidden sm:block w-px h-4"
+              style={{ background: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(16, 21, 24, 0.15)' }}
+            />
+
+            {/* Back button */}
+            <Link
+              to="/"
+              className="hidden sm:flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider transition-colors group"
+              style={{ color: isDark ? '#6b7280' : '#5c676c' }}
             >
               <ArrowLeft className="w-3 h-3 transition-transform group-hover:-translate-x-0.5" />
-              <span className="hidden sm:inline">ARC</span>
-            </button>
+              <span>Back</span>
+            </Link>
           </div>
 
           <div className="flex items-center gap-4">
-            <span className={`text-[10px] font-mono font-bold uppercase tracking-widest ${
-              isDark ? 'text-zinc-200' : 'text-zinc-900'
-            }`}>
-              DOCS
-            </span>
-
             {/* Theme toggle */}
             <button
               onClick={() => setIsDark(!isDark)}
-              className={`p-2 rounded-lg transition-colors ${
-                isDark
-                  ? 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
-                  : 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100'
-              }`}
+              className="p-1.5 rounded transition-colors"
+              style={{ color: isDark ? '#6b7280' : '#5c676c' }}
               title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
             >
               {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
+
+            {/* DOCS label - fancy lettering */}
+            <span
+              className="text-[10px] font-mono font-bold uppercase tracking-[0.25em]"
+              style={{ color: isDark ? '#f3f4f6' : '#101518' }}
+            >
+              DOCS
+            </span>
           </div>
         </div>
       </nav>
@@ -307,51 +378,243 @@ export default function DocsLayout({
       <TableOfContents sections={sections} isDark={isDark} />
 
       {/* Main content */}
-      <main className="pt-14 lg:pl-72 xl:pr-64">
+      <main className="pt-14 lg:pl-72 xl:pr-56">
         <div className="max-w-3xl mx-auto px-6 py-12">
-          {/* Page header */}
-          {badge && (
-            <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border mb-6 ${
-              isDark ? badgeColorsDark[badgeColor] : badgeColorsLight[badgeColor]
-            }`}>
-              <span className="text-xs font-medium">{badge}</span>
+          {/* Page header with controls */}
+          <div className="flex items-start justify-between mb-10">
+            <div className="flex-1">
+              {badge && (
+                <div
+                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border mb-4 text-xs font-semibold uppercase tracking-wider"
+                  style={{
+                    background: currentBadge.bg,
+                    borderColor: currentBadge.border,
+                    color: currentBadge.text,
+                  }}
+                >
+                  {badge}
+                </div>
+              )}
+
+              {title && (
+                <h1
+                  className="text-3xl md:text-4xl font-semibold tracking-tight mb-4"
+                  style={{
+                    fontFamily: "'Fraunces', serif",
+                    color: isDark ? '#f3f4f6' : '#101518',
+                  }}
+                >
+                  {title}
+                </h1>
+              )}
+
+              {description && (
+                <p
+                  className="text-lg leading-relaxed"
+                  style={{ color: isDark ? '#9ca3af' : '#5c676c' }}
+                >
+                  {description}
+                </p>
+              )}
             </div>
-          )}
 
-          {title && (
-            <h1 className={`text-3xl md:text-4xl font-semibold tracking-tight mb-4 ${
-              isDark ? 'text-zinc-100' : 'text-zinc-900'
-            }`}>
-              {title}
-            </h1>
-          )}
+            {/* Page controls - Agent and Copy dropdown */}
+            <div className="flex items-center gap-2 ml-4 mt-2">
+              {/* Agent button */}
+              <button
+                onClick={() => onNavigate('llm')}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                style={{
+                  color: isDark ? '#9ca3af' : '#5c676c',
+                  border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(16, 21, 24, 0.12)'}`,
+                  background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.5)',
+                }}
+                title="View agent-friendly documentation"
+              >
+                <Bot className="w-3.5 h-3.5" />
+                <span>Agent</span>
+              </button>
 
-          {description && (
-            <p className={`text-lg mb-12 ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
-              {description}
-            </p>
-          )}
+              {/* Copy dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setCopyMenuOpen(!copyMenuOpen)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                  style={{
+                    color: isDark ? '#9ca3af' : '#5c676c',
+                    border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(16, 21, 24, 0.12)'}`,
+                    background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.5)',
+                  }}
+                >
+                  {copied ? (
+                    <>
+                      <Check className="w-3.5 h-3.5" />
+                      <span>Copied</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5" />
+                      <span>Copy</span>
+                      <ChevronRight className="w-3 h-3 rotate-90" />
+                    </>
+                  )}
+                </button>
 
-          {/* Page content */}
-          <div className={`prose max-w-none
-            prose-headings:scroll-mt-20
-            prose-h2:text-2xl prose-h2:font-semibold prose-h2:mt-12 prose-h2:mb-4 prose-h2:tracking-tight
-            prose-h3:text-xl prose-h3:font-medium prose-h3:mt-8 prose-h3:mb-3
-            prose-p:leading-relaxed
-            prose-a:no-underline hover:prose-a:underline
-            prose-strong:font-semibold
-            prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-code:font-normal prose-code:before:content-none prose-code:after:content-none
-            prose-pre:border
-            prose-li:leading-relaxed
-            ${isDark
-              ? 'prose-invert prose-zinc prose-p:text-zinc-400 prose-a:text-violet-400 prose-strong:text-zinc-200 prose-code:bg-zinc-800 prose-pre:bg-zinc-900 prose-pre:border-zinc-800 prose-li:marker:text-zinc-600 prose-ul:text-zinc-400 prose-h2:text-zinc-100 prose-h3:text-zinc-200'
-              : 'prose-zinc prose-p:text-zinc-600 prose-a:text-violet-600 prose-strong:text-zinc-800 prose-code:bg-zinc-100 prose-pre:bg-zinc-900 prose-pre:border-zinc-800 prose-li:marker:text-zinc-400 prose-ul:text-zinc-600'
-            }
-          `}>
+                {/* Dropdown menu */}
+                {copyMenuOpen && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={() => setCopyMenuOpen(false)}
+                    />
+                    <div
+                      className="absolute right-0 mt-1 w-44 rounded-lg shadow-lg z-50 py-1 overflow-hidden"
+                      style={{
+                        background: isDark ? '#1a1d20' : '#ffffff',
+                        border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(16, 21, 24, 0.12)'}`,
+                      }}
+                    >
+                      <button
+                        onClick={handleCopyMarkdown}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-left transition-colors"
+                        style={{
+                          color: isDark ? '#d1d5db' : '#2e3538',
+                        }}
+                      >
+                        <Copy className="w-3.5 h-3.5" style={{ color: isDark ? '#6b7280' : '#5c676c' }} />
+                        Copy Markdown
+                      </button>
+                      <button
+                        onClick={handleCopyForAgent}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-left transition-colors"
+                        style={{
+                          color: isDark ? '#d1d5db' : '#2e3538',
+                        }}
+                      >
+                        <Bot className="w-3.5 h-3.5" style={{ color: isDark ? '#6b7280' : '#5c676c' }} />
+                        Copy for Agent
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Page content with prose styling */}
+          <div
+            className="docs-prose"
+            style={{
+              '--prose-heading': isDark ? '#f3f4f6' : '#101518',
+              '--prose-body': isDark ? '#d1d5db' : '#2e3538',
+              '--prose-muted': isDark ? '#9ca3af' : '#5c676c',
+              '--prose-link': '#f07c4f',
+              '--prose-code-bg': isDark ? 'rgba(255,255,255,0.08)' : 'rgba(16, 21, 24, 0.06)',
+              '--prose-border': isDark ? 'rgba(255,255,255,0.08)' : 'rgba(16, 21, 24, 0.1)',
+            } as React.CSSProperties}
+          >
             {children}
           </div>
         </div>
       </main>
+
+      {/* Prose styles */}
+      <style>{`
+        .docs-prose {
+          font-size: 15px;
+          line-height: 1.75;
+          color: var(--prose-body);
+        }
+
+        .docs-prose h2 {
+          font-family: 'Fraunces', serif;
+          font-size: 1.5rem;
+          font-weight: 600;
+          color: var(--prose-heading);
+          margin: 3rem 0 1.25rem;
+          padding-top: 2rem;
+          border-top: 1px solid var(--prose-border);
+          scroll-margin-top: 100px;
+        }
+
+        .docs-prose h2:first-child {
+          margin-top: 0;
+          padding-top: 0;
+          border-top: none;
+        }
+
+        .docs-prose h3 {
+          font-family: 'Fraunces', serif;
+          font-size: 1.125rem;
+          font-weight: 600;
+          color: var(--prose-heading);
+          margin: 2rem 0 1rem;
+          scroll-margin-top: 100px;
+        }
+
+        .docs-prose p {
+          margin: 0 0 1.25rem;
+        }
+
+        .docs-prose a {
+          color: var(--prose-link);
+          text-decoration: none;
+          font-weight: 500;
+        }
+
+        .docs-prose a:hover {
+          text-decoration: underline;
+        }
+
+        .docs-prose strong {
+          font-weight: 600;
+          color: var(--prose-heading);
+        }
+
+        .docs-prose code {
+          font-family: 'JetBrains Mono', 'SF Mono', monospace;
+          font-size: 13px;
+          padding: 2px 6px;
+          border-radius: 4px;
+          background: var(--prose-code-bg);
+          color: var(--prose-heading);
+        }
+
+        .docs-prose pre {
+          margin: 0;
+          padding: 0;
+          background: transparent;
+        }
+
+        .docs-prose pre code {
+          padding: 0;
+          background: transparent;
+        }
+
+        .docs-prose ul, .docs-prose ol {
+          margin: 1.25rem 0;
+          padding-left: 1.5rem;
+        }
+
+        .docs-prose li {
+          margin: 0.5rem 0;
+        }
+
+        .docs-prose li::marker {
+          color: var(--prose-muted);
+        }
+
+        .docs-prose hr {
+          border: none;
+          border-top: 1px solid var(--prose-border);
+          margin: 3rem 0;
+        }
+
+        /* Not-prose class for opting out */
+        .docs-prose .not-prose {
+          all: revert;
+        }
+      `}</style>
     </div>
   )
 }

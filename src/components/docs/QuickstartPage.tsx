@@ -2,6 +2,7 @@ import React from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
 import DocsLayout, { type DocSection } from './DocsLayout'
+import CodeBlock from './CodeBlock'
 
 const sections: DocSection[] = [
   { id: 'install', title: 'Installation', level: 2 },
@@ -23,7 +24,7 @@ export default function QuickstartPage({ currentPage, onNavigate, onBack }: Quic
       title="Quickstart"
       description="Create your first Arc diagram in under 5 minutes."
       badge="Getting Started"
-      badgeColor="emerald"
+      badgeColor="teal"
       sections={sections}
       currentPage={currentPage}
       onNavigate={onNavigate}
@@ -31,27 +32,28 @@ export default function QuickstartPage({ currentPage, onNavigate, onBack }: Quic
     >
       <h2 id="install">Installation</h2>
       <p>
-        Arc is a React component. Copy the <code>ArcDiagram.tsx</code> component and its
-        dependencies into your project:
+        Install the Arc player from npm. It's a lightweight React component with no external dependencies besides Lucide icons.
       </p>
 
-      <pre className="bg-zinc-900 text-zinc-100 p-4 rounded-lg overflow-x-auto">
-        <code>{`# Required dependencies
-pnpm add lucide-react
+      <CodeBlock
+        language="bash"
+        filename="terminal"
+        code={`# Install the Arc player
+npm install @arach/arc
 
-# Copy these files to your project:
-# - src/components/ArcDiagram.tsx
-# - src/utils/themes.ts`}</code>
-      </pre>
+# Or use the visual editor
+npx @arach/arc-editor`}
+      />
 
       <h2 id="create-diagram">Create a Diagram</h2>
       <p>
         Create a new file for your diagram configuration:
       </p>
 
-      <pre className="bg-zinc-900 text-zinc-100 p-4 rounded-lg overflow-x-auto text-sm">
-        <code>{`// src/diagrams/my-system.diagram.ts
-import type { ArcDiagramData } from '../components/ArcDiagram'
+      <CodeBlock
+        language="typescript"
+        filename="src/diagrams/my-system.diagram.ts"
+        code={`import type { ArcDiagramData } from '@arach/arc'
 
 const diagram: ArcDiagramData = {
   id: 'MY.SYSTEM.001',
@@ -80,17 +82,19 @@ const diagram: ArcDiagramData = {
   },
 }
 
-export default diagram`}</code>
-      </pre>
+export default diagram`}
+      />
 
       <h2 id="render">Render the Diagram</h2>
       <p>
         Import and render your diagram using the ArcDiagram component:
       </p>
 
-      <pre className="bg-zinc-900 text-zinc-100 p-4 rounded-lg overflow-x-auto">
-        <code>{`import ArcDiagram from './components/ArcDiagram'
-import mySystemDiagram from './diagrams/my-system.diagram'
+      <CodeBlock
+        language="tsx"
+        filename="src/pages/ArchitecturePage.tsx"
+        code={`import { ArcDiagram } from '@arach/arc'
+import mySystemDiagram from '../diagrams/my-system.diagram'
 
 function ArchitecturePage() {
   return (
@@ -103,32 +107,36 @@ function ArchitecturePage() {
       />
     </div>
   )
-}`}</code>
-      </pre>
+}`}
+      />
 
       <h2 id="customize">Customize Appearance</h2>
       <p>
         Switch between themes and modes to match your design:
       </p>
 
-      <pre className="bg-zinc-900 text-zinc-100 p-4 rounded-lg overflow-x-auto">
-        <code>{`// Light mode with warm editorial theme
+      <CodeBlock
+        language="tsx"
+        code={`// Light mode with warm editorial theme
 <ArcDiagram data={diagram} mode="light" theme="warm" />
 
 // Dark mode with cool technical theme
 <ArcDiagram data={diagram} mode="dark" theme="cool" />
 
 // Grayscale for print
-<ArcDiagram data={diagram} mode="light" theme="mono" />`}</code>
-      </pre>
+<ArcDiagram data={diagram} mode="light" theme="mono" />`}
+        showLineNumbers={false}
+      />
 
       <p>
         You can also disable interactivity (zoom/pan) for static displays:
       </p>
 
-      <pre className="bg-zinc-900 text-zinc-100 p-4 rounded-lg overflow-x-auto">
-        <code>{`<ArcDiagram data={diagram} interactive={false} />`}</code>
-      </pre>
+      <CodeBlock
+        language="tsx"
+        code={`<ArcDiagram data={diagram} interactive={false} />`}
+        showLineNumbers={false}
+      />
 
       <h2 id="next-steps">Next Steps</h2>
       <p>
@@ -138,47 +146,62 @@ function ArchitecturePage() {
       <div className="space-y-3 not-prose">
         <button
           onClick={() => onNavigate('diagram-format')}
-          className="group w-full flex items-center justify-between p-4 rounded-lg border border-zinc-200 bg-white hover:border-violet-300 transition-colors"
+          className="group w-full flex items-center justify-between p-5 rounded-2xl transition-all text-left"
+          style={{
+            background: 'rgba(255, 255, 255, 0.75)',
+            border: '1px solid rgba(16, 21, 24, 0.12)',
+            boxShadow: '0 10px 24px rgba(16, 23, 32, 0.1)',
+          }}
         >
           <div>
-            <span className="font-bold text-zinc-900 group-hover:text-violet-600 transition-colors">
+            <span className="font-semibold" style={{ color: '#101518' }}>
               Diagram Format
             </span>
-            <p className="text-sm text-zinc-600 mt-1">
+            <p className="text-sm mt-1" style={{ color: '#5c676c' }}>
               Full reference for nodes, connectors, and styles
             </p>
           </div>
-          <ArrowRight className="w-5 h-5 text-zinc-400 group-hover:text-violet-500 group-hover:translate-x-1 transition-all" />
+          <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-all" style={{ color: '#9ca3af' }} />
         </button>
 
         <button
           onClick={() => onNavigate('themes')}
-          className="group w-full flex items-center justify-between p-4 rounded-lg border border-zinc-200 bg-white hover:border-violet-300 transition-colors"
+          className="group w-full flex items-center justify-between p-5 rounded-2xl transition-all text-left"
+          style={{
+            background: 'rgba(255, 255, 255, 0.75)',
+            border: '1px solid rgba(16, 21, 24, 0.12)',
+            boxShadow: '0 10px 24px rgba(16, 23, 32, 0.1)',
+          }}
         >
           <div>
-            <span className="font-bold text-zinc-900 group-hover:text-violet-600 transition-colors">
+            <span className="font-semibold" style={{ color: '#101518' }}>
               Themes
             </span>
-            <p className="text-sm text-zinc-600 mt-1">
+            <p className="text-sm mt-1" style={{ color: '#5c676c' }}>
               Color palettes and visual treatments
             </p>
           </div>
-          <ArrowRight className="w-5 h-5 text-zinc-400 group-hover:text-violet-500 group-hover:translate-x-1 transition-all" />
+          <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-all" style={{ color: '#9ca3af' }} />
         </button>
 
         <Link
           to="/editor"
-          className="group w-full flex items-center justify-between p-4 rounded-lg border border-zinc-200 bg-white hover:border-violet-300 transition-colors"
+          className="group w-full flex items-center justify-between p-5 rounded-2xl transition-all"
+          style={{
+            background: 'rgba(255, 255, 255, 0.75)',
+            border: '1px solid rgba(16, 21, 24, 0.12)',
+            boxShadow: '0 10px 24px rgba(16, 23, 32, 0.1)',
+          }}
         >
           <div>
-            <span className="font-bold text-zinc-900 group-hover:text-violet-600 transition-colors">
+            <span className="font-semibold" style={{ color: '#101518' }}>
               Try the Editor
             </span>
-            <p className="text-sm text-zinc-600 mt-1">
+            <p className="text-sm mt-1" style={{ color: '#5c676c' }}>
               Visual editor with real-time preview
             </p>
           </div>
-          <ArrowRight className="w-5 h-5 text-zinc-400 group-hover:text-violet-500 group-hover:translate-x-1 transition-all" />
+          <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-all" style={{ color: '#9ca3af' }} />
         </Link>
       </div>
     </DocsLayout>

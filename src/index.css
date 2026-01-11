@@ -8,3 +8,25 @@ body {
 .dark {
   color-scheme: dark;
 }
+
+/* Code font */
+code, pre, .font-mono {
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+  font-feature-settings: 'liga' 1, 'calt' 1;
+}
+
+/* Syntax highlighting - One Dark inspired */
+.syntax-keyword { color: #c678dd; }
+.syntax-string { color: #98c379; }
+.syntax-number { color: #d19a66; }
+.syntax-comment { color: #5c6370; font-style: italic; }
+.syntax-function { color: #61afef; }
+.syntax-property { color: #e06c75; }
+.syntax-operator { color: #56b6c2; }
+.syntax-punctuation { color: #abb2bf; }
+.syntax-tag { color: #e06c75; }
+.syntax-attr-name { color: #d19a66; }
+.syntax-attr-value { color: #98c379; }
+.syntax-type { color: #e5c07b; }
+.syntax-variable { color: #e06c75; }
+.syntax-constant { color: #d19a66; }
