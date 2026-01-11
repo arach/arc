@@ -8,7 +8,7 @@ const diagram: ArcDiagramData = {
     core:       { x: 360, y: 170, size: 'l' },
     editor:     { x: 60,  y: 100, size: 'm' },
     templates:  { x: 70,  y: 280, size: 's' },
-    automation: { x: 375, y: 50,  size: 's' },
+    automation: { x: 415, y: 50,  size: 's' },
     exports:    { x: 660, y: 100, size: 'm' },
     consumers:  { x: 660, y: 280, size: 'm' },
   },

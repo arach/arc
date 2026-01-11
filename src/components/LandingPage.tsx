@@ -250,10 +250,10 @@ export default function LandingPage({ onLaunchEditor }: LandingPageProps) {
 
         <section className="arc-section" id="architecture-next">
           <div className="arc-section-header">
-            <h2>Arc architecture, next</h2>
+            <h2>Declarative by design</h2>
             <p>
-              A complementary view of the same system: the core model sits in the middle while
-              editors, templates, exporters, and automation orbit around it.
+              Every diagram is a typed data structure. Edit it visually or in code—the result
+              is always portable, versionable, and ready for your pipeline.
             </p>
           </div>
           <ArcArchitectureNext />
