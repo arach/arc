@@ -12,7 +12,7 @@ import {
 } from '../../utils/exportUtils'
 import { copyToClipboard } from '../../utils/fileOperations'
 
-function ShareOption({ icon: Icon, label, description, onClick, loading, success, secondary }) {
+function ShareOption({ icon: Icon, label, description, onClick, loading = false, success = false, secondary = false }: any) {
   return (
     <button
       onClick={onClick}

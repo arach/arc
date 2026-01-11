@@ -121,7 +121,7 @@ export default function MiniMap({
         })}
 
         {/* Nodes */}
-        {Object.entries(diagram.nodes).map(([nodeId, node]) => {
+        {Object.entries(diagram.nodes as Record<string, any>).map(([nodeId, node]) => {
           const data = diagram.nodeData[nodeId]
           if (!data) return null
           const color = nodeColors[data.color] || nodeColors.zinc

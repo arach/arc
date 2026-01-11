@@ -22,7 +22,7 @@ export default function InfiniteGrid({
   const offsetY = (viewportBounds.y % size) * zoom
 
   const style = useMemo(() => {
-    const baseStyle = {
+    const baseStyle: React.CSSProperties = {
       position: 'absolute',
       inset: 0,
       width: '100%',

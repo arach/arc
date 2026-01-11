@@ -6,7 +6,7 @@ import { SIZE_OPTIONS, NODE_SIZES } from '../../utils/constants'
 import IconPicker from './IconPicker'
 import ColorPicker from './ColorPicker'
 
-function InputField({ label, value, onChange, placeholder, type = 'text', className = '' }) {
+function InputField({ label, value, onChange, placeholder, type = 'text', className = '' }: any) {
   return (
     <div className={className}>
       <label className="block text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-1">
@@ -26,7 +26,7 @@ function InputField({ label, value, onChange, placeholder, type = 'text', classN
 // Size labels for display
 const SIZE_LABELS = { xs: 'XS', s: 'S', m: 'M', l: 'L' }
 
-function SizePicker({ value, onChange }) {
+function SizePicker({ value, onChange }: any) {
   return (
     <ToggleGroup
       value={value ? [value] : ['m']}
@@ -54,7 +54,7 @@ function SizePicker({ value, onChange }) {
   )
 }
 
-export default function NodeProperties({ nodeId }) {
+export default function NodeProperties({ nodeId }: any) {
   const { actions } = useEditor()
   const diagram = useDiagram()
 

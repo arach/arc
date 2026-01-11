@@ -7,7 +7,7 @@ import {
 import { useEditor, useEditorState, useHistory, useDiagram } from './EditorProvider'
 import { NODE_SIZES } from '../../utils/constants'
 
-function ToolButton({ icon: Icon, label, onClick, active, disabled }) {
+function ToolButton({ icon: Icon, label, onClick, active = false, disabled = false }: any) {
   return (
     <button
       onClick={onClick}

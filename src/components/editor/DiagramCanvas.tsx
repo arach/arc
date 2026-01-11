@@ -1,26 +1,26 @@
 import { useRef, useCallback, useState, useEffect } from 'react'
-// @ts-expect-error - JS module, will migrate later
+// @ts-ignore - JS module, will migrate later
 import { useEditor, useDiagram, useEditorState, useTemplate } from './EditorProvider'
-// @ts-expect-error - JS module
+// @ts-ignore - JS module
 import { NODE_SIZES } from '../../utils/constants'
-// @ts-expect-error - JS module
+// @ts-ignore - JS module
 import { getTemplate } from '../../utils/templates'
 import { useCanvasTransform } from '../../hooks/useCanvasTransform'
-// @ts-expect-error - JS module
+// @ts-ignore - JS module
 import EditableNode from './EditableNode'
-// @ts-expect-error - JS module
+// @ts-ignore - JS module
 import ConnectorLayer from './ConnectorLayer'
-// @ts-expect-error - JS module
+// @ts-ignore - JS module
 import AnchorPoints from './AnchorPoints'
-// @ts-expect-error - JS module
+// @ts-ignore - JS module
 import GroupLayer from './GroupLayer'
-// @ts-expect-error - JS module
+// @ts-ignore - JS module
 import ImageLayer from './ImageLayer'
-// @ts-expect-error - JS module
+// @ts-ignore - JS module
 import MiniMap from './MiniMap'
-// @ts-expect-error - JS module
+// @ts-ignore - JS module
 import ExportZoneLayer from './ExportZoneLayer'
-// @ts-expect-error - JS module
+// @ts-ignore - JS module
 import InfiniteGrid from './InfiniteGrid'
 import ZoomControls from './ZoomControls'
 
@@ -206,8 +206,8 @@ export default function DiagramCanvas({ onViewportChange }: DiagramCanvasProps) 
       // Selection is handled by mousedown/mouseup for marquee selection
       if (editor.mode === 'addNode') {
         const canvasPoint = screenToCanvas({ x: e.clientX, y: e.clientY })
-        const x = Math.round(canvasPoint.x - NODE_SIZES.normal.width / 2)
-        const y = Math.round(canvasPoint.y - NODE_SIZES.normal.height / 2)
+        const x = Math.round(canvasPoint.x - NODE_SIZES.m.width / 2)
+        const y = Math.round(canvasPoint.y - NODE_SIZES.m.height / 2)
         actions.addNode({ x: Math.max(0, x), y: Math.max(0, y) })
       } else if (editor.mode === 'addConnector') {
         actions.clearPendingConnector()

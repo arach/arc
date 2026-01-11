@@ -1,7 +1,7 @@
 import { NODE_SIZES } from './constants'
 
 // Helper: Calculate anchor position on a node
-function getAnchorPosition(x, y, width, height, position) {
+function getAnchorPosition(x: any, y: any, width: any, height: any, position: any) {
   switch (position) {
     case 'left':        return { x: x, y: y + height / 2 }
     case 'right':       return { x: x + width, y: y + height / 2 }
@@ -16,7 +16,7 @@ function getAnchorPosition(x, y, width, height, position) {
 }
 
 // Helper: Generate SVG path for connector
-function getConnectorPath(from, to, fromAnchor, toAnchor) {
+function getConnectorPath(from: any, to: any, fromAnchor: any, toAnchor: any) {
   // Simple curved path using bezier
   const dx = to.x - from.x
   const dy = to.y - from.y
@@ -74,7 +74,7 @@ const groupColors = {
 /**
  * Generate SVG string from diagram data
  */
-export function generateSVG(diagram, options = {}) {
+export function generateSVG(diagram: any, options: any = {}) {
   const {
     backgroundColor = '#ffffff',
     includeGrid = false,
@@ -179,7 +179,7 @@ export function generateSVG(diagram, options = {}) {
   }
 
   // Nodes
-  for (const [nodeId, node] of Object.entries(diagram.nodes)) {
+  for (const [nodeId, node] of Object.entries(diagram.nodes as Record<string, any>)) {
     const data = diagram.nodeData[nodeId]
     if (!data) continue
 
@@ -208,7 +208,7 @@ export function generateSVG(diagram, options = {}) {
 /**
  * Generate PNG from diagram using canvas
  */
-export async function generatePNG(diagram, options = {}) {
+export async function generatePNG(diagram: any, options: any = {}) {
   const { scale = 2, backgroundColor = '#ffffff' } = options
 
   // Generate SVG first
@@ -252,7 +252,7 @@ export async function generatePNG(diagram, options = {}) {
 /**
  * Create a shareable data URL for the diagram
  */
-export function createShareableLink(diagram) {
+export function createShareableLink(diagram: any) {
   // Compress diagram to minimal JSON
   const minimalDiagram = {
     l: diagram.layout,
@@ -277,7 +277,7 @@ export function createShareableLink(diagram) {
 /**
  * Decode a shareable link back to diagram data
  */
-export function decodeShareableLink(encoded) {
+export function decodeShareableLink(encoded: any) {
   try {
     const json = decodeURIComponent(atob(encoded))
     const data = JSON.parse(json)
@@ -300,7 +300,7 @@ export function decodeShareableLink(encoded) {
 /**
  * Download a file
  */
-export function downloadFile(content, filename, type) {
+export function downloadFile(content, filename, type: any) {
   const blob = content instanceof Blob ? content : new Blob([content], { type })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
@@ -328,7 +328,7 @@ function escapeXml(str) {
 /**
  * Generate TypeScript source file for ArcDiagram component
  */
-export function generateTypeScript(diagram) {
+export function generateTypeScript(diagram: any) {
   // Use export zone for bounds, or full layout
   const bounds = diagram.exportZone || {
     x: 0,
@@ -342,7 +342,7 @@ export function generateTypeScript(diagram) {
   const visibleNodes = {}
   const visibleNodeData = {}
 
-  for (const [id, node] of Object.entries(diagram.nodes)) {
+  for (const [id, node] of Object.entries(diagram.nodes as Record<string, any>)) {
     const data = diagram.nodeData[id]
     if (!data) continue
 
@@ -384,12 +384,12 @@ export function generateTypeScript(diagram) {
   }))
 
   // Get used connector styles
-  const usedStyles = new Set(visibleConnectors.map(c => c.style))
-  const visibleConnectorStyles = {}
+  const usedStyles = new Set(visibleConnectors.map((c: any) => c.style))
+  const visibleConnectorStyles: Record<string, any> = {}
   for (const styleName of usedStyles) {
-    const style = diagram.connectorStyles?.[styleName]
+    const style = diagram.connectorStyles?.[styleName as string]
     if (style) {
-      visibleConnectorStyles[styleName] = {
+      visibleConnectorStyles[styleName as string] = {
         color: style.color || 'zinc',
         strokeWidth: style.strokeWidth || 2,
         ...(style.label && { label: style.label }),

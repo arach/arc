@@ -2,7 +2,7 @@ import React from 'react'
 import { useEditor, useDiagram } from '../editor/EditorProvider'
 import { COLOR_OPTIONS } from '../../utils/constants'
 
-function InputField({ label, value, onChange, placeholder, type = 'text', className = '' }) {
+function InputField({ label, value, onChange, placeholder, type = 'text', className = '' }: any) {
   return (
     <div className={className}>
       <label className="block text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-1">
@@ -19,7 +19,7 @@ function InputField({ label, value, onChange, placeholder, type = 'text', classN
   )
 }
 
-function ColorPicker({ value, onChange }) {
+function ColorPicker({ value, onChange }: any) {
   return (
     <div className="flex flex-wrap gap-2">
       {COLOR_OPTIONS.map(color => (
@@ -46,7 +46,7 @@ function ColorPicker({ value, onChange }) {
   )
 }
 
-function ShapeTypePicker({ value, onChange }) {
+function ShapeTypePicker({ value, onChange }: any) {
   return (
     <div className="flex gap-2">
       {['rect', 'circle'].map(type => (
@@ -68,7 +68,7 @@ function ShapeTypePicker({ value, onChange }) {
   )
 }
 
-export default function GroupProperties({ groupId }) {
+export default function GroupProperties({ groupId }: any) {
   const { actions } = useEditor()
   const diagram = useDiagram()
 

@@ -105,7 +105,7 @@ function EditorContent({ isDark, onToggleTheme }) {
 
   const handleOpen = useCallback(async () => {
     if (meta.isDirty && !window.confirm('Discard unsaved changes?')) return
-    const result = await loadDiagram()
+    const result = await loadDiagram() as { diagram: any; filename: string } | null
     if (result) {
       actions.loadDiagram(result.diagram, result.filename)
     }

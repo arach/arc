@@ -12,7 +12,7 @@ export default function AnchorPoints({
   if (!visibleNodeId) return null
 
   // Filter to main anchors (not bottomRight/bottomLeft for simplicity)
-  const mainAnchors = ['top', 'right', 'bottom', 'left']
+  const mainAnchors = ['top', 'right', 'bottom', 'left'] as const
 
   return (
     <svg

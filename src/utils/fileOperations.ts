@@ -1,5 +1,13 @@
+// Extend window for File System Access API
+declare global {
+  interface Window {
+    showSaveFilePicker?: (options?: any) => Promise<any>
+    showOpenFilePicker?: (options?: any) => Promise<any[]>
+  }
+}
+
 // Save diagram to file using File System Access API
-export async function saveDiagram(diagram, suggestedName = 'diagram.json') {
+export async function saveDiagram(diagram: any, suggestedName = 'diagram.json') {
   const json = JSON.stringify(diagram, null, 2)
   const blob = new Blob([json], { type: 'application/json' })
 
@@ -68,7 +76,7 @@ export async function loadDiagram() {
     input.accept = '.json'
 
     input.onchange = async (e) => {
-      const file = e.target.files?.[0]
+      const file = (e.target as HTMLInputElement).files?.[0]
       if (!file) {
         resolve(null)
         return

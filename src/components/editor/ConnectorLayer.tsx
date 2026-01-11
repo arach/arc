@@ -271,7 +271,7 @@ export default function ConnectorLayer({
     connectors
       .map(c => connectorStyles[c.style]?.color)
       .filter(Boolean)
-  )]
+  )] as string[]
 
   return (
     <>
