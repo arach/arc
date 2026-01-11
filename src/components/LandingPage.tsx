@@ -61,27 +61,48 @@ function highlightCode(code: string): string {
 
 function DiagramShowcase() {
   const [view, setView] = useState<'diagram' | 'source'>('diagram')
+  const [theme, setTheme] = useState<'light' | 'dark'>('light')
 
   return (
     <div className="arc-diagram-shell">
       <div className="arc-diagram-full">
-        <div className="arc-view-toggle">
-          <button
-            className={`arc-view-btn ${view === 'diagram' ? 'active' : ''}`}
-            onClick={() => setView('diagram')}
-          >
-            Diagram
-          </button>
-          <button
-            className={`arc-view-btn ${view === 'source' ? 'active' : ''}`}
-            onClick={() => setView('source')}
-          >
-            Source
-          </button>
+        <div className="arc-view-controls">
+          <div className="arc-view-toggle">
+            <button
+              className={`arc-view-btn ${view === 'diagram' ? 'active' : ''}`}
+              onClick={() => setView('diagram')}
+            >
+              Diagram
+            </button>
+            <button
+              className={`arc-view-btn ${view === 'source' ? 'active' : ''}`}
+              onClick={() => setView('source')}
+            >
+              Source
+            </button>
+          </div>
+          {view === 'diagram' && (
+            <div className="arc-theme-toggle">
+              <button
+                className={`arc-theme-btn ${theme === 'light' ? 'active' : ''}`}
+                onClick={() => setTheme('light')}
+                title="Light mode"
+              >
+                ☀
+              </button>
+              <button
+                className={`arc-theme-btn ${theme === 'dark' ? 'active' : ''}`}
+                onClick={() => setTheme('dark')}
+                title="Dark mode"
+              >
+                ☾
+              </button>
+            </div>
+          )}
         </div>
         {view === 'diagram' ? (
           <div className="arc-diagram-scroll">
-            <ArcDiagram data={architectureDiagram} theme="light" className="min-w-[860px]" />
+            <ArcDiagram data={architectureDiagram} theme={theme} className="min-w-[860px]" />
           </div>
         ) : (
           <div className="arc-showcase-code" style={{ margin: 0, borderRadius: '16px' }}>

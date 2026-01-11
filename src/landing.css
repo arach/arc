@@ -660,11 +660,17 @@
 .hl-comment { color: #6e7781; font-style: italic; }
 .hl-type { color: #8250df; }
 
-/* View toggle */
+/* View controls */
+.arc-view-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
 .arc-view-toggle {
   display: flex;
   gap: 4px;
-  margin-bottom: 16px;
 }
 
 .arc-view-btn {
@@ -688,6 +694,38 @@
   background: var(--arc-ink);
   color: white;
   border-color: var(--arc-ink);
+}
+
+/* Theme toggle */
+.arc-theme-toggle {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid var(--arc-border);
+}
+
+.arc-theme-btn {
+  width: 32px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  opacity: 0.5;
+}
+
+.arc-theme-btn:hover {
+  opacity: 0.8;
+}
+
+.arc-theme-btn.active {
+  background: white;
+  opacity: 1;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 @media (max-width: 720px) {
