@@ -95,7 +95,13 @@ const connectorStyles = {
   publish: { color: 'blue', strokeWidth: 2, label: 'publish' },
 }
 
-const connectors = [
+const connectors: Array<{
+  from: string
+  to: string
+  fromAnchor: string
+  toAnchor: string
+  style: string
+}> = [
   { from: 'editor', to: 'model', fromAnchor: 'right', toAnchor: 'left', style: 'diagram' },
   { from: 'templates', to: 'model', fromAnchor: 'right', toAnchor: 'left', style: 'themes' },
   { from: 'model', to: 'docs', fromAnchor: 'right', toAnchor: 'left', style: 'publish' },
@@ -244,16 +250,16 @@ function Connector({
   connector,
 }: {
   connector: {
-    from: keyof typeof nodes
-    to: keyof typeof nodes
+    from: string
+    to: string
     fromAnchor: string
     toAnchor: string
-    style: keyof typeof connectorStyles
+    style: string
   }
 }) {
-  const style = connectorStyles[connector.style]
-  const from = anchor(connector.from, connector.fromAnchor)
-  const to = anchor(connector.to, connector.toAnchor)
+  const style = connectorStyles[connector.style as keyof typeof connectorStyles]
+  const from = anchor(connector.from as keyof typeof nodes, connector.fromAnchor)
+  const to = anchor(connector.to as keyof typeof nodes, connector.toAnchor)
   const mid = midPoint(from, to)
   const colorSet = colors[style.color as keyof typeof colors]
 

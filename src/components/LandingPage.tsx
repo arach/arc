@@ -188,12 +188,12 @@ export default function LandingPage({ onLaunchEditor }: LandingPageProps) {
               </div>
               <span>docs/intro.md</span>
             </a>
-            <a className="arc-doc-link" href="docs/architecture.md">
+            <a className="arc-doc-link" href="docs/architecture/">
               <div>
                 <strong>Architecture overview</strong>
                 <span>State flow, major modules, and exporter responsibilities.</span>
               </div>
-              <span>docs/architecture.md</span>
+              <span>docs/architecture/</span>
             </a>
           </div>
         </section>

@@ -91,7 +91,7 @@ interface NodeProps {
 function Node({ node, data }: NodeProps) {
   const size = NODE_SIZES[node.size]
   const color = COLORS[data.color] || COLORS.zinc
-  const Icon = (LucideIcons as Record<string, LucideIcon>)[data.icon] || LucideIcons.Box
+  const Icon = (LucideIcons as unknown as Record<string, LucideIcon>)[data.icon] || LucideIcons.Box
 
   const isLarge = node.size === 'l'
   const isSmall = node.size === 's'
