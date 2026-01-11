@@ -3,32 +3,24 @@ import diagram from './diagrams/architecture-intro.diagram'
 
 const sourceCode = `const diagram: ArcDiagramData = {
   id: 'ARC.ARCH.001',
-  layout: { width: 780, height: 380 },
+  layout: { width: 860, height: 400 },
   nodes: {
-    editor:    { x: 40,  y: 40,  size: 'l' },
-    templates: { x: 40,  y: 160, size: 'm' },
-    model:     { x: 320, y: 140, size: 'm' },
-    exporters: { x: 320, y: 260, size: 'm' },
-    docs:      { x: 560, y: 140, size: 'm' },
+    editor:    { x: 50,  y: 50,  size: 'l' },
+    templates: { x: 70,  y: 200, size: 'm' },
+    model:     { x: 340, y: 150, size: 'm' },
   },
   nodeData: {
-    editor:    { icon: 'Monitor',  name: 'Arc Editor',    color: 'violet' },
-    templates: { icon: 'Grid3X3',  name: 'Templates',     color: 'amber' },
-    model:     { icon: 'Layers',   name: 'Diagram Model', color: 'blue' },
-    exporters: { icon: 'Upload',   name: 'Exporters',     color: 'emerald' },
-    docs:      { icon: 'FileCode', name: 'Docs + Apps',   color: 'zinc' },
+    editor:    { icon: 'Monitor', name: 'Arc Editor',    color: 'violet' },
+    templates: { icon: 'Grid3X3', name: 'Templates',     color: 'amber' },
+    model:     { icon: 'Layers',  name: 'Diagram Model', color: 'blue' },
   },
   connectors: [
-    { from: 'editor',    to: 'model',     style: 'diagram' },
-    { from: 'templates', to: 'model',     style: 'themes' },
-    { from: 'model',     to: 'docs',      style: 'publish' },
-    { from: 'model',     to: 'exporters', style: 'export' },
+    { from: 'editor',    to: 'model', style: 'diagram' },
+    { from: 'templates', to: 'model', style: 'themes' },
   ],
   connectorStyles: {
-    diagram: { color: 'violet',  label: 'diagram' },
-    themes:  { color: 'amber',   label: 'themes' },
-    publish: { color: 'blue',    label: 'publish' },
-    export:  { color: 'emerald', label: 'export' },
+    diagram: { color: 'violet', label: 'diagram' },
+    themes:  { color: 'amber',  label: 'themes' },
   },
 }`
 
