@@ -136,6 +136,24 @@
   background: rgba(0, 0, 0, 0.04);
 }
 
+.arc-nav-github {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--arc-border);
+  background: rgba(255, 255, 255, 0.6);
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.arc-nav-github:hover {
+  background: var(--arc-ink);
+  color: white;
+  border-color: var(--arc-ink);
+}
+
 .arc-button {
   display: inline-flex;
   align-items: center;
@@ -161,7 +179,7 @@
 .arc-hero {
   width: min(1120px, 100% - 48px);
   margin: 0 auto;
-  padding: 48px 0 40px;
+  padding: 40px 0 32px;
 }
 
 .arc-hero-headline {
@@ -326,7 +344,7 @@
 .arc-why-section {
   background: linear-gradient(180deg, rgba(240, 246, 244, 0.5) 0%, rgba(247, 243, 236, 0) 100%);
   border-top: 1px solid rgba(16, 21, 24, 0.06);
-  padding: 40px 0 48px;
+  padding: 32px 0 36px;
 }
 
 .arc-why-inner {
@@ -391,16 +409,16 @@
 .arc-section {
   width: min(1120px, 100% - 48px);
   margin: 0 auto;
-  padding: 48px 0;
+  padding: 36px 0;
   display: grid;
-  gap: 24px;
+  gap: 20px;
 }
 
 /* Architecture section with background break */
 .arc-architecture-section {
   background: var(--arc-paper);
   border-top: 1px solid rgba(16, 21, 24, 0.06);
-  padding: 48px 0 56px;
+  padding: 36px 0 40px;
 }
 
 .arc-architecture-section .arc-section {

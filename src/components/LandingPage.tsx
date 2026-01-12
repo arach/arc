@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Package, Zap, Shield, Rabbit, Settings, Copy, Check } from 'lucide-react'
+import { Package, Zap, Shield, Rabbit, Copy, Check, Github } from 'lucide-react'
 import ArcDiagram, { type ThemeId, type ArcDiagramData } from './ArcDiagram'
 import ArcArchitectureNext from './ArcArchitectureNext'
 import architectureDiagram from './diagrams/architecture.diagram'
@@ -261,6 +261,10 @@ export default function LandingPage({ onLaunchEditor }: LandingPageProps) {
               <a href="#overview">Why Arc</a>
               <a href="#architecture">Architecture</a>
               <Link to="/docs">Docs</Link>
+              <a href="https://github.com/arach/arc" target="_blank" rel="noopener noreferrer" className="arc-nav-github">
+                <Github className="w-4 h-4" />
+                <span>Star on GitHub</span>
+              </a>
             </nav>
           </div>
         </header>
@@ -307,6 +311,7 @@ export default function LandingPage({ onLaunchEditor }: LandingPageProps) {
                 <li><strong>Ship declarative outputs</strong> — Export configs you can lint, review, and CI</li>
                 <li><strong>Templates that scale</strong> — Curated themes, consistent styling across teams</li>
                 <li><strong>Share the story</strong> — SVG/PNG exports for decks and live docs</li>
+                <li><strong>Embed anywhere</strong> — Drop-in React component with zoom, pan, and infinite canvas</li>
               </ul>
             </div>
             <div className="arc-get-started">
