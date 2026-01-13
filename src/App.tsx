@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom'
 import DiagramEditor from './components/editor/DiagramEditor'
 import LandingPage from './components/LandingPage'
 import Docs from './components/docs/Docs'
+import IsometricDemo from './components/IsometricDemo'
 import './landing.css'
 
 function EditorPage() {
@@ -57,6 +58,7 @@ function App() {
         <Route path="/editor" element={<EditorPage />} />
         <Route path="/docs" element={<DocsWrapper />} />
         <Route path="/docs/:page" element={<DocsWrapper />} />
+        <Route path="/iso-demo" element={<IsometricDemo />} />
       </Routes>
     </BrowserRouter>
   )
