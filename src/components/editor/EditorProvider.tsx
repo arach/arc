@@ -36,6 +36,10 @@ export function EditorProvider({ children, initialDiagram }) {
       dispatch({ type: 'node/resize', nodeId, size, width, height })
     }, []),
 
+    updateNodePosition: useCallback((nodeId: string, updates: Record<string, any>) => {
+      dispatch({ type: 'node/updatePosition', nodeId, updates })
+    }, []),
+
     // Connector operations
     addConnector: useCallback((from, to, fromAnchor, toAnchor, style) => {
       dispatch({ type: 'connector/add', from, to, fromAnchor, toAnchor, style })

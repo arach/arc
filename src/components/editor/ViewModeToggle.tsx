@@ -11,7 +11,7 @@ export default function ViewModeToggle({
   onViewModeChange,
 }: ViewModeToggleProps) {
   return (
-    <div className="absolute bottom-3 right-32 flex items-center gap-1 bg-white dark:bg-zinc-800 rounded-lg shadow-lg border border-zinc-200 dark:border-zinc-700 p-1">
+    <div className="absolute bottom-3 right-44 flex items-center gap-1 bg-white dark:bg-zinc-800 rounded-lg shadow-lg border border-zinc-200 dark:border-zinc-700 p-1">
       <button
         onClick={() => onViewModeChange('2d')}
         className={`p-1.5 rounded transition-colors ${

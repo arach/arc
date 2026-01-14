@@ -198,6 +198,24 @@ export function editorReducer(state, action) {
       }
     }
 
+    case 'node/updatePosition': {
+      // Update any properties on the node position object (z, isoHeight, isoDepth, etc.)
+      const { nodeId, updates } = action
+      const stateWithHistory = saveToHistory(state)
+      const currentNode = stateWithHistory.diagram.nodes[nodeId]
+
+      return {
+        ...stateWithHistory,
+        diagram: {
+          ...stateWithHistory.diagram,
+          nodes: {
+            ...stateWithHistory.diagram.nodes,
+            [nodeId]: { ...currentNode, ...updates },
+          },
+        },
+      }
+    }
+
     // ============================================
     // CONNECTOR OPERATIONS
     // ============================================
