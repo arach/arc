@@ -180,6 +180,11 @@ export function EditorProvider({ children, initialDiagram }) {
     resetZoom: useCallback(() => {
       dispatch({ type: 'zoom/set', zoom: 1 })
     }, []),
+
+    // View mode
+    setViewMode: useCallback((viewMode: '2d' | 'isometric') => {
+      dispatch({ type: 'viewMode/set', viewMode })
+    }, []),
   }
 
   return (
@@ -221,4 +226,9 @@ export function useHistory() {
 export function useTemplate() {
   const { state } = useEditor()
   return state.editor.template
+}
+
+export function useViewMode() {
+  const { state } = useEditor()
+  return state.editor.viewMode
 }

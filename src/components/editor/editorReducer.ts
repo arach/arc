@@ -32,6 +32,7 @@ export const initialState = {
     dragNodeOffsets: {}, // { nodeId: { x, y } } for multi-node drag
     template: DEFAULT_TEMPLATE, // Current style template
     zoom: 1, // Zoom level (0.5 to 2)
+    viewMode: '2d', // '2d' | 'isometric'
   },
   meta: {
     filename: null,
@@ -758,6 +759,19 @@ export function editorReducer(state, action) {
         editor: {
           ...state.editor,
           zoom: Math.min(2, Math.max(0.25, action.zoom)),
+        },
+      }
+
+    // ============================================
+    // VIEW MODE
+    // ============================================
+
+    case 'viewMode/set':
+      return {
+        ...state,
+        editor: {
+          ...state.editor,
+          viewMode: action.viewMode,
         },
       }
 

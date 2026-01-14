@@ -1,6 +1,6 @@
 import { useRef, useCallback, useState, useEffect } from 'react'
 // @ts-ignore - JS module, will migrate later
-import { useEditor, useDiagram, useEditorState, useTemplate } from './EditorProvider'
+import { useEditor, useDiagram, useEditorState, useTemplate, useViewMode } from './EditorProvider'
 // @ts-ignore - JS module
 import { NODE_SIZES } from '../../utils/constants'
 // @ts-ignore - JS module
@@ -23,18 +23,38 @@ import ExportZoneLayer from './ExportZoneLayer'
 // @ts-ignore - JS module
 import InfiniteGrid from './InfiniteGrid'
 import ZoomControls from './ZoomControls'
+import ViewModeToggle from './ViewModeToggle'
+import type { EmbedConfig } from '../../types/editor'
+
+// Default embed configuration
+const DEFAULT_EMBED_CONFIG: Required<EmbedConfig> = {
+  defaultViewMode: '2d',
+  enableViewModeToggle: false,
+  enableZoom: true,
+  enablePan: true,
+  enableDrag: true,
+  enableSelection: true,
+  showZoomControls: true,
+  showMiniMap: true,
+  showGrid: true,
+}
 
 interface DiagramCanvasProps {
   onViewportChange?: (bounds: { x: number; y: number; width: number; height: number }) => void
+  embedConfig?: EmbedConfig
 }
 
-export default function DiagramCanvas({ onViewportChange }: DiagramCanvasProps) {
+export default function DiagramCanvas({ onViewportChange, embedConfig }: DiagramCanvasProps) {
   const { actions } = useEditor()
   const diagram = useDiagram()
   const editor = useEditorState()
   const templateId = useTemplate()
+  const viewMode = useViewMode()
   const template = getTemplate(templateId)
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null)
+
+  // Merge embed config with defaults
+  const config = { ...DEFAULT_EMBED_CONFIG, ...embedConfig }
 
   const {
     containerRef,
@@ -59,6 +79,7 @@ export default function DiagramCanvas({ onViewportChange }: DiagramCanvasProps) 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent, nodeId: string) => {
       if (editor.mode !== 'select' || isPanning) return
+      if (!config.enableSelection && !config.enableDrag) return
 
       e.target instanceof Element && (e.target as Element).setPointerCapture?.(e.pointerId)
       const canvasPoint = screenToCanvas({ x: e.clientX, y: e.clientY })
@@ -94,12 +115,19 @@ export default function DiagramCanvas({ onViewportChange }: DiagramCanvasProps) 
       }
 
       const clickedNode = diagram.nodes[nodeId]
+
+      // If drag is disabled, just update selection without starting drag
+      if (!config.enableDrag) {
+        actions.selectNodes(newSelectedIds)
+        return
+      }
+
       actions.startDrag(nodeId, {
         x: canvasPoint.x - clickedNode.x,
         y: canvasPoint.y - clickedNode.y,
       }, nodeOffsets, newSelectedIds)
     },
-    [editor.mode, editor.selectedNodeIds, isPanning, diagram.nodes, actions, screenToCanvas]
+    [editor.mode, editor.selectedNodeIds, isPanning, diagram.nodes, actions, screenToCanvas, config.enableDrag, config.enableSelection]
   )
 
   const handlePointerMove = useCallback(
@@ -543,12 +571,14 @@ export default function DiagramCanvas({ onViewportChange }: DiagramCanvasProps) 
         onDragOver={handleDragOver}
       >
         {/* Infinite grid - fills entire viewport */}
-        <InfiniteGrid
-          grid={diagram.grid}
-          viewportBounds={viewportBounds}
-          containerSize={containerSize}
-          zoom={zoom}
-        />
+        {config.showGrid && (
+          <InfiniteGrid
+            grid={diagram.grid}
+            viewportBounds={viewportBounds}
+            containerSize={containerSize}
+            zoom={zoom}
+          />
+        )}
 
         {/* Transformed canvas content */}
         <div style={transformStyle}>
@@ -714,20 +744,32 @@ export default function DiagramCanvas({ onViewportChange }: DiagramCanvasProps) 
       )}
 
       {/* Zoom controls */}
-      <ZoomControls
-        zoom={zoom}
-        onZoomIn={() => zoomIn()}
-        onZoomOut={() => zoomOut()}
-        onReset={resetTransform}
-        onFitToView={() => fitToView(diagram.layout)}
-      />
+      {config.showZoomControls && (
+        <ZoomControls
+          zoom={zoom}
+          onZoomIn={() => zoomIn()}
+          onZoomOut={() => zoomOut()}
+          onReset={resetTransform}
+          onFitToView={() => fitToView(diagram.layout)}
+        />
+      )}
+
+      {/* View mode toggle */}
+      {config.enableViewModeToggle && (
+        <ViewModeToggle
+          viewMode={viewMode}
+          onViewModeChange={actions.setViewMode}
+        />
+      )}
 
       {/* Mini map */}
-      <MiniMap
-        diagram={diagram}
-        viewportBounds={viewportBounds}
-        onViewportChange={handleMiniMapViewportChange}
-      />
+      {config.showMiniMap && (
+        <MiniMap
+          diagram={diagram}
+          viewportBounds={viewportBounds}
+          onViewportChange={handleMiniMapViewportChange}
+        />
+      )}
     </div>
   )
 }

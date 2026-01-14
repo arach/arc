@@ -27,12 +27,39 @@ export type AnchorPosition =
 
 export type EditorMode = 'select' | 'addNode' | 'addConnector' | 'pan'
 
+export type ViewMode = '2d' | 'isometric'
+
+// Embed-time configuration for controlling canvas features
+export interface EmbedConfig {
+  // View mode
+  defaultViewMode?: ViewMode       // '2d' | 'isometric', defaults to '2d'
+  enableViewModeToggle?: boolean   // Show toggle between 2D/ISO, defaults to false
+
+  // Interaction controls
+  enableZoom?: boolean             // Enable zoom controls and wheel zoom, defaults to true
+  enablePan?: boolean              // Enable canvas panning, defaults to true
+  enableDrag?: boolean             // Enable node dragging, defaults to true
+  enableSelection?: boolean        // Enable node/connector selection, defaults to true
+
+  // UI controls
+  showZoomControls?: boolean       // Show zoom +/- buttons, defaults to true
+  showMiniMap?: boolean            // Show minimap, defaults to true
+  showGrid?: boolean               // Show background grid, defaults to true
+}
+
 export type ConnectorCurve = 'natural' | 'down' | 'up'
 
 export interface NodePosition {
   x: number
   y: number
   size: NodeSize
+  // Optional custom dimensions (override size preset)
+  width?: number
+  height?: number
+  // Isometric properties (used when viewMode is 'isometric')
+  z?: number        // Elevation above floor plane, defaults to 0
+  isoHeight?: number  // 3D box height, defaults to 20
+  isoDepth?: number   // 3D box depth (Y in iso space), defaults to 50
 }
 
 export interface NodeData {
@@ -99,6 +126,7 @@ export interface EditorState {
   zoom: number
   pan: Point
   isPanning: boolean
+  viewMode: ViewMode  // '2d' | 'isometric'
 }
 
 export interface MetaState {
