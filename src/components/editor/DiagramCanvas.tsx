@@ -5,6 +5,8 @@ import { useEditor, useDiagram, useEditorState, useTemplate, useViewMode } from 
 import { NODE_SIZES } from '../../utils/constants'
 // @ts-ignore - JS module
 import { getTemplate } from '../../utils/templates'
+// @ts-ignore - JS module
+import { screenToIsoFloor } from '../../utils/isometric'
 import { useCanvasTransform } from '../../hooks/useCanvasTransform'
 // @ts-ignore - JS module
 import EditableNode from './EditableNode'
@@ -144,6 +146,15 @@ export default function DiagramCanvas({ onViewportChange, embedConfig }: Diagram
       const canvasPoint = screenToCanvas({ x: e.clientX, y: e.clientY })
       const isShiftHeld = e.shiftKey
 
+      // In isometric mode, convert screen coordinates to isometric floor coordinates
+      let dragPoint = canvasPoint
+      if (viewMode === 'isometric') {
+        const originX = diagram.layout.width / 2
+        const originY = diagram.layout.height - 100
+        const isoPoint = screenToIsoFloor(canvasPoint.x - originX, canvasPoint.y - originY)
+        dragPoint = isoPoint
+      }
+
       // Compute new selection based on shift state
       let newSelectedIds: string[]
       if (isShiftHeld) {
@@ -167,8 +178,8 @@ export default function DiagramCanvas({ onViewportChange, embedConfig }: Diagram
         const node = diagram.nodes[id]
         if (node) {
           nodeOffsets[id] = {
-            x: canvasPoint.x - node.x,
-            y: canvasPoint.y - node.y,
+            x: dragPoint.x - node.x,
+            y: dragPoint.y - node.y,
           }
         }
       }
@@ -182,11 +193,11 @@ export default function DiagramCanvas({ onViewportChange, embedConfig }: Diagram
       }
 
       actions.startDrag(nodeId, {
-        x: canvasPoint.x - clickedNode.x,
-        y: canvasPoint.y - clickedNode.y,
+        x: dragPoint.x - clickedNode.x,
+        y: dragPoint.y - clickedNode.y,
       }, nodeOffsets, newSelectedIds)
     },
-    [editor.mode, editor.selectedNodeIds, isPanning, diagram.nodes, actions, screenToCanvas, config.enableDrag, config.enableSelection]
+    [editor.mode, editor.selectedNodeIds, isPanning, diagram.nodes, diagram.layout, actions, screenToCanvas, viewMode, config.enableDrag, config.enableSelection]
   )
 
   const handlePointerMove = useCallback(
@@ -195,13 +206,22 @@ export default function DiagramCanvas({ onViewportChange, embedConfig }: Diagram
 
       const canvasPoint = screenToCanvas({ x: e.clientX, y: e.clientY })
 
+      // In isometric mode, convert screen coordinates to isometric floor coordinates
+      let dragPoint = canvasPoint
+      if (viewMode === 'isometric') {
+        const originX = diagram.layout.width / 2
+        const originY = diagram.layout.height - 100
+        const isoPoint = screenToIsoFloor(canvasPoint.x - originX, canvasPoint.y - originY)
+        dragPoint = isoPoint
+      }
+
       // Move all selected nodes together - allow negative coords for infinite canvas
       const moves = editor.selectedNodeIds.map((nodeId: string) => {
         const offset = editor.dragNodeOffsets?.[nodeId] || editor.dragOffset
 
         // No bounds constraints - infinite canvas
-        const x = Math.round(canvasPoint.x - offset.x)
-        const y = Math.round(canvasPoint.y - offset.y)
+        const x = Math.round(dragPoint.x - offset.x)
+        const y = Math.round(dragPoint.y - offset.y)
 
         return { nodeId, x, y }
       })
