@@ -228,7 +228,8 @@ export default function DiagramCanvas({ onViewportChange, embedConfig }: Diagram
       }
 
       // Expand if needed (expandLayout only updates if larger)
-      if (maxWidth > diagram.layout.width || maxHeight > diagram.layout.height) {
+      // Only in 2D mode - isometric uses different coordinate system
+      if (viewMode === '2d' && (maxWidth > diagram.layout.width || maxHeight > diagram.layout.height)) {
         actions.expandLayout(maxWidth, maxHeight)
       }
     },
@@ -242,6 +243,7 @@ export default function DiagramCanvas({ onViewportChange, embedConfig }: Diagram
       diagram.layout,
       actions,
       screenToCanvas,
+      viewMode,
     ]
   )
 
@@ -419,7 +421,10 @@ export default function DiagramCanvas({ onViewportChange, embedConfig }: Diagram
   }, [viewportBounds.x, viewportBounds.y, viewportBounds.width, viewportBounds.height, onViewportChange])
 
   // Auto-expand layout when viewport extends beyond current bounds
+  // Only in 2D mode - isometric uses different coordinate system
   useEffect(() => {
+    if (viewMode !== '2d') return
+
     const viewRight = viewportBounds.x + viewportBounds.width
     const viewBottom = viewportBounds.y + viewportBounds.height
     const padding = 100
@@ -432,7 +437,7 @@ export default function DiagramCanvas({ onViewportChange, embedConfig }: Diagram
         actions.expandLayout(newWidth, newHeight)
       }
     }
-  }, [viewportBounds.x, viewportBounds.y, viewportBounds.width, viewportBounds.height, diagram.layout.width, diagram.layout.height, actions])
+  }, [viewMode, viewportBounds.x, viewportBounds.y, viewportBounds.width, viewportBounds.height, diagram.layout.width, diagram.layout.height, actions])
 
   const handleMiniMapViewportChange = useCallback(
     (newCenter: { x: number; y: number }) => {
@@ -851,8 +856,8 @@ export default function DiagramCanvas({ onViewportChange, embedConfig }: Diagram
         />
       )}
 
-      {/* Mini map */}
-      {config.showMiniMap && (
+      {/* Mini map - hidden in isometric mode since coordinate systems don't align */}
+      {config.showMiniMap && viewMode === '2d' && (
         <MiniMap
           diagram={diagram}
           viewportBounds={viewportBounds}
