@@ -77,6 +77,24 @@ export default function DiagramCanvas({ onViewportChange, embedConfig }: Diagram
   })
 
   const canvasRef = useRef<HTMLDivElement>(null)
+  const prevViewModeRef = useRef(viewMode)
+
+  // When switching to isometric mode, expand layout and adjust pan to center content
+  useEffect(() => {
+    if (prevViewModeRef.current !== viewMode) {
+      prevViewModeRef.current = viewMode
+
+      if (viewMode === 'isometric') {
+        // Expand layout to give more room for isometric projection
+        const minIsoHeight = 1200
+        if (diagram.layout.height < minIsoHeight) {
+          actions.expandLayout(diagram.layout.width, minIsoHeight)
+        }
+        // Reset view to show content better
+        resetTransform()
+      }
+    }
+  }, [viewMode, diagram.layout.height, diagram.layout.width, actions, resetTransform])
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent, nodeId: string) => {
