@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react'
-import { EditorProvider, useEditor, useDiagram, useEditorState, useMeta, useViewMode } from './EditorProvider'
+import { EditorProvider, useEditor, useDiagram, useEditorState, useMeta } from './EditorProvider'
 import { useMeta as usePageMeta } from '../../hooks/useMeta'
 import TopBar from './TopBar'
 import FloatingToolbar from './FloatingToolbar'
@@ -96,7 +96,6 @@ function EditorContent({ isDark, onToggleTheme }) {
   const diagram = useDiagram()
   const editor = useEditorState()
   const meta = useMeta()
-  const viewMode = useViewMode()
   const [showShare, setShowShare] = useState(false)
   const [viewportBounds, setViewportBounds] = useState(null)
 
@@ -180,12 +179,8 @@ function EditorContent({ isDark, onToggleTheme }) {
       {/* Main editor area */}
       <div className="flex-1 flex overflow-hidden">
         {/* Canvas area */}
-        <div className={`flex-1 relative p-4 ${viewMode === 'isometric' ? '' : 'overflow-hidden'}`}>
-          <div
-            className={`w-full h-full rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm ${
-              viewMode === 'isometric' ? '' : 'overflow-hidden'
-            }`}
-          >
+        <div className="flex-1 relative p-4 overflow-hidden">
+          <div className="w-full h-full rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 shadow-sm">
             <DiagramCanvas
               onViewportChange={setViewportBounds}
               embedConfig={{ enableViewModeToggle: true }}
