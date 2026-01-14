@@ -79,22 +79,61 @@ export default function DiagramCanvas({ onViewportChange, embedConfig }: Diagram
   const canvasRef = useRef<HTMLDivElement>(null)
   const prevViewModeRef = useRef(viewMode)
 
-  // When switching to isometric mode, expand layout and adjust pan to center content
+  // When switching to isometric mode, pan to where the content actually renders
   useEffect(() => {
     if (prevViewModeRef.current !== viewMode) {
       prevViewModeRef.current = viewMode
 
-      if (viewMode === 'isometric') {
-        // Expand layout to give more room for isometric projection
-        const minIsoHeight = 1200
-        if (diagram.layout.height < minIsoHeight) {
-          actions.expandLayout(diagram.layout.width, minIsoHeight)
+      if (viewMode === 'isometric' && containerRef.current) {
+        // Calculate where isometric content will render
+        // Origin is at (layout.width/2, layout.height - 100)
+        const originX = diagram.layout.width / 2
+        const originY = diagram.layout.height - 100
+
+        // Find bounds of all nodes in isometric screen space
+        const nodeIds = Object.keys(diagram.nodes)
+        if (nodeIds.length > 0) {
+          let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+
+          // Import isoToScreen calculation inline to find where content renders
+          const COS_30 = 0.866
+          const SIN_30 = 0.5
+
+          for (const nodeId of nodeIds) {
+            const node = diagram.nodes[nodeId]
+            if (!node) continue
+            const z = node.z || 0
+            const isoHeight = node.isoHeight || 25
+
+            // Calculate screen position for this node
+            const screenX = originX + (node.x - node.y) * COS_30
+            const screenY = originY - (node.x + node.y) * SIN_30 - z - isoHeight
+
+            minX = Math.min(minX, screenX - 50)
+            maxX = Math.max(maxX, screenX + 50)
+            minY = Math.min(minY, screenY - 20)
+            maxY = Math.max(maxY, screenY + 50)
+          }
+
+          // Calculate center of isometric content
+          const contentCenterX = (minX + maxX) / 2
+          const contentCenterY = (minY + maxY) / 2
+
+          // Get container size
+          const rect = containerRef.current.getBoundingClientRect()
+
+          // Pan so content is centered in the viewport
+          const panX = rect.width / 2 - contentCenterX
+          const panY = rect.height / 2 - contentCenterY
+
+          setPan({ x: panX, y: panY })
         }
-        // Reset view to show content better
+      } else if (viewMode === '2d') {
+        // Reset to normal view when going back to 2D
         resetTransform()
       }
     }
-  }, [viewMode, diagram.layout.height, diagram.layout.width, actions, resetTransform])
+  }, [viewMode, diagram.nodes, diagram.layout, containerRef, setPan, resetTransform])
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent, nodeId: string) => {
