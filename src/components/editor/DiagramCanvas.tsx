@@ -564,7 +564,8 @@ export default function DiagramCanvas({ onViewportChange, embedConfig }: Diagram
       <div
         ref={containerRef}
         className={`
-          w-full h-full overflow-hidden
+          w-full h-full
+          ${viewMode === 'isometric' ? 'overflow-visible' : 'overflow-hidden'}
           ${template.canvas.background}
           ${getCursorClass()}
         `}
@@ -583,13 +584,14 @@ export default function DiagramCanvas({ onViewportChange, embedConfig }: Diagram
         )}
 
         {/* Transformed canvas content */}
-        <div style={transformStyle}>
+        <div style={{ ...transformStyle, overflow: viewMode === 'isometric' ? 'visible' : undefined }}>
           <div
             ref={canvasRef}
             className="relative canvas-bg"
             style={{
               width: diagram.layout.width,
               height: diagram.layout.height,
+              overflow: viewMode === 'isometric' ? 'visible' : undefined,
             }}
             onClick={handleCanvasClick}
             onMouseDown={handleCanvasMouseDown}
@@ -720,7 +722,15 @@ export default function DiagramCanvas({ onViewportChange, embedConfig }: Diagram
                 </div>
               </>
             ) : (
-              <>
+              /* Isometric view - render in a container that can overflow */
+              <div
+                className="absolute inset-0"
+                style={{
+                  overflow: 'visible',
+                  // Extend the clickable area beyond canvas bounds
+                  pointerEvents: 'auto',
+                }}
+              >
                 {/* Isometric Connectors */}
                 <IsometricConnectorLayer
                   nodes={diagram.nodes}
@@ -730,7 +740,7 @@ export default function DiagramCanvas({ onViewportChange, embedConfig }: Diagram
                   selectedConnectorIndex={editor.selectedConnectorIndex}
                   onConnectorClick={handleConnectorClick}
                   originX={diagram.layout.width / 2}
-                  originY={diagram.layout.height - 100}
+                  originY={diagram.layout.height * 0.7}
                 />
 
                 {/* Isometric Nodes */}
@@ -741,9 +751,9 @@ export default function DiagramCanvas({ onViewportChange, embedConfig }: Diagram
                   onNodeClick={(nodeId) => actions.selectNode(nodeId)}
                   onNodePointerDown={handlePointerDown}
                   originX={diagram.layout.width / 2}
-                  originY={diagram.layout.height - 100}
+                  originY={diagram.layout.height * 0.7}
                 />
-              </>
+              </div>
             )}
 
             {/* Export zone overlay */}
