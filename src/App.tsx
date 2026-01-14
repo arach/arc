@@ -4,6 +4,7 @@ import DiagramEditor from './components/editor/DiagramEditor'
 import LandingPage from './components/LandingPage'
 import Docs from './components/docs/Docs'
 import IsometricDemo from './components/IsometricDemo'
+import IsometricExamples from './components/IsometricExamples'
 import './landing.css'
 
 function EditorPage() {
@@ -59,6 +60,7 @@ function App() {
         <Route path="/docs" element={<DocsWrapper />} />
         <Route path="/docs/:page" element={<DocsWrapper />} />
         <Route path="/iso-demo" element={<IsometricDemo />} />
+        <Route path="/iso-examples" element={<IsometricExamples />} />
       </Routes>
     </BrowserRouter>
   )

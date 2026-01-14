@@ -1,6 +1,7 @@
-import { useState } from 'react'
-import { isoToScreen, isoBox, getColorShading } from '../utils/isometric'
+import { useState, useRef } from 'react'
+import { isoToScreen, isoBox, getColorShading, screenToIsoFloor } from '../utils/isometric'
 import { Monitor, Database, Globe, Cpu } from 'lucide-react'
+import ThreeRenderer from './ThreeRenderer'
 
 interface DemoNode {
   id: string
@@ -17,8 +18,8 @@ interface DemoNode {
 
 const INITIAL_NODES: DemoNode[] = [
   { id: 'client', x: 0, y: 0, elevation: 0, width: 80, depth: 50, height: 20, color: 'blue', label: 'Client', icon: Monitor },
-  { id: 'api', x: 120, y: 0, elevation: 40, width: 90, depth: 55, height: 25, color: 'violet', label: 'API', icon: Globe },
-  { id: 'service', x: 250, y: 0, elevation: 80, width: 80, depth: 50, height: 20, color: 'cyan', label: 'Service', icon: Cpu },
+  { id: 'api', x: 120, y: 0, elevation: 0, width: 90, depth: 55, height: 25, color: 'violet', label: 'API', icon: Globe },
+  { id: 'service', x: 250, y: 0, elevation: 0, width: 80, depth: 50, height: 20, color: 'cyan', label: 'Service', icon: Cpu },
   { id: 'db', x: 250, y: 100, elevation: 0, width: 80, depth: 50, height: 18, color: 'emerald', label: 'Database', icon: Database },
 ]
 
@@ -68,38 +69,38 @@ function CoordinateTable({
                     <span className="text-slate-300 truncate">{node.label}</span>
                   </div>
                 </td>
-                <td className={`border-r ${!isLast ? 'border-b' : ''} border-slate-700 p-0.5`}>
+                <td className={`border-r ${!isLast ? 'border-b' : ''} border-slate-700 p-0`}>
                   <input
                     type="number"
                     value={node.x}
                     onChange={(e) => onChange(node.id, 'x', parseInt(e.target.value) || 0)}
-                    className="w-full bg-slate-800 text-slate-200 text-center py-1 px-1 border border-transparent focus:border-red-500 focus:outline-none rounded-sm"
+                    className="w-full bg-slate-800 text-slate-200 text-center py-1.5 px-1 border-0 focus:bg-slate-700 focus:outline-none"
                   />
                 </td>
-                <td className={`border-r ${!isLast ? 'border-b' : ''} border-slate-700 p-0.5`}>
+                <td className={`border-r ${!isLast ? 'border-b' : ''} border-slate-700 p-0`}>
                   <input
                     type="number"
                     value={node.y}
                     onChange={(e) => onChange(node.id, 'y', parseInt(e.target.value) || 0)}
-                    className="w-full bg-slate-800 text-slate-200 text-center py-1 px-1 border border-transparent focus:border-green-500 focus:outline-none rounded-sm"
+                    className="w-full bg-slate-800 text-slate-200 text-center py-1.5 px-1 border-0 focus:bg-slate-700 focus:outline-none"
                   />
                 </td>
                 {showZ && (
-                  <td className={`border-r ${!isLast ? 'border-b' : ''} border-slate-700 p-0.5`}>
+                  <td className={`border-r ${!isLast ? 'border-b' : ''} border-slate-700 p-0`}>
                     <input
                       type="number"
                       value={node.elevation}
                       onChange={(e) => onChange(node.id, 'elevation', parseInt(e.target.value) || 0)}
-                      className="w-full bg-slate-800 text-slate-200 text-center py-1 px-1 border border-transparent focus:border-blue-500 focus:outline-none rounded-sm"
+                      className="w-full bg-slate-800 text-slate-200 text-center py-1.5 px-1 border-0 focus:bg-slate-700 focus:outline-none"
                     />
                   </td>
                 )}
-                <td className={`${!isLast ? 'border-b' : ''} border-slate-700 p-0.5`}>
+                <td className={`${!isLast ? 'border-b' : ''} border-slate-700 p-0`}>
                   <input
                     type="number"
                     value={node.height}
                     onChange={(e) => onChange(node.id, 'height', parseInt(e.target.value) || 0)}
-                    className="w-full bg-slate-800 text-slate-400 text-center py-1 px-1 border border-transparent focus:border-slate-500 focus:outline-none rounded-sm"
+                    className="w-full bg-slate-800 text-slate-400 text-center py-1.5 px-1 border-0 focus:bg-slate-700 focus:outline-none"
                   />
                 </td>
               </tr>
@@ -115,11 +116,27 @@ function CoordinateTable({
 // 2D TOP-DOWN VIEW
 // ============================================
 
-function TopDown2DCanvas({ nodes }: { nodes: DemoNode[] }) {
-  const SCALE = 1.0
-  const ORIGIN_X = 50  // Where (0,0) is on screen
-  const ORIGIN_Y = 180 // Y=0 is near bottom, Y increases upward
+function TopDown2DCanvas({
+  nodes,
+  onNodeMove
+}: {
+  nodes: DemoNode[]
+  onNodeMove: (id: string, x: number, y: number) => void
+}) {
+  const SCALE = 1.5
+  const ORIGIN_X = 80  // Where (0,0) is on screen
+  const ORIGIN_Y = 280 // Y=0 is near bottom, Y increases upward
   const GRID_SIZE = 50
+  const CANVAS_WIDTH = 1200
+  const CANVAS_HEIGHT = 320
+
+  const [dragState, setDragState] = useState<{
+    nodeId: string
+    startX: number
+    startY: number
+    nodeStartX: number
+    nodeStartY: number
+  } | null>(null)
 
   const nodeMap = nodes.reduce((acc, node) => {
     acc[node.id] = node
@@ -132,35 +149,79 @@ function TopDown2DCanvas({ nodes }: { nodes: DemoNode[] }) {
     sy: ORIGIN_Y - y * SCALE  // Flip Y so it goes up
   })
 
+  const handlePointerDown = (e: React.PointerEvent, nodeId: string) => {
+    e.preventDefault()
+    const node = nodeMap[nodeId]
+    if (!node) return
+
+    ;(e.target as Element).setPointerCapture(e.pointerId)
+    setDragState({
+      nodeId,
+      startX: e.clientX,
+      startY: e.clientY,
+      nodeStartX: node.x,
+      nodeStartY: node.y,
+    })
+  }
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!dragState) return
+
+    const deltaScreenX = e.clientX - dragState.startX
+    const deltaScreenY = e.clientY - dragState.startY
+
+    // Convert screen delta to 2D coords (Y is flipped)
+    const deltaX = deltaScreenX / SCALE
+    const deltaY = -deltaScreenY / SCALE  // Flip Y
+
+    const newX = Math.round(dragState.nodeStartX + deltaX)
+    const newY = Math.round(dragState.nodeStartY + deltaY)
+
+    onNodeMove(dragState.nodeId, newX, newY)
+  }
+
+  const handlePointerUp = () => {
+    setDragState(null)
+  }
+
   return (
     <div className="bg-slate-900 rounded-lg overflow-hidden">
-      <svg width={420} height={220}>
+      <svg
+        width={CANVAS_WIDTH}
+        height={CANVAS_HEIGHT}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerLeave={handlePointerUp}
+        className={dragState ? 'cursor-grabbing' : ''}
+      >
         {/* Grid lines with labels */}
-        {Array.from({ length: 8 }).map((_, i) => {
+        {Array.from({ length: 15 }).map((_, i) => {
           const xVal = i * GRID_SIZE
           const { sx } = toScreen(xVal, 0)
+          if (sx > CANVAS_WIDTH - 20) return null
           return (
             <g key={`vline-${i}`}>
               <line
-                x1={sx} y1={20} x2={sx} y2={200}
+                x1={sx} y1={20} x2={sx} y2={CANVAS_HEIGHT - 20}
                 stroke="rgba(255,255,255,0.08)"
                 strokeWidth="1"
               />
               {i > 0 && (
-                <text x={sx} y={212} textAnchor="middle" className="fill-slate-600 text-[9px]">
+                <text x={sx} y={CANVAS_HEIGHT - 8} textAnchor="middle" className="fill-slate-600 text-[9px]">
                   {xVal}
                 </text>
               )}
             </g>
           )
         })}
-        {Array.from({ length: 5 }).map((_, i) => {
+        {Array.from({ length: 7 }).map((_, i) => {
           const yVal = i * GRID_SIZE
           const { sy } = toScreen(0, yVal)
+          if (sy < 20) return null
           return (
             <g key={`hline-${i}`}>
               <line
-                x1={40} y1={sy} x2={400} y2={sy}
+                x1={40} y1={sy} x2={CANVAS_WIDTH - 40} y2={sy}
                 stroke="rgba(255,255,255,0.08)"
                 strokeWidth="1"
               />
@@ -176,9 +237,9 @@ function TopDown2DCanvas({ nodes }: { nodes: DemoNode[] }) {
         {/* Axes at origin */}
         <g>
           {/* X axis (red) - pointing right */}
-          <line x1={ORIGIN_X} y1={ORIGIN_Y} x2={ORIGIN_X + 320} y2={ORIGIN_Y} stroke="#f87171" strokeWidth="2" />
-          <polygon points={`${ORIGIN_X + 320},${ORIGIN_Y} ${ORIGIN_X + 310},${ORIGIN_Y - 5} ${ORIGIN_X + 310},${ORIGIN_Y + 5}`} fill="#f87171" />
-          <text x={ORIGIN_X + 330} y={ORIGIN_Y + 4} className="fill-red-400 text-[11px] font-bold">X</text>
+          <line x1={ORIGIN_X} y1={ORIGIN_Y} x2={CANVAS_WIDTH - 80} y2={ORIGIN_Y} stroke="#f87171" strokeWidth="2" />
+          <polygon points={`${CANVAS_WIDTH - 80},${ORIGIN_Y} ${CANVAS_WIDTH - 90},${ORIGIN_Y - 5} ${CANVAS_WIDTH - 90},${ORIGIN_Y + 5}`} fill="#f87171" />
+          <text x={CANVAS_WIDTH - 68} y={ORIGIN_Y + 4} className="fill-red-400 text-[11px] font-bold">X</text>
 
           {/* Y axis (green) - pointing up */}
           <line x1={ORIGIN_X} y1={ORIGIN_Y} x2={ORIGIN_X} y2={30} stroke="#4ade80" strokeWidth="2" />
@@ -212,8 +273,14 @@ function TopDown2DCanvas({ nodes }: { nodes: DemoNode[] }) {
           const Icon = node.icon
           const shading = getColorShading(node.color as any)
           const { sx, sy } = toScreen(node.x, node.y + node.depth) // top-left in screen coords
+          const isDragging = dragState?.nodeId === node.id
           return (
-            <g key={node.id}>
+            <g
+              key={node.id}
+              onPointerDown={(e) => handlePointerDown(e, node.id)}
+              className={`cursor-grab ${isDragging ? 'cursor-grabbing' : ''}`}
+              style={{ filter: isDragging ? 'brightness(1.1)' : undefined }}
+            >
               <rect
                 x={sx}
                 y={sy}
@@ -229,6 +296,7 @@ function TopDown2DCanvas({ nodes }: { nodes: DemoNode[] }) {
                 y={sy}
                 width={node.width * SCALE}
                 height={node.depth * SCALE}
+                className="pointer-events-none"
               >
                 <div className="flex flex-col items-center justify-center h-full text-white">
                   <Icon size={14} className="mb-0.5" />
@@ -247,10 +315,41 @@ function TopDown2DCanvas({ nodes }: { nodes: DemoNode[] }) {
 // ISOMETRIC VIEW
 // ============================================
 
-function IsometricCanvas({ nodes }: { nodes: DemoNode[] }) {
-  const ORIGIN_X = 80   // Screen position of (0,0,0)
-  const ORIGIN_Y = 220
+function IsometricCanvas({
+  nodes,
+  onNodeMove
+}: {
+  nodes: DemoNode[]
+  onNodeMove: (id: string, x: number, y: number) => void
+}) {
+  // Origin at bottom-center, objects in positive quadrant appear above
+  // +X goes up-right, +Y goes up-left, +Z goes up
+  const BASE_ORIGIN_X = 290  // Center horizontally
+  const BASE_ORIGIN_Y = 380  // Near bottom
   const GRID_SIZE = 50
+  const CANVAS_WIDTH = 580
+  const CANVAS_HEIGHT = 400
+
+  const svgRef = useRef<SVGSVGElement>(null)
+
+  // Canvas transform state (pan & zoom)
+  const [pan, setPan] = useState({ x: 0, y: 0 })
+  const [zoom, setZoom] = useState(1)
+  const [isPanning, setIsPanning] = useState(false)
+  const [panStart, setPanStart] = useState({ x: 0, y: 0, panX: 0, panY: 0 })
+
+  // Node drag state
+  const [dragState, setDragState] = useState<{
+    nodeId: string
+    startX: number
+    startY: number
+    nodeStartX: number
+    nodeStartY: number
+  } | null>(null)
+
+  // Computed origin with pan offset
+  const ORIGIN_X = BASE_ORIGIN_X + pan.x
+  const ORIGIN_Y = BASE_ORIGIN_Y + pan.y
 
   const sortedNodes = [...nodes].sort((a, b) => {
     const aDepth = a.y + a.x - a.elevation
@@ -263,9 +362,88 @@ function IsometricCanvas({ nodes }: { nodes: DemoNode[] }) {
     return acc
   }, {} as Record<string, DemoNode>)
 
+  // Canvas pan handlers (drag on empty space)
+  const handleCanvasPointerDown = (e: React.PointerEvent) => {
+    // Only start panning if clicking on the SVG background, not a node
+    if (e.target === svgRef.current) {
+      e.preventDefault()
+      setIsPanning(true)
+      setPanStart({ x: e.clientX, y: e.clientY, panX: pan.x, panY: pan.y })
+    }
+  }
+
+  const handleCanvasPointerMove = (e: React.PointerEvent) => {
+    if (isPanning) {
+      const dx = e.clientX - panStart.x
+      const dy = e.clientY - panStart.y
+      setPan({ x: panStart.panX + dx, y: panStart.panY + dy })
+      return
+    }
+
+    if (dragState) {
+      // Calculate screen delta
+      const deltaScreenX = e.clientX - dragState.startX
+      const deltaScreenY = e.clientY - dragState.startY
+
+      // Convert screen delta to isometric delta
+      const isoStart = screenToIsoFloor(0, 0)
+      const isoEnd = screenToIsoFloor(deltaScreenX / zoom, deltaScreenY / zoom)
+
+      const deltaIsoX = isoEnd.x - isoStart.x
+      const deltaIsoY = isoEnd.y - isoStart.y
+
+      const newX = Math.round(dragState.nodeStartX + deltaIsoX)
+      const newY = Math.round(dragState.nodeStartY + deltaIsoY)
+
+      onNodeMove(dragState.nodeId, newX, newY)
+    }
+  }
+
+  const handleCanvasPointerUp = () => {
+    setIsPanning(false)
+    setDragState(null)
+  }
+
+  // Zoom with mouse wheel
+  const handleWheel = (e: React.WheelEvent) => {
+    e.preventDefault()
+    const delta = e.deltaY > 0 ? 0.9 : 1.1
+    setZoom(z => Math.max(0.5, Math.min(2, z * delta)))
+  }
+
+  // Node drag handlers
+  const handleNodePointerDown = (e: React.PointerEvent, nodeId: string) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const node = nodeMap[nodeId]
+    if (!node) return
+
+    ;(e.target as Element).setPointerCapture(e.pointerId)
+    setDragState({
+      nodeId,
+      startX: e.clientX,
+      startY: e.clientY,
+      nodeStartX: node.x,
+      nodeStartY: node.y,
+    })
+  }
+
   return (
-    <div className="bg-slate-900 rounded-lg overflow-hidden">
-      <svg width={480} height={300}>
+    <div className="bg-slate-900 rounded-lg overflow-hidden relative">
+      <svg
+        ref={svgRef}
+        width={CANVAS_WIDTH}
+        height={CANVAS_HEIGHT}
+        onPointerDown={handleCanvasPointerDown}
+        onPointerMove={handleCanvasPointerMove}
+        onPointerUp={handleCanvasPointerUp}
+        onPointerLeave={handleCanvasPointerUp}
+        onWheel={handleWheel}
+        className={isPanning ? 'cursor-grabbing' : dragState ? 'cursor-grabbing' : 'cursor-grab'}
+        style={{ touchAction: 'none' }}
+      >
+        {/* Zoom transform group */}
+        <g transform={`scale(${zoom})`} style={{ transformOrigin: `${CANVAS_WIDTH/2}px ${CANVAS_HEIGHT/2}px` }}>
         {/* Isometric grid on floor with labels */}
         {Array.from({ length: 8 }).map((_, i) => {
           const val = i * GRID_SIZE
@@ -293,22 +471,24 @@ function IsometricCanvas({ nodes }: { nodes: DemoNode[] }) {
                 stroke="rgba(255,255,255,0.06)"
                 strokeWidth="1"
               />
-              {/* X axis labels */}
+              {/* X axis labels - on the front side of the X axis (Y=0 line) */}
               {i > 0 && (
                 <text
-                  x={xStart.screenX + ORIGIN_X + 5}
-                  y={xStart.screenY + ORIGIN_Y + 12}
-                  className="fill-red-400/50 text-[8px]"
+                  x={xStart.screenX + ORIGIN_X}
+                  y={xStart.screenY + ORIGIN_Y + 14}
+                  className="fill-red-400/70 text-[9px] font-medium"
+                  textAnchor="middle"
                 >
                   {val}
                 </text>
               )}
-              {/* Y axis labels */}
+              {/* Y axis labels - on the front side of the Y axis (X=0 line) */}
               {i > 0 && (
                 <text
-                  x={yStart.screenX + ORIGIN_X - 12}
-                  y={yStart.screenY + ORIGIN_Y + 4}
-                  className="fill-green-400/50 text-[8px]"
+                  x={yStart.screenX + ORIGIN_X}
+                  y={yStart.screenY + ORIGIN_Y + 14}
+                  className="fill-green-400/70 text-[9px] font-medium"
+                  textAnchor="middle"
                 >
                   {val}
                 </text>
@@ -472,8 +652,14 @@ function IsometricCanvas({ nodes }: { nodes: DemoNode[] }) {
             node.elevation + node.height
           )
 
+          const isDragging = dragState?.nodeId === node.id
           return (
-            <g key={node.id}>
+            <g
+              key={node.id}
+              onPointerDown={(e) => handleNodePointerDown(e, node.id)}
+              className={`cursor-grab ${isDragging ? 'cursor-grabbing' : ''}`}
+              style={{ filter: isDragging ? 'brightness(1.1)' : undefined }}
+            >
               <path d={paths.left} fill={shading.left} stroke="rgba(0,0,0,0.3)" strokeWidth="1" />
               <path d={paths.right} fill={shading.right} stroke="rgba(0,0,0,0.2)" strokeWidth="1" />
               <path d={paths.top} fill={shading.top} stroke="rgba(0,0,0,0.1)" strokeWidth="1" />
@@ -493,7 +679,13 @@ function IsometricCanvas({ nodes }: { nodes: DemoNode[] }) {
             </g>
           )
         })}
+        </g>
       </svg>
+
+      {/* Zoom indicator */}
+      <div className="absolute bottom-2 right-2 text-[10px] text-slate-500 bg-slate-800/80 px-2 py-1 rounded">
+        {Math.round(zoom * 100)}%
+      </div>
     </div>
   )
 }
@@ -511,56 +703,88 @@ export default function IsometricDemo() {
     ))
   }
 
+  const handleNodeMove = (id: string, x: number, y: number) => {
+    setNodes(prev => prev.map(node =>
+      node.id === id ? { ...node, x, y } : node
+    ))
+  }
+
   const resetNodes = () => setNodes(INITIAL_NODES)
 
   return (
     <div className="min-h-screen bg-slate-950 p-6">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold text-white mb-1">Isometric Projection Demo</h1>
-          <p className="text-slate-400 text-sm">Edit coordinates to see how 2D positions map to isometric 3D</p>
+          <h1 className="text-2xl font-bold text-white mb-1">Arc Rendering Modes</h1>
+          <p className="text-slate-400 text-sm">Edit in Three.js (left) → Preview in SVG player (right)</p>
         </div>
 
-        {/* 2D Section */}
-        <div className="mb-6">
-          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
-            2D Top-Down View <span className="text-slate-600">(X-Y plane)</span>
-          </h2>
-          <div className="flex gap-4 bg-slate-900/50 rounded-xl p-4">
-            <div className="w-72 shrink-0">
-              <CoordinateTable nodes={nodes} onChange={handleChange} showZ={false} />
-            </div>
-            <div className="flex-1">
-              <TopDown2DCanvas nodes={nodes} />
-            </div>
+        {/* Coordinate table at top */}
+        <div className="mb-6 flex justify-center">
+          <div className="w-[500px]">
+            <CoordinateTable nodes={nodes} onChange={handleChange} showZ={true} />
+            <button
+              onClick={resetNodes}
+              className="mt-3 w-full text-xs text-slate-500 hover:text-slate-300 py-1.5 border border-slate-700 rounded hover:border-slate-600 transition-colors"
+            >
+              Reset to defaults
+            </button>
           </div>
         </div>
 
-        {/* Isometric Section */}
-        <div className="mb-6">
-          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
-            Isometric View <span className="text-slate-600">(X-Y-Z space)</span>
-          </h2>
-          <div className="flex gap-4 bg-slate-900/50 rounded-xl p-4">
-            <div className="w-72 shrink-0">
-              <CoordinateTable nodes={nodes} onChange={handleChange} showZ={true} />
-              <button
-                onClick={resetNodes}
-                className="mt-3 w-full text-xs text-slate-500 hover:text-slate-300 py-1.5 border border-slate-700 rounded hover:border-slate-600 transition-colors"
-              >
-                Reset to defaults
-              </button>
+        {/* Side by side: Editor | Player */}
+        <div className="grid grid-cols-2 gap-4">
+
+          {/* LEFT: Three.js Editor */}
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <span className="text-[10px] font-bold text-blue-400 bg-blue-950 px-2 py-0.5 rounded">EDITOR</span>
+              <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                Arc Three.js <span className="text-slate-600 normal-case">(full 3D)</span>
+              </h2>
             </div>
-            <div className="flex-1">
-              <IsometricCanvas nodes={nodes} />
+            <div className="bg-slate-900/50 rounded-xl p-2">
+              <ThreeRenderer
+                nodes={nodes}
+                onNodeMove={handleNodeMove}
+                width={580}
+                height={400}
+              />
             </div>
+          </div>
+
+          {/* RIGHT: SVG Player */}
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950 px-2 py-0.5 rounded">PLAYER</span>
+              <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                Arc SVG <span className="text-slate-600 normal-case">(zero deps)</span>
+              </h2>
+            </div>
+            <div className="bg-slate-900/50 rounded-xl p-2">
+              <IsometricCanvas nodes={nodes} onNodeMove={handleNodeMove} />
+            </div>
+          </div>
+
+        </div>
+
+        {/* 2D Planning view below */}
+        <div className="mt-4">
+          <div className="flex items-center gap-3 mb-2">
+            <span className="text-[10px] font-bold text-slate-600 bg-slate-800 px-2 py-0.5 rounded">2D</span>
+            <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+              Top-Down <span className="text-slate-600 normal-case">(planning view)</span>
+            </h2>
+          </div>
+          <div className="bg-slate-900/50 rounded-xl p-2">
+            <TopDown2DCanvas nodes={nodes} onNodeMove={handleNodeMove} />
           </div>
         </div>
 
         {/* Legend */}
-        <div className="text-center text-xs text-slate-600">
+        <div className="text-center text-xs text-slate-600 mt-6">
           <span className="text-red-400 font-medium">X</span> = horizontal →
-          <span className="text-green-400 font-medium ml-3">Y</span> = depth ↑
+          <span className="text-green-400 font-medium ml-3">Y</span> = depth
           <span className="text-blue-400 font-medium ml-3">Z</span> = elevation ↑
           <span className="text-slate-400 font-medium ml-3">H</span> = thickness
         </div>
