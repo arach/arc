@@ -86,6 +86,8 @@ export interface ConnectorStyle {
   dashed?: boolean
   bidirectional?: boolean
   animated?: boolean
+  showArrow?: boolean
+  showEndpoints?: boolean
 }
 
 export interface GridConfig {

@@ -24,6 +24,8 @@ import ExportZoneLayer from './ExportZoneLayer'
 import InfiniteGrid from './InfiniteGrid'
 import ZoomControls from './ZoomControls'
 import ViewModeToggle from './ViewModeToggle'
+import IsometricNodeLayer from './IsometricNodeLayer'
+import IsometricConnectorLayer from './IsometricConnectorLayer'
 import type { EmbedConfig } from '../../types/editor'
 
 // Default embed configuration
@@ -670,49 +672,79 @@ export default function DiagramCanvas({ onViewportChange, embedConfig }: Diagram
               </svg>
             )}
 
-            {/* Connectors */}
-            <ConnectorLayer
-              layout={diagram.layout}
-              nodes={diagram.nodes}
-              connectors={diagram.connectors}
-              connectorStyles={diagram.connectorStyles}
-              selectedConnectorIndex={editor.selectedConnectorIndex}
-              onConnectorClick={handleConnectorClick}
-            />
+            {/* Render 2D or Isometric view based on viewMode */}
+            {viewMode === '2d' ? (
+              <>
+                {/* 2D Connectors */}
+                <ConnectorLayer
+                  layout={diagram.layout}
+                  nodes={diagram.nodes}
+                  connectors={diagram.connectors}
+                  connectorStyles={diagram.connectorStyles}
+                  selectedConnectorIndex={editor.selectedConnectorIndex}
+                  onConnectorClick={handleConnectorClick}
+                />
 
-            {/* Anchor points */}
-            {anchorNodeId && (
-              <AnchorPoints
-                layout={diagram.layout}
-                nodes={diagram.nodes}
-                visibleNodeId={anchorNodeId}
-                onAnchorClick={handleAnchorClick}
-                pendingConnector={editor.pendingConnector}
-              />
-            )}
-
-            {/* Nodes - pointer-events-none so clicks pass through to connectors */}
-            <div className="absolute inset-0 pointer-events-none">
-              {Object.entries(diagram.nodes).map(([nodeId, node]) => {
-                const data = diagram.nodeData[nodeId]
-                if (!data) return null
-                return (
-                  <EditableNode
-                    key={nodeId}
-                    nodeId={nodeId}
-                    node={node}
-                    data={data}
+                {/* Anchor points */}
+                {anchorNodeId && (
+                  <AnchorPoints
                     layout={diagram.layout}
-                    template={template}
-                    isSelected={editor.selectedNodeIds.includes(nodeId)}
-                    onPointerDown={handlePointerDown}
-                    onClick={handleNodeClick}
-                    onMouseEnter={() => editor.mode === 'addConnector' && setHoveredNodeId(nodeId)}
-                    onMouseLeave={() => editor.mode === 'addConnector' && setHoveredNodeId(null)}
+                    nodes={diagram.nodes}
+                    visibleNodeId={anchorNodeId}
+                    onAnchorClick={handleAnchorClick}
+                    pendingConnector={editor.pendingConnector}
                   />
-                )
-              })}
-            </div>
+                )}
+
+                {/* 2D Nodes */}
+                <div className="absolute inset-0 pointer-events-none">
+                  {Object.entries(diagram.nodes).map(([nodeId, node]) => {
+                    const data = diagram.nodeData[nodeId]
+                    if (!data) return null
+                    return (
+                      <EditableNode
+                        key={nodeId}
+                        nodeId={nodeId}
+                        node={node}
+                        data={data}
+                        layout={diagram.layout}
+                        template={template}
+                        isSelected={editor.selectedNodeIds.includes(nodeId)}
+                        onPointerDown={handlePointerDown}
+                        onClick={handleNodeClick}
+                        onMouseEnter={() => editor.mode === 'addConnector' && setHoveredNodeId(nodeId)}
+                        onMouseLeave={() => editor.mode === 'addConnector' && setHoveredNodeId(null)}
+                      />
+                    )
+                  })}
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Isometric Connectors */}
+                <IsometricConnectorLayer
+                  nodes={diagram.nodes}
+                  nodeData={diagram.nodeData}
+                  connectors={diagram.connectors}
+                  connectorStyles={diagram.connectorStyles}
+                  selectedConnectorIndex={editor.selectedConnectorIndex}
+                  onConnectorClick={handleConnectorClick}
+                  originX={diagram.layout.width / 2}
+                  originY={diagram.layout.height - 100}
+                />
+
+                {/* Isometric Nodes */}
+                <IsometricNodeLayer
+                  nodes={diagram.nodes}
+                  nodeData={diagram.nodeData}
+                  selectedNodeIds={editor.selectedNodeIds}
+                  onNodeClick={(nodeId) => actions.selectNode(nodeId)}
+                  onNodePointerDown={handlePointerDown}
+                  originX={diagram.layout.width / 2}
+                  originY={diagram.layout.height - 100}
+                />
+              </>
+            )}
 
             {/* Export zone overlay */}
             <ExportZoneLayer

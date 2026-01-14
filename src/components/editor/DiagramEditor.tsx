@@ -181,7 +181,10 @@ function EditorContent({ isDark, onToggleTheme }) {
         {/* Canvas area */}
         <div className="flex-1 relative p-4 overflow-hidden">
           <div className="w-full h-full rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 shadow-sm">
-            <DiagramCanvas onViewportChange={setViewportBounds} />
+            <DiagramCanvas
+              onViewportChange={setViewportBounds}
+              embedConfig={{ enableViewModeToggle: true }}
+            />
           </div>
           {/* Floating toolbar */}
           <FloatingToolbar />
