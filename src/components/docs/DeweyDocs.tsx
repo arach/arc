@@ -2,6 +2,12 @@ import React from 'react'
 import { DocsLayout, MarkdownContent } from '@arach/dewey'
 import type { NavGroup } from '@arach/dewey'
 
+// Strip frontmatter from markdown content
+function stripFrontmatter(content: string): string {
+  const match = content.match(/^---\n[\s\S]*?\n---\n/)
+  return match ? content.slice(match[0].length) : content
+}
+
 // Import markdown files as raw strings
 import overviewMd from '../../../docs/overview.md?raw'
 import quickstartMd from '../../../docs/quickstart.md?raw'
@@ -99,7 +105,7 @@ export default function DeweyDocs({ pageId }: DeweyDocsProps) {
       prevPage={prevPage}
       nextPage={nextPage}
     >
-      <MarkdownContent content={page.content} />
+      <MarkdownContent content={stripFrontmatter(page.content)} />
     </DocsLayout>
   )
 }
