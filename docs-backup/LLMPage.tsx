@@ -1,8 +1,6 @@
 import React, { useState } from 'react'
 import { Copy, Check, Bot, FileText, Code, Palette, ArrowLeft } from 'lucide-react'
 import { useMeta } from '../../hooks/useMeta'
-// Import Dewey-generated docs as raw string
-import fullDocumentation from '../../../docs/AGENTS.md?raw'
 
 interface LLMPageProps {
   currentPage: string
@@ -10,8 +8,8 @@ interface LLMPageProps {
   onBack: () => void
 }
 
-// Legacy hardcoded docs removed - now powered by Dewey
-const _legacyDocs = `# Arc - Visual Architecture Diagram Library
+// Full documentation in markdown format for LLMs/agents
+const fullDocumentation = `# Arc - Visual Architecture Diagram Library
 
 Arc is a React component library for rendering beautiful, interactive architecture diagrams. It provides a declarative JSON format for defining diagrams and multiple built-in themes.
 

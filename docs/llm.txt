@@ -1,0 +1,130 @@
+# Arc - LLM Context File
+
+> Visual diagram editor outputting declarative JSON/TypeScript configs
+> Source: https://github.com/arach/arc
+> Docs: https://arc.arach.dev/docs
+
+## Quick Facts
+
+- **What**: Drag-and-drop architecture diagram editor
+- **Output**: JSON/TypeScript configs (not images)
+- **Stack**: React 19, Vite 7, TailwindCSS 4
+- **Packages**: @arach/arc (full), @arach/arc-player (lightweight)
+
+## Installation
+
+```bash
+npm install @arach/arc
+npx @arach/arc-editor
+```
+
+## Minimal Example
+
+```tsx
+import { ArcDiagram } from '@arach/arc'
+
+const diagram = {
+  layout: { width: 600, height: 300 },
+  nodes: {
+    frontend: { x: 50, y: 100, size: 'm' },
+    backend: { x: 250, y: 100, size: 'm' },
+  },
+  nodeData: {
+    frontend: { icon: 'Monitor', name: 'Frontend', color: 'violet' },
+    backend: { icon: 'Server', name: 'Backend', color: 'emerald' },
+  },
+  connectors: [
+    { from: 'frontend', to: 'backend', fromAnchor: 'right', toAnchor: 'left', style: 'api' }
+  ],
+  connectorStyles: {
+    api: { color: 'violet', strokeWidth: 2, label: 'REST' }
+  },
+}
+
+<ArcDiagram data={diagram} mode="light" theme="default" />
+```
+
+## Schema
+
+```typescript
+interface ArcDiagramData {
+  id?: string
+  layout: { width: number; height: number }
+  nodes: Record<string, { x: number; y: number; size: 's' | 'm' | 'l' }>
+  nodeData: Record<string, { icon: string; name: string; color: DiagramColor; subtitle?: string }>
+  connectors: Array<{ from: string; to: string; fromAnchor: AnchorPosition; toAnchor: AnchorPosition; style: string }>
+  connectorStyles: Record<string, { color: DiagramColor; strokeWidth: number; label?: string; dashed?: boolean }>
+}
+
+type DiagramColor = 'violet' | 'emerald' | 'blue' | 'amber' | 'sky' | 'zinc' | 'rose' | 'orange'
+type AnchorPosition = 'left' | 'right' | 'top' | 'bottom' | 'topLeft' | 'topRight' | 'bottomLeft' | 'bottomRight'
+```
+
+## Props
+
+| Prop | Type | Default |
+|------|------|---------|
+| data | ArcDiagramData | required |
+| mode | 'light' \| 'dark' | 'light' |
+| theme | 'default' \| 'warm' \| 'cool' \| 'mono' | 'default' |
+| interactive | boolean | true |
+
+## Available Icons (Lucide)
+
+Server, Database, Cloud, CloudCog, Monitor, Smartphone, Laptop, Globe, Terminal, MessageSquare, Mail, Bell, Shield, Lock, Key, FileText, Folder, Package, Layers, Wifi, Radio, Plug, RefreshCw, Download, Upload, Send, Zap, HardDrive, Network, Cpu, Archive, Cable, Router
+
+## Project Structure
+
+```
+src/components/editor/
+├── DiagramEditor.jsx     # Main layout
+├── EditorProvider.jsx    # State (useReducer + Context)
+├── editorReducer.js      # State logic
+├── DiagramCanvas.jsx     # Interactive canvas
+├── EditableNode.jsx      # Draggable nodes
+├── ConnectorLayer.jsx    # SVG connectors
+└── PropertiesPanel.jsx   # Editing sidebar
+
+src/utils/
+├── constants.js          # Colors, sizes
+├── iconRegistry.js       # Icon mapping
+├── diagramHelpers.js     # Geometry utils
+└── fileOperations.js     # Save/load/export
+```
+
+## State Shape
+
+```typescript
+{
+  diagram: { layout, nodes, nodeData, connectors, connectorStyles },
+  editor: { selectedNodeId, selectedConnectorIndex, mode, pendingConnector, isDragging },
+  meta: { filename, isDirty, lastSaved },
+  history: { past, future }
+}
+```
+
+## Common Modifications
+
+| Task | File |
+|------|------|
+| Add icon | src/utils/iconRegistry.js |
+| Add color | src/utils/constants.js COLORS |
+| Edit drag | src/components/editor/EditableNode.jsx |
+| Edit paths | src/components/editor/ConnectorLayer.jsx |
+| New export | src/utils/fileOperations.js |
+
+## Commands
+
+```bash
+pnpm dev      # Start dev server
+pnpm build    # Production build
+pnpm lint     # ESLint
+```
+
+## Critical Rules
+
+1. Diagrams are JSON data, not images - maintain declarative format
+2. State is immutable - always return new objects from reducer
+3. History is capped at 50 states
+4. Icons must be registered in iconRegistry.js before use
+5. Exports should be deterministic (same input = same output)

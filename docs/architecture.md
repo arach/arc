@@ -1,53 +1,57 @@
-# Arc Architecture Overview
+---
+title: Architecture
+description: How the Arc editor is built
+order: 5
+---
 
-Arc is organized around a single diagram model and a small set of modules that read, edit, and
-export that model. The goal is to keep editor behavior, state management, and export logic
-separate so outputs stay stable even as the UI evolves.
+# Architecture
 
 ## Major Modules
 
-- `src/components/editor/`: The editor shell (top bar, canvas, panels, layers).
-- `src/components/properties/`: Forms for editing node, connector, group, and grid settings.
-- `src/components/dialogs/`: Export and share dialogs.
-- `src/hooks/`: Keyboard shortcuts and canvas transform helpers.
-- `src/utils/`: Diagram helpers, templates, export utilities, and file operations.
-- `src/types/`: TypeScript types for diagram + editor state.
+Arc is organized into several key modules:
+
+| Module | Path | Purpose |
+|--------|------|---------|
+| Editor | `src/components/editor/` | Visual drag-and-drop editor |
+| Player | `src/player/` | Lightweight renderer |
+| Utils | `src/utils/` | Shared helpers |
 
 ## State Model
 
-State lives in a reducer + context pair (`EditorProvider`, `editorReducer`). The state shape is
-split into four slices:
+The editor uses `useReducer` + Context for state management:
 
-- `diagram`: layout, nodes, nodeData, connectors, connectorStyles, groups, images, exportZone
-- `editor`: selection, mode, pending actions, template, zoom
-- `meta`: filename, dirty state, last saved
-- `history`: undo/redo stacks (capped for performance)
-
-The reducer records history on meaningful changes and drives all interactions (add/remove nodes,
-update connectors, change templates, etc.).
-
-## Data Flow
-
-1. **Input**: The editor dispatches actions from UI events.
-2. **Reducer**: `editorReducer` updates the diagram and tracks history.
-3. **Canvas**: `DiagramCanvas` renders nodes, connectors, groups, and images.
-4. **Properties**: The panel writes updates back to the reducer.
-5. **Export**: `exportUtils` and `fileOperations` serialize the model for external use.
-
-## Diagram Config
-
-Exported diagrams are declarative and designed to be embedded elsewhere:
-
-```ts
+```typescript
 {
-  layout: { width: 1200, height: 700 },
-  nodes: { api: { x: 80, y: 120, size: 'm' } },
-  nodeData: { api: { icon: 'Server', name: 'API', color: 'emerald' } },
-  connectors: [
-    { from: 'web', to: 'api', fromAnchor: 'right', toAnchor: 'left', style: 'http' }
-  ],
-  connectorStyles: { http: { color: 'amber', strokeWidth: 2, label: 'HTTP' } }
+  diagram: { layout, nodes, nodeData, connectors, connectorStyles },
+  editor: { selectedNodeId, selectedConnectorIndex, mode, pendingConnector, isDragging },
+  meta: { filename, isDirty, lastSaved },
+  history: { past, future }
 }
 ```
 
-Keep configs in version control so architecture updates travel with the product.
+## Data Flow
+
+1. **User Action** → Dispatch action to reducer
+2. **Reducer** → Updates state immutably, pushes to history
+3. **Context** → Propagates new state to components
+4. **Canvas** → Re-renders affected nodes/connectors
+
+## Diagram Config
+
+Diagrams are stored as JSON:
+
+```json
+{
+  "layout": { "width": 700, "height": 340 },
+  "nodes": { "nodeId": { "x": 25, "y": 15, "size": "large" } },
+  "nodeData": { "nodeId": { "icon": "Monitor", "name": "...", "color": "violet" } },
+  "connectors": [{ "from": "a", "to": "b", "fromAnchor": "right", "toAnchor": "left", "style": "http" }],
+  "connectorStyles": { "http": { "color": "amber", "strokeWidth": 2, "label": "HTTP" } }
+}
+```
+
+## Editor Modes
+
+- **select** - Default mode. Click to select, drag to move nodes
+- **addNode** - Click on canvas to place a new node
+- **addConnector** - Click source anchor → click target anchor to connect
