@@ -107,29 +107,39 @@ const pages: Record<string, PageData> = {
     content: stripFrontmatter(overviewMd),
     agentContent: stripFrontmatter(overviewAgentMd),
     prompt: {
-      title: 'Create a Diagram',
-      description: 'Generate a new Arc architecture diagram',
+      title: 'Get Help with Arc',
+      description: 'General assistance for working with Arc diagrams',
       messages: [
         {
+          role: 'system',
+          content: `## Arc Diagram Editor
+
+Arc creates **declarative architecture diagrams** as JSON configs that can be version-controlled, rendered anywhere, and edited visually.
+
+### Config Structure
+- \`layout\` — Canvas dimensions (\`width\`, \`height\`)
+- \`nodes\` — Position and size for each node (\`x\`, \`y\`, \`size\`)
+- \`nodeData\` — Visual properties (\`icon\`, \`name\`, \`subtitle\`, \`color\`)
+- \`connectors\` — Connections between nodes (\`from\`, \`to\`, \`anchors\`, \`style\`)
+- \`connectorStyles\` — Shared line styles (\`color\`, \`strokeWidth\`, \`label\`)
+
+### Available Values
+| Property | Options |
+|----------|---------|
+| size | \`s\`, \`m\`, \`l\` |
+| color | \`violet\`, \`emerald\`, \`blue\`, \`amber\`, \`sky\`, \`zinc\`, \`rose\`, \`orange\` |
+| icon | Any [Lucide icon](https://lucide.dev) — Server, Database, Monitor, Cloud, etc. |`,
+        },
+        {
           role: 'user',
-          content: `Create an Arc diagram for [SYSTEM_DESCRIPTION].
+          content: `I need help with Arc: {TASK}
 
-The diagram should include:
-- [COMPONENT_1]: [DESCRIPTION]
-- [COMPONENT_2]: [DESCRIPTION]
-- [COMPONENT_3]: [DESCRIPTION]
-
-Connections:
-- [COMPONENT_1] → [COMPONENT_2]: [LABEL]
-- [COMPONENT_2] → [COMPONENT_3]: [LABEL]
-
-Use the Arc JSON format with layout, nodes, nodeData, connectors, and connectorStyles.`,
+{CONTEXT}`,
         },
       ],
       variables: [
-        { name: 'SYSTEM_DESCRIPTION', description: 'What system to diagram', example: 'a user authentication flow' },
-        { name: 'COMPONENT_1', description: 'First component name', example: 'Web Client' },
-        { name: 'LABEL', description: 'Connection label', example: 'REST API' },
+        { name: 'TASK', description: 'What you want to accomplish', example: 'create a diagram for my auth flow' },
+        { name: 'CONTEXT', description: 'Additional details, existing config, or constraints' },
       ],
     },
     title: 'Overview',
@@ -141,24 +151,47 @@ Use the Arc JSON format with layout, nodes, nodeData, connectors, and connectorS
     agentContent: stripFrontmatter(quickstartAgentMd),
     prompt: {
       title: 'Set Up Arc',
-      description: 'Get help setting up Arc in your project',
+      description: 'Get started with Arc in your project',
       messages: [
         {
+          role: 'system',
+          content: `## Setting Up Arc
+
+### Installation
+\`\`\`bash
+npm install @arach/arc
+\`\`\`
+
+### Basic Usage
+\`\`\`jsx
+import { ArchitectureDiagram } from '@arach/arc'
+import config from './my-diagram.json'
+
+<ArchitectureDiagram config={config} />
+\`\`\`
+
+### Minimal Config
+\`\`\`json
+{
+  "layout": { "width": 600, "height": 300 },
+  "nodes": { "app": { "x": 50, "y": 50, "size": "m" } },
+  "nodeData": { "app": { "icon": "Monitor", "name": "App", "color": "violet" } }
+}
+\`\`\``,
+        },
+        {
           role: 'user',
-          content: `Help me set up Arc in my [PROJECT_TYPE] project.
+          content: `Help me set up Arc in my {PROJECT_TYPE} project.
 
-I want to:
-- Install the Arc package
-- Create my first diagram showing [SYSTEM_DESCRIPTION]
-- Render it in [FRAMEWORK]
+I want to create a diagram showing: {WHAT_TO_DIAGRAM}
 
-Guide me through the setup step by step.`,
+{ADDITIONAL_REQUIREMENTS}`,
         },
       ],
       variables: [
-        { name: 'PROJECT_TYPE', description: 'Type of project', example: 'React' },
-        { name: 'SYSTEM_DESCRIPTION', description: 'What to diagram', example: 'my API architecture' },
-        { name: 'FRAMEWORK', description: 'UI framework', example: 'Next.js' },
+        { name: 'PROJECT_TYPE', description: 'Your framework or setup', example: 'Next.js app' },
+        { name: 'WHAT_TO_DIAGRAM', description: 'The system you want to visualize', example: 'API gateway connecting to microservices' },
+        { name: 'ADDITIONAL_REQUIREMENTS', description: 'Any specific needs or constraints' },
       ],
     },
     title: 'Quickstart',
@@ -169,36 +202,53 @@ Guide me through the setup step by step.`,
     content: stripFrontmatter(apiMd),
     agentContent: stripFrontmatter(apiAgentMd),
     prompt: {
-      title: 'Add a Node',
-      description: 'Add a new component to your diagram',
+      title: 'Work with Diagram Configs',
+      description: 'Create, read, or modify Arc diagram JSON',
       messages: [
         {
           role: 'system',
-          content: `Arc diagram format reference:
-- Sizes: 's' | 'm' | 'l'
-- Colors: violet | emerald | blue | amber | sky | zinc | rose | orange
-- Anchors: left | right | top | bottom | topLeft | topRight | bottomLeft | bottomRight
-- Icons: Any Lucide icon (Server, Database, Monitor, Cloud, etc.)`,
+          content: `## Arc Diagram Format Reference
+
+### Config Structure
+\`\`\`json
+{
+  "layout": { "width": 700, "height": 340 },
+  "nodes": {
+    "nodeId": { "x": 25, "y": 15, "size": "m" }
+  },
+  "nodeData": {
+    "nodeId": { "icon": "Server", "name": "API", "subtitle": "v2.0", "color": "violet" }
+  },
+  "connectors": [
+    { "from": "a", "to": "b", "fromAnchor": "right", "toAnchor": "left", "style": "http" }
+  ],
+  "connectorStyles": {
+    "http": { "color": "amber", "strokeWidth": 2, "label": "HTTP" }
+  }
+}
+\`\`\`
+
+### Valid Values
+| Property | Options |
+|----------|---------|
+| size | \`s\` (small), \`m\` (medium), \`l\` (large) |
+| color | \`violet\`, \`emerald\`, \`blue\`, \`amber\`, \`sky\`, \`zinc\`, \`rose\`, \`orange\` |
+| anchor | \`left\`, \`right\`, \`top\`, \`bottom\`, \`topLeft\`, \`topRight\`, \`bottomLeft\`, \`bottomRight\` |
+| icon | Any Lucide icon name — \`Server\`, \`Database\`, \`Monitor\`, \`Cloud\`, \`Globe\`, etc. |`,
         },
         {
           role: 'user',
-          content: `Add a new node to this Arc diagram:
+          content: `{ACTION} this Arc diagram config:
 
-[PASTE_DIAGRAM_CONFIG]
+{DIAGRAM_CONFIG}
 
-New node:
-- Name: [NODE_NAME]
-- Icon: [ICON_NAME]
-- Color: [COLOR]
-- Position: [POSITION_DESCRIPTION]
-- Connect to: [TARGET_NODE] via [CONNECTION_LABEL]`,
+{SPECIFIC_REQUEST}`,
         },
       ],
       variables: [
-        { name: 'PASTE_DIAGRAM_CONFIG', description: 'Your existing diagram JSON' },
-        { name: 'NODE_NAME', description: 'Display name for the node', example: 'Cache Layer' },
-        { name: 'ICON_NAME', description: 'Lucide icon name', example: 'Database' },
-        { name: 'COLOR', description: 'Node color', example: 'amber' },
+        { name: 'ACTION', description: 'What to do', example: 'Modify / Explain / Add to / Convert' },
+        { name: 'DIAGRAM_CONFIG', description: 'Your existing diagram JSON (or describe what you want to create)' },
+        { name: 'SPECIFIC_REQUEST', description: 'Detailed instructions for the change' },
       ],
     },
     title: 'Diagram Format',
@@ -209,34 +259,49 @@ New node:
     content: stripFrontmatter(architectureMd),
     agentContent: stripFrontmatter(architectureAgentMd),
     prompt: {
-      title: 'Debug Arc Editor',
-      description: 'Get help troubleshooting the Arc editor',
+      title: 'Arc Editor Development',
+      description: 'Understand or extend the Arc editor codebase',
       messages: [
         {
           role: 'system',
-          content: `Arc Editor key files:
-- State: src/components/editor/EditorProvider.jsx + editorReducer.js
-- Canvas: src/components/editor/DiagramCanvas.jsx
-- Nodes: src/components/editor/EditableNode.jsx
-- Connectors: src/components/editor/ConnectorLayer.jsx
-- Icons: src/utils/iconRegistry.js
-- Constants: src/utils/constants.js`,
+          content: `## Arc Editor Architecture
+
+### Key Files
+| Area | Files |
+|------|-------|
+| State | \`EditorProvider.jsx\` + \`editorReducer.js\` — useReducer + Context |
+| Canvas | \`DiagramCanvas.jsx\` — Interactive drag-and-drop surface |
+| Nodes | \`EditableNode.jsx\` — Draggable node components |
+| Connectors | \`ConnectorLayer.jsx\` — SVG connection lines |
+| Properties | \`PropertiesPanel.jsx\` — Right sidebar editor |
+| Icons | \`iconRegistry.js\` — Lucide icon mapping |
+| Constants | \`constants.js\` — Colors, sizes, anchor positions |
+
+### Editor State
+\`\`\`javascript
+{
+  diagram: { layout, nodes, nodeData, connectors, connectorStyles },
+  editor: { selectedNodeId, mode, pendingConnector, isDragging },
+  meta: { filename, isDirty, lastSaved },
+  history: { past, future }
+}
+\`\`\`
+
+### Modes
+- \`select\` — Click to select, drag to move
+- \`addNode\` — Click canvas to place node
+- \`addConnector\` — Click source → click target`,
         },
         {
           role: 'user',
-          content: `Debug this issue in the Arc editor:
+          content: `{GOAL}
 
-Issue: [DESCRIBE_PROBLEM]
-Expected: [EXPECTED_BEHAVIOR]
-Actual: [ACTUAL_BEHAVIOR]
-
-What's happening and how do I fix it?`,
+{DETAILS}`,
         },
       ],
       variables: [
-        { name: 'DESCRIBE_PROBLEM', description: 'What went wrong', example: 'Nodes won\'t drag' },
-        { name: 'EXPECTED_BEHAVIOR', description: 'What should happen', example: 'Node moves with cursor' },
-        { name: 'ACTUAL_BEHAVIOR', description: 'What actually happens', example: 'Node stays in place' },
+        { name: 'GOAL', description: 'What you want to understand or build', example: 'Add keyboard shortcut for deleting nodes' },
+        { name: 'DETAILS', description: 'Relevant context, error messages, or constraints' },
       ],
     },
     title: 'Architecture',
@@ -247,26 +312,38 @@ What's happening and how do I fix it?`,
     content: stripFrontmatter(examplesMd),
     agentContent: stripFrontmatter(apiAgentMd),
     prompt: {
-      title: 'Modify Styling',
-      description: 'Change the appearance of your diagram',
+      title: 'Diagram Templates',
+      description: 'Apply structural styling to diagrams',
       messages: [
         {
+          role: 'system',
+          content: `## Arc Templates
+
+Templates define the **structural appearance** of diagrams — shapes, line styles, spacing, and layout patterns.
+
+### Built-in Templates
+- **default** — Clean boxes with subtle shadows
+- **minimal** — Thin borders, no shadows
+- **rounded** — Pill-shaped nodes
+- **technical** — Sharp corners, monospace labels
+
+### Customizing Structure
+Templates control:
+- Node shape (rounded corners, borders, shadows)
+- Connector style (solid, dashed, animated)
+- Label positioning and typography
+- Spacing and alignment`,
+        },
+        {
           role: 'user',
-          content: `Update the styling of this Arc diagram:
+          content: `{TEMPLATE_REQUEST}
 
-[PASTE_DIAGRAM_CONFIG]
-
-Changes I want:
-- [CHANGE_1]
-- [CHANGE_2]
-
-Apply these changes and return the updated config.`,
+{DIAGRAM_OR_DESCRIPTION}`,
         },
       ],
       variables: [
-        { name: 'PASTE_DIAGRAM_CONFIG', description: 'Your existing diagram JSON' },
-        { name: 'CHANGE_1', description: 'First style change', example: 'Make all connectors dashed' },
-        { name: 'CHANGE_2', description: 'Second style change', example: 'Change theme to dark mode' },
+        { name: 'TEMPLATE_REQUEST', description: 'What styling you want', example: 'Apply a minimal technical style' },
+        { name: 'DIAGRAM_OR_DESCRIPTION', description: 'Your diagram config or description of desired result' },
       ],
     },
     title: 'Templates',
@@ -277,24 +354,37 @@ Apply these changes and return the updated config.`,
     content: stripFrontmatter(examplesMd),
     agentContent: stripFrontmatter(apiAgentMd),
     prompt: {
-      title: 'Change Theme',
-      description: 'Switch color palettes for your diagram',
+      title: 'Color Themes',
+      description: 'Apply color palettes to diagrams',
       messages: [
         {
+          role: 'system',
+          content: `## Arc Themes
+
+Themes define **color palettes** that can be applied to any template.
+
+### Node Colors
+\`violet\` \`emerald\` \`blue\` \`amber\` \`sky\` \`zinc\` \`rose\` \`orange\`
+
+### Connector Colors
+Connectors can use the same palette, or custom colors in \`connectorStyles\`.
+
+### Theme Presets
+- **default** — Balanced, colorful
+- **warm** — Oranges, ambers, roses
+- **cool** — Blues, violets, emeralds
+- **mono** — Grayscale with accent`,
+        },
+        {
           role: 'user',
-          content: `Change the theme of my Arc diagram to [THEME_NAME].
+          content: `{THEME_REQUEST}
 
-Current config:
-[PASTE_DIAGRAM_CONFIG]
-
-Available themes: default, warm, cool, mono
-
-Update the colors to match the [THEME_NAME] palette.`,
+{DIAGRAM_OR_DESCRIPTION}`,
         },
       ],
       variables: [
-        { name: 'THEME_NAME', description: 'Target theme', example: 'warm' },
-        { name: 'PASTE_DIAGRAM_CONFIG', description: 'Your existing diagram JSON' },
+        { name: 'THEME_REQUEST', description: 'Color scheme you want', example: 'Use a warm palette with orange accents' },
+        { name: 'DIAGRAM_OR_DESCRIPTION', description: 'Your diagram config or description' },
       ],
     },
     title: 'Themes',
@@ -305,27 +395,47 @@ Update the colors to match the [THEME_NAME] palette.`,
     content: stripFrontmatter(agentsMd),
     agentContent: llmTxt,
     prompt: {
-      title: 'Work with Arc',
-      description: 'General prompt for Arc tasks',
+      title: 'Arc AI Assistant',
+      description: 'Full context for working with Arc',
       messages: [
         {
           role: 'system',
-          content: `You are helping with Arc, a visual diagram editor. Key info:
-- Diagrams are JSON with: layout, nodes, nodeData, connectors, connectorStyles
-- Colors: violet, emerald, blue, amber, sky, zinc, rose, orange
-- Sizes: s, m, l
-- Icons: Lucide icons (Server, Database, Monitor, Cloud, etc.)`,
+          content: `## Arc — AI-Ready Diagram Editor
+
+Arc creates **declarative architecture diagrams** as JSON. Key concepts:
+
+### Config Structure
+\`\`\`
+layout → canvas size (width, height)
+nodes → positions (x, y, size)
+nodeData → visuals (icon, name, subtitle, color)
+connectors → connections (from, to, anchors, style)
+connectorStyles → shared line styles
+\`\`\`
+
+### Valid Values
+- **size**: \`s\`, \`m\`, \`l\`
+- **color**: \`violet\`, \`emerald\`, \`blue\`, \`amber\`, \`sky\`, \`zinc\`, \`rose\`, \`orange\`
+- **anchor**: \`left\`, \`right\`, \`top\`, \`bottom\`, \`topLeft\`, \`topRight\`, \`bottomLeft\`, \`bottomRight\`
+- **icon**: Any Lucide icon (\`Server\`, \`Database\`, \`Monitor\`, \`Cloud\`, \`Globe\`, etc.)
+
+### Common Tasks
+- Create diagrams from descriptions
+- Modify existing configs
+- Add/remove nodes and connectors
+- Change colors, sizes, icons
+- Explain diagram structure`,
         },
         {
           role: 'user',
-          content: `Help me [TASK_DESCRIPTION] with Arc.
+          content: `{REQUEST}
 
-[ADDITIONAL_CONTEXT]`,
+{CONTEXT}`,
         },
       ],
       variables: [
-        { name: 'TASK_DESCRIPTION', description: 'What you want to do', example: 'create a microservices diagram' },
-        { name: 'ADDITIONAL_CONTEXT', description: 'Any extra details' },
+        { name: 'REQUEST', description: 'What you need help with', example: 'Create a microservices diagram' },
+        { name: 'CONTEXT', description: 'Existing config, requirements, or constraints' },
       ],
     },
     title: 'AI Agents',
@@ -336,27 +446,47 @@ Update the colors to match the [THEME_NAME] palette.`,
     content: stripFrontmatter(agentsMd),
     agentContent: llmTxt,
     prompt: {
-      title: 'Work with Arc',
-      description: 'General prompt for Arc tasks',
+      title: 'Arc AI Assistant',
+      description: 'Full context for working with Arc',
       messages: [
         {
           role: 'system',
-          content: `You are helping with Arc, a visual diagram editor. Key info:
-- Diagrams are JSON with: layout, nodes, nodeData, connectors, connectorStyles
-- Colors: violet, emerald, blue, amber, sky, zinc, rose, orange
-- Sizes: s, m, l
-- Icons: Lucide icons (Server, Database, Monitor, Cloud, etc.)`,
+          content: `## Arc — AI-Ready Diagram Editor
+
+Arc creates **declarative architecture diagrams** as JSON. Key concepts:
+
+### Config Structure
+\`\`\`
+layout → canvas size (width, height)
+nodes → positions (x, y, size)
+nodeData → visuals (icon, name, subtitle, color)
+connectors → connections (from, to, anchors, style)
+connectorStyles → shared line styles
+\`\`\`
+
+### Valid Values
+- **size**: \`s\`, \`m\`, \`l\`
+- **color**: \`violet\`, \`emerald\`, \`blue\`, \`amber\`, \`sky\`, \`zinc\`, \`rose\`, \`orange\`
+- **anchor**: \`left\`, \`right\`, \`top\`, \`bottom\`, \`topLeft\`, \`topRight\`, \`bottomLeft\`, \`bottomRight\`
+- **icon**: Any Lucide icon (\`Server\`, \`Database\`, \`Monitor\`, \`Cloud\`, \`Globe\`, etc.)
+
+### Common Tasks
+- Create diagrams from descriptions
+- Modify existing configs
+- Add/remove nodes and connectors
+- Change colors, sizes, icons
+- Explain diagram structure`,
         },
         {
           role: 'user',
-          content: `Help me [TASK_DESCRIPTION] with Arc.
+          content: `{REQUEST}
 
-[ADDITIONAL_CONTEXT]`,
+{CONTEXT}`,
         },
       ],
       variables: [
-        { name: 'TASK_DESCRIPTION', description: 'What you want to do', example: 'create a microservices diagram' },
-        { name: 'ADDITIONAL_CONTEXT', description: 'Any extra details' },
+        { name: 'REQUEST', description: 'What you need help with', example: 'Create a microservices diagram' },
+        { name: 'CONTEXT', description: 'Existing config, requirements, or constraints' },
       ],
     },
     title: 'Skills',
