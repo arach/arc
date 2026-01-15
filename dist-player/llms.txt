@@ -1,0 +1,36 @@
+# Arc (LLM Guide)
+
+Arc is a visual editor for building architecture diagrams that stay in code. The editor outputs a
+clean, declarative model (JSON/TypeScript) that can be committed, diffed, and reused in docs.
+
+Quickstart (bun):
+- bun install
+- bun run dev
+- bun run build
+- bun run lint
+- bun run typecheck
+
+Key entry points:
+- src/App.tsx (landing vs editor via hash; #editor opens the editor)
+- src/main.tsx (React entry)
+- src/landing.css (landing page styles)
+
+Editor architecture:
+- src/components/editor/ (canvas, panels, toolbar, reducer)
+- src/components/editor/editorReducer.ts (state + history)
+- src/components/properties/ (editing forms)
+- src/utils/ (diagram helpers, templates, export utilities, file operations)
+
+Landing page diagrams:
+- src/components/ArcDiagram.tsx (Talkie-style diagram renderer)
+- src/components/diagrams/architecture.diagram.ts (Arc diagram data)
+- src/components/ArcArchitectureNext.tsx (complementary blueprint diagram)
+
+Docs (Markdown):
+- docs/intro.md (intro + quickstart)
+- docs/architecture.md (architecture overview)
+- public/docs/ (same docs for GitHub Pages)
+
+Diagram model shape:
+- layout, nodes, nodeData, connectors, connectorStyles
+- See docs/architecture.md for examples.

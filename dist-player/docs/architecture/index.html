@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Arc Docs - Architecture</title>
+    <link rel="stylesheet" href="../docs.css" />
+  </head>
+  <body>
+    <header class="docs-topbar">
+      <div class="docs-topbar-inner">
+        <a class="docs-brand" href="../../">
+          <span class="docs-brand-mark" aria-hidden="true"></span>
+          <span>Arc</span>
+        </a>
+        <nav class="docs-top-links">
+          <a href="../intro.md">Intro</a>
+          <a href="./">Architecture</a>
+          <a href="../../">Home</a>
+        </nav>
+      </div>
+    </header>
+
+    <div class="docs-layout">
+      <aside class="docs-sidebar">
+        <div class="docs-nav-group">
+          <h4>Getting Started</h4>
+          <ul>
+            <li>
+              <a class="docs-nav-link" href="../intro.md">
+                Overview
+                <span>What Arc is, quickstart</span>
+              </a>
+            </li>
+            <li>
+              <a class="docs-nav-link active" href="./">
+                Architecture
+                <span>How the system fits together</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+        <div class="docs-nav-group">
+          <h4>Core Concepts</h4>
+          <ul>
+            <li>
+              <a class="docs-nav-link" href="#diagram-model">
+                Diagram Model
+                <span>Nodes, connectors, styles</span>
+              </a>
+            </li>
+            <li>
+              <a class="docs-nav-link" href="#state-flow">
+                State Flow
+                <span>Reducer + history</span>
+              </a>
+            </li>
+            <li>
+              <a class="docs-nav-link" href="#export-pipeline">
+                Export Pipeline
+                <span>SVG, PNG, JSON, TS</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+      </aside>
+
+      <main class="docs-main">
+        <div class="docs-badge">Architecture</div>
+        <h1>Arc architecture</h1>
+        <p>
+          Arc centers everything around a single diagram model. The editor edits it, templates
+          refine it, and exporters output it. That keeps architecture diagrams readable and
+          versionable.
+        </p>
+
+        <section class="docs-section" id="system-overview">
+          <h2>System overview</h2>
+          <p>
+            The editor captures intent, but the diagram model is the source of truth. This means
+            Arc can render consistent exports and teams can review updates in pull requests.
+          </p>
+
+          <div class="docs-diagram">
+            <div class="docs-diagram-canvas">
+              <svg viewBox="0 0 960 460" aria-hidden="true">
+                <defs>
+                  <marker
+                    id="docs-arrow"
+                    markerWidth="8"
+                    markerHeight="6"
+                    refX="7"
+                    refY="3"
+                    orient="auto"
+                  >
+                    <polygon points="0 0, 8 3, 0 6" fill="#cbd5f5" />
+                  </marker>
+                </defs>
+                <path d="M 270 110 L 360 182.5" stroke="#a78bfa" stroke-width="2" fill="none" marker-end="url(#docs-arrow)" />
+                <path d="M 230 232.5 L 360 182.5" stroke="#fbbf24" stroke-width="2" fill="none" marker-end="url(#docs-arrow)" />
+                <path d="M 500 182.5 L 640 182.5" stroke="#60a5fa" stroke-width="2" fill="none" marker-end="url(#docs-arrow)" />
+                <path d="M 430 215 L 430 260" stroke="#34d399" stroke-width="2" fill="none" marker-end="url(#docs-arrow)" />
+              </svg>
+
+              <div class="docs-node violet" data-size="l" style="left: 70px; top: 70px;">
+                <div class="docs-node-header">
+                  <div class="docs-node-icon">UI</div>
+                  <div>
+                    <div class="docs-node-title">Arc Editor</div>
+                    <div class="docs-node-subtitle">Canvas UI</div>
+                  </div>
+                </div>
+                <div class="docs-node-desc">Drag, connect, and style systems.</div>
+              </div>
+
+              <div class="docs-node amber" data-size="m" style="left: 90px; top: 200px;">
+                <div class="docs-node-header">
+                  <div class="docs-node-icon">TH</div>
+                  <div>
+                    <div class="docs-node-title">Templates</div>
+                    <div class="docs-node-subtitle">Themes</div>
+                  </div>
+                </div>
+                <div class="docs-node-desc">Palettes, sizes, defaults.</div>
+              </div>
+
+              <div class="docs-node blue" data-size="m" style="left: 360px; top: 150px;">
+                <div class="docs-node-header">
+                  <div class="docs-node-icon">DM</div>
+                  <div>
+                    <div class="docs-node-title">Diagram Model</div>
+                    <div class="docs-node-subtitle">JSON / TS</div>
+                  </div>
+                </div>
+                <div class="docs-node-desc">Typed, diffable diagram state.</div>
+              </div>
+
+              <div class="docs-node emerald" data-size="m" style="left: 360px; top: 260px;">
+                <div class="docs-node-header">
+                  <div class="docs-node-icon">EX</div>
+                  <div>
+                    <div class="docs-node-title">Exporters</div>
+                    <div class="docs-node-subtitle">SVG / PNG / TS</div>
+                  </div>
+                </div>
+                <div class="docs-node-desc">Render outputs for docs and decks.</div>
+              </div>
+
+              <div class="docs-node zinc" data-size="m" style="left: 640px; top: 150px;">
+                <div class="docs-node-header">
+                  <div class="docs-node-icon">AP</div>
+                  <div>
+                    <div class="docs-node-title">Docs + Apps</div>
+                    <div class="docs-node-subtitle">Consumers</div>
+                  </div>
+                </div>
+                <div class="docs-node-desc">Embed configs anywhere.</div>
+              </div>
+            </div>
+
+            <details class="docs-markup">
+              <summary>View diagram markup</summary>
+              <pre class="docs-code"><code>const diagram = {
+  id: 'ARC.ARCH.001',
+  layout: { width: 960, height: 460 },
+  nodes: {
+    editor: { x: 70, y: 70, size: 'l' },
+    templates: { x: 90, y: 200, size: 'm' },
+    model: { x: 360, y: 150, size: 'm' },
+    exporters: { x: 360, y: 260, size: 'm' },
+    docs: { x: 640, y: 150, size: 'm' },
+  },
+  nodeData: {
+    editor: { icon: 'Monitor', name: 'Arc Editor', subtitle: 'Canvas UI', description: 'Drag, connect, and style systems.', color: 'violet' },
+    templates: { icon: 'Grid', name: 'Templates', subtitle: 'Themes', description: 'Palettes, sizes, defaults.', color: 'amber' },
+    model: { icon: 'Layers', name: 'Diagram Model', subtitle: 'JSON / TS', description: 'Typed, diffable diagram state.', color: 'blue' },
+    exporters: { icon: 'Upload', name: 'Exporters', subtitle: 'SVG / PNG / TS', description: 'Render outputs for docs and decks.', color: 'emerald' },
+    docs: { icon: 'FileCode', name: 'Docs + Apps', subtitle: 'Consumers', description: 'Embed configs anywhere.', color: 'zinc' },
+  },
+  connectors: [
+    { from: 'editor', to: 'model', fromAnchor: 'right', toAnchor: 'left', style: 'diagram' },
+    { from: 'templates', to: 'model', fromAnchor: 'right', toAnchor: 'left', style: 'themes' },
+    { from: 'model', to: 'docs', fromAnchor: 'right', toAnchor: 'left', style: 'publish' },
+    { from: 'model', to: 'exporters', fromAnchor: 'bottom', toAnchor: 'top', style: 'export' },
+  ],
+  connectorStyles: {
+    diagram: { color: 'violet', strokeWidth: 2, label: 'diagram' },
+    themes: { color: 'amber', strokeWidth: 2, label: 'themes' },
+    export: { color: 'emerald', strokeWidth: 2, label: 'export' },
+    publish: { color: 'blue', strokeWidth: 2, label: 'publish' },
+  },
+}</code></pre>
+            </details>
+          </div>
+        </section>
+
+        <section class="docs-section" id="diagram-model">
+          <h2>Diagram model</h2>
+          <p>
+            Every diagram is serialized into one model with layout, nodes, and styling metadata.
+            This keeps diagrams portable, easy to diff, and reusable across documentation sites.
+          </p>
+          <ul>
+            <li><strong>Nodes</strong> store positions and sizes.</li>
+            <li><strong>Node data</strong> stores labels, icons, and color themes.</li>
+            <li><strong>Connectors</strong> define relationships and routing.</li>
+            <li><strong>Connector styles</strong> standardize line weight and labeling.</li>
+          </ul>
+        </section>
+
+        <section class="docs-section" id="state-flow">
+          <h2>State flow</h2>
+          <p>
+            The editor uses a reducer + history stack. Every change pushes the diagram state into
+            history, making undo/redo predictable and keeping the export pipeline reliable.
+          </p>
+          <ul>
+            <li>Editor actions dispatch into <strong>editorReducer</strong>.</li>
+            <li>History is capped to keep performance steady.</li>
+            <li>Exporters read directly from the diagram state.</li>
+          </ul>
+        </section>
+
+        <section class="docs-section" id="export-pipeline">
+          <h2>Export pipeline</h2>
+          <p>
+            Exports are designed to flow into docs, decks, and codebases. The same diagram model can
+            be exported as JSON, TypeScript, SVG, or PNG depending on the target.
+          </p>
+        </section>
+
+        <section class="docs-section" id="next-steps">
+          <h2>Next steps</h2>
+          <p>
+            For a quickstart, read the intro doc and run the editor locally. Keep diagrams in Git
+            so they evolve alongside the systems they describe.
+          </p>
+        </section>
+      </main>
+
+      <aside class="docs-toc">
+        <h4>On this page</h4>
+        <ul>
+          <li><a href="#system-overview">System overview</a></li>
+          <li><a href="#diagram-model">Diagram model</a></li>
+          <li><a href="#state-flow">State flow</a></li>
+          <li><a href="#export-pipeline">Export pipeline</a></li>
+          <li><a href="#next-steps">Next steps</a></li>
+        </ul>
+      </aside>
+    </div>
+  </body>
+</html>

@@ -5,7 +5,7 @@ import LandingPage from './components/LandingPage'
 import DeweyDocs from './components/docs/DeweyDocs'
 import IsometricDemo from './components/IsometricDemo'
 import IsometricExamples from './components/IsometricExamples'
-import '@arach/dewey/styles'
+// TODO: Dewey styles not exported yet - components use inline styles
 import './landing.css'
 
 function EditorPage() {

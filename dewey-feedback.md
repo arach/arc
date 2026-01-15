@@ -60,6 +60,12 @@ Captured during Arc documentation setup (2026-01-14)
 - No agent-specific content in docs/ folder at all
 - Suggestion: Output to `docs/` by default, or add `agents/` subfolder
 
+## Build Issues
+
+- **BUG**: `@arach/dewey/styles` export declared in package.json but `dist/styles.css` doesn't exist
+- Build script doesn't generate CSS file
+- Components seem to use inline styles so it may work without, but export shouldn't be declared if it doesn't exist
+
 ## Questions for Dewey
 
 1. What's the intended relationship between CLAUDE.md and AGENTS.md?
