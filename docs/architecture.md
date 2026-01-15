@@ -1,3 +1,9 @@
+---
+title: Architecture
+description: How the Arc editor is built - state management, modules, and data flow
+order: 3
+---
+
 # Arc Architecture Overview
 
 Arc is organized around a single diagram model and a small set of modules that read, edit, and

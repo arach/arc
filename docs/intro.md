@@ -1,3 +1,9 @@
+---
+title: Introduction
+description: Getting started with Arc - the visual editor for architecture diagrams
+order: 0
+---
+
 # Arc Introduction
 
 Arc is a visual editor for building architecture diagrams that stay in code. You design on a
