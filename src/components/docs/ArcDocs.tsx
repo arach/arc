@@ -800,38 +800,19 @@ function DocPage({ pageId }: { pageId: string }) {
             <Menu className="w-4 h-4" /> Menu
           </button>
 
-          {/* Page header - matching production layout */}
-          <div className="flex items-start justify-between mb-8">
-            <div>
-              {/* Badge */}
-              {page.badge && (
-                <div
-                  className="inline-flex items-center px-3 py-1.5 rounded-full border mb-4 text-xs font-semibold uppercase"
-                  style={{
-                    background: 'rgba(240, 124, 79, 0.1)',
-                    borderColor: 'rgba(240, 124, 79, 0.3)',
-                    color: '#f07c4f',
-                    letterSpacing: '0.05em',
-                  }}
-                >
-                  {page.badge}
-                </div>
-              )}
-              {/* Title */}
-              <h1
-                className="text-3xl md:text-4xl font-semibold tracking-tight mb-4"
-                style={{ fontFamily: "'Fraunces', serif", color: '#101518' }}
-              >
-                {page.title}
-              </h1>
-              {/* Description */}
-              <p className="text-lg leading-relaxed" style={{ color: '#5c676c' }}>
-                {page.description}
-              </p>
-            </div>
+          {/* Page header - title row with buttons */}
+          <div className="flex items-start justify-between mb-4">
+            {/* Title */}
+            <h1
+              className="text-3xl md:text-4xl font-semibold tracking-tight"
+              style={{ fontFamily: "'Fraunces', serif", color: '#101518' }}
+            >
+              {page.title}
+            </h1>
 
-            {/* Page controls: AI Prompt → Copy for AI → Copy .md */}
-            <div className="flex items-center gap-2 ml-4 mt-2">
+            {/* Page controls - margin-top aligns button text baseline with title baseline */}
+            {/* Formula: (title-size - button-size) × 0.8 ≈ (2.25rem - 0.75rem) × 0.8 = 1.2rem */}
+            <div className="flex items-center gap-2" style={{ marginTop: '1.2rem' }}>
               {page.prompt && (
                 <button
                   onClick={() => setPromptOpen(true)}
@@ -866,6 +847,11 @@ function DocPage({ pageId }: { pageId: string }) {
               />
             </div>
           </div>
+
+          {/* Description - full width */}
+          <p className="text-lg leading-relaxed mb-8" style={{ color: '#5c676c' }}>
+            {page.description}
+          </p>
 
           {/* Agent quick action for agents page */}
           {(pageId === 'agents' || pageId === 'skills') && (
