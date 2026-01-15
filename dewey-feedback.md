@@ -43,8 +43,10 @@ Captured during Arc documentation setup (2026-01-14)
 - Navigation rules are helpful
 
 ### llms.txt
-- Very minimal (258 bytes) - could include more context
-- Format unclear - is this for RAG? What's the target?
+- **BUG**: Content is empty - sections are created but doc content not included
+- Just has headers: `## Overview`, `## Quickstart`, `## Architecture` with nothing under them
+- Should contain the full doc content for LLM context windows
+- Format unclear - is this for RAG? What's the target consumer?
 
 ### docs.json
 - Good structured format
