@@ -15,9 +15,9 @@ import {
   type PromptParam,
 } from '@arach/dewey'
 
-// Import Dewey CSS directly from source (linked package)
-import '../../../ext/dewey/packages/docs/src/css/colors/warm.css'
-import '../../../ext/dewey/packages/docs/src/css/base.css'
+// Import Dewey CSS from npm package
+import '@arach/dewey/css/colors/warm.css'
+import '@arach/dewey/css/base.css'
 
 // Import human-readable markdown files
 import overviewMd from '../../../docs/overview.md?raw'
@@ -830,29 +830,40 @@ function DocPage({ pageId }: { pageId: string }) {
               </p>
             </div>
 
-            {/* Page controls - now using CopyButtons */}
+            {/* Page controls: AI Prompt → Copy for AI → Copy .md */}
             <div className="flex items-center gap-2 ml-4 mt-2">
+              {page.prompt && (
+                <button
+                  onClick={() => setPromptOpen(true)}
+                  className="group relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                  style={{
+                    color: '#f07c4f',
+                    border: '1px solid rgba(240, 124, 79, 0.3)',
+                    background: 'rgba(240, 124, 79, 0.08)',
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  <Sparkles className="w-3.5 h-3.5" style={{ flexShrink: 0 }} />
+                  <span>AI Prompt</span>
+                  {/* Tooltip */}
+                  <div
+                    className="absolute left-1/2 -translate-x-1/2 top-full mt-2 px-3 py-2 rounded-lg text-xs opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity"
+                    style={{
+                      background: '#1a1a1a',
+                      color: 'white',
+                      whiteSpace: 'nowrap',
+                      zIndex: 50,
+                    }}
+                  >
+                    Open context panel for AI assistants
+                  </div>
+                </button>
+              )}
               <CopyButtons
                 markdownContent={page.content}
                 agentContent={page.agentContent}
               />
-              {page.prompt && (
-                <button
-                  onClick={() => setPromptOpen(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
-                  style={{
-                    color: '#5c676c',
-                    border: '1px solid rgba(16, 21, 24, 0.12)',
-                    background: 'rgba(255,255,255,0.5)',
-                    cursor: 'pointer',
-                    whiteSpace: 'nowrap',
-                  }}
-                  title="Open AI prompt template"
-                >
-                  <Sparkles className="w-3.5 h-3.5" style={{ flexShrink: 0 }} />
-                  <span>AI Prompt</span>
-                </button>
-              )}
             </div>
           </div>
 
