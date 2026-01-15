@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@arach/dewey':
+        specifier: link:./ext/dewey/packages/docs
+        version: link:ext/dewey/packages/docs
       '@base-ui/react':
         specifier: ^1.0.0
         version: 1.0.0(@types/react@19.2.8)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
