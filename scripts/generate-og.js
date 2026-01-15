@@ -161,11 +161,11 @@ const mainOGHtml = `
     </div>
 
     <div class="headline">
-      <span class="headline-line">Visual Diagram</span>
-      <span class="headline-line headline-accent">Editor</span>
+      <span class="headline-line">Diagrams</span>
+      <span class="headline-line headline-accent">as Code</span>
     </div>
 
-    <div class="tagline">Design architecture diagrams visually. Export clean, declarative configs.</div>
+    <div class="tagline">Declarative architecture diagrams. Design visually, export as config.</div>
 
     <div class="features">
       <div class="feature">Drag & Drop</div>
@@ -331,7 +331,7 @@ const docsOGHtml = `
     </div>
 
     <div class="headline">Arc Documentation</div>
-    <div class="subtitle">Everything you need to create beautiful architecture diagrams</div>
+    <div class="subtitle">Everything you need to create declarative architecture diagrams</div>
 
     <div class="features">
       <div class="feature">
@@ -661,11 +661,11 @@ const landingOGHtml = `
     </div>
 
     <div class="tagline">
-      Design once, <span class="tagline-accent">export everywhere</span>
+      Diagrams <span class="tagline-accent">as Code</span>
     </div>
 
     <div class="subtitle">
-      Visual architecture diagrams with clean, declarative configs
+      Declarative architecture diagrams you can design, version, and embed
     </div>
   </div>
 
