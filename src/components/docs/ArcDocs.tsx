@@ -1,12 +1,13 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Book, Bot, Menu, Copy, Check } from 'lucide-react'
+import { Book, Menu, Bot, Download } from 'lucide-react'
 import {
   DeweyProvider,
   Header,
   DocsIndex,
   Sidebar,
   MarkdownContent,
+  CopyButtons,
   extractTocItems,
   type PageNode,
 } from '@arach/dewey'
@@ -15,13 +16,29 @@ import {
 import '../../../ext/dewey/packages/docs/src/css/colors/warm.css'
 import '../../../ext/dewey/packages/docs/src/css/base.css'
 
-// Import markdown files
+// Import human-readable markdown files
 import overviewMd from '../../../docs/overview.md?raw'
 import quickstartMd from '../../../docs/quickstart.md?raw'
 import apiMd from '../../../docs/api.md?raw'
 import examplesMd from '../../../docs/examples.md?raw'
 import architectureMd from '../../../docs/architecture.md?raw'
 import agentsMd from '../../../docs/AGENTS.md?raw'
+
+// Import agent-optimized markdown files
+import overviewAgentMd from '../../../docs/agent/overview.agent.md?raw'
+import quickstartAgentMd from '../../../docs/agent/quickstart.agent.md?raw'
+import apiAgentMd from '../../../docs/agent/api.agent.md?raw'
+import architectureAgentMd from '../../../docs/agent/architecture.agent.md?raw'
+
+// Import prompt templates
+import createDiagramPrompt from '../../../docs/prompts/create-diagram.md?raw'
+import addNodePrompt from '../../../docs/prompts/add-node.md?raw'
+import modifyStylingPrompt from '../../../docs/prompts/modify-styling.md?raw'
+import exportDiagramPrompt from '../../../docs/prompts/export-diagram.md?raw'
+import debugEditorPrompt from '../../../docs/prompts/debug-editor.md?raw'
+
+// Import combined llm.txt for full context
+import llmTxt from '../../../public/llm.txt?raw'
 
 // Strip frontmatter
 function stripFrontmatter(content: string): string {
@@ -57,22 +74,89 @@ const pageTree: PageNode[] = [
   },
   {
     type: 'folder',
-    name: 'Exports',
+    name: 'Agents',
     children: [
-      { type: 'page', id: 'exports', name: 'Export Formats', icon: 'Upload', description: 'SVG, PNG, JSON, TS' },
+      { type: 'page', id: 'agents', name: 'AI Agents', icon: 'Bot', description: 'LLM-optimized docs' },
+      { type: 'page', id: 'skills', name: 'Skills', icon: 'Sparkles', description: 'Pre-built agent skills' },
     ],
   },
 ]
 
-// Page content map with badges matching production
-const pages: Record<string, { content: string; title: string; description: string; badge?: string }> = {
-  overview: { content: stripFrontmatter(overviewMd), title: 'Overview', description: 'Arc is a visual diagram editor for creating architecture diagrams that are readable, versionable, and ready for docs.', badge: 'Introduction' },
-  quickstart: { content: stripFrontmatter(quickstartMd), title: 'Quickstart', description: 'Get up and running with Arc in minutes.', badge: 'Getting Started' },
-  'diagram-format': { content: stripFrontmatter(apiMd), title: 'Diagram Format', description: 'Data structure & schema for Arc diagrams.', badge: 'Reference' },
-  architecture: { content: stripFrontmatter(architectureMd), title: 'Architecture', description: 'Templates & themes system architecture.', badge: 'Core Concepts' },
-  templates: { content: stripFrontmatter(examplesMd), title: 'Templates', description: 'Structural presets that define box shapes, line styles, and layout behaviors.', badge: 'Styling' },
-  themes: { content: stripFrontmatter(examplesMd), title: 'Themes', description: 'Color palettes that can be applied to any template.', badge: 'Styling' },
-  exports: { content: stripFrontmatter(agentsMd), title: 'Export Formats', description: 'SVG, PNG, JSON, and TypeScript export options.', badge: 'Exports' },
+// Page content map with human, agent, and prompt content
+interface PageData {
+  content: string
+  agentContent?: string
+  promptContent?: string
+  title: string
+  description: string
+  badge?: string
+}
+
+const pages: Record<string, PageData> = {
+  overview: {
+    content: stripFrontmatter(overviewMd),
+    agentContent: stripFrontmatter(overviewAgentMd),
+    promptContent: stripFrontmatter(createDiagramPrompt),
+    title: 'Overview',
+    description: 'Arc is a visual diagram editor for creating architecture diagrams that are readable, versionable, and ready for docs.',
+    badge: 'Introduction',
+  },
+  quickstart: {
+    content: stripFrontmatter(quickstartMd),
+    agentContent: stripFrontmatter(quickstartAgentMd),
+    promptContent: stripFrontmatter(createDiagramPrompt),
+    title: 'Quickstart',
+    description: 'Create your first Arc diagram in under 5 minutes.',
+    badge: 'Getting Started',
+  },
+  'diagram-format': {
+    content: stripFrontmatter(apiMd),
+    agentContent: stripFrontmatter(apiAgentMd),
+    promptContent: stripFrontmatter(addNodePrompt),
+    title: 'Diagram Format',
+    description: 'Data structure & schema for Arc diagrams.',
+    badge: 'Reference',
+  },
+  architecture: {
+    content: stripFrontmatter(architectureMd),
+    agentContent: stripFrontmatter(architectureAgentMd),
+    promptContent: stripFrontmatter(debugEditorPrompt),
+    title: 'Architecture',
+    description: 'How the Arc editor is built.',
+    badge: 'Core Concepts',
+  },
+  templates: {
+    content: stripFrontmatter(examplesMd),
+    agentContent: stripFrontmatter(apiAgentMd),
+    promptContent: stripFrontmatter(modifyStylingPrompt),
+    title: 'Templates',
+    description: 'Structural presets that define box shapes, line styles, and layout behaviors.',
+    badge: 'Styling',
+  },
+  themes: {
+    content: stripFrontmatter(examplesMd),
+    agentContent: stripFrontmatter(apiAgentMd),
+    promptContent: stripFrontmatter(modifyStylingPrompt),
+    title: 'Themes',
+    description: 'Color palettes that can be applied to any template.',
+    badge: 'Styling',
+  },
+  agents: {
+    content: stripFrontmatter(agentsMd),
+    agentContent: llmTxt,
+    promptContent: stripFrontmatter(createDiagramPrompt),
+    title: 'AI Agents',
+    description: 'LLM-optimized documentation for AI coding assistants.',
+    badge: 'Agents',
+  },
+  skills: {
+    content: stripFrontmatter(agentsMd),
+    agentContent: llmTxt,
+    promptContent: stripFrontmatter(createDiagramPrompt),
+    title: 'Skills',
+    description: 'Pre-built skills and prompts for AI assistants.',
+    badge: 'Agents',
+  },
 }
 
 // React Router Link adapter for Dewey
@@ -83,16 +167,19 @@ function RouterLink({ href, children, ...props }: React.AnchorHTMLAttributes<HTM
 // ============================================
 // Doc Page Component
 // ============================================
-function DocPage({ pageId, onNavigate }: { pageId: string; onNavigate: (id: string) => void }) {
+function DocPage({ pageId }: { pageId: string }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [copied, setCopied] = useState(false)
   const page = pages[pageId] || pages.overview
   const tocItems = extractTocItems(page.content)
 
-  const handleCopy = async () => {
-    await navigator.clipboard.writeText(page.content)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+  const handleDownloadLLM = () => {
+    const blob = new Blob([llmTxt], { type: 'text/plain' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'arc-llm.txt'
+    a.click()
+    URL.revokeObjectURL(url)
   }
 
   return (
@@ -149,34 +236,51 @@ function DocPage({ pageId, onNavigate }: { pageId: string; onNavigate: (id: stri
               </p>
             </div>
 
-            {/* Page controls */}
+            {/* Page controls - now using CopyButtons */}
             <div className="flex items-center gap-2 ml-4 mt-2">
-              <button
-                onClick={() => onNavigate('exports')}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
-                style={{
-                  color: '#5c676c',
-                  border: '1px solid rgba(16, 21, 24, 0.12)',
-                  background: 'rgba(255,255,255,0.5)',
-                }}
-              >
-                <Bot className="w-3.5 h-3.5" />
-                <span>Agent</span>
-              </button>
-              <button
-                onClick={handleCopy}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
-                style={{
-                  color: '#5c676c',
-                  border: '1px solid rgba(16, 21, 24, 0.12)',
-                  background: 'rgba(255,255,255,0.5)',
-                }}
-              >
-                {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                <span>{copied ? 'Copied' : 'Copy'}</span>
-              </button>
+              <CopyButtons
+                markdownContent={page.content}
+                agentContent={page.agentContent}
+                promptContent={page.promptContent}
+              />
             </div>
           </div>
+
+          {/* Agent quick action for agents page */}
+          {(pageId === 'agents' || pageId === 'skills') && (
+            <div
+              className="mb-8 p-4 rounded-xl"
+              style={{
+                background: 'linear-gradient(135deg, rgba(240, 124, 79, 0.08) 0%, rgba(240, 124, 79, 0.02) 100%)',
+                border: '1px solid rgba(240, 124, 79, 0.2)',
+              }}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Bot className="w-5 h-5" style={{ color: '#f07c4f' }} />
+                  <div>
+                    <div className="font-medium" style={{ color: '#101518' }}>
+                      Download Complete Context
+                    </div>
+                    <div className="text-sm" style={{ color: '#5c676c' }}>
+                      Get llm.txt with everything your AI assistant needs
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={handleDownloadLLM}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm"
+                  style={{
+                    background: '#f07c4f',
+                    color: 'white',
+                  }}
+                >
+                  <Download className="w-4 h-4" />
+                  llm.txt
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Markdown content */}
           <div className="dw-prose">
@@ -255,7 +359,7 @@ export default function ArcDocs({ pageId }: ArcDocsProps) {
             ]}
           />
         ) : (
-          <DocPage pageId={pageId} onNavigate={handleNavigate} />
+          <DocPage pageId={pageId} />
         )}
       </div>
     </DeweyProvider>
