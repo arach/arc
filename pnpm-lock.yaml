@@ -4,12 +4,15 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+overrides:
+  '@arach/dewey': link:ext/dewey/packages/docs
+
 importers:
 
   .:
     dependencies:
       '@arach/dewey':
-        specifier: link:./ext/dewey/packages/docs
+        specifier: link:ext/dewey/packages/docs
         version: link:ext/dewey/packages/docs
       '@base-ui/react':
         specifier: ^1.0.0
