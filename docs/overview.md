@@ -1,12 +1,12 @@
 ---
 title: Overview
-description: Diagrams as Code - Visual editor for architecture diagrams that live in your codebase
+description: Arc is a React component library for rendering beautiful, interactive architecture diagrams
 order: 1
 ---
 
-# Arc Overview
+# Arc - Visual Architecture Diagram Library
 
-Arc is a visual editor for building architecture diagrams that stay in code. You design on a canvas, then export a clean, declarative model that can be stored in Git and rendered anywhere.
+Arc is a React component library for rendering beautiful, interactive architecture diagrams. It provides a declarative JSON format for defining diagrams and multiple built-in themes.
 
 ## Why Arc?
 
@@ -16,6 +16,13 @@ Architecture diagrams typically live in design tools, disconnected from the code
 - **Render anywhere** - Use the lightweight player or export to SVG/PNG
 - **Stay consistent** - Templates enforce color palettes and sizing rules
 
+## Packages
+
+| Package | Size | Use Case |
+|---------|------|----------|
+| `@arach/arc` | ~75KB | Full editor + player components |
+| `@arach/arc-player` | ~7KB | Lightweight renderer only |
+
 ## Key Features
 
 - **Visual Editor** - Drag-and-drop nodes, connectors, groups, and images
@@ -24,16 +31,7 @@ Architecture diagrams typically live in design tools, disconnected from the code
 - **Isometric View** - Toggle 3D projection for visual impact
 - **Multiple Export Formats** - JSON, TypeScript, SVG, PNG, clipboard embed
 
-## Packages
+## Links
 
-Arc ships as two npm packages:
-
-| Package | Size | Use Case |
-|---------|------|----------|
-| `@arach/arc` | ~75KB | Full editor + player components |
-| `@arach/arc-player` | ~7KB | Lightweight renderer only |
-
-## Quick Links
-
-- [Quickstart](./quickstart.md) - Get started in 5 minutes
-- [Architecture](./architecture.md) - How the editor is built
+- GitHub: https://github.com/arach/arc
+- npm (player): https://www.npmjs.com/package/@arach/arc

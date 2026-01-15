@@ -31,12 +31,12 @@ export default {
       { pattern: 'isometric|3d', instruction: 'See src/utils/isometric.ts and IsometricNodeLayer.tsx' },
     ],
 
-    sections: ['overview', 'quickstart', 'architecture'],
+    sections: ['overview', 'quickstart', 'api', 'examples', 'architecture'],
   },
 
   docs: {
     path: './docs',
-    output: './',
-    required: ['overview', 'quickstart', 'architecture'],
+    output: './docs',
+    required: ['overview', 'quickstart', 'api'],
   },
 }

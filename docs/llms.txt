@@ -7,6 +7,8 @@
 - Overview: /docs/overview
 - Quickstart: /docs/quickstart
 - Architecture: /docs/architecture
+- API Reference: /docs/api
+- Examples: /docs/examples
 
 ## Overview
 
@@ -17,5 +19,13 @@
 
 
 ## Architecture
+
+
+
+## API Reference
+
+
+
+## Examples
 
 

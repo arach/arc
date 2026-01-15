@@ -44,16 +44,25 @@ Captured during Arc documentation setup (2026-01-14)
 
 ### llms.txt
 - **BUG**: Content is empty - sections are created but doc content not included
-- Just has headers: `## Overview`, `## Quickstart`, `## Architecture` with nothing under them
-- Should contain the full doc content for LLM context windows
+- Just has headers: `## Overview`, `## Quickstart`, etc. with nothing under them
+- AGENTS.md correctly includes content, but llms.txt doesn't
+- This is a generator bug - llms.txt should mirror AGENTS.md content structure
 - Format unclear - is this for RAG? What's the target consumer?
 
 ### docs.json
 - Good structured format
 - Could include file modification dates for cache invalidation
 
+## Output Location Issues
+
+- Agent files (AGENTS.md, llms.txt, docs.json) go to root, not docs/
+- If serving docs at `/docs/*`, need `docs/llms.txt` for `/docs/llms.txt` route
+- No agent-specific content in docs/ folder at all
+- Suggestion: Output to `docs/` by default, or add `agents/` subfolder
+
 ## Questions for Dewey
 
 1. What's the intended relationship between CLAUDE.md and AGENTS.md?
 2. Should dewey.config.ts be committed or gitignored?
 3. How do criticalContext rules differ from entryPoints?
+4. Where should agent files live - root or docs/?
