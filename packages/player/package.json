@@ -1,0 +1,52 @@
+{
+  "name": "@arach/arc-player",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Lightweight isometric diagram renderer for embedding Arc diagrams",
+  "author": "Arach Tchoupani",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/arach/arc.git",
+    "directory": "packages/player"
+  },
+  "keywords": [
+    "diagram",
+    "isometric",
+    "embed",
+    "visualization",
+    "react",
+    "svg"
+  ],
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/arc-player.umd.js",
+  "module": "./dist/arc-player.es.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/arc-player.es.js",
+      "require": "./dist/arc-player.umd.js"
+    },
+    "./slim": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/arc-player-slim.es.js",
+      "require": "./dist/arc-player-slim.umd.js"
+    }
+  },
+  "sideEffects": false,
+  "peerDependencies": {
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
+  }
+}
