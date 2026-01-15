@@ -1,8 +1,8 @@
-import React from 'react'
+import React, { useState, useRef, useCallback } from 'react'
 import {
   Plus, Link2, MousePointer2, Move,
   Undo2, Redo2, Trash2,
-  Square, Circle, Crop,
+  Square, Circle, Crop, GripVertical,
 } from 'lucide-react'
 import { useEditor, useEditorState, useHistory, useDiagram } from './EditorProvider'
 import { NODE_SIZES } from '../../utils/constants'
@@ -36,6 +36,39 @@ export default function FloatingToolbar() {
   const editor = useEditorState()
   const history = useHistory()
   const diagram = useDiagram()
+
+  // Draggable state
+  const [position, setPosition] = useState({ x: 0, y: 0 })
+  const [isDragging, setIsDragging] = useState(false)
+  const dragRef = useRef<{ startX: number; startY: number; startPosX: number; startPosY: number } | null>(null)
+
+  const handleDragStart = useCallback((e: React.PointerEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    ;(e.target as Element).setPointerCapture(e.pointerId)
+    setIsDragging(true)
+    dragRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      startPosX: position.x,
+      startPosY: position.y,
+    }
+  }, [position])
+
+  const handleDragMove = useCallback((e: React.PointerEvent) => {
+    if (!isDragging || !dragRef.current) return
+    const dx = e.clientX - dragRef.current.startX
+    const dy = e.clientY - dragRef.current.startY
+    setPosition({
+      x: dragRef.current.startPosX + dx,
+      y: dragRef.current.startPosY + dy,
+    })
+  }, [isDragging])
+
+  const handleDragEnd = useCallback(() => {
+    setIsDragging(false)
+    dragRef.current = null
+  }, [])
 
   const canUndo = history.past.length > 0
   const canRedo = history.future.length > 0
@@ -103,8 +136,26 @@ export default function FloatingToolbar() {
   }
 
   return (
-    <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20">
-      <div className="flex items-center gap-0.5 px-2 py-1.5 bg-white dark:bg-zinc-800 rounded-xl shadow-lg border border-zinc-200 dark:border-zinc-700">
+    <div
+      className="absolute top-4 left-1/2 z-20"
+      style={{
+        transform: `translate(calc(-50% + ${position.x}px), ${position.y}px)`,
+      }}
+      onPointerMove={handleDragMove}
+      onPointerUp={handleDragEnd}
+      onPointerLeave={handleDragEnd}
+    >
+      <div className={`flex items-center gap-0.5 px-2 py-1.5 bg-white dark:bg-zinc-800 rounded-xl shadow-lg border border-zinc-200 dark:border-zinc-700 ${isDragging ? 'cursor-grabbing' : ''}`}>
+        {/* Drag handle */}
+        <div
+          className="p-1.5 cursor-grab hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg mr-0.5 touch-none"
+          onPointerDown={handleDragStart}
+        >
+          <GripVertical className="w-4 h-4 text-zinc-400" strokeWidth={2} />
+        </div>
+
+        <Divider />
+
         {/* Selection tools */}
         <ToolButton
           icon={MousePointer2}
