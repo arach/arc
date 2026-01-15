@@ -49,6 +49,7 @@ jobs:
           pnpm build:player
           mkdir -p packages/player/dist
           cp dist-player/*.js packages/player/dist/
+          cp dist-player/*.d.ts packages/player/dist/ 2>/dev/null || true
 
       - name: Get version from tag
         if: startsWith(github.ref, 'refs/tags/v')
