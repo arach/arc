@@ -11,7 +11,7 @@ import {
   PromptSlideout,
   extractTocItems,
   type PageNode,
-  type PromptMessage,
+  type PromptParam,
 } from '@arach/dewey'
 
 // Import Dewey CSS directly from source (linked package)
@@ -94,8 +94,16 @@ const pageTree: PageNode[] = [
 interface PromptConfig {
   title: string
   description: string
-  messages: PromptMessage[]
-  variables?: { name: string; description: string; example?: string }[]
+  /** Grounding TLDR for the user */
+  info: string
+  /** Man-page style parameter definitions */
+  params?: PromptParam[]
+  /** Starter template with {VARIABLE} placeholders */
+  starterTemplate: string
+  /** In-context learning JSON examples */
+  examples?: string
+  /** Expected output format */
+  expectedOutput?: string
 }
 
 // Page content map with human, agent, and prompt content
@@ -115,23 +123,42 @@ const pages: Record<string, PageData> = {
     prompt: {
       title: 'Create an Arc Diagram',
       description: 'Generate architecture diagrams from descriptions',
-      messages: [
-        {
-          role: 'user',
-          content: `Create an Arc diagram for {SYSTEM_DESCRIPTION}.
-
-It should show: {KEY_COMPONENTS}
-
-Output valid Arc JSON with layout, nodes, nodeData, and connectors.
-
----
-*Full Arc reference: {BASE_URL}/llm.txt*`,
-        },
+      info: 'Arc outputs JSON configs with four keys: layout, nodes, nodeData, connectors. Describe your architecture and get a valid config you can paste directly into the editor.',
+      params: [
+        { name: 'ARCHITECTURE', description: 'The system you\'re diagramming', example: 'three-tier web app with React, Node API, and PostgreSQL' },
       ],
-      variables: [
-        { name: 'SYSTEM_DESCRIPTION', description: 'What you\'re diagramming', example: 'a user authentication flow' },
-        { name: 'KEY_COMPONENTS', description: 'The main pieces and how they connect', example: 'Client, API Gateway, Auth Service, Database' },
-      ],
+      starterTemplate: `Create an Arc diagram for: {ARCHITECTURE}
+
+Show the main components and how they connect. Use size "l" for primary components, "m" for services, "s" for utilities.`,
+      examples: `// GOOD: Left-to-right flow, proper spacing (~200px apart)
+{
+  "layout": { "width": 700, "height": 350 },
+  "nodes": {
+    "client": { "x": 50, "y": 130, "size": "m" },
+    "api": { "x": 270, "y": 100, "size": "l" },    // Primary = large
+    "db": { "x": 520, "y": 130, "size": "m" }
+  },
+  "nodeData": {
+    "client": { "icon": "Monitor", "name": "React App", "color": "sky" },
+    "api": { "icon": "Server", "name": "Node API", "subtitle": "Express", "color": "violet" },
+    "db": { "icon": "Database", "name": "PostgreSQL", "color": "emerald" }
+  },
+  "connectors": [
+    { "from": "client", "to": "api", "fromAnchor": "right", "toAnchor": "left" },
+    { "from": "api", "to": "db", "fromAnchor": "right", "toAnchor": "left" }
+  ]
+}
+
+// VALID VALUES:
+// Icons: Monitor, Server, Cloud, Database, Lock, User, Globe, Code, Terminal, Zap, Settings, Mail, Search, Box, Layers... (48 total)
+// Colors: violet, emerald, blue, amber, zinc, sky
+// Sizes: xs, s, m, l
+// Anchors: top, right, bottom, left, bottomRight, bottomLeft`,
+      expectedOutput: `Complete JSON with all four keys. Verify:
+- Node IDs match between "nodes" and "nodeData"
+- Use only valid icons (Monitor, Server, Database, Lock, etc.)
+- Colors: violet, emerald, blue, amber, zinc, sky
+- Horizontal flow: use right→left anchors`,
     },
     title: 'Overview',
     description: 'Arc is a visual diagram editor for creating architecture diagrams that are readable, versionable, and ready for docs.',
@@ -143,24 +170,20 @@ Output valid Arc JSON with layout, nodes, nodeData, and connectors.
     prompt: {
       title: 'Set Up Arc',
       description: 'Add Arc to your project',
-      messages: [
-        {
-          role: 'user',
-          content: `Help me add Arc to my {PROJECT_TYPE} project.
-
-I want to create a diagram showing {WHAT_TO_DIAGRAM}.
-
-Walk me through installation, creating the config, and rendering it.
-
----
-*Arc package: \`npm install @arach/arc\`*
-*Full docs: {BASE_URL}/llm.txt*`,
-        },
+      info: 'Arc is a React component that renders diagrams from JSON configs. Install via npm and import the ArchitectureDiagram component.',
+      params: [
+        { name: 'PROJECT', description: 'Your framework/setup', example: 'Next.js app' },
+        { name: 'DIAGRAM', description: 'What to visualize', example: 'API architecture' },
       ],
-      variables: [
-        { name: 'PROJECT_TYPE', description: 'Your setup', example: 'Next.js app' },
-        { name: 'WHAT_TO_DIAGRAM', description: 'What to visualize', example: 'my API architecture' },
-      ],
+      starterTemplate: `Help me set up Arc in my {PROJECT}.
+
+I want to create a diagram showing {DIAGRAM}.
+
+Walk me through:
+1. Installation
+2. Creating the config
+3. Rendering the component`,
+      expectedOutput: 'Step-by-step instructions with copy-pasteable code snippets for installation and basic usage.',
     },
     title: 'Quickstart',
     description: 'Create your first Arc diagram in under 5 minutes.',
@@ -171,30 +194,65 @@ Walk me through installation, creating the config, and rendering it.
     agentContent: stripFrontmatter(apiAgentMd),
     prompt: {
       title: 'Work with Diagram Configs',
-      description: 'Modify, debug, or understand Arc JSON',
-      messages: [
-        {
-          role: 'user',
-          content: `I have an Arc diagram config I need help with:
+      description: 'Create, modify, or debug Arc diagram JSON',
+      info: 'Arc configs are JSON with four required keys: layout (canvas size), nodes (positions), nodeData (appearance), and connectors (lines). Node IDs must match between nodes and nodeData.',
+      params: [
+        { name: 'CONFIG', description: 'Your existing Arc JSON config (paste below), or leave empty for new diagram' },
+        { name: 'TASK', description: 'What you need done', example: 'add a database node on the right' },
+      ],
+      starterTemplate: `I need help with an Arc diagram config.
 
+**My task:** {TASK}
+
+**My current config (if modifying):**
 \`\`\`json
-{PASTE_CONFIG}
+{CONFIG}
 \`\`\`
 
-{WHAT_YOU_NEED}
+If creating from scratch, describe the architecture you want to visualize.`,
+      examples: `// GOOD CONFIG - proper spacing, logical flow
+{
+  "layout": { "width": 800, "height": 400 },
+  "nodes": {
+    // ~200px horizontal spacing, vertically centered
+    "client": { "x": 50, "y": 160, "size": "m" },
+    "gateway": { "x": 280, "y": 115, "size": "l" },
+    "auth": { "x": 560, "y": 100, "size": "m" },
+    "db": { "x": 560, "y": 230, "size": "m" }
+  },
+  "nodeData": {
+    // IDs MUST match "nodes" keys exactly
+    "client": { "icon": "Monitor", "name": "Client", "color": "sky" },
+    "gateway": { "icon": "Server", "name": "Gateway", "color": "violet" },
+    "auth": { "icon": "Lock", "name": "Auth", "color": "emerald" },
+    "db": { "icon": "Database", "name": "PostgreSQL", "color": "amber" }
+  },
+  "connectors": [
+    { "from": "client", "to": "gateway", "fromAnchor": "right", "toAnchor": "left" },
+    { "from": "gateway", "to": "auth", "fromAnchor": "right", "toAnchor": "left" },
+    { "from": "gateway", "to": "db", "fromAnchor": "bottomRight", "toAnchor": "left" }
+  ]
+}
 
----
-*Arc config reference:*
-- *size: s, m, l*
-- *colors: violet, emerald, blue, amber, sky, zinc, rose, orange*
-- *anchors: left, right, top, bottom, topLeft, topRight, bottomLeft, bottomRight*
-- *Full docs: {BASE_URL}/llm.txt*`,
-        },
-      ],
-      variables: [
-        { name: 'PASTE_CONFIG', description: 'Your diagram JSON (or describe what you want to create)' },
-        { name: 'WHAT_YOU_NEED', description: 'Add a node, change styling, explain structure, debug an issue, etc.' },
-      ],
+// BAD CONFIG - common mistakes
+{
+  // Missing "layout" key!
+  "nodes": { "api": { "x": 50, "y": 50, "size": "medium" } },  // "medium" invalid, use "m"
+  "nodeData": { "gateway": { "name": "API" } }  // ID mismatch! "api" vs "gateway"
+}
+
+// VALID VALUES:
+// Icons (48): Monitor, Server, Smartphone, Cloud, Cpu, Database, HardDrive, Wifi, Globe, User, Users, Lock, Key, Shield, Code, Terminal, FileCode, Folder, Zap, Activity, BarChart, PieChart, Box, Package, Layers, Grid, Settings, Bell, Mail, MessageSquare, Search, Filter, Download, Upload, Play, Pause, Square, Circle...
+// Colors (6): violet, emerald, blue, amber, zinc, sky
+// Sizes: xs, s, m, l
+// Anchors: top, right, bottom, left, bottomRight, bottomLeft`,
+      expectedOutput: `Return complete, valid JSON. Before responding, verify:
+1. All node IDs in "nodes" match entries in "nodeData"
+2. All connector "from"/"to" values reference existing node IDs
+3. Icons are from the 48 valid Lucide icons
+4. Colors: violet, emerald, blue, amber, zinc, sky
+5. Sizes: xs, s, m, l
+6. Anchors: top, right, bottom, left, bottomRight, bottomLeft`,
     },
     title: 'Diagram Format',
     description: 'Data structure & schema for Arc diagrams.',
@@ -206,28 +264,18 @@ Walk me through installation, creating the config, and rendering it.
     prompt: {
       title: 'Arc Editor Development',
       description: 'Understand or extend the Arc editor codebase',
-      messages: [
-        {
-          role: 'user',
-          content: `I'm working on the Arc editor codebase and need help with: {WHAT_YOU_NEED}
-
-Key files for reference:
-- \`EditorProvider.jsx\` + \`editorReducer.js\` — State management (useReducer + Context)
-- \`DiagramCanvas.jsx\` — Main canvas with drag-and-drop
-- \`EditableNode.jsx\` — Individual node components
-- \`ConnectorLayer.jsx\` — SVG connection lines
-- \`PropertiesPanel.jsx\` — Right sidebar for editing selected items
-
-Editor modes: select (default), addNode, addConnector
-
----
-*For full codebase context, see the project's CLAUDE.md*
-*Arc config format: {BASE_URL}/llm.txt*`,
-        },
+      info: 'The Arc editor is a React app using useReducer + Context for state management. Key files: EditorProvider.jsx, DiagramCanvas.jsx, EditableNode.jsx.',
+      params: [
+        { name: 'TASK', description: 'Feature to add, bug to fix, or concept to understand' },
       ],
-      variables: [
-        { name: 'WHAT_YOU_NEED', description: 'Feature to add, bug to fix, or concept to understand' },
-      ],
+      starterTemplate: `I'm working on the Arc editor and need help with: {TASK}
+
+For context, the editor uses:
+- EditorProvider.jsx + editorReducer.js for state
+- DiagramCanvas.jsx for the main canvas
+- EditableNode.jsx for draggable nodes
+- ConnectorLayer.jsx for SVG connections`,
+      expectedOutput: 'Code changes with file paths and explanations. Follow existing patterns: useReducer actions, pointer capture for drag, SVG layer for connectors.',
     },
     title: 'Architecture',
     description: 'How the Arc editor is built.',
@@ -239,26 +287,37 @@ Editor modes: select (default), addNode, addConnector
     prompt: {
       title: 'Restyle My Diagram',
       description: 'Change structure and appearance',
-      messages: [
-        {
-          role: 'user',
-          content: `Update the styling of this Arc diagram:
+      info: 'Arc styling uses node sizes (s/m/l) and colors to create visual hierarchy. Large nodes for primary components, small for utilities.',
+      params: [
+        { name: 'CONFIG', description: 'Your current diagram config' },
+        { name: 'STYLE', description: 'Desired changes', example: 'larger gateway, warm colors' },
+      ],
+      starterTemplate: `Restyle this Arc diagram:
 
 \`\`\`json
-{PASTE_CONFIG}
+{CONFIG}
 \`\`\`
 
-I want: {STYLE_CHANGES}
+I want: {STYLE}`,
+      examples: `// Visual hierarchy with sizes
+{
+  "nodes": {
+    "gateway": { "x": 200, "y": 50, "size": "l" },   // Large = primary
+    "auth": { "x": 100, "y": 180, "size": "m" },     // Medium = service
+    "cache": { "x": 300, "y": 180, "size": "s" }     // Small = utility
+  },
+  "nodeData": {
+    "gateway": { "icon": "Server", "name": "Gateway", "color": "violet" },
+    "auth": { "icon": "Lock", "name": "Auth", "color": "emerald" },
+    "cache": { "icon": "Database", "name": "Redis", "color": "orange" }
+  }
+}
 
----
-*Colors: violet, emerald, blue, amber, sky, zinc, rose, orange*
-*Full reference: {BASE_URL}/llm.txt*`,
-        },
-      ],
-      variables: [
-        { name: 'PASTE_CONFIG', description: 'Your diagram JSON' },
-        { name: 'STYLE_CHANGES', description: 'What to change', example: 'warm colors, larger nodes, dashed connectors' },
-      ],
+// Color families:
+// Warm: orange, amber, rose
+// Cool: violet, blue, sky
+// Neutral: zinc, emerald`,
+      expectedOutput: 'The complete restyled config with updated sizes and colors.',
     },
     title: 'Templates',
     description: 'Structural presets that define box shapes, line styles, and layout behaviors.',
@@ -270,23 +329,32 @@ I want: {STYLE_CHANGES}
     prompt: {
       title: 'Change Color Palette',
       description: 'Apply a new color scheme',
-      messages: [
-        {
-          role: 'user',
-          content: `Change the colors in this Arc diagram to use a {COLOR_SCHEME} palette:
+      info: 'Arc has 8 colors: violet, emerald, blue, amber, sky, zinc, rose, orange. Use one primary color and 2-3 supporting colors for cohesion.',
+      params: [
+        { name: 'CONFIG', description: 'Your diagram config' },
+        { name: 'PALETTE', description: 'Color scheme', example: 'warm tones' },
+      ],
+      starterTemplate: `Apply a {PALETTE} color palette to this diagram:
 
 \`\`\`json
-{PASTE_CONFIG}
-\`\`\`
+{CONFIG}
+\`\`\``,
+      examples: `// Warm palette
+"nodeData": {
+  "main": { "color": "orange" },    // Primary
+  "service": { "color": "amber" },  // Secondary
+  "accent": { "color": "rose" }     // Accent
+}
 
----
-*Available colors: violet, emerald, blue, amber, sky, zinc, rose, orange*`,
-        },
-      ],
-      variables: [
-        { name: 'COLOR_SCHEME', description: 'The look you want', example: 'warm (orange/amber/rose)' },
-        { name: 'PASTE_CONFIG', description: 'Your diagram JSON' },
-      ],
+// Cool palette
+"nodeData": {
+  "main": { "color": "violet" },
+  "service": { "color": "blue" },
+  "accent": { "color": "sky" }
+}
+
+// Available: violet, emerald, blue, amber, sky, zinc, rose, orange`,
+      expectedOutput: 'The complete config with updated colors in nodeData.',
     },
     title: 'Themes',
     description: 'Color palettes that can be applied to any template.',
@@ -298,21 +366,21 @@ I want: {STYLE_CHANGES}
     prompt: {
       title: 'Brief Your AI Agent',
       description: 'Give your agent full Arc context',
-      messages: [
-        {
-          role: 'user',
-          content: `I need help with Arc, a diagram editor that outputs JSON configs.
-
-{WHAT_YOU_NEED}
-
----
-*Load full Arc context from: {BASE_URL}/llm.txt*
-*Or use the Arc skill if available in your environment*`,
-        },
+      info: 'Arc is a diagram editor that outputs JSON configs. Use this prompt to give your AI assistant the context it needs to help with Arc.',
+      params: [
+        { name: 'TASK', description: 'What you need help with', example: 'create a diagram' },
       ],
-      variables: [
-        { name: 'WHAT_YOU_NEED', description: 'What you\'re trying to accomplish with Arc' },
-      ],
+      starterTemplate: `I need help with Arc, a diagram editor that outputs JSON configs.
+
+{TASK}
+
+Quick reference:
+- Sizes: s (small), m (medium), l (large)
+- Colors: violet, emerald, blue, amber, sky, zinc, rose, orange
+- Anchors: left, right, top, bottom
+
+For full context: {BASE_URL}/llm.txt`,
+      expectedOutput: 'Valid Arc JSON configs or step-by-step guidance depending on the task.',
     },
     title: 'AI Agents',
     description: 'LLM-optimized documentation for AI coding assistants.',
@@ -324,20 +392,19 @@ I want: {STYLE_CHANGES}
     prompt: {
       title: 'Use Arc Skill',
       description: 'Pre-built skill for AI assistants',
-      messages: [
-        {
-          role: 'user',
-          content: `Use the Arc skill to help me {TASK}.
-
-If the Arc skill isn't available, load context from: {BASE_URL}/llm.txt
-
-{ADDITIONAL_DETAILS}`,
-        },
-      ],
-      variables: [
+      info: 'Arc skills are ready-to-use prompts for common tasks: creating diagrams, modifying configs, debugging issues.',
+      params: [
         { name: 'TASK', description: 'What you want to do', example: 'create a microservices diagram' },
-        { name: 'ADDITIONAL_DETAILS', description: 'Requirements, existing config, or constraints' },
+        { name: 'DETAILS', description: 'Additional requirements or existing config' },
       ],
+      starterTemplate: `Use Arc to: {TASK}
+
+{DETAILS}
+
+Reference:
+- Sizes: s, m, l
+- Colors: violet, emerald, blue, amber, sky, zinc, rose, orange`,
+      expectedOutput: 'Complete, valid Arc JSON ready to paste into the editor.',
     },
     title: 'Skills',
     description: 'Pre-built skills and prompts for AI assistants.',
@@ -517,8 +584,11 @@ function DocPage({ pageId }: { pageId: string }) {
           onClose={() => setPromptOpen(false)}
           title={page.prompt.title}
           description={page.prompt.description}
-          prompt={page.prompt.messages.map(m => ({ ...m, content: withBaseUrl(m.content) }))}
-          variables={page.prompt.variables}
+          info={page.prompt.info}
+          params={page.prompt.params}
+          starterTemplate={withBaseUrl(page.prompt.starterTemplate)}
+          examples={page.prompt.examples}
+          expectedOutput={page.prompt.expectedOutput}
         />
       )}
     </div>
