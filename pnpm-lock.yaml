@@ -156,6 +156,15 @@ importers:
         specifier: ^7.2.4
         version: 7.3.1(@types/node@25.0.6)(jiti@2.6.1)(lightningcss@1.30.2)
 
+  packages/player:
+    dependencies:
+      react:
+        specifier: ^18.0.0 || ^19.0.0
+        version: 19.2.3
+      react-dom:
+        specifier: ^18.0.0 || ^19.0.0
+        version: 19.2.3(react@19.2.3)
+
 packages:
 
   '@babel/code-frame@7.27.1':
