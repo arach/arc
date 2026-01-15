@@ -48,6 +48,12 @@ function stripFrontmatter(content: string): string {
   return match ? content.slice(match[0].length) : content
 }
 
+// Replace {BASE_URL} with current origin
+function withBaseUrl(content: string): string {
+  const origin = typeof window !== 'undefined' ? window.location.origin : ''
+  return content.replace(/\{BASE_URL\}/g, origin)
+}
+
 // Page tree - exact match to production docsNav
 const pageTree: PageNode[] = [
   {
@@ -111,30 +117,20 @@ const pages: Record<string, PageData> = {
       description: 'Generate architecture diagrams from descriptions',
       messages: [
         {
-          role: 'system',
-          content: `**Arc** creates declarative architecture diagrams as JSON.
-
-\`\`\`
-layout → canvas size
-nodes → positions ({ x, y, size })
-nodeData → visuals ({ icon, name, color })
-connectors → lines between nodes
-\`\`\`
-
-**colors**: violet, emerald, blue, amber, sky, zinc, rose, orange
-**icons**: Server, Database, Monitor, Cloud, Globe, Shield, etc.`,
-        },
-        {
           role: 'user',
           content: `Create an Arc diagram for {SYSTEM_DESCRIPTION}.
 
-Include these components:
-{COMPONENTS}`,
+It should show: {KEY_COMPONENTS}
+
+Output valid Arc JSON with layout, nodes, nodeData, and connectors.
+
+---
+*Full Arc reference: {BASE_URL}/llm.txt*`,
         },
       ],
       variables: [
-        { name: 'SYSTEM_DESCRIPTION', description: 'What the diagram represents', example: 'a user authentication flow' },
-        { name: 'COMPONENTS', description: 'List the main parts and how they connect' },
+        { name: 'SYSTEM_DESCRIPTION', description: 'What you\'re diagramming', example: 'a user authentication flow' },
+        { name: 'KEY_COMPONENTS', description: 'The main pieces and how they connect', example: 'Client, API Gateway, Auth Service, Database' },
       ],
     },
     title: 'Overview',
@@ -146,27 +142,24 @@ Include these components:
     agentContent: stripFrontmatter(quickstartAgentMd),
     prompt: {
       title: 'Set Up Arc',
-      description: 'Install and configure Arc in your project',
+      description: 'Add Arc to your project',
       messages: [
         {
-          role: 'system',
-          content: `\`\`\`bash
-npm install @arach/arc
-\`\`\`
-
-\`\`\`jsx
-import { ArchitectureDiagram } from '@arach/arc'
-<ArchitectureDiagram config={diagramConfig} />
-\`\`\``,
-        },
-        {
           role: 'user',
-          content: `Help me add Arc to my {PROJECT_TYPE} project. I want to create a diagram showing {WHAT_TO_DIAGRAM}.`,
+          content: `Help me add Arc to my {PROJECT_TYPE} project.
+
+I want to create a diagram showing {WHAT_TO_DIAGRAM}.
+
+Walk me through installation, creating the config, and rendering it.
+
+---
+*Arc package: \`npm install @arach/arc\`*
+*Full docs: {BASE_URL}/llm.txt*`,
         },
       ],
       variables: [
-        { name: 'PROJECT_TYPE', description: 'Your tech stack', example: 'Next.js' },
-        { name: 'WHAT_TO_DIAGRAM', description: 'What you want to visualize', example: 'my microservices architecture' },
+        { name: 'PROJECT_TYPE', description: 'Your setup', example: 'Next.js app' },
+        { name: 'WHAT_TO_DIAGRAM', description: 'What to visualize', example: 'my API architecture' },
       ],
     },
     title: 'Quickstart',
@@ -178,37 +171,29 @@ import { ArchitectureDiagram } from '@arach/arc'
     agentContent: stripFrontmatter(apiAgentMd),
     prompt: {
       title: 'Work with Diagram Configs',
-      description: 'Create, read, or modify Arc diagram JSON',
+      description: 'Modify, debug, or understand Arc JSON',
       messages: [
         {
-          role: 'system',
-          content: `## Arc Config Format
-
-\`\`\`
-layout → { width, height }
-nodes → { id: { x, y, size } }
-nodeData → { id: { icon, name, color } }
-connectors → [{ from, to, fromAnchor, toAnchor, style }]
-connectorStyles → { styleName: { color, label } }
-\`\`\`
-
-**size**: \`s\` \`m\` \`l\`  •  **color**: \`violet\` \`emerald\` \`blue\` \`amber\` \`sky\` \`zinc\` \`rose\` \`orange\`
-**anchor**: \`left\` \`right\` \`top\` \`bottom\` \`topLeft\` \`topRight\` \`bottomLeft\` \`bottomRight\``,
-        },
-        {
           role: 'user',
-          content: `Here's my Arc diagram config:
+          content: `I have an Arc diagram config I need help with:
 
 \`\`\`json
 {PASTE_CONFIG}
 \`\`\`
 
-{WHAT_YOU_NEED}`,
+{WHAT_YOU_NEED}
+
+---
+*Arc config reference:*
+- *size: s, m, l*
+- *colors: violet, emerald, blue, amber, sky, zinc, rose, orange*
+- *anchors: left, right, top, bottom, topLeft, topRight, bottomLeft, bottomRight*
+- *Full docs: {BASE_URL}/llm.txt*`,
         },
       ],
       variables: [
-        { name: 'PASTE_CONFIG', description: 'Your diagram JSON' },
-        { name: 'WHAT_YOU_NEED', description: 'What you want to do — add a node, change colors, explain the structure, etc.' },
+        { name: 'PASTE_CONFIG', description: 'Your diagram JSON (or describe what you want to create)' },
+        { name: 'WHAT_YOU_NEED', description: 'Add a node, change styling, explain structure, debug an issue, etc.' },
       ],
     },
     title: 'Diagram Format',
@@ -220,29 +205,28 @@ connectorStyles → { styleName: { color, label } }
     agentContent: stripFrontmatter(architectureAgentMd),
     prompt: {
       title: 'Arc Editor Development',
-      description: 'Understand or extend the Arc editor',
+      description: 'Understand or extend the Arc editor codebase',
       messages: [
         {
-          role: 'system',
-          content: `## Arc Editor Structure
-
-\`\`\`
-EditorProvider.jsx → State (useReducer + Context)
-DiagramCanvas.jsx → Drag-and-drop canvas
-EditableNode.jsx → Draggable nodes
-ConnectorLayer.jsx → SVG lines
-PropertiesPanel.jsx → Right sidebar
-\`\`\`
-
-**Modes**: \`select\` (click/drag) • \`addNode\` (click to place) • \`addConnector\` (click source → target)`,
-        },
-        {
           role: 'user',
-          content: `I'm working on the Arc editor and need help with: {WHAT_YOU_NEED}`,
+          content: `I'm working on the Arc editor codebase and need help with: {WHAT_YOU_NEED}
+
+Key files for reference:
+- \`EditorProvider.jsx\` + \`editorReducer.js\` — State management (useReducer + Context)
+- \`DiagramCanvas.jsx\` — Main canvas with drag-and-drop
+- \`EditableNode.jsx\` — Individual node components
+- \`ConnectorLayer.jsx\` — SVG connection lines
+- \`PropertiesPanel.jsx\` — Right sidebar for editing selected items
+
+Editor modes: select (default), addNode, addConnector
+
+---
+*For full codebase context, see the project's CLAUDE.md*
+*Arc config format: {BASE_URL}/llm.txt*`,
         },
       ],
       variables: [
-        { name: 'WHAT_YOU_NEED', description: 'What you want to understand, build, or debug' },
+        { name: 'WHAT_YOU_NEED', description: 'Feature to add, bug to fix, or concept to understand' },
       ],
     },
     title: 'Architecture',
@@ -253,30 +237,27 @@ PropertiesPanel.jsx → Right sidebar
     content: stripFrontmatter(examplesMd),
     agentContent: stripFrontmatter(apiAgentMd),
     prompt: {
-      title: 'Diagram Styling',
-      description: 'Change the visual style of your diagram',
+      title: 'Restyle My Diagram',
+      description: 'Change structure and appearance',
       messages: [
         {
-          role: 'system',
-          content: `**Templates** control structure: node shapes, line styles, spacing.
-**Themes** control colors: node fills, connector colors, accents.
-
-**colors**: \`violet\` \`emerald\` \`blue\` \`amber\` \`sky\` \`zinc\` \`rose\` \`orange\``,
-        },
-        {
           role: 'user',
-          content: `Update the styling of this diagram:
+          content: `Update the styling of this Arc diagram:
 
 \`\`\`json
 {PASTE_CONFIG}
 \`\`\`
 
-I want: {STYLE_CHANGES}`,
+I want: {STYLE_CHANGES}
+
+---
+*Colors: violet, emerald, blue, amber, sky, zinc, rose, orange*
+*Full reference: {BASE_URL}/llm.txt*`,
         },
       ],
       variables: [
-        { name: 'PASTE_CONFIG', description: 'Your current diagram JSON' },
-        { name: 'STYLE_CHANGES', description: 'What styling to apply', example: 'Use warm colors with rounded nodes' },
+        { name: 'PASTE_CONFIG', description: 'Your diagram JSON' },
+        { name: 'STYLE_CHANGES', description: 'What to change', example: 'warm colors, larger nodes, dashed connectors' },
       ],
     },
     title: 'Templates',
@@ -287,27 +268,24 @@ I want: {STYLE_CHANGES}`,
     content: stripFrontmatter(examplesMd),
     agentContent: stripFrontmatter(apiAgentMd),
     prompt: {
-      title: 'Color Themes',
-      description: 'Apply color palettes to your diagram',
+      title: 'Change Color Palette',
+      description: 'Apply a new color scheme',
       messages: [
         {
-          role: 'system',
-          content: `**colors**: \`violet\` \`emerald\` \`blue\` \`amber\` \`sky\` \`zinc\` \`rose\` \`orange\`
-
-**warm**: orange, amber, rose  •  **cool**: blue, violet, emerald  •  **mono**: zinc`,
-        },
-        {
           role: 'user',
-          content: `Change the colors in this diagram to {COLOR_SCHEME}:
+          content: `Change the colors in this Arc diagram to use a {COLOR_SCHEME} palette:
 
 \`\`\`json
 {PASTE_CONFIG}
-\`\`\``,
+\`\`\`
+
+---
+*Available colors: violet, emerald, blue, amber, sky, zinc, rose, orange*`,
         },
       ],
       variables: [
-        { name: 'COLOR_SCHEME', description: 'The palette you want', example: 'warm colors' },
-        { name: 'PASTE_CONFIG', description: 'Your current diagram JSON' },
+        { name: 'COLOR_SCHEME', description: 'The look you want', example: 'warm (orange/amber/rose)' },
+        { name: 'PASTE_CONFIG', description: 'Your diagram JSON' },
       ],
     },
     title: 'Themes',
@@ -318,29 +296,22 @@ I want: {STYLE_CHANGES}`,
     content: stripFrontmatter(agentsMd),
     agentContent: llmTxt,
     prompt: {
-      title: 'Arc AI Assistant',
-      description: 'Full context for working with Arc',
+      title: 'Brief Your AI Agent',
+      description: 'Give your agent full Arc context',
       messages: [
         {
-          role: 'system',
-          content: `**Arc** — Declarative architecture diagrams as JSON.
-
-\`\`\`
-layout → { width, height }
-nodes → { id: { x, y, size } }
-nodeData → { id: { icon, name, color } }
-connectors → [{ from, to, style }]
-\`\`\`
-
-**size**: s, m, l  •  **colors**: violet, emerald, blue, amber, sky, zinc, rose, orange`,
-        },
-        {
           role: 'user',
-          content: `{WHAT_YOU_NEED}`,
+          content: `I need help with Arc, a diagram editor that outputs JSON configs.
+
+{WHAT_YOU_NEED}
+
+---
+*Load full Arc context from: {BASE_URL}/llm.txt*
+*Or use the Arc skill if available in your environment*`,
         },
       ],
       variables: [
-        { name: 'WHAT_YOU_NEED', description: 'Describe what you want to create, modify, or understand' },
+        { name: 'WHAT_YOU_NEED', description: 'What you\'re trying to accomplish with Arc' },
       ],
     },
     title: 'AI Agents',
@@ -351,29 +322,21 @@ connectors → [{ from, to, style }]
     content: stripFrontmatter(agentsMd),
     agentContent: llmTxt,
     prompt: {
-      title: 'Arc AI Assistant',
-      description: 'Full context for working with Arc',
+      title: 'Use Arc Skill',
+      description: 'Pre-built skill for AI assistants',
       messages: [
         {
-          role: 'system',
-          content: `**Arc** — Declarative architecture diagrams as JSON.
-
-\`\`\`
-layout → { width, height }
-nodes → { id: { x, y, size } }
-nodeData → { id: { icon, name, color } }
-connectors → [{ from, to, style }]
-\`\`\`
-
-**size**: s, m, l  •  **colors**: violet, emerald, blue, amber, sky, zinc, rose, orange`,
-        },
-        {
           role: 'user',
-          content: `{WHAT_YOU_NEED}`,
+          content: `Use the Arc skill to help me {TASK}.
+
+If the Arc skill isn't available, load context from: {BASE_URL}/llm.txt
+
+{ADDITIONAL_DETAILS}`,
         },
       ],
       variables: [
-        { name: 'WHAT_YOU_NEED', description: 'Describe what you want to create, modify, or understand' },
+        { name: 'TASK', description: 'What you want to do', example: 'create a microservices diagram' },
+        { name: 'ADDITIONAL_DETAILS', description: 'Requirements, existing config, or constraints' },
       ],
     },
     title: 'Skills',
@@ -554,7 +517,7 @@ function DocPage({ pageId }: { pageId: string }) {
           onClose={() => setPromptOpen(false)}
           title={page.prompt.title}
           description={page.prompt.description}
-          prompt={page.prompt.messages}
+          prompt={page.prompt.messages.map(m => ({ ...m, content: withBaseUrl(m.content) }))}
           variables={page.prompt.variables}
         />
       )}
