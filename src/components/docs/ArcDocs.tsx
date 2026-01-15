@@ -10,6 +10,7 @@ import {
   CopyButtons,
   PromptSlideout,
   extractTocItems,
+  useActiveSection,
   type PageNode,
   type PromptParam,
 } from '@arach/dewey'
@@ -763,6 +764,7 @@ function DocPage({ pageId }: { pageId: string }) {
   const [promptOpen, setPromptOpen] = useState(false)
   const page = pages[pageId] || pages.overview
   const tocItems = extractTocItems(page.content)
+  const activeSection = useActiveSection(tocItems)
 
   const handleDownloadLLM = () => {
     const blob = new Blob([llmTxt], { type: 'text/plain' })
@@ -842,10 +844,12 @@ function DocPage({ pageId }: { pageId: string }) {
                     color: '#5c676c',
                     border: '1px solid rgba(16, 21, 24, 0.12)',
                     background: 'rgba(255,255,255,0.5)',
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
                   }}
                   title="Open AI prompt template"
                 >
-                  <Sparkles className="w-3.5 h-3.5" />
+                  <Sparkles className="w-3.5 h-3.5" style={{ flexShrink: 0 }} />
                   <span>AI Prompt</span>
                 </button>
               )}
@@ -900,11 +904,11 @@ function DocPage({ pageId }: { pageId: string }) {
         <h4 className="dw-toc-title">ON THIS PAGE</h4>
         <nav>
           <ul className="dw-toc-list">
-            {tocItems.map((item, index) => (
+            {tocItems.map((item) => (
               <li key={item.id} className="dw-toc-item">
                 <a
                   href={`#${item.id}`}
-                  className={`dw-toc-link ${index === 0 ? 'active' : ''}`}
+                  className={`dw-toc-link ${activeSection === item.id ? 'active' : ''}`}
                   data-level={item.level}
                 >
                   {item.title}
