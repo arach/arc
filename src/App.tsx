@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
-import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useNavigate, useParams } from 'react-router-dom'
 import DiagramEditor from './components/editor/DiagramEditor'
 import LandingPage from './components/LandingPage'
-import Docs from './components/docs/Docs'
+import DeweyDocs from './components/docs/DeweyDocs'
 import IsometricDemo from './components/IsometricDemo'
 import IsometricExamples from './components/IsometricExamples'
+import '@arach/dewey/styles'
 import './landing.css'
 
 function EditorPage() {
@@ -41,14 +42,14 @@ function LandingPageWrapper() {
 }
 
 function DocsWrapper() {
-  const navigate = useNavigate()
+  const { page } = useParams<{ page?: string }>()
 
   // Ensure dark mode is removed on docs
   useEffect(() => {
     document.documentElement.classList.remove('dark')
   }, [])
 
-  return <Docs onBack={() => navigate('/')} />
+  return <DeweyDocs pageId={page || 'overview'} />
 }
 
 function App() {
