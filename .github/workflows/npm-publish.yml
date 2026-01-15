@@ -38,8 +38,12 @@ jobs:
           cache: pnpm
           registry-url: 'https://registry.npmjs.org'
 
+      - name: Use npm package instead of local link
+        run: |
+          sed -i 's|"@arach/dewey": "link:./ext/dewey/packages/docs"|"@arach/dewey": "^0.2.0"|' package.json
+
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --no-frozen-lockfile
 
       - name: Build library
         run: pnpm build:lib

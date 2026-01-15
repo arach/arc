@@ -26,6 +26,10 @@ jobs:
         with:
           bun-version: 'latest'
 
+      - name: Use npm package instead of local link
+        run: |
+          sed -i 's|"@arach/dewey": "link:./ext/dewey/packages/docs"|"@arach/dewey": "^0.2.0"|' package.json
+
       - name: Install dependencies
         run: bun install
 

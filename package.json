@@ -49,7 +49,7 @@
     "react-dom": "^18.0.0 || ^19.0.0"
   },
   "dependencies": {
-    "@arach/dewey": "^0.2.0",
+    "@arach/dewey": "link:./ext/dewey/packages/docs",
     "@base-ui/react": "^1.0.0",
     "@types/three": "^0.182.0",
     "js-yaml": "^4.1.1",
