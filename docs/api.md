@@ -1,7 +1,7 @@
 ---
 title: API Reference
 description: Complete API reference for Arc components and types
-order: 4
+order: 3
 ---
 
 # API Reference
@@ -96,7 +96,6 @@ const theme = getTheme('warm')
 
 // List all available themes
 const themes = getThemeList()
-// Returns: [{ id: 'default', name: 'Default', description: '...' }, ...]
 
 // Access theme colors
 const palette = theme.light.palette.violet
@@ -107,12 +106,12 @@ const palette = theme.light.palette.violet
 
 Arc uses Lucide React icons. Common architecture icons:
 
-**Infrastructure**: Server, Database, Cloud, CloudCog, HardDrive, Network, Cpu
-**Interfaces**: Monitor, Smartphone, Laptop, Globe, Terminal
-**Services**: MessageSquare, Mail, Bell, Shield, Lock, Key
-**Data**: FileText, Folder, Package, Archive, Layers
-**Connectivity**: Wifi, Radio, Plug, Cable, Router
-**Actions**: RefreshCw, Download, Upload, Send, Zap
+- **Infrastructure**: Server, Database, Cloud, CloudCog, HardDrive, Network, Cpu
+- **Interfaces**: Monitor, Smartphone, Laptop, Globe, Terminal
+- **Services**: MessageSquare, Mail, Bell, Shield, Lock, Key
+- **Data**: FileText, Folder, Package, Archive, Layers
+- **Connectivity**: Wifi, Radio, Plug, Cable, Router
+- **Actions**: RefreshCw, Download, Upload, Send, Zap
 
 ## Export Formats
 

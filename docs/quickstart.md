@@ -6,14 +6,16 @@ order: 2
 
 # Quickstart
 
+Get up and running with Arc in under 5 minutes.
+
 ## Installation
 
 ```bash
 # Install the player/renderer
-pnpm add @arach/arc
+npm install @arach/arc
 
-# Or just the lightweight player
-pnpm add @arach/arc-player
+# Or install the visual editor CLI
+npx @arach/arc-editor
 ```
 
 ## Quick Start
@@ -51,23 +53,21 @@ function App() {
 
 ## Vanilla JavaScript
 
-For non-React environments:
+For non-React projects, use the player package:
 
-```js
-import { renderToElement } from '@arach/arc-player'
+```html
+<script type="module">
+  import { renderDiagram } from '@arach/arc-player'
 
-renderToElement(document.getElementById('diagram'), config)
+  renderDiagram(document.getElementById('diagram'), {
+    layout: { width: 600, height: 300 },
+    // ... diagram config
+  })
+</script>
 ```
 
-## Development
+## Next Steps
 
-Run the editor locally:
-
-```bash
-git clone https://github.com/arach/arc
-cd arc
-pnpm install
-pnpm dev
-```
-
-The dev server runs on `http://localhost:5188`.
+- Read the [API Reference](./api.md) for full component props
+- Explore [Examples](./examples.md) for common patterns
+- Learn about [Themes](./themes.md) for styling options

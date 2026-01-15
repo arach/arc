@@ -2,10 +2,9 @@ import { useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, useNavigate, useParams } from 'react-router-dom'
 import DiagramEditor from './components/editor/DiagramEditor'
 import LandingPage from './components/LandingPage'
-import DeweyDocs from './components/docs/DeweyDocs'
+import ArcDocs from './components/docs/ArcDocs'
 import IsometricDemo from './components/IsometricDemo'
 import IsometricExamples from './components/IsometricExamples'
-// TODO: Dewey styles not exported yet - components use inline styles
 import './landing.css'
 
 function EditorPage() {
@@ -49,7 +48,7 @@ function DocsWrapper() {
     document.documentElement.classList.remove('dark')
   }, [])
 
-  return <DeweyDocs pageId={page || 'overview'} />
+  return <ArcDocs pageId={page || 'index'} />
 }
 
 function App() {

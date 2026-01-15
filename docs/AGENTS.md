@@ -1,3 +1,9 @@
+---
+title: LLM Documentation
+description: Agent-friendly documentation for AI coding assistants
+order: 6
+---
+
 # arc
 
 > Diagrams as Code - Visual editor for architecture diagrams that live in your codebase
@@ -14,27 +20,23 @@
 
 ## Project Structure
 
-| Component | Path | Purpose |
-|-----------|------|---------|
-| Editor | `src/components/editor/` | |
-| Properties | `src/components/properties/` | |
-| Utils | `src/utils/` | |
-| Types | `src/types/` | |
-| Player | `src/player/` | |
-| Lib Entry | `src/index.ts` | |
+| Component | Path |
+|-----------|------|
+| Editor | src/components/editor/ |
+| Player | src/player/ |
+| Landing Page | src/components/LandingPage.tsx |
+| Documentation | src/components/docs/ |
+| Utilities | src/utils/ |
+| Types | src/types/ |
 
 ## Quick Navigation
 
-- Working with **diagram state**? → Check EditorProvider.tsx and editorReducer.ts
-- Working with **node|connector|group**? → See src/types/diagram.ts for type definitions
-- Working with **export|render**? → Look at src/utils/exportUtils.ts and src/player/
-- Working with **isometric|3d**? → See src/utils/isometric.ts and IsometricNodeLayer.tsx
+- Entry point: `src/main.jsx`
+- Main editor: `src/components/editor/DiagramEditor.jsx`
+- State management: `src/components/editor/EditorProvider.jsx`
+- Canvas rendering: `src/components/editor/DiagramCanvas.jsx`
 
 ## Overview
-
-> Arc is a React component library for rendering beautiful, interactive architecture diagrams
-
-# Arc - Visual Architecture Diagram Library
 
 Arc is a React component library for rendering beautiful, interactive architecture diagrams. It provides a declarative JSON format for defining diagrams and multiple built-in themes.
 
@@ -48,41 +50,33 @@ Architecture diagrams typically live in design tools, disconnected from the code
 
 ## Packages
 
-| Package | Size | Use Case |
-|---------|------|----------|
-| `@arach/arc` | ~75KB | Full editor + player components |
-| `@arach/arc-player` | ~7KB | Lightweight renderer only |
+| Package | Description |
+|---------|-------------|
+| `@arach/arc` | Core player/renderer component |
+| `@arach/arc-player` | Lightweight embeddable player |
 
 ## Key Features
 
-- **Visual Editor** - Drag-and-drop nodes, connectors, groups, and images
-- **Declarative Exports** - JSON/TypeScript configs designed for version control
-- **Templates** - Built-in themes and sizing presets
-- **Isometric View** - Toggle 3D projection for visual impact
-- **Multiple Export Formats** - JSON, TypeScript, SVG, PNG, clipboard embed
+- **Declarative Format** - Diagrams are data structures
+- **Templates** - Structural presets for layout
+- **Themes** - Color palettes (default, warm, cool, mono)
+- **Export** - SVG, PNG, JSON, TypeScript
 
 ## Links
 
-- GitHub: https://github.com/arach/arc
-- npm (player): https://www.npmjs.com/package/@arach/arc
+- [GitHub Repository](https://github.com/arach/arc)
+- [NPM: @arach/arc](https://www.npmjs.com/package/@arach/arc)
 
 ## Quickstart
 
-> Get started with Arc in 5 minutes
-
-# Quickstart
-
-## Installation
+### Installation
 
 ```bash
-# Install the player/renderer
-pnpm add @arach/arc
-
-# Or just the lightweight player
-pnpm add @arach/arc-player
+npm install @arach/arc
+npx @arach/arc-editor
 ```
 
-## Quick Start
+### Quick Start
 
 ```tsx
 import { ArcDiagram } from '@arach/arc'
@@ -115,94 +109,66 @@ function App() {
 }
 ```
 
-## Vanilla JavaScript
+### Vanilla JavaScript
 
-For non-React environments:
-
-```js
-import { renderToElement } from '@arach/arc-player'
-
-renderToElement(document.getElementById('diagram'), config)
+```html
+<script type="module">
+  import { renderDiagram } from '@arach/arc-player'
+  renderDiagram(document.getElementById('diagram'), diagramConfig)
+</script>
 ```
 
 ## Development
 
-Run the editor locally:
-
 ```bash
-git clone https://github.com/arach/arc
-cd arc
-pnpm install
-pnpm dev
+pnpm dev      # Start dev server
+pnpm build    # Production build
+pnpm lint     # Run ESLint
 ```
-
-The dev server runs on `http://localhost:5188`.
 
 ## Architecture
 
-> How the Arc editor is built - state management, modules, and data flow
+### Major Modules
 
-# Arc Architecture Overview
+| Module | Path | Purpose |
+|--------|------|---------|
+| Editor | `src/components/editor/` | Visual drag-and-drop editor |
+| Player | `src/player/` | Lightweight renderer |
+| Utils | `src/utils/` | Shared helpers |
 
-Arc is organized around a single diagram model and a small set of modules that read, edit, and
-export that model. The goal is to keep editor behavior, state management, and export logic
-separate so outputs stay stable even as the UI evolves.
+### State Model
 
-## Major Modules
-
-- `src/components/editor/`: The editor shell (top bar, canvas, panels, layers).
-- `src/components/properties/`: Forms for editing node, connector, group, and grid settings.
-- `src/components/dialogs/`: Export and share dialogs.
-- `src/hooks/`: Keyboard shortcuts and canvas transform helpers.
-- `src/utils/`: Diagram helpers, templates, export utilities, and file operations.
-- `src/types/`: TypeScript types for diagram + editor state.
-
-## State Model
-
-State lives in a reducer + context pair (`EditorProvider`, `editorReducer`). The state shape is
-split into four slices:
-
-- `diagram`: layout, nodes, nodeData, connectors, connectorStyles, groups, images, exportZone
-- `editor`: selection, mode, pending actions, template, zoom
-- `meta`: filename, dirty state, last saved
-- `history`: undo/redo stacks (capped for performance)
-
-The reducer records history on meaningful changes and drives all interactions (add/remove nodes,
-update connectors, change templates, etc.).
-
-## Data Flow
-
-1. **Input**: The editor dispatches actions from UI events.
-2. **Reducer**: `editorReducer` updates the diagram and tracks history.
-3. **Canvas**: `DiagramCanvas` renders nodes, connectors, groups, and images.
-4. **Properties**: The panel writes updates back to the reducer.
-5. **Export**: `exportUtils` and `fileOperations` serialize the model for external use.
-
-## Diagram Config
-
-Exported diagrams are declarative and designed to be embedded elsewhere:
-
-```ts
+```typescript
 {
-  layout: { width: 1200, height: 700 },
-  nodes: { api: { x: 80, y: 120, size: 'm' } },
-  nodeData: { api: { icon: 'Server', name: 'API', color: 'emerald' } },
-  connectors: [
-    { from: 'web', to: 'api', fromAnchor: 'right', toAnchor: 'left', style: 'http' }
-  ],
-  connectorStyles: { http: { color: 'amber', strokeWidth: 2, label: 'HTTP' } }
+  diagram: { layout, nodes, nodeData, connectors, connectorStyles },
+  editor: { selectedNodeId, selectedConnectorIndex, mode, pendingConnector, isDragging },
+  meta: { filename, isDirty, lastSaved },
+  history: { past, future }
 }
 ```
 
-Keep configs in version control so architecture updates travel with the product.
+### Data Flow
+
+1. User Action → Dispatch action to reducer
+2. Reducer → Updates state immutably, pushes to history
+3. Context → Propagates new state to components
+4. Canvas → Re-renders affected nodes/connectors
+
+### Diagram Config
+
+```json
+{
+  "layout": { "width": 700, "height": 340 },
+  "nodes": { "nodeId": { "x": 25, "y": 15, "size": "large" } },
+  "nodeData": { "nodeId": { "icon": "Monitor", "name": "...", "color": "violet" } },
+  "connectors": [{ "from": "a", "to": "b", "fromAnchor": "right", "toAnchor": "left", "style": "http" }],
+  "connectorStyles": { "http": { "color": "amber", "strokeWidth": 2, "label": "HTTP" } }
+}
+```
 
 ## API Reference
 
-> Complete API reference for Arc components and types
-
-# API Reference
-
-## ArcDiagram Component
+### ArcDiagram Component
 
 ```tsx
 interface ArcDiagramProps {
@@ -214,66 +180,64 @@ interface ArcDiagramProps {
 }
 ```
 
-## ArcDiagramData Schema
+### ArcDiagramData Schema
 
 ```typescript
 interface ArcDiagramData {
-  id?: string                                    // Optional diagram identifier
-  layout: { width: number; height: number }     // Canvas dimensions
-  nodes: Record<string, NodePosition>           // Node positions by ID
-  nodeData: Record<string, NodeData>            // Node display data by ID
-  connectors: Connector[]                       // Connection definitions
-  connectorStyles: Record<string, ConnectorStyle> // Style definitions
+  id?: string
+  layout: { width: number; height: number }
+  nodes: Record<string, NodePosition>
+  nodeData: Record<string, NodeData>
+  connectors: Connector[]
+  connectorStyles: Record<string, ConnectorStyle>
 }
 ```
 
-## Node Types
+### Node Types
 
 ```typescript
 interface NodePosition {
-  x: number           // X coordinate
-  y: number           // Y coordinate
-  size: 's' | 'm' | 'l'  // Node size (small, medium, large)
+  x: number
+  y: number
+  size: 's' | 'm' | 'l'
 }
 
 interface NodeData {
-  icon: string        // Lucide icon name (e.g., 'Monitor', 'Server', 'Database')
-  name: string        // Display name
-  subtitle?: string   // Optional subtitle
-  description?: string // Optional description
-  color: DiagramColor // Color theme for this node
+  icon: string
+  name: string
+  subtitle?: string
+  description?: string
+  color: DiagramColor
 }
 
 type DiagramColor = 'violet' | 'emerald' | 'blue' | 'amber' | 'sky' | 'zinc' | 'rose' | 'orange'
 ```
 
-## Connector Types
+### Connector Types
 
 ```typescript
 interface Connector {
-  from: string          // Source node ID
-  to: string            // Target node ID
-  fromAnchor: AnchorPosition  // Where to attach on source
-  toAnchor: AnchorPosition    // Where to attach on target
-  style: string         // Reference to connectorStyles key
-  curve?: 'natural' | 'step'  // Line curve style (default: 'natural')
+  from: string
+  to: string
+  fromAnchor: AnchorPosition
+  toAnchor: AnchorPosition
+  style: string
+  curve?: 'natural' | 'step'
 }
 
 type AnchorPosition = 'left' | 'right' | 'top' | 'bottom' |
                       'bottomLeft' | 'bottomRight' | 'topLeft' | 'topRight'
 
 interface ConnectorStyle {
-  color: DiagramColor   // Line color
-  strokeWidth: number   // Line thickness (1-4 recommended)
-  label?: string        // Optional label text
-  labelAlign?: 'left' | 'right' | 'center'  // Label position
-  dashed?: boolean      // Dashed line style
+  color: DiagramColor
+  strokeWidth: number
+  label?: string
+  labelAlign?: 'left' | 'right' | 'center'
+  dashed?: boolean
 }
 ```
 
 ## Themes
-
-Arc includes 4 built-in themes:
 
 | Theme ID | Name | Description |
 |----------|------|-------------|
@@ -287,116 +251,25 @@ Arc includes 4 built-in themes:
 ```typescript
 import { getTheme, getThemeList, THEMES } from '@arach/arc'
 
-// Get a specific theme
 const theme = getTheme('warm')
-
-// List all available themes
 const themes = getThemeList()
-// Returns: [{ id: 'default', name: 'Default', description: '...' }, ...]
-
-// Access theme colors
 const palette = theme.light.palette.violet
-// { border: '#...', bg: '#...', icon: '#...', stroke: '#...' }
 ```
 
 ## Available Icons
 
-Arc uses Lucide React icons. Common architecture icons:
+Arc uses Lucide React icons:
 
-**Infrastructure**: Server, Database, Cloud, CloudCog, HardDrive, Network, Cpu
-**Interfaces**: Monitor, Smartphone, Laptop, Globe, Terminal
-**Services**: MessageSquare, Mail, Bell, Shield, Lock, Key
-**Data**: FileText, Folder, Package, Archive, Layers
-**Connectivity**: Wifi, Radio, Plug, Cable, Router
-**Actions**: RefreshCw, Download, Upload, Send, Zap
+- **Infrastructure**: Server, Database, Cloud, CloudCog, HardDrive, Network, Cpu
+- **Interfaces**: Monitor, Smartphone, Laptop, Globe, Terminal
+- **Services**: MessageSquare, Mail, Bell, Shield, Lock, Key
+- **Data**: FileText, Folder, Package, Archive, Layers
+- **Connectivity**: Wifi, Radio, Plug, Cable, Router
+- **Actions**: RefreshCw, Download, Upload, Send, Zap
 
 ## Export Formats
 
-The Arc Editor can export diagrams as:
 - **JSON**: Full diagram configuration
 - **TypeScript**: Type-safe diagram constant
 - **SVG**: Vector graphic (light or dark)
 - **PNG**: Raster image
-
-## Examples
-
-> Real-world diagram examples
-
-# Examples
-
-## Complex Microservices Architecture
-
-```tsx
-const microservicesArchitecture: ArcDiagramData = {
-  layout: { width: 900, height: 500 },
-  nodes: {
-    client: { x: 50, y: 200, size: 'l' },
-    gateway: { x: 200, y: 200, size: 'm' },
-    auth: { x: 400, y: 50, size: 'm' },
-    users: { x: 400, y: 200, size: 'm' },
-    orders: { x: 400, y: 350, size: 'm' },
-    cache: { x: 600, y: 50, size: 's' },
-    userDb: { x: 600, y: 200, size: 's' },
-    orderDb: { x: 600, y: 350, size: 's' },
-    queue: { x: 750, y: 275, size: 'm' },
-  },
-  nodeData: {
-    client: { icon: 'Smartphone', name: 'Mobile App', color: 'violet' },
-    gateway: { icon: 'Network', name: 'API Gateway', color: 'emerald' },
-    auth: { icon: 'Shield', name: 'Auth Service', color: 'amber' },
-    users: { icon: 'Users', name: 'User Service', color: 'blue' },
-    orders: { icon: 'ShoppingCart', name: 'Order Service', color: 'rose' },
-    cache: { icon: 'Zap', name: 'Redis', subtitle: 'Cache', color: 'orange' },
-    userDb: { icon: 'Database', name: 'PostgreSQL', subtitle: 'Users', color: 'blue' },
-    orderDb: { icon: 'Database', name: 'PostgreSQL', subtitle: 'Orders', color: 'rose' },
-    queue: { icon: 'MessageSquare', name: 'RabbitMQ', color: 'sky' },
-  },
-  connectors: [
-    { from: 'client', to: 'gateway', fromAnchor: 'right', toAnchor: 'left', style: 'http' },
-    { from: 'gateway', to: 'auth', fromAnchor: 'topRight', toAnchor: 'left', style: 'grpc' },
-    { from: 'gateway', to: 'users', fromAnchor: 'right', toAnchor: 'left', style: 'grpc' },
-    { from: 'gateway', to: 'orders', fromAnchor: 'bottomRight', toAnchor: 'left', style: 'grpc' },
-    { from: 'auth', to: 'cache', fromAnchor: 'right', toAnchor: 'left', style: 'redis' },
-    { from: 'users', to: 'userDb', fromAnchor: 'right', toAnchor: 'left', style: 'sql' },
-    { from: 'orders', to: 'orderDb', fromAnchor: 'right', toAnchor: 'left', style: 'sql' },
-    { from: 'orders', to: 'queue', fromAnchor: 'right', toAnchor: 'left', style: 'amqp' },
-    { from: 'users', to: 'queue', fromAnchor: 'bottomRight', toAnchor: 'topLeft', style: 'amqp' },
-  ],
-  connectorStyles: {
-    http: { color: 'violet', strokeWidth: 3, label: 'HTTPS' },
-    grpc: { color: 'emerald', strokeWidth: 2, label: 'gRPC' },
-    redis: { color: 'orange', strokeWidth: 2, dashed: true },
-    sql: { color: 'blue', strokeWidth: 2, label: 'SQL' },
-    amqp: { color: 'sky', strokeWidth: 2, label: 'AMQP', dashed: true },
-  },
-}
-```
-
-## Simple Three-Tier
-
-```tsx
-const threeTier: ArcDiagramData = {
-  layout: { width: 600, height: 300 },
-  nodes: {
-    web: { x: 50, y: 100, size: 'm' },
-    api: { x: 250, y: 100, size: 'm' },
-    db: { x: 450, y: 100, size: 'm' },
-  },
-  nodeData: {
-    web: { icon: 'Monitor', name: 'Web App', color: 'blue' },
-    api: { icon: 'Server', name: 'API', color: 'emerald' },
-    db: { icon: 'Database', name: 'Database', color: 'violet' },
-  },
-  connectors: [
-    { from: 'web', to: 'api', fromAnchor: 'right', toAnchor: 'left', style: 'http' },
-    { from: 'api', to: 'db', fromAnchor: 'right', toAnchor: 'left', style: 'sql' },
-  ],
-  connectorStyles: {
-    http: { color: 'amber', strokeWidth: 2, label: 'HTTP' },
-    sql: { color: 'sky', strokeWidth: 2, label: 'SQL' },
-  },
-}
-```
-
----
-Generated by [Dewey](https://github.com/arach/dewey) | Last updated: 2026-01-15

@@ -1,12 +1,38 @@
 ---
 title: Examples
 description: Real-world diagram examples
-order: 5
+order: 4
 ---
 
 # Examples
 
-## Complex Microservices Architecture
+## Simple Three-Tier Architecture
+
+```tsx
+const simpleDiagram: ArcDiagramData = {
+  layout: { width: 600, height: 300 },
+  nodes: {
+    frontend: { x: 50, y: 100, size: 'm' },
+    backend: { x: 250, y: 100, size: 'm' },
+    database: { x: 450, y: 100, size: 'm' },
+  },
+  nodeData: {
+    frontend: { icon: 'Monitor', name: 'Frontend', color: 'violet' },
+    backend: { icon: 'Server', name: 'Backend', color: 'emerald' },
+    database: { icon: 'Database', name: 'Database', color: 'blue' },
+  },
+  connectors: [
+    { from: 'frontend', to: 'backend', fromAnchor: 'right', toAnchor: 'left', style: 'api' },
+    { from: 'backend', to: 'database', fromAnchor: 'right', toAnchor: 'left', style: 'db' },
+  ],
+  connectorStyles: {
+    api: { color: 'violet', strokeWidth: 2, label: 'REST' },
+    db: { color: 'blue', strokeWidth: 2, label: 'SQL' },
+  },
+}
+```
+
+## Microservices Architecture
 
 ```tsx
 const microservicesArchitecture: ArcDiagramData = {
@@ -34,48 +60,53 @@ const microservicesArchitecture: ArcDiagramData = {
     queue: { icon: 'MessageSquare', name: 'RabbitMQ', color: 'sky' },
   },
   connectors: [
-    { from: 'client', to: 'gateway', fromAnchor: 'right', toAnchor: 'left', style: 'http' },
-    { from: 'gateway', to: 'auth', fromAnchor: 'topRight', toAnchor: 'left', style: 'grpc' },
+    { from: 'client', to: 'gateway', fromAnchor: 'right', toAnchor: 'left', style: 'https' },
+    { from: 'gateway', to: 'auth', fromAnchor: 'top', toAnchor: 'left', style: 'grpc' },
     { from: 'gateway', to: 'users', fromAnchor: 'right', toAnchor: 'left', style: 'grpc' },
-    { from: 'gateway', to: 'orders', fromAnchor: 'bottomRight', toAnchor: 'left', style: 'grpc' },
+    { from: 'gateway', to: 'orders', fromAnchor: 'bottom', toAnchor: 'left', style: 'grpc' },
     { from: 'auth', to: 'cache', fromAnchor: 'right', toAnchor: 'left', style: 'redis' },
     { from: 'users', to: 'userDb', fromAnchor: 'right', toAnchor: 'left', style: 'sql' },
     { from: 'orders', to: 'orderDb', fromAnchor: 'right', toAnchor: 'left', style: 'sql' },
     { from: 'orders', to: 'queue', fromAnchor: 'right', toAnchor: 'left', style: 'amqp' },
-    { from: 'users', to: 'queue', fromAnchor: 'bottomRight', toAnchor: 'topLeft', style: 'amqp' },
   ],
   connectorStyles: {
-    http: { color: 'violet', strokeWidth: 3, label: 'HTTPS' },
+    https: { color: 'violet', strokeWidth: 2, label: 'HTTPS' },
     grpc: { color: 'emerald', strokeWidth: 2, label: 'gRPC' },
-    redis: { color: 'orange', strokeWidth: 2, dashed: true },
-    sql: { color: 'blue', strokeWidth: 2, label: 'SQL' },
-    amqp: { color: 'sky', strokeWidth: 2, label: 'AMQP', dashed: true },
+    sql: { color: 'blue', strokeWidth: 1, label: 'SQL' },
+    redis: { color: 'orange', strokeWidth: 1, dashed: true },
+    amqp: { color: 'sky', strokeWidth: 2, label: 'AMQP' },
   },
 }
 ```
 
-## Simple Three-Tier
+## Event-Driven Architecture
 
 ```tsx
-const threeTier: ArcDiagramData = {
-  layout: { width: 600, height: 300 },
+const eventDriven: ArcDiagramData = {
+  layout: { width: 700, height: 400 },
   nodes: {
-    web: { x: 50, y: 100, size: 'm' },
-    api: { x: 250, y: 100, size: 'm' },
-    db: { x: 450, y: 100, size: 'm' },
+    producer: { x: 50, y: 150, size: 'm' },
+    broker: { x: 300, y: 150, size: 'l' },
+    consumer1: { x: 550, y: 50, size: 'm' },
+    consumer2: { x: 550, y: 150, size: 'm' },
+    consumer3: { x: 550, y: 250, size: 'm' },
   },
   nodeData: {
-    web: { icon: 'Monitor', name: 'Web App', color: 'blue' },
-    api: { icon: 'Server', name: 'API', color: 'emerald' },
-    db: { icon: 'Database', name: 'Database', color: 'violet' },
+    producer: { icon: 'Send', name: 'Producer', color: 'violet' },
+    broker: { icon: 'Radio', name: 'Kafka', subtitle: 'Event Broker', color: 'amber' },
+    consumer1: { icon: 'Bell', name: 'Notifications', color: 'blue' },
+    consumer2: { icon: 'FileText', name: 'Analytics', color: 'emerald' },
+    consumer3: { icon: 'Archive', name: 'Storage', color: 'zinc' },
   },
   connectors: [
-    { from: 'web', to: 'api', fromAnchor: 'right', toAnchor: 'left', style: 'http' },
-    { from: 'api', to: 'db', fromAnchor: 'right', toAnchor: 'left', style: 'sql' },
+    { from: 'producer', to: 'broker', fromAnchor: 'right', toAnchor: 'left', style: 'events' },
+    { from: 'broker', to: 'consumer1', fromAnchor: 'topRight', toAnchor: 'left', style: 'subscribe' },
+    { from: 'broker', to: 'consumer2', fromAnchor: 'right', toAnchor: 'left', style: 'subscribe' },
+    { from: 'broker', to: 'consumer3', fromAnchor: 'bottomRight', toAnchor: 'left', style: 'subscribe' },
   ],
   connectorStyles: {
-    http: { color: 'amber', strokeWidth: 2, label: 'HTTP' },
-    sql: { color: 'sky', strokeWidth: 2, label: 'SQL' },
+    events: { color: 'violet', strokeWidth: 2, label: 'Events' },
+    subscribe: { color: 'amber', strokeWidth: 1, dashed: true },
   },
 }
 ```
