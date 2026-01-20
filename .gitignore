@@ -50,3 +50,6 @@ coverage
 
 # Puppeteer cache
 .cache
+
+# External dependencies (local dev only)
+ext/
