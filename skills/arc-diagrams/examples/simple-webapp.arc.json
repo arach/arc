@@ -1,0 +1,21 @@
+{
+  "layout": { "width": 550, "height": 200 },
+  "nodes": {
+    "browser":  { "x": 50,  "y": 60, "size": "l" },
+    "server":   { "x": 280, "y": 60, "size": "m" },
+    "database": { "x": 450, "y": 60, "size": "s" }
+  },
+  "nodeData": {
+    "browser":  { "icon": "Monitor",  "name": "Browser",  "subtitle": "React", "color": "violet" },
+    "server":   { "icon": "Server",   "name": "Server",   "subtitle": "Express", "color": "emerald" },
+    "database": { "icon": "Database", "name": "DB",       "subtitle": "SQLite", "color": "blue" }
+  },
+  "connectors": [
+    { "from": "browser", "to": "server",   "fromAnchor": "right", "toAnchor": "left", "style": "http" },
+    { "from": "server",  "to": "database", "fromAnchor": "right", "toAnchor": "left", "style": "sql" }
+  ],
+  "connectorStyles": {
+    "http": { "color": "amber", "strokeWidth": 2, "label": "HTTP" },
+    "sql":  { "color": "blue",  "strokeWidth": 2, "label": "SQL" }
+  }
+}

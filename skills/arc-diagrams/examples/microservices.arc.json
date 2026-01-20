@@ -1,0 +1,38 @@
+{
+  "layout": { "width": 900, "height": 450 },
+  "nodes": {
+    "gateway":   { "x": 50,  "y": 180, "size": "l" },
+    "auth":      { "x": 300, "y": 50,  "size": "m" },
+    "users":     { "x": 300, "y": 180, "size": "m" },
+    "orders":    { "x": 300, "y": 310, "size": "m" },
+    "queue":     { "x": 520, "y": 180, "size": "s" },
+    "userDb":    { "x": 520, "y": 50,  "size": "s" },
+    "orderDb":   { "x": 520, "y": 310, "size": "s" },
+    "analytics": { "x": 700, "y": 180, "size": "m" }
+  },
+  "nodeData": {
+    "gateway":   { "icon": "Globe",    "name": "API Gateway",    "subtitle": "Kong",      "color": "violet" },
+    "auth":      { "icon": "Shield",   "name": "Auth Service",   "subtitle": "JWT",       "color": "amber" },
+    "users":     { "icon": "Users",    "name": "User Service",   "subtitle": "REST",      "color": "emerald" },
+    "orders":    { "icon": "Package",  "name": "Order Service",  "subtitle": "REST",      "color": "blue" },
+    "queue":     { "icon": "Repeat",   "name": "Message Queue",  "subtitle": "RabbitMQ",  "color": "zinc" },
+    "userDb":    { "icon": "Database", "name": "Users DB",       "subtitle": "Postgres",  "color": "emerald" },
+    "orderDb":   { "icon": "Database", "name": "Orders DB",      "subtitle": "Postgres",  "color": "blue" },
+    "analytics": { "icon": "BarChart", "name": "Analytics",      "subtitle": "ClickHouse","color": "sky" }
+  },
+  "connectors": [
+    { "from": "gateway", "to": "auth",    "fromAnchor": "right", "toAnchor": "left", "style": "http" },
+    { "from": "gateway", "to": "users",   "fromAnchor": "right", "toAnchor": "left", "style": "http" },
+    { "from": "gateway", "to": "orders",  "fromAnchor": "right", "toAnchor": "left", "style": "http" },
+    { "from": "users",   "to": "userDb",  "fromAnchor": "right", "toAnchor": "left", "style": "sql" },
+    { "from": "orders",  "to": "orderDb", "fromAnchor": "right", "toAnchor": "left", "style": "sql" },
+    { "from": "users",   "to": "queue",   "fromAnchor": "right", "toAnchor": "left", "style": "async" },
+    { "from": "orders",  "to": "queue",   "fromAnchor": "right", "toAnchor": "left", "style": "async" },
+    { "from": "queue",   "to": "analytics", "fromAnchor": "right", "toAnchor": "left", "style": "async" }
+  ],
+  "connectorStyles": {
+    "http":  { "color": "amber",   "strokeWidth": 2, "label": "HTTP" },
+    "sql":   { "color": "blue",    "strokeWidth": 2, "label": "SQL" },
+    "async": { "color": "zinc",    "strokeWidth": 1.5, "label": "async", "dashed": true }
+  }
+}
