@@ -1,6 +1,6 @@
 {
   "name": "@arach/arc",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "type": "module",
   "description": "Visual diagram editor for creating architecture diagrams",
   "author": "Arach Tchoupani",
