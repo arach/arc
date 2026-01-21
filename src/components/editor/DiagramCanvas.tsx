@@ -28,7 +28,7 @@ import ZoomControls from './ZoomControls'
 import ViewModeToggle from './ViewModeToggle'
 import IsometricNodeLayer from './IsometricNodeLayer'
 import IsometricConnectorLayer from './IsometricConnectorLayer'
-import type { EmbedConfig } from '../../types/editor'
+import type { EmbedConfig, ZoomConfig } from '../../types/editor'
 
 // Default embed configuration
 const DEFAULT_EMBED_CONFIG: Required<EmbedConfig> = {
@@ -46,9 +46,10 @@ const DEFAULT_EMBED_CONFIG: Required<EmbedConfig> = {
 interface DiagramCanvasProps {
   onViewportChange?: (bounds: { x: number; y: number; width: number; height: number }) => void
   embedConfig?: EmbedConfig
+  zoomConfig?: ZoomConfig
 }
 
-export default function DiagramCanvas({ onViewportChange, embedConfig }: DiagramCanvasProps) {
+export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfig }: DiagramCanvasProps) {
   const { actions } = useEditor()
   const diagram = useDiagram()
   const editor = useEditorState()
@@ -65,6 +66,9 @@ export default function DiagramCanvas({ onViewportChange, embedConfig }: Diagram
     zoom,
     pan,
     isPanning,
+    minZoom,
+    maxZoom,
+    setZoom,
     zoomIn,
     zoomOut,
     resetTransform,
@@ -73,9 +77,12 @@ export default function DiagramCanvas({ onViewportChange, embedConfig }: Diagram
     screenToCanvas,
     transformStyle,
   } = useCanvasTransform({
-    initialZoom: 1,
+    initialZoom: zoomConfig?.defaultZoom ?? 1,
     initialPan: { x: 0, y: 0 },
     panModeActive: editor.mode === 'pan',
+    contentSize: diagram.layout,
+    zoomLevels: zoomConfig?.zoomLevels,
+    zoomStep: zoomConfig?.zoomStep,
   })
 
   const canvasRef = useRef<HTMLDivElement>(null)
@@ -861,8 +868,11 @@ export default function DiagramCanvas({ onViewportChange, embedConfig }: Diagram
       {config.showZoomControls && (
         <ZoomControls
           zoom={zoom}
+          minZoom={minZoom}
+          maxZoom={maxZoom}
           onZoomIn={() => zoomIn()}
           onZoomOut={() => zoomOut()}
+          onZoomChange={(newZoom) => setZoom(newZoom)}
           onReset={resetTransform}
           onFitToView={() => fitToView(diagram.layout)}
         />

@@ -12,7 +12,7 @@ This file provides guidance to Claude Code when working with this repository.
 - **Vite 7** - Build tool and dev server
 - **TailwindCSS 4** - Utility-first styling
 - **Lucide React** - SVG icon library
-- **JavaScript (JSX)** - No TypeScript currently
+- **TypeScript** - Full type support
 
 ## Build Commands
 
@@ -107,6 +107,47 @@ Uses `useReducer` + Context for diagram state:
 - `Cmd+Shift+Z` - Redo
 - `Cmd+S` - Save
 - `Cmd+N` - New diagram
+
+### Zoom Controls
+- **Scroll wheel** - Pan the canvas
+- **Cmd/Ctrl + scroll** - Zoom in/out (focal point zoom)
+- **Click percentage** - Type a custom zoom level
+- **Double-click percentage** - Reset to initial zoom
+- **+/- buttons** - Step through zoom levels (5% increments)
+- **Fit button** - Auto-fit diagram to viewport
+
+## Zoom Configuration
+
+The `DiagramCanvas` component accepts a `zoomConfig` prop for customizing zoom behavior:
+
+```typescript
+interface ZoomConfig {
+  defaultZoom?: number | 'fit'  // Initial zoom level, or 'fit' to auto-calculate
+  zoomLevels?: number[]         // Custom zoom level steps (overrides zoomStep)
+  zoomStep?: number             // Zoom increment per step (default: 0.05 = 5%)
+}
+```
+
+### Usage Examples
+
+```tsx
+// Auto-fit to container (capped at 100%)
+<DiagramCanvas zoomConfig={{ defaultZoom: 'fit' }} />
+
+// Custom starting zoom
+<DiagramCanvas zoomConfig={{ defaultZoom: 0.7 }} />
+
+// 10% increments instead of 5%
+<DiagramCanvas zoomConfig={{ zoomStep: 0.10 }} />
+
+// Explicit zoom levels
+<DiagramCanvas zoomConfig={{ zoomLevels: [0.5, 0.75, 1, 1.5, 2] }} />
+```
+
+### Zoom Defaults
+- **Range:** 25% to 200%
+- **Step:** 5% increments
+- **Initial:** 100% (or calculated if `defaultZoom: 'fit'`)
 
 ## Diagram Config Format
 

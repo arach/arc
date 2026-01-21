@@ -1,12 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Point, Transform } from '../types/editor'
-import { ZOOM_MIN, ZOOM_MAX, ZOOM_STEP } from '../types/editor'
+import { ZOOM_MIN, ZOOM_MAX, ZOOM_STEP, DEFAULT_ZOOM_LEVELS } from '../types/editor'
 
 interface UseCanvasTransformOptions {
-  initialZoom?: number
+  initialZoom?: number | 'fit'
   initialPan?: Point
   panModeActive?: boolean
   onTransformChange?: (transform: Transform) => void
+  contentSize?: { width: number; height: number }  // Required for 'fit' calculation
+  zoomLevels?: number[]      // Custom zoom level steps (overrides zoomStep)
+  zoomStep?: number          // Zoom increment per step (default: 0.05 = 5%)
 }
 
 interface CanvasTransformState {
@@ -16,22 +19,57 @@ interface CanvasTransformState {
 }
 
 export function useCanvasTransform(options: UseCanvasTransformOptions = {}) {
-  const { initialZoom = 1, initialPan = { x: 0, y: 0 }, panModeActive = false, onTransformChange } = options
+  const {
+    initialZoom = 1,
+    initialPan = { x: 0, y: 0 },
+    panModeActive = false,
+    onTransformChange,
+    contentSize,
+    zoomLevels,
+    zoomStep = ZOOM_STEP,
+  } = options
+
+  // Generate zoom levels from step if not explicitly provided
+  const effectiveZoomLevels = zoomLevels || DEFAULT_ZOOM_LEVELS
+  const minZoom = effectiveZoomLevels[0] ?? ZOOM_MIN
+  const maxZoom = effectiveZoomLevels[effectiveZoomLevels.length - 1] ?? ZOOM_MAX
+
+  // Track if we need to calculate 'fit' zoom on mount
+  const needsFitZoom = initialZoom === 'fit'
+  const initialZoomValue = typeof initialZoom === 'number' ? initialZoom : 1
 
   const [state, setState] = useState<CanvasTransformState>({
-    zoom: initialZoom,
+    zoom: initialZoomValue,
     pan: initialPan,
     isPanning: false,
   })
+
+  // Store the initial/default zoom for reset (will be updated after fit calculation)
+  const defaultZoomRef = useRef<number>(initialZoomValue)
 
   const containerRef = useRef<HTMLDivElement>(null)
   const isPanningRef = useRef(false)
   const lastPanPoint = useRef<Point>({ x: 0, y: 0 })
   const spacePressed = useRef(false)
 
+  // Find the nearest zoom level from the available levels
+  const findNearestZoomLevel = useCallback((targetZoom: number): number => {
+    let nearest = effectiveZoomLevels[0]
+    let minDiff = Math.abs(targetZoom - nearest)
+
+    for (const level of effectiveZoomLevels) {
+      const diff = Math.abs(targetZoom - level)
+      if (diff < minDiff) {
+        minDiff = diff
+        nearest = level
+      }
+    }
+    return nearest
+  }, [effectiveZoomLevels])
+
   const setZoom = useCallback((newZoom: number, focalPoint?: Point) => {
     setState((prev) => {
-      const clampedZoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, newZoom))
+      const clampedZoom = Math.min(maxZoom, Math.max(minZoom, newZoom))
 
       if (focalPoint && containerRef.current) {
         const rect = containerRef.current.getBoundingClientRect()
@@ -53,16 +91,36 @@ export function useCanvasTransform(options: UseCanvasTransformOptions = {}) {
 
       return { ...prev, zoom: clampedZoom }
     })
-  }, [])
+  }, [minZoom, maxZoom])
 
   const setPan = useCallback((pan: Point) => {
     setState((prev) => ({ ...prev, pan }))
   }, [])
 
+  // Find next zoom level up from current
+  const getNextZoomLevel = useCallback((currentZoom: number): number => {
+    for (const level of effectiveZoomLevels) {
+      if (level > currentZoom + 0.001) {  // Small epsilon for floating point
+        return level
+      }
+    }
+    return effectiveZoomLevels[effectiveZoomLevels.length - 1]
+  }, [effectiveZoomLevels])
+
+  // Find next zoom level down from current
+  const getPrevZoomLevel = useCallback((currentZoom: number): number => {
+    for (let i = effectiveZoomLevels.length - 1; i >= 0; i--) {
+      if (effectiveZoomLevels[i] < currentZoom - 0.001) {  // Small epsilon for floating point
+        return effectiveZoomLevels[i]
+      }
+    }
+    return effectiveZoomLevels[0]
+  }, [effectiveZoomLevels])
+
   const zoomIn = useCallback(
     (focalPoint?: Point) => {
       setState((prev) => {
-        const newZoom = Math.min(ZOOM_MAX, prev.zoom * ZOOM_STEP)
+        const newZoom = getNextZoomLevel(prev.zoom)
         if (focalPoint && containerRef.current) {
           const rect = containerRef.current.getBoundingClientRect()
           const mouseX = focalPoint.x - rect.left
@@ -81,13 +139,13 @@ export function useCanvasTransform(options: UseCanvasTransformOptions = {}) {
         return { ...prev, zoom: newZoom }
       })
     },
-    []
+    [getNextZoomLevel]
   )
 
   const zoomOut = useCallback(
     (focalPoint?: Point) => {
       setState((prev) => {
-        const newZoom = Math.max(ZOOM_MIN, prev.zoom / ZOOM_STEP)
+        const newZoom = getPrevZoomLevel(prev.zoom)
         if (focalPoint && containerRef.current) {
           const rect = containerRef.current.getBoundingClientRect()
           const mouseX = focalPoint.x - rect.left
@@ -106,30 +164,36 @@ export function useCanvasTransform(options: UseCanvasTransformOptions = {}) {
         return { ...prev, zoom: newZoom }
       })
     },
-    []
+    [getPrevZoomLevel]
   )
 
   const resetTransform = useCallback(() => {
-    setState({ zoom: 1, pan: { x: 0, y: 0 }, isPanning: false })
+    setState({ zoom: defaultZoomRef.current, pan: { x: 0, y: 0 }, isPanning: false })
   }, [])
 
-  const fitToView = useCallback((contentSize: { width: number; height: number }, padding = 40) => {
+  const fitToView = useCallback((size: { width: number; height: number }, padding = 40) => {
     if (!containerRef.current) return
 
     const rect = containerRef.current.getBoundingClientRect()
-    const scaleX = (rect.width - padding * 2) / contentSize.width
-    const scaleY = (rect.height - padding * 2) / contentSize.height
-    const zoom = Math.min(scaleX, scaleY, 1)
+    const scaleX = (rect.width - padding * 2) / size.width
+    const scaleY = (rect.height - padding * 2) / size.height
+    const rawZoom = Math.min(scaleX, scaleY, 1)  // Cap at 100%
 
-    const panX = (rect.width - contentSize.width * zoom) / 2
-    const panY = (rect.height - contentSize.height * zoom) / 2
+    // Round to nearest zoom step
+    const roundedZoom = findNearestZoomLevel(rawZoom)
 
-    setState({ zoom, pan: { x: panX, y: panY }, isPanning: false })
-  }, [])
+    const panX = (rect.width - size.width * roundedZoom) / 2
+    const panY = (rect.height - size.height * roundedZoom) / 2
+
+    setState({ zoom: roundedZoom, pan: { x: panX, y: panY }, isPanning: false })
+
+    return roundedZoom  // Return for use in initial 'fit' calculation
+  }, [findNearestZoomLevel])
 
   const handleWheel = useCallback(
     (e: WheelEvent) => {
       e.preventDefault()
+      e.stopPropagation()  // Prevent scroll events from escaping the container
 
       const isPinch = e.ctrlKey || e.metaKey
 
@@ -227,6 +291,29 @@ export function useCanvasTransform(options: UseCanvasTransformOptions = {}) {
     onTransformChange?.({ zoom: state.zoom, pan: state.pan })
   }, [state.zoom, state.pan, onTransformChange])
 
+  // Handle initial 'fit' calculation on mount
+  const hasFittedRef = useRef(false)
+  useEffect(() => {
+    if (needsFitZoom && contentSize && containerRef.current && !hasFittedRef.current) {
+      hasFittedRef.current = true
+
+      const rect = containerRef.current.getBoundingClientRect()
+      const padding = 40
+      const scaleX = (rect.width - padding * 2) / contentSize.width
+      const scaleY = (rect.height - padding * 2) / contentSize.height
+      const rawZoom = Math.min(scaleX, scaleY, 1)  // Cap at 100%
+
+      // Round to nearest zoom step
+      const fittedZoom = findNearestZoomLevel(rawZoom)
+      defaultZoomRef.current = fittedZoom  // Store for reset
+
+      const panX = (rect.width - contentSize.width * fittedZoom) / 2
+      const panY = (rect.height - contentSize.height * fittedZoom) / 2
+
+      setState({ zoom: fittedZoom, pan: { x: panX, y: panY }, isPanning: false })
+    }
+  }, [needsFitZoom, contentSize, findNearestZoomLevel])
+
   const screenToCanvas = useCallback(
     (screenPoint: Point): Point => {
       if (!containerRef.current) return screenPoint
@@ -262,6 +349,8 @@ export function useCanvasTransform(options: UseCanvasTransformOptions = {}) {
     zoom: state.zoom,
     pan: state.pan,
     isPanning: state.isPanning,
+    minZoom,
+    maxZoom,
     setZoom,
     setPan,
     zoomIn,

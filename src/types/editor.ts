@@ -149,6 +149,18 @@ export interface AppState {
   history: HistoryState
 }
 
-export const ZOOM_MIN = 0.1
-export const ZOOM_MAX = 4
-export const ZOOM_STEP = 1.15
+export const ZOOM_MIN = 0.25
+export const ZOOM_MAX = 2
+export const ZOOM_STEP = 0.05
+
+// 25% to 200% in 5% increments
+export const DEFAULT_ZOOM_LEVELS = Array.from({ length: 36 }, (_, i) =>
+  Math.round((0.25 + i * 0.05) * 100) / 100
+)
+
+// Zoom configuration props for ArcDiagram and related components
+export interface ZoomConfig {
+  defaultZoom?: number | 'fit'  // Initial zoom level, or 'fit' to auto-calculate
+  zoomLevels?: number[]         // Custom zoom level steps (overrides zoomStep)
+  zoomStep?: number             // Zoom increment per step (default: 0.05 = 5%)
+}
