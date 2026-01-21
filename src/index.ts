@@ -14,7 +14,23 @@ export { EditorProvider, useEditor, useDiagram, useEditorState, useViewMode } fr
 // =============================================================================
 // Player / Viewer Components
 // =============================================================================
-export { default as ArcDiagram } from './player/ArcDiagram'
+
+// 2D Flow Diagram Player (layout, nodes, nodeData, connectors format)
+export {
+  default as ArcDiagram,
+  type ArcDiagramData,
+  type NodeSize,
+  type NodePosition as ArcNodePosition,
+  type NodeData as ArcNodeData,
+  type Connector as ArcConnector,
+  type ConnectorStyle as ArcConnectorStyle,
+  type DiagramColor,
+  type DiagramMode,
+  type DiagramLayout,
+} from './components/ArcDiagram'
+
+// 3D Isometric Diagram Player (tiers, floorSize, nodes format)
+export { default as ArcDiagramIsometric } from './player/ArcDiagram'
 export { renderToElement, renderToString } from './player/vanilla'
 
 // =============================================================================
