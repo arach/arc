@@ -48,6 +48,15 @@ const diagram: ArcDiagramData = {
 export default diagram
 ```
 
+## Requirements
+
+The `ArcDiagram` player component requires:
+
+- **Tailwind CSS v3+** - Component uses Tailwind utility classes for styling
+- **Default color palette** - The following colors must be available: `violet`, `emerald`, `blue`, `amber`, `sky`, `zinc`, `rose`, `orange`
+
+If you're using a custom Tailwind config that restricts the color palette, ensure these colors are included.
+
 ## Tech Stack
 
 - React 19
