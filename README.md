@@ -1,6 +1,8 @@
 # Arc
 
-A visual diagram editor for creating architecture diagrams. Design system architectures with a drag-and-drop interface, then export to clean TypeScript for use in documentation sites.
+A visual diagram editor for creating architecture diagrams. Design visually, export as code.
+
+![Arc Editor](public/og-editor.png)
 
 ## Features
 
@@ -20,32 +22,43 @@ pnpm install
 pnpm dev
 ```
 
-## Export Format
+## Example Output
 
-Arc exports diagrams as clean TypeScript compatible with the `ArcDiagram` player component:
+Arc exports diagrams as clean TypeScript. Here's a microservices architecture:
 
 ```typescript
-import type { ArcDiagramData } from './ArcDiagram'
-
 const diagram: ArcDiagramData = {
-  layout: { width: 800, height: 400 },
+  layout: { width: 850, height: 340 },
   nodes: {
-    app: { x: 50, y: 50, size: 'l' },
-    api: { x: 300, y: 50, size: 'm' },
+    client:  { x: 40,  y: 130, size: 'm' },
+    gateway: { x: 220, y: 130, size: 'l' },
+    auth:    { x: 460, y: 40,  size: 'm' },
+    api:     { x: 460, y: 140, size: 'm' },
+    cache:   { x: 460, y: 240, size: 's' },
+    db:      { x: 680, y: 140, size: 'm' },
   },
   nodeData: {
-    app: { icon: 'Monitor', name: 'App', color: 'violet' },
-    api: { icon: 'Server', name: 'API', color: 'emerald' },
+    client:  { icon: 'Monitor',  name: 'Client',      subtitle: 'React App', color: 'violet' },
+    gateway: { icon: 'Server',   name: 'API Gateway', subtitle: 'Express', description: 'Load balanced', color: 'emerald' },
+    auth:    { icon: 'Shield',   name: 'Auth',        subtitle: 'JWT', color: 'amber' },
+    api:     { icon: 'Code',     name: 'API',         subtitle: 'REST', color: 'blue' },
+    cache:   { icon: 'Zap',      name: 'Cache',       color: 'sky' },
+    db:      { icon: 'Database', name: 'PostgreSQL',  subtitle: 'Primary', color: 'blue' },
   },
   connectors: [
-    { from: 'app', to: 'api', fromAnchor: 'right', toAnchor: 'left', style: 'http' }
+    { from: 'client',  to: 'gateway', fromAnchor: 'right',       toAnchor: 'left', style: 'https' },
+    { from: 'gateway', to: 'auth',    fromAnchor: 'right',       toAnchor: 'left', style: 'internal' },
+    { from: 'gateway', to: 'api',     fromAnchor: 'right',       toAnchor: 'left', style: 'internal' },
+    { from: 'gateway', to: 'cache',   fromAnchor: 'bottomRight', toAnchor: 'left', style: 'cache' },
+    { from: 'api',     to: 'db',      fromAnchor: 'right',       toAnchor: 'left', style: 'sql' },
   ],
   connectorStyles: {
-    http: { color: 'amber', strokeWidth: 2, label: 'HTTP' }
+    https:    { color: 'violet',  strokeWidth: 2, label: 'HTTPS' },
+    internal: { color: 'emerald', strokeWidth: 2 },
+    cache:    { color: 'sky',     strokeWidth: 1, dashed: true },
+    sql:      { color: 'blue',    strokeWidth: 2, label: 'SQL' },
   },
 }
-
-export default diagram
 ```
 
 ## Requirements

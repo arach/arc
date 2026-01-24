@@ -1,4 +1,4 @@
-import ArcDiagram from './ArcDiagram'
+import { ArcDiagram } from '@arach/arc'
 import diagram from './diagrams/architecture-intro.diagram'
 
 // Actual source that generates the diagram

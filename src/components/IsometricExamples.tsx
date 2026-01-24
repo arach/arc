@@ -547,7 +547,7 @@ function IsometricDiagram({ config, drawerOpen = false }: { config: DiagramConfi
 
   // Tier hover state with debounce
   const [hoveredTier, setHoveredTierRaw] = useState<number | null>(null)
-  const tierHoverTimeout = React.useRef<NodeJS.Timeout | null>(null)
+  const tierHoverTimeout = React.useRef<ReturnType<typeof setTimeout> | null>(null)
   const setHoveredTier = (tier: number | null) => {
     if (tierHoverTimeout.current) clearTimeout(tierHoverTimeout.current)
     if (tier === null) {
@@ -560,7 +560,7 @@ function IsometricDiagram({ config, drawerOpen = false }: { config: DiagramConfi
 
   // Node hover state with debounce
   const [hoveredNode, setHoveredNodeRaw] = useState<{ tier: number; index: number } | null>(null)
-  const nodeHoverTimeout = React.useRef<NodeJS.Timeout | null>(null)
+  const nodeHoverTimeout = React.useRef<ReturnType<typeof setTimeout> | null>(null)
   const setHoveredNode = (node: { tier: number; index: number } | null) => {
     if (nodeHoverTimeout.current) clearTimeout(nodeHoverTimeout.current)
     if (node === null) {

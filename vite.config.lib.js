@@ -11,7 +11,7 @@ export default defineConfig({
     react(),
     dts({
       include: ['src/index.ts', 'src/types/**/*.ts', 'src/player/types.ts'],
-      outDir: 'dist',
+      outDir: 'lib',
       rollupTypes: true,
     }),
   ],
@@ -38,7 +38,7 @@ export default defineConfig({
         },
       },
     },
-    outDir: 'dist',
+    outDir: 'lib',
     emptyOutDir: true,
     minify: 'esbuild',
     cssCodeSplit: false,

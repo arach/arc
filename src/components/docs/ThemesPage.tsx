@@ -1,7 +1,6 @@
 import React, { useState } from 'react'
 import DocsLayout, { type DocSection } from './DocsLayout'
-import ArcDiagram, { type ThemeId, type DiagramMode } from '../ArcDiagram'
-import { THEMES, getThemeList } from '../../utils/themes'
+import { ArcDiagram, type ThemeId, type DiagramMode, THEMES, getThemeList } from '@arach/arc'
 
 // Sample diagram for previewing themes
 const sampleDiagram = {
@@ -155,7 +154,7 @@ export default function ThemesPage({ currentPage, onNavigate, onBack }: ThemesPa
       </p>
 
       <pre className="bg-zinc-900 text-zinc-100 p-4 rounded-lg overflow-x-auto">
-        <code>{`import ArcDiagram from './ArcDiagram'
+        <code>{`import { ArcDiagram } from '@arach/arc'
 import diagram from './my-diagram'
 
 // Light mode with warm theme

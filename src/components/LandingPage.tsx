@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Package, Zap, Shield, Rabbit, Copy, Check, Github } from 'lucide-react'
-import ArcDiagram, { type ThemeId, type ArcDiagramData } from './ArcDiagram'
+import { ArcDiagram, type ThemeId, type ArcDiagramData } from '@arach/arc'
 import ArcArchitectureNext from './ArcArchitectureNext'
 import architectureDiagram from './diagrams/architecture.diagram'
-import { getThemeList } from '../utils/themes'
+import { getThemeList } from '@arach/arc'
 import { useMeta } from '../hooks/useMeta'
 
 type PackageManager = 'npm' | 'pnpm' | 'yarn' | 'bun'

@@ -18,18 +18,18 @@
     "isometric"
   ],
   "files": [
-    "dist/arc.es.js",
-    "dist/arc.umd.js",
-    "dist/index.d.ts"
+    "lib/arc.es.js",
+    "lib/arc.umd.js",
+    "lib/index.d.ts"
   ],
-  "main": "./dist/arc.umd.js",
-  "module": "./dist/arc.es.js",
-  "types": "./dist/index.d.ts",
+  "main": "./lib/arc.umd.js",
+  "module": "./lib/arc.es.js",
+  "types": "./lib/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/arc.es.js",
-      "require": "./dist/arc.umd.js"
+      "types": "./lib/index.d.ts",
+      "import": "./lib/arc.es.js",
+      "require": "./lib/arc.umd.js"
     }
   },
   "sideEffects": false,

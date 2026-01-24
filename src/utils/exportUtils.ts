@@ -408,7 +408,7 @@ export function generateTypeScript(diagram: any) {
   }
 
   // Format as clean TypeScript
-  return `import type { ArcDiagramData } from '../ArcDiagram'
+  return `import type { ArcDiagramData } from '@arach/arc'
 
 const diagram: ArcDiagramData = ${formatAsTS(data)}
 

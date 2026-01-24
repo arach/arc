@@ -5,6 +5,7 @@ node_modules
 dist
 dist-ssr
 dist-player
+lib
 bundle-stats.html
 *.tsbuildinfo
 

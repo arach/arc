@@ -8,7 +8,7 @@ import { getTheme, type ThemeId, type Theme } from '../utils/themes'
 // Types
 // ============================================
 
-export type NodeSize = 's' | 'm' | 'l'
+export type NodeSize = 'xs' | 's' | 'm' | 'l'
 export type AnchorPosition = 'left' | 'right' | 'top' | 'bottom' | 'bottomLeft' | 'bottomRight' | 'topLeft' | 'topRight'
 export type DiagramColor = 'violet' | 'emerald' | 'blue' | 'amber' | 'sky' | 'zinc' | 'rose' | 'orange'
 
@@ -67,6 +67,7 @@ const NODE_SIZES: Record<NodeSize, { width: number; height: number }> = {
   l: { width: 220, height: 90 },
   m: { width: 160, height: 75 },
   s: { width: 110, height: 48 },
+  xs: { width: 80, height: 36 },
 }
 
 // Mode = light/dark appearance, Theme = color palette
@@ -167,9 +168,25 @@ function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors }
   const toNode = nodes[connector.to]
   if (!fromNode || !toNode) return null
 
+  // Validate node sizes exist
+  if (!NODE_SIZES[fromNode.size] || !NODE_SIZES[toNode.size]) {
+    console.warn(`Invalid node size: ${fromNode.size} or ${toNode.size}`)
+    return null
+  }
+
   const style = styles[connector.style] || { color: 'zinc', strokeWidth: 2 }
-  const from = getAnchorPoint(fromNode, connector.fromAnchor)
-  const to = getAnchorPoint(toNode, connector.toAnchor)
+
+  // Safely get anchor points
+  let from: { x: number; y: number }
+  let to: { x: number; y: number }
+  try {
+    from = getAnchorPoint(fromNode, connector.fromAnchor)
+    to = getAnchorPoint(toNode, connector.toAnchor)
+  } catch (e) {
+    console.warn(`Invalid anchor: ${connector.fromAnchor} or ${connector.toAnchor}`)
+    return null
+  }
+
   const color = themeColors.palette[style.color]?.stroke || themeColors.palette.zinc.stroke
   const gradientId = `connector-gradient-${connectorIndex}`
 
@@ -278,17 +295,18 @@ function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors }
 // Zoom Controls
 // ============================================
 
-const ZOOM_LEVELS = [0.5, 0.75, 1, 1.25, 1.5, 2]
+const DEFAULT_ZOOM_LEVELS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2]
 
 interface ZoomControlsProps {
   zoom: number
+  zoomLevels: number[]
   onZoomIn: () => void
   onZoomOut: () => void
   onReset: () => void
   mode: DiagramMode
 }
 
-function ZoomControls({ zoom, onZoomIn, onZoomOut, onReset, mode }: ZoomControlsProps) {
+function ZoomControls({ zoom, zoomLevels, onZoomIn, onZoomOut, onReset, mode }: ZoomControlsProps) {
   const { ZoomIn, ZoomOut } = LucideIcons
   const isLight = mode === 'light'
 
@@ -300,7 +318,7 @@ function ZoomControls({ zoom, onZoomIn, onZoomOut, onReset, mode }: ZoomControls
     }`}>
       <button
         onClick={onZoomOut}
-        disabled={zoom <= ZOOM_LEVELS[0]}
+        disabled={zoom <= zoomLevels[0]}
         className={`p-1 disabled:opacity-30 disabled:cursor-not-allowed transition-colors rounded-l-md ${
           isLight ? 'hover:bg-zinc-100' : 'hover:bg-zinc-700'
         }`}
@@ -321,7 +339,7 @@ function ZoomControls({ zoom, onZoomIn, onZoomOut, onReset, mode }: ZoomControls
       </button>
       <button
         onClick={onZoomIn}
-        disabled={zoom >= ZOOM_LEVELS[ZOOM_LEVELS.length - 1]}
+        disabled={zoom >= zoomLevels[zoomLevels.length - 1]}
         className={`p-1 disabled:opacity-30 disabled:cursor-not-allowed transition-colors rounded-r-md ${
           isLight ? 'hover:bg-zinc-100' : 'hover:bg-zinc-700'
         }`}
@@ -343,40 +361,90 @@ interface ArcDiagramProps {
   interactive?: boolean  // Enable zoom/pan controls
   mode?: DiagramMode     // Light/dark appearance
   theme?: ThemeId        // Color palette theme
+  /** Override the diagram label (bottom-left). Defaults to data.id */
+  label?: string
+  /** Initial zoom level. Use 'fit' to auto-fit content, or a number (e.g., 0.75). Default: 1 */
+  defaultZoom?: number | 'fit'
+  /** Custom zoom level steps. Default: [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2] */
+  zoomLevels?: number[]
 }
 
-export default function ArcDiagram({ data, className = '', interactive = true, mode = 'dark', theme = 'default' }: ArcDiagramProps) {
+export default function ArcDiagram({
+  data,
+  className = '',
+  interactive = true,
+  mode = 'dark',
+  theme = 'default',
+  label,
+  defaultZoom = 1,
+  zoomLevels = DEFAULT_ZOOM_LEVELS,
+}: ArcDiagramProps) {
   const { id, layout, nodes, nodeData, connectors, connectorStyles } = data
   const isLight = mode === 'light'
+  const containerRef = React.useRef<HTMLDivElement>(null)
 
   // Resolve theme colors based on mode
   const themeData = getTheme(theme)
   const themeColors = isLight ? themeData.light : themeData.dark
+
+  // Calculate 'fit' zoom based on container size
+  const calculateFitZoom = useCallback(() => {
+    if (!containerRef.current) return 1
+    const container = containerRef.current
+    const containerWidth = container.clientWidth
+    const containerHeight = container.clientHeight
+    // Add padding for chrome (zoom controls, label)
+    const padding = 40
+    const fitX = (containerWidth - padding) / layout.width
+    const fitY = (containerHeight - padding) / layout.height
+    // Use the smaller ratio to fit both dimensions, cap at 1 (100%)
+    return Math.min(fitX, fitY, 1)
+  }, [layout.width, layout.height])
+
+  // Determine initial zoom
+  const getInitialZoom = useCallback(() => {
+    if (defaultZoom === 'fit') {
+      return calculateFitZoom()
+    }
+    return defaultZoom
+  }, [defaultZoom, calculateFitZoom])
 
   // Zoom & pan state
   const [zoom, setZoom] = useState(1)
   const [pan, setPan] = useState({ x: 0, y: 0 })
   const [isPanning, setIsPanning] = useState(false)
   const [panStart, setPanStart] = useState({ x: 0, y: 0 })
+  const [initialized, setInitialized] = useState(false)
+
+  // Set initial zoom after mount (needed for 'fit' to measure container)
+  React.useEffect(() => {
+    if (!initialized) {
+      setZoom(getInitialZoom())
+      setInitialized(true)
+    }
+  }, [initialized, getInitialZoom])
+
+  // Sorted zoom levels for consistent navigation
+  const sortedZoomLevels = React.useMemo(() => [...zoomLevels].sort((a, b) => a - b), [zoomLevels])
 
   const handleZoomIn = useCallback(() => {
     setZoom(z => {
-      const idx = ZOOM_LEVELS.findIndex(l => l >= z)
-      return ZOOM_LEVELS[Math.min(idx + 1, ZOOM_LEVELS.length - 1)]
+      const idx = sortedZoomLevels.findIndex(l => l >= z)
+      return sortedZoomLevels[Math.min(idx + 1, sortedZoomLevels.length - 1)]
     })
-  }, [])
+  }, [sortedZoomLevels])
 
   const handleZoomOut = useCallback(() => {
     setZoom(z => {
-      const idx = ZOOM_LEVELS.findIndex(l => l >= z)
-      return ZOOM_LEVELS[Math.max(idx - 1, 0)]
+      const idx = sortedZoomLevels.findIndex(l => l >= z)
+      return sortedZoomLevels[Math.max(idx - 1, 0)]
     })
-  }, [])
+  }, [sortedZoomLevels])
 
   const handleReset = useCallback(() => {
-    setZoom(1)
+    setZoom(getInitialZoom())
     setPan({ x: 0, y: 0 })
-  }, [])
+  }, [getInitialZoom])
 
   const handleWheel = useCallback((e: React.WheelEvent) => {
     if (!interactive) return
@@ -405,8 +473,12 @@ export default function ArcDiagram({ data, className = '', interactive = true, m
     setIsPanning(false)
   }, [])
 
+  // Displayed label: prop overrides data.id
+  const displayLabel = label ?? id
+
   return (
     <div
+      ref={containerRef}
       className={`rounded-2xl overflow-hidden relative ${themeColors.background.container} ${className}`}
       onWheel={handleWheel}
       onMouseDown={handleMouseDown}
@@ -457,17 +529,19 @@ export default function ArcDiagram({ data, className = '', interactive = true, m
         </svg>
 
         {/* Nodes */}
-        {Object.entries(nodes).map(([nodeId, node]) => (
-          <Node key={nodeId} node={node} data={nodeData[nodeId]} mode={mode} themeColors={themeColors} />
-        ))}
+        {Object.entries(nodes).map(([nodeId, node]) => {
+          const data = nodeData[nodeId]
+          if (!data) return null  // Skip nodes without data
+          return <Node key={nodeId} node={node} data={data} mode={mode} themeColors={themeColors} />
+        })}
       </div>
 
       {/* Viewer chrome - fixed position regardless of zoom/pan */}
 
-      {/* Diagram ID - bottom left */}
-      {id && (
+      {/* Diagram label - bottom left */}
+      {displayLabel && (
         <div className={`absolute bottom-3 left-3 font-mono text-[9px] tracking-wider z-10 ${themeColors.text.muted}`}>
-          {id}
+          {displayLabel}
         </div>
       )}
 
@@ -475,6 +549,7 @@ export default function ArcDiagram({ data, className = '', interactive = true, m
       {interactive && (
         <ZoomControls
           zoom={zoom}
+          zoomLevels={sortedZoomLevels}
           onZoomIn={handleZoomIn}
           onZoomOut={handleZoomOut}
           onReset={handleReset}

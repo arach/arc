@@ -27,7 +27,11 @@ export {
   type DiagramColor,
   type DiagramMode,
   type DiagramLayout,
+  type ThemeId,
 } from './components/ArcDiagram'
+
+// Theme utilities
+export { THEMES, getTheme, getThemeList, type Theme, type ColorPalette } from './utils/themes'
 
 // 3D Isometric Diagram Player (tiers, floorSize, nodes format)
 export { default as ArcDiagramIsometric } from './player/ArcDiagram'
