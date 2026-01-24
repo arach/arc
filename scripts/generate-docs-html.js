@@ -48,3 +48,31 @@ if (!existsSync(docsDir)) {
 // Write docs/index.html
 writeFileSync(path.join(docsDir, 'index.html'), html)
 console.log('✓ Generated dist/docs/index.html with docs OG tags')
+
+// Generate docs/agents/index.html (LLM reference page)
+const agentsDir = path.join(docsDir, 'agents')
+if (!existsSync(agentsDir)) {
+  mkdirSync(agentsDir, { recursive: true })
+}
+
+let agentsHtml = readFileSync(indexPath, 'utf-8')
+const agentsReplacements = [
+  [/<title>.*?<\/title>/, '<title>LLM & Agent Reference | Arc Docs</title>'],
+  [/<meta name="title" content=".*?"/, '<meta name="title" content="LLM & Agent Reference | Arc Docs"'],
+  [/<meta property="og:title" content=".*?"/, '<meta property="og:title" content="LLM & Agent Reference | Arc Docs"'],
+  [/<meta property="twitter:title" content=".*?"/, '<meta property="twitter:title" content="LLM & Agent Reference | Arc Docs"'],
+  [/<meta name="description" content=".*?"/, '<meta name="description" content="Agent-friendly documentation for AI-assisted diagram generation with Arc."'],
+  [/<meta property="og:description" content=".*?"/, '<meta property="og:description" content="Agent-friendly documentation for AI-assisted diagram generation with Arc."'],
+  [/<meta property="twitter:description" content=".*?"/, '<meta property="twitter:description" content="Agent-friendly documentation for AI-assisted diagram generation with Arc."'],
+  [/<meta property="og:url" content=".*?"/, '<meta property="og:url" content="https://arc.jdi.sh/docs/agents"'],
+  [/<meta property="twitter:url" content=".*?"/, '<meta property="twitter:url" content="https://arc.jdi.sh/docs/agents"'],
+  [/<meta property="og:image" content=".*?"/, '<meta property="og:image" content="https://arc.jdi.sh/og-docs-llm.png"'],
+  [/<meta property="twitter:image" content=".*?"/, '<meta property="twitter:image" content="https://arc.jdi.sh/og-docs-llm.png"'],
+]
+
+for (const [pattern, replacement] of agentsReplacements) {
+  agentsHtml = agentsHtml.replace(pattern, replacement)
+}
+
+writeFileSync(path.join(agentsDir, 'index.html'), agentsHtml)
+console.log('✓ Generated dist/docs/agents/index.html with agents OG tags')
