@@ -1,7 +1,19 @@
 import { useState, useCallback } from 'react'
 
+interface GroupDragState {
+  groupId: string
+  type: 'move' | 'resize'
+  corner?: string
+  startX: number
+  startY: number
+  originalX: number
+  originalY: number
+  originalWidth?: number
+  originalHeight?: number
+}
+
 // Group colors matching the node color palette
-const groupColors = {
+const groupColors: Record<string, { fill: string; stroke: string }> = {
   violet: { fill: 'rgba(139, 92, 246, 0.1)', stroke: 'rgba(139, 92, 246, 0.5)' },
   emerald: { fill: 'rgba(52, 211, 153, 0.1)', stroke: 'rgba(52, 211, 153, 0.5)' },
   blue: { fill: 'rgba(96, 165, 250, 0.1)', stroke: 'rgba(96, 165, 250, 0.5)' },
@@ -107,9 +119,9 @@ export default function GroupLayer({
   onGroupUpdate,
   screenToCanvas,
 }) {
-  const [dragState, setDragState] = useState(null)
+  const [dragState, setDragState] = useState<GroupDragState | null>(null)
 
-  const handleDragStart = useCallback((groupId, e) => {
+  const handleDragStart = useCallback((groupId: string, e: React.MouseEvent) => {
     const group = groups.find(g => g.id === groupId)
     if (!group) return
 
@@ -124,7 +136,7 @@ export default function GroupLayer({
     })
   }, [groups, screenToCanvas])
 
-  const handleResizeStart = useCallback((groupId, corner, e) => {
+  const handleResizeStart = useCallback((groupId: string, corner: string, e: React.MouseEvent) => {
     const group = groups.find(g => g.id === groupId)
     if (!group) return
 
@@ -142,7 +154,7 @@ export default function GroupLayer({
     })
   }, [groups, screenToCanvas])
 
-  const handleMouseMove = useCallback((e) => {
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (!dragState) return
 
     const point = screenToCanvas({ x: e.clientX, y: e.clientY })
@@ -154,7 +166,7 @@ export default function GroupLayer({
         x: Math.round(dragState.originalX + dx),
         y: Math.round(dragState.originalY + dy),
       })
-    } else if (dragState.type === 'resize') {
+    } else if (dragState.type === 'resize' && dragState.corner && dragState.originalWidth !== undefined && dragState.originalHeight !== undefined) {
       let newX = dragState.originalX
       let newY = dragState.originalY
       let newWidth = dragState.originalWidth

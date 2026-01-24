@@ -1,14 +1,33 @@
 import { useState, useCallback, useRef } from 'react'
 
+interface DragState {
+  type: 'move' | 'resize'
+  corner?: string
+  startX: number
+  startY: number
+  originalX: number
+  originalY: number
+  originalWidth?: number
+  originalHeight?: number
+}
+
+interface ExportZoneLayerProps {
+  layout: { width: number; height: number }
+  exportZone: { x: number; y: number; width: number; height: number } | null
+  isEditing: boolean
+  onZoneUpdate: (zone: { x: number; y: number; width: number; height: number }) => void
+  screenToCanvas: (point: { x: number; y: number }) => { x: number; y: number }
+}
+
 export default function ExportZoneLayer({
   layout,
   exportZone,
   isEditing,
   onZoneUpdate,
   screenToCanvas,
-}) {
-  const [dragState, setDragState] = useState(null)
-  const svgRef = useRef(null)
+}: ExportZoneLayerProps) {
+  const [dragState, setDragState] = useState<DragState | null>(null)
+  const svgRef = useRef<SVGSVGElement>(null)
 
   const handleResizeStart = useCallback((corner, e) => {
     if (!exportZone || !isEditing) return
@@ -43,7 +62,7 @@ export default function ExportZoneLayer({
     })
   }, [exportZone, isEditing, screenToCanvas])
 
-  const handlePointerMove = useCallback((e) => {
+  const handlePointerMove = useCallback((e: React.PointerEvent) => {
     if (!dragState || !exportZone) return
 
     const point = screenToCanvas({ x: e.clientX, y: e.clientY })
@@ -57,7 +76,7 @@ export default function ExportZoneLayer({
         x: Math.max(0, Math.round(dragState.originalX + dx)),
         y: Math.max(0, Math.round(dragState.originalY + dy)),
       })
-    } else if (dragState.type === 'resize') {
+    } else if (dragState.type === 'resize' && dragState.corner && dragState.originalWidth !== undefined && dragState.originalHeight !== undefined) {
       let newX = dragState.originalX
       let newY = dragState.originalY
       let newWidth = dragState.originalWidth

@@ -1,6 +1,25 @@
 import { useState, useCallback } from 'react'
 
-function ImageShape({ image, isSelected, onClick, onDragStart, onResize }) {
+interface ImageDragState {
+  imageId: string
+  type: 'move' | 'resize'
+  corner?: string
+  startX: number
+  startY: number
+  originalX: number
+  originalY: number
+  originalWidth?: number
+  originalHeight?: number
+  aspectRatio?: number
+}
+
+function ImageShape({ image, isSelected, onClick, onDragStart, onResize }: {
+  image: { id: string; x: number; y: number; width: number; height: number; src: string; opacity?: number }
+  isSelected: boolean
+  onClick: (id: string) => void
+  onDragStart: (id: string, e: React.MouseEvent) => void
+  onResize: (id: string, corner: string, e: React.MouseEvent) => void
+}) {
   const { x, y, width, height, src, opacity = 1 } = image
 
   const handleMouseDown = (e) => {
@@ -77,9 +96,9 @@ export default function ImageLayer({
   onImageUpdate,
   screenToCanvas,
 }) {
-  const [dragState, setDragState] = useState(null)
+  const [dragState, setDragState] = useState<ImageDragState | null>(null)
 
-  const handleDragStart = useCallback((imageId, e) => {
+  const handleDragStart = useCallback((imageId: string, e: React.MouseEvent) => {
     const image = images.find(img => img.id === imageId)
     if (!image) return
 
@@ -94,7 +113,7 @@ export default function ImageLayer({
     })
   }, [images, screenToCanvas])
 
-  const handleResizeStart = useCallback((imageId, corner, e) => {
+  const handleResizeStart = useCallback((imageId: string, corner: string, e: React.MouseEvent) => {
     const image = images.find(img => img.id === imageId)
     if (!image) return
 
@@ -113,7 +132,7 @@ export default function ImageLayer({
     })
   }, [images, screenToCanvas])
 
-  const handleMouseMove = useCallback((e) => {
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (!dragState) return
 
     const point = screenToCanvas({ x: e.clientX, y: e.clientY })
@@ -125,7 +144,7 @@ export default function ImageLayer({
         x: Math.round(dragState.originalX + dx),
         y: Math.round(dragState.originalY + dy),
       })
-    } else if (dragState.type === 'resize') {
+    } else if (dragState.type === 'resize' && dragState.corner && dragState.originalWidth !== undefined && dragState.originalHeight !== undefined) {
       let newX = dragState.originalX
       let newY = dragState.originalY
       let newWidth = dragState.originalWidth

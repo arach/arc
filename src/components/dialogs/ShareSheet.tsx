@@ -51,10 +51,19 @@ function ShareOption({ icon: Icon, label, description, onClick, loading = false,
 }
 
 // Interactive crop preview
-function CropPreview({ diagram, cropBounds, onCropChange }) {
-  const containerRef = useRef(null)
-  const [dragging, setDragging] = useState(null) // null | 'move' | 'nw' | 'ne' | 'sw' | 'se'
-  const [dragStart, setDragStart] = useState(null)
+interface DragStart {
+  mouse: { x: number; y: number }
+  bounds: { x: number; y: number; width: number; height: number }
+}
+
+function CropPreview({ diagram, cropBounds, onCropChange }: {
+  diagram: any
+  cropBounds: { x: number; y: number; width: number; height: number }
+  onCropChange: (bounds: { x: number; y: number; width: number; height: number }) => void
+}) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [dragging, setDragging] = useState<string | null>(null) // null | 'move' | 'nw' | 'ne' | 'sw' | 'se'
+  const [dragStart, setDragStart] = useState<DragStart | null>(null)
 
   // Calculate scale to fit diagram in preview area
   const previewWidth = 450

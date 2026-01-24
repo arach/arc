@@ -1,7 +1,14 @@
 import { createContext, useContext, useReducer, useCallback } from 'react'
 import { editorReducer, initialState } from './editorReducer'
 
-const EditorContext = createContext(null)
+// Define the context type
+interface EditorContextType {
+  state: typeof initialState
+  dispatch: React.Dispatch<any>
+  actions: Record<string, (...args: any[]) => void>
+}
+
+const EditorContext = createContext<EditorContextType | null>(null)
 
 export function EditorProvider({ children, initialDiagram }) {
   const [state, dispatch] = useReducer(
@@ -198,7 +205,7 @@ export function EditorProvider({ children, initialDiagram }) {
   )
 }
 
-export function useEditor() {
+export function useEditor(): EditorContextType {
   const context = useContext(EditorContext)
   if (!context) {
     throw new Error('useEditor must be used within an EditorProvider')

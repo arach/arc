@@ -14,10 +14,9 @@ const sections: DocSection[] = [
 interface QuickstartPageProps {
   currentPage: string
   onNavigate: (page: string) => void
-  onBack: () => void
 }
 
-export default function QuickstartPage({ currentPage, onNavigate, onBack }: QuickstartPageProps) {
+export default function QuickstartPage({ currentPage, onNavigate}: QuickstartPageProps) {
   return (
     <DocsLayout
       title="Quickstart"
@@ -27,7 +26,6 @@ export default function QuickstartPage({ currentPage, onNavigate, onBack }: Quic
       sections={sections}
       currentPage={currentPage}
       onNavigate={onNavigate}
-      onBack={onBack}
       ogImage="/og-docs-quickstart.png"
     >
       <h2 id="install">Installation</h2>

@@ -22,15 +22,6 @@ interface TierConfig {
 }
 
 // =============================================================================
-// NODE OPTIONS - Declarative visual properties
-// =============================================================================
-interface NodeStyle {
-  opacity?: number          // Override tier opacity (0-1)
-  blur?: number             // Blur for depth effect (px)
-  translucent?: boolean     // Glass-like effect with backdrop
-}
-
-// =============================================================================
 // EXAMPLE 1: Layered Design System
 // =============================================================================
 const DESIGN_SYSTEM = {
