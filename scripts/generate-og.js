@@ -1006,6 +1006,16 @@ async function main() {
     'og-docs-llm.png'
   )
 
+  await generateOGImage(
+    docPageHtml('Overview', 'Arc is a visual diagram editor for architecture diagrams that are readable and versionable.'),
+    'og-docs-overview.png'
+  )
+
+  await generateOGImage(
+    docPageHtml('Themes', 'Color palettes and background treatments that adapt to light and dark modes.'),
+    'og-docs-themes.png'
+  )
+
   console.log('\nDone!')
 }
 

@@ -39,6 +39,7 @@ export default function OverviewPage({ currentPage, onNavigate}: OverviewPagePro
       sections={sections}
       currentPage={currentPage}
       onNavigate={onNavigate}
+      ogImage="/og-docs-overview.png"
     >
       <h2 id="what-is-arc">What is Arc?</h2>
       <p>

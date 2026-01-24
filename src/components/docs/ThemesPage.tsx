@@ -56,6 +56,7 @@ export default function ThemesPage({ currentPage, onNavigate}: ThemesPageProps) 
       sections={sections}
       currentPage={currentPage}
       onNavigate={onNavigate}
+      ogImage="/og-docs-themes.png"
     >
       <h2 id="overview">Overview</h2>
       <p>
