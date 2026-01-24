@@ -27,10 +27,9 @@ const FeatureCard = ({ icon: Icon, title, description, color }: {
 interface OverviewPageProps {
   currentPage: string
   onNavigate: (page: string) => void
-  onBack: () => void
 }
 
-export default function OverviewPage({ currentPage, onNavigate, onBack }: OverviewPageProps) {
+export default function OverviewPage({ currentPage, onNavigate}: OverviewPageProps) {
   return (
     <DocsLayout
       title="Overview"
@@ -40,7 +39,6 @@ export default function OverviewPage({ currentPage, onNavigate, onBack }: Overvi
       sections={sections}
       currentPage={currentPage}
       onNavigate={onNavigate}
-      onBack={onBack}
     >
       <h2 id="what-is-arc">What is Arc?</h2>
       <p>

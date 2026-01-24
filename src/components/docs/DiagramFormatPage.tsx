@@ -16,10 +16,9 @@ const sections: DocSection[] = [
 interface DiagramFormatPageProps {
   currentPage: string
   onNavigate: (page: string) => void
-  onBack: () => void
 }
 
-export default function DiagramFormatPage({ currentPage, onNavigate, onBack }: DiagramFormatPageProps) {
+export default function DiagramFormatPage({ currentPage, onNavigate}: DiagramFormatPageProps) {
   return (
     <DocsLayout
       title="Diagram Format"
@@ -29,7 +28,6 @@ export default function DiagramFormatPage({ currentPage, onNavigate, onBack }: D
       sections={sections}
       currentPage={currentPage}
       onNavigate={onNavigate}
-      onBack={onBack}
       ogImage="/og-docs-format.png"
     >
       <h2 id="overview">Overview</h2>

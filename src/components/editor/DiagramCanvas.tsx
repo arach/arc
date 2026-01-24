@@ -666,7 +666,6 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
           <InfiniteGrid
             grid={diagram.grid}
             viewportBounds={viewportBounds}
-            containerSize={containerSize}
             zoom={zoom}
           />
         )}
@@ -790,11 +789,12 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
                   {Object.entries(diagram.nodes).map(([nodeId, node]) => {
                     const data = diagram.nodeData[nodeId]
                     if (!data) return null
+                    const typedNode = node as { x: number; y: number; size?: string; width?: number; height?: number }
                     return (
                       <EditableNode
                         key={nodeId}
                         nodeId={nodeId}
-                        node={node}
+                        node={typedNode}
                         data={data}
                         layout={diagram.layout}
                         template={template}
@@ -841,7 +841,6 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
               exportZone={diagram.exportZone}
               isEditing={editor.mode === 'select'}
               onZoneUpdate={handleExportZoneUpdate}
-              onZoneClear={actions.clearExportZone}
               screenToCanvas={screenToCanvas}
             />
           </div>
@@ -881,7 +880,7 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
       {/* View mode toggle */}
       {config.enableViewModeToggle && (
         <ViewModeToggle
-          viewMode={viewMode}
+          viewMode={viewMode as '2d' | 'isometric'}
           onViewModeChange={actions.setViewMode}
         />
       )}

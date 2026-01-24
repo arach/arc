@@ -239,11 +239,11 @@ function useDiagramCodeBlocks(containerRef: React.RefObject<HTMLDivElement | nul
 function DiagramTogglePortals({ blocks, containerRef }: { blocks: DiagramCodeBlock[], containerRef: React.RefObject<HTMLDivElement | null> }) {
   return (
     <>
-      {blocks.map(({ id, diagram, code, codeHtml }) => {
+      {blocks.map(({ id, diagram, codeHtml }) => {
         const container = containerRef.current?.querySelector(`[data-toggle-container="${id}"]`)
         if (!container) return null
         return ReactDOM.createPortal(
-          <CodePreviewToggle code={code} diagram={diagram} codeHtml={codeHtml} />,
+          <CodePreviewToggle diagram={diagram} codeHtml={codeHtml} />,
           container,
           id
         )

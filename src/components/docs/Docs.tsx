@@ -1,16 +1,11 @@
 import { useParams, useNavigate } from 'react-router-dom'
-import DocsIndexPage from './DocsIndexPage'
 import OverviewPage from './OverviewPage'
 import QuickstartPage from './QuickstartPage'
 import DiagramFormatPage from './DiagramFormatPage'
 import ThemesPage from './ThemesPage'
 import LLMPage from './LLMPage'
 
-interface DocsProps {
-  onBack: () => void
-}
-
-export default function Docs({ onBack }: DocsProps) {
+export default function Docs() {
   const { page } = useParams<{ page?: string }>()
   const navigate = useNavigate()
   const currentPage = page || 'index'
@@ -27,7 +22,6 @@ export default function Docs({ onBack }: DocsProps) {
   const pageProps = {
     currentPage,
     onNavigate: handleNavigate,
-    onBack,
   }
 
   // Render the appropriate page
@@ -50,6 +44,5 @@ export default function Docs({ onBack }: DocsProps) {
     // case 'exports':
     //   return <ExportsPage {...pageProps} />
     default:
-      return <DocsIndexPage onNavigate={handleNavigate} onBack={onBack} />
   }
 }

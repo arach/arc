@@ -1,3 +1,4 @@
+import React from 'react'
 import { anchor, midPoint } from '../../utils/diagramHelpers'
 
 // Stroke colors for dark mode
@@ -172,8 +173,8 @@ function Connector({ connector, nodes, connectorStyles, isSelected, onClick, ind
   const dashArray = style.dashed ? '8 4' : undefined
   
   // Determine arrow markers
-  let markerStartAttr = undefined
-  let markerEndAttr = undefined
+  let markerStartAttr: string | undefined = undefined
+  let markerEndAttr: string | undefined = undefined
   if (showArrow) {
     if (isBidirectional) {
       markerStartAttr = `url(#arrow-start-${style.color})`

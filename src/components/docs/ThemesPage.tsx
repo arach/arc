@@ -40,10 +40,9 @@ const sections: DocSection[] = [
 interface ThemesPageProps {
   currentPage: string
   onNavigate: (page: string) => void
-  onBack: () => void
 }
 
-export default function ThemesPage({ currentPage, onNavigate, onBack }: ThemesPageProps) {
+export default function ThemesPage({ currentPage, onNavigate}: ThemesPageProps) {
   const [previewTheme, setPreviewTheme] = useState<ThemeId>('default')
   const [previewMode, setPreviewMode] = useState<DiagramMode>('light')
   const themes = getThemeList()
@@ -57,7 +56,6 @@ export default function ThemesPage({ currentPage, onNavigate, onBack }: ThemesPa
       sections={sections}
       currentPage={currentPage}
       onNavigate={onNavigate}
-      onBack={onBack}
     >
       <h2 id="overview">Overview</h2>
       <p>
