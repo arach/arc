@@ -1,5 +1,2 @@
 packages:
   - packages/*
-
-overrides:
-  '@arach/dewey': link:ext/dewey/packages/docs
