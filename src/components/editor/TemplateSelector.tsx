@@ -1,4 +1,4 @@
-import React from 'react'
+
 import { Palette } from 'lucide-react'
 import { useEditor, useTemplate } from './EditorProvider'
 import { getTemplateList } from '../../utils/templates'

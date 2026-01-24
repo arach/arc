@@ -1,7 +1,7 @@
-import React, { useState, useMemo, useRef, useCallback } from 'react'
+import { useState, useMemo, useRef, useCallback } from 'react'
 import {
-  X, Copy, Check, Download, Link, Image, FileImage,
-  Loader2, ExternalLink, Braces, RotateCcw, FileCode
+  X, Check, Link, Image, FileImage,
+  Loader2, Braces, RotateCcw, FileCode
 } from 'lucide-react'
 import {
   generateSVG,

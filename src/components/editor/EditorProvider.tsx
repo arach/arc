@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useCallback } from 'react'
+import { createContext, useContext, useReducer, useCallback } from 'react'
 import { editorReducer, initialState } from './editorReducer'
 
 const EditorContext = createContext(null)

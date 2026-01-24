@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import ReactDOM from 'react-dom'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { Book, Menu, Bot, Download, Sparkles } from 'lucide-react'
 import {
   DeweyProvider,
@@ -78,12 +78,11 @@ function parseDiagramFromCode(codeText: string): ArcDiagramData | null {
 }
 
 interface CodePreviewToggleProps {
-  code: string
   diagram: ArcDiagramData
   codeHtml: string // Preserve Dewey's syntax highlighting
 }
 
-function CodePreviewToggle({ code, diagram, codeHtml }: CodePreviewToggleProps) {
+function CodePreviewToggle({ diagram, codeHtml }: CodePreviewToggleProps) {
   const [view, setView] = useState<'code' | 'preview'>('code')
 
   return (
@@ -540,13 +539,6 @@ import overviewAgentMd from '../../../docs/agent/overview.agent.md?raw'
 import quickstartAgentMd from '../../../docs/agent/quickstart.agent.md?raw'
 import apiAgentMd from '../../../docs/agent/api.agent.md?raw'
 import architectureAgentMd from '../../../docs/agent/architecture.agent.md?raw'
-
-// Import prompt templates
-import createDiagramPrompt from '../../../docs/prompts/create-diagram.md?raw'
-import addNodePrompt from '../../../docs/prompts/add-node.md?raw'
-import modifyStylingPrompt from '../../../docs/prompts/modify-styling.md?raw'
-import exportDiagramPrompt from '../../../docs/prompts/export-diagram.md?raw'
-import debugEditorPrompt from '../../../docs/prompts/debug-editor.md?raw'
 
 // Import combined llm.txt for full context
 import llmTxt from '../../../docs/llm.txt?raw'
@@ -1477,16 +1469,6 @@ interface ArcDocsProps {
 }
 
 export default function ArcDocs({ pageId }: ArcDocsProps) {
-  const navigate = useNavigate()
-
-  const handleNavigate = (id: string) => {
-    if (id === 'index') {
-      navigate('/docs')
-    } else {
-      navigate(`/docs/${id}`)
-    }
-  }
-
   return (
     <DeweyProvider
       components={{ Link: RouterLink }}

@@ -1,11 +1,10 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react'
+import { useState, useCallback, useRef } from 'react'
 
 export default function ExportZoneLayer({
   layout,
   exportZone,
   isEditing,
   onZoneUpdate,
-  onZoneClear,
   screenToCanvas,
 }) {
   const [dragState, setDragState] = useState(null)

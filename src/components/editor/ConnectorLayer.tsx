@@ -1,5 +1,3 @@
-import React from 'react'
-import { COLORS } from '../../utils/constants'
 import { anchor, midPoint } from '../../utils/diagramHelpers'
 
 // Stroke colors for dark mode

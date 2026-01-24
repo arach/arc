@@ -220,7 +220,6 @@ interface DocsLayoutProps {
   sections?: DocSection[]
   currentPage: string
   onNavigate: (page: string) => void
-  onBack: () => void
   markdown?: string
   ogImage?: string
 }
@@ -234,7 +233,6 @@ export default function DocsLayout({
   sections = [],
   currentPage,
   onNavigate,
-  onBack,
   markdown,
   ogImage,
 }: DocsLayoutProps) {

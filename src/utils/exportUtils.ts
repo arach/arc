@@ -140,8 +140,6 @@ export function generateSVG(diagram: any, options: any = {}) {
     const toNode = diagram.nodes[connector.to]
     if (!fromNode || !toNode) continue
 
-    const fromData = diagram.nodeData[connector.from]
-    const toData = diagram.nodeData[connector.to]
     const fromSize = NODE_SIZES[fromNode.size] || NODE_SIZES.m
     const toSize = NODE_SIZES[toNode.size] || NODE_SIZES.m
 

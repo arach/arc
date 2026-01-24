@@ -1,18 +1,29 @@
-import React, { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import {
   Plus, Link2, MousePointer2, Move,
   Undo2, Redo2, Trash2,
   Square, Circle, Crop, GripVertical,
+  type LucideIcon,
 } from 'lucide-react'
 import { useEditor, useEditorState, useHistory, useDiagram } from './EditorProvider'
 import { NODE_SIZES } from '../../utils/constants'
 
-function ToolButton({ icon: Icon, label, onClick, active = false, disabled = false }: any) {
+interface ToolButtonProps {
+  icon: LucideIcon
+  label: string
+  onClick: () => void
+  active?: boolean
+  disabled?: boolean
+}
+
+function ToolButton({ icon: Icon, label, onClick, active = false, disabled = false }: ToolButtonProps) {
   return (
     <button
       onClick={onClick}
       disabled={disabled}
       title={label}
+      aria-label={label}
+      aria-pressed={active}
       className={`
         p-2 rounded-lg transition-all
         ${active
@@ -145,11 +156,18 @@ export default function FloatingToolbar() {
       onPointerUp={handleDragEnd}
       onPointerLeave={handleDragEnd}
     >
-      <div className={`flex items-center gap-0.5 px-2 py-1.5 bg-white dark:bg-zinc-800 rounded-xl shadow-lg border border-zinc-200 dark:border-zinc-700 ${isDragging ? 'cursor-grabbing' : ''}`}>
+      <div
+        className={`flex items-center gap-0.5 px-2 py-1.5 bg-white dark:bg-zinc-800 rounded-xl shadow-lg border border-zinc-200 dark:border-zinc-700 ${isDragging ? 'cursor-grabbing' : ''}`}
+        role="toolbar"
+        aria-label="Diagram editing tools"
+      >
         {/* Drag handle */}
         <div
           className="p-1.5 cursor-grab hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg mr-0.5 touch-none"
           onPointerDown={handleDragStart}
+          role="button"
+          aria-label="Drag to reposition toolbar"
+          tabIndex={0}
         >
           <GripVertical className="w-4 h-4 text-zinc-400" strokeWidth={2} />
         </div>

@@ -1,4 +1,4 @@
-import React from 'react'
+import { memo } from 'react'
 import { getIconComponent } from '../../utils/iconRegistry'
 import { NODE_SIZES } from '../../utils/constants'
 
@@ -83,7 +83,23 @@ const subtitleColorMap = {
   },
 }
 
-export default function EditableNode({
+interface EditableNodeProps {
+  nodeId: string
+  node: { x: number; y: number; size?: string; width?: number; height?: number }
+  data: { icon: string; name: string; subtitle?: string; description?: string; color?: string }
+  layout: { width: number; height: number }
+  template: {
+    node?: Record<string, unknown>
+    canvas?: { background?: string }
+  }
+  isSelected: boolean
+  onPointerDown: (e: React.PointerEvent, nodeId: string) => void
+  onClick: (nodeId: string, e: React.MouseEvent) => void
+  onMouseEnter: () => void
+  onMouseLeave: () => void
+}
+
+const EditableNode = memo(function EditableNode({
   nodeId,
   node,
   data,
@@ -94,7 +110,7 @@ export default function EditableNode({
   onClick,
   onMouseEnter,
   onMouseLeave,
-}) {
+}: EditableNodeProps) {
   const Icon = getIconComponent(data.icon)
   const size = node.size || 'm'
   const color = data.color || 'violet'
@@ -114,13 +130,13 @@ export default function EditableNode({
   const heightPercent = (height / layout.height) * 100
 
   // Get template-specific styles
-  const nodeStyle = template?.node || {}
-  const accentPosition = nodeStyle.accentPosition || 'left'
-  const accentClass = accentClasses[accentPosition]?.[color] || ''
-  const iconBorderStyle = nodeStyle.iconBorderStyle || 'colored'
-  const iconBorderClass = iconBorderColors[iconBorderStyle]?.[color] || ''
-  const subtitleStyle = nodeStyle.subtitleStyle || 'colored'
-  const subtitleColorClass = subtitleColorMap[subtitleStyle]?.[color] || 'text-zinc-500'
+  const nodeStyle = (template?.node || {}) as Record<string, string>
+  const accentPosition = (nodeStyle.accentPosition || 'left') as keyof typeof accentClasses
+  const accentClass = accentClasses[accentPosition]?.[color as keyof typeof accentClasses['left']] || ''
+  const iconBorderStyle = (nodeStyle.iconBorderStyle || 'colored') as keyof typeof iconBorderColors
+  const iconBorderClass = iconBorderColors[iconBorderStyle]?.[color as keyof typeof iconBorderColors['colored']] || ''
+  const subtitleStyle = (nodeStyle.subtitleStyle || 'colored') as keyof typeof subtitleColorMap
+  const subtitleColorClass = subtitleColorMap[subtitleStyle]?.[color as keyof typeof subtitleColorMap['colored']] || 'text-zinc-500'
 
   // Ring offset color based on canvas background
   const ringOffsetClass = template?.canvas?.background?.includes('white')
@@ -192,4 +208,6 @@ export default function EditableNode({
       </div>
     </div>
   )
-}
+})
+
+export default EditableNode

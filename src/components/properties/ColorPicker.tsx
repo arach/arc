@@ -1,4 +1,4 @@
-import React from 'react'
+
 import { COLOR_OPTIONS } from '../../utils/constants'
 
 const colorClasses = {

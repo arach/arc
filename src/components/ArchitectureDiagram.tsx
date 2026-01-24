@@ -1,4 +1,3 @@
-import React from 'react'
 import { Monitor, Mic, Cpu, Server, Smartphone, Watch, Cloud } from 'lucide-react'
 
 // ============================================

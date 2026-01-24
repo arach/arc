@@ -1,4 +1,4 @@
-import React from 'react'
+
 import { useDiagram, useEditor } from '../editor/EditorProvider'
 import { Trash2 } from 'lucide-react'
 

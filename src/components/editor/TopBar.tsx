@@ -1,4 +1,4 @@
-import React from 'react'
+
 import { File, FolderOpen, Save, Share, Sun, Moon } from 'lucide-react'
 import { useMeta } from './EditorProvider'
 import TemplateSelector from './TemplateSelector'

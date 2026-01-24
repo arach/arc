@@ -26,7 +26,6 @@ export function useCanvasTransform(options: UseCanvasTransformOptions = {}) {
     onTransformChange,
     contentSize,
     zoomLevels,
-    zoomStep = ZOOM_STEP,
   } = options
 
   // Generate zoom levels from step if not explicitly provided

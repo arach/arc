@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react'
+import { useMemo } from 'react'
 
 /**
  * Renders an infinite grid pattern that tiles based on viewport position.
@@ -7,7 +7,6 @@ import React, { useMemo } from 'react'
 export default function InfiniteGrid({
   grid,
   viewportBounds, // { x, y, width, height } - visible area in canvas coords
-  containerSize,  // { width, height } - actual container dimensions in pixels
   zoom,
 }) {
   if (!grid?.enabled) return null
