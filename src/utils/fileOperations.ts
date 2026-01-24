@@ -66,8 +66,7 @@ export async function loadDiagram() {
         return { diagram, filename: handle.name }
       } catch (parseErr) {
         console.error('Invalid JSON in diagram file:', parseErr)
-        alert('The selected file contains invalid JSON. Please check the file format.')
-        return null
+        return { error: 'Invalid JSON in diagram file. Please check the file format.' }
       }
     }
   } catch (err) {

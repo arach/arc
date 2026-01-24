@@ -3,12 +3,13 @@ import {
   Plus, Link2, MousePointer2, Move,
   Undo2, Redo2, Trash2,
   Square, Circle, Crop, GripVertical,
+  type LucideIcon,
 } from 'lucide-react'
 import { useEditor, useEditorState, useHistory, useDiagram } from './EditorProvider'
 import { NODE_SIZES } from '../../utils/constants'
 
 interface ToolButtonProps {
-  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>
+  icon: LucideIcon
   label: string
   onClick: () => void
   active?: boolean
