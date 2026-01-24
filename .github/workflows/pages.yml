@@ -29,7 +29,10 @@ jobs:
       - name: Install dependencies
         run: bun install
 
-      - name: Build
+      - name: Build library
+        run: bun run build:lib
+
+      - name: Build site
         run: bun run build
 
       - name: Configure Pages
