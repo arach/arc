@@ -1,4 +1,4 @@
-import React from 'react'
+
 import { useEditor, useDiagram } from '../editor/EditorProvider'
 import { COLOR_OPTIONS } from '../../utils/constants'
 

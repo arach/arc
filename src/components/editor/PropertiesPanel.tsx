@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react'
-import { ChevronRight, ChevronLeft, PanelRight } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { ChevronRight, PanelRight } from 'lucide-react'
 import { useEditorState } from './EditorProvider'
 import NodeProperties from '../properties/NodeProperties'
 import ConnectorProperties from '../properties/ConnectorProperties'

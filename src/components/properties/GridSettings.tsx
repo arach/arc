@@ -1,4 +1,4 @@
-import React from 'react'
+
 import { Grid3X3 } from 'lucide-react'
 import { useEditor, useDiagram } from '../editor/EditorProvider'
 import { GRID_COLORS, DEFAULT_GRID } from '../../utils/constants'

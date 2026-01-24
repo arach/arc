@@ -1,15 +1,14 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Book, ArrowRight, ArrowLeft, Sun, Moon, Bot } from 'lucide-react'
+import { Book, ArrowRight, ArrowLeft, Sun, Moon } from 'lucide-react'
 import { docsNav } from './DocsLayout'
 import { useMeta } from '../../hooks/useMeta'
 
 interface DocsIndexPageProps {
   onNavigate: (page: string) => void
-  onBack: () => void
 }
 
-export default function DocsIndexPage({ onNavigate, onBack }: DocsIndexPageProps) {
+export default function DocsIndexPage({ onNavigate }: DocsIndexPageProps) {
   const [isDark, setIsDark] = useState(false)
 
   // Set page-specific meta tags

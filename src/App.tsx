@@ -9,7 +9,6 @@ import './landing.css'
 
 function EditorPage() {
   const [isDark, setIsDark] = useState(true)
-  const navigate = useNavigate()
 
   useEffect(() => {
     if (isDark) {

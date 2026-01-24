@@ -11,7 +11,16 @@ export default defineConfig(({ mode }) => {
   // Dogfood: In production, use the pre-built library (lib/) to catch regressions
   // This requires running `pnpm build:lib` first before `pnpm build`
   const libPath = resolve(__dirname, 'lib/arc.es.js')
-  const useBuiltLib = mode === 'production' && existsSync(libPath)
+  const libExists = existsSync(libPath)
+  const useBuiltLib = mode === 'production' && libExists
+
+  // Error if production build is attempted without pre-built library
+  if (mode === 'production' && !libExists) {
+    throw new Error(
+      'Production build requires pre-built library. Run `pnpm build:lib` first.\n' +
+      `Expected file at: ${libPath}`
+    )
+  }
 
   return {
     base: '/',

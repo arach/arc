@@ -1,4 +1,3 @@
-import React from 'react'
 import DocsLayout, { type DocSection } from './DocsLayout'
 import CodeBlock from './CodeBlock'
 

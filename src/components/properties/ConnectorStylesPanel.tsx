@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Plus, Trash2, ChevronDown, ChevronRight } from 'lucide-react'
 import { useEditor, useDiagram } from '../editor/EditorProvider'
 import { COLOR_OPTIONS } from '../../utils/constants'

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { EditorProvider, useEditor, useDiagram, useEditorState, useMeta } from './EditorProvider'
 import { useMeta as usePageMeta } from '../../hooks/useMeta'
 import TopBar from './TopBar'
@@ -6,6 +6,7 @@ import FloatingToolbar from './FloatingToolbar'
 import DiagramCanvas from './DiagramCanvas'
 import PropertiesPanel from './PropertiesPanel'
 import ShareSheet from '../dialogs/ShareSheet'
+import ErrorBoundary from '../ErrorBoundary'
 import useKeyboardShortcuts from '../../hooks/useKeyboardShortcuts'
 import { saveDiagram, loadDiagram } from '../../utils/fileOperations'
 
@@ -181,10 +182,12 @@ function EditorContent({ isDark, onToggleTheme }) {
         {/* Canvas area */}
         <div className="flex-1 relative p-4 overflow-hidden">
           <div className="w-full h-full rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 shadow-sm">
-            <DiagramCanvas
-              onViewportChange={setViewportBounds}
-              embedConfig={{ enableViewModeToggle: true }}
-            />
+            <ErrorBoundary>
+              <DiagramCanvas
+                onViewportChange={setViewportBounds}
+                embedConfig={{ enableViewModeToggle: true }}
+              />
+            </ErrorBoundary>
           </div>
           {/* Floating toolbar */}
           <FloatingToolbar />

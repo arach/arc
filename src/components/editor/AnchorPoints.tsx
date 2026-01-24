@@ -1,6 +1,4 @@
-import React from 'react'
 import { anchor } from '../../utils/diagramHelpers'
-import { ANCHOR_POSITIONS } from '../../utils/constants'
 
 export default function AnchorPoints({
   layout,

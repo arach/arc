@@ -1,4 +1,4 @@
-import React from 'react'
+
 import { ToggleGroup } from '@base-ui/react/toggle-group'
 import { Toggle } from '@base-ui/react/toggle'
 import { useEditor, useDiagram, useViewMode } from '../editor/EditorProvider'

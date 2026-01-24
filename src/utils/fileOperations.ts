@@ -60,12 +60,18 @@ export async function loadDiagram() {
 
       const file = await handle.getFile()
       const text = await file.text()
-      const diagram = JSON.parse(text)
 
-      return { diagram, filename: handle.name }
+      try {
+        const diagram = JSON.parse(text)
+        return { diagram, filename: handle.name }
+      } catch (parseErr) {
+        console.error('Invalid JSON in diagram file:', parseErr)
+        alert('The selected file contains invalid JSON. Please check the file format.')
+        return null
+      }
     }
   } catch (err) {
-    if (err.name === 'AbortError') return null // User cancelled
+    if ((err as Error).name === 'AbortError') return null // User cancelled
     console.error('Load failed:', err)
   }
 

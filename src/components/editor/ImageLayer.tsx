@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 
 function ImageShape({ image, isSelected, onClick, onDragStart, onResize }) {
   const { x, y, width, height, src, opacity = 1 } = image

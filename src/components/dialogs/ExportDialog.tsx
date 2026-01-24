@@ -1,6 +1,6 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { X, Copy, Check, Download } from 'lucide-react'
-import { exportForTalkie, copyToClipboard, saveDiagram } from '../../utils/fileOperations'
+import { exportForTalkie, copyToClipboard } from '../../utils/fileOperations'
 
 export default function ExportDialog({ diagram, onClose }) {
   const [copied, setCopied] = useState(false)

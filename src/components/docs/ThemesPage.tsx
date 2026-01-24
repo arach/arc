@@ -1,6 +1,6 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import DocsLayout, { type DocSection } from './DocsLayout'
-import { ArcDiagram, type ThemeId, type DiagramMode, THEMES, getThemeList } from '@arach/arc'
+import { ArcDiagram, type ThemeId, type DiagramMode, getThemeList } from '@arach/arc'
 
 // Sample diagram for previewing themes
 const sampleDiagram = {

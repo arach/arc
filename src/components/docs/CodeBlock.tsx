@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Copy, Check } from 'lucide-react'
 
 interface CodeBlockProps {
@@ -9,7 +9,7 @@ interface CodeBlockProps {
 }
 
 // Simple syntax highlighter matching the landing page style
-function highlightCode(code: string, language: string): string {
+function highlightCode(code: string, _language: string): string {
   let html = escapeHtml(code)
 
   // Comments first
@@ -58,7 +58,6 @@ export default function CodeBlock({
   code,
   language = 'typescript',
   filename,
-  showLineNumbers = true
 }: CodeBlockProps) {
   const [copied, setCopied] = useState(false)
 
