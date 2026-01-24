@@ -35,7 +35,7 @@
   "sideEffects": false,
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "tsc && vite build && node scripts/generate-docs-html.js",
     "build:lib": "vite build --config vite.config.lib.js",
     "build:player": "vite build --config vite.config.player.js && vite build --config vite.config.player-slim.js",
     "lint": "eslint .",
