@@ -2,6 +2,14 @@ import { useEffect } from 'react';
 
 const GA_MEASUREMENT_ID = 'G-GSHDZPFRZG';
 
+// Extend Window interface for gtag
+declare global {
+  interface Window {
+    dataLayer: any[];
+    gtag: (...args: any[]) => void;
+  }
+}
+
 export function GoogleAnalytics() {
   useEffect(() => {
     // Check if gtag already exists
@@ -21,7 +29,7 @@ export function GoogleAnalytics() {
       function gtag(...args: any[]) {
         window.dataLayer.push(args);
       }
-      (window as any).gtag = gtag;
+      window.gtag = gtag;
       gtag('js', new Date());
       gtag('config', GA_MEASUREMENT_ID);
     };
