@@ -5,6 +5,7 @@ import LandingPage from './components/LandingPage'
 import ArcDocs from './components/docs/ArcDocs'
 import IsometricDemo from './components/IsometricDemo'
 import IsometricExamples from './components/IsometricExamples'
+import { GoogleAnalytics } from './components/GoogleAnalytics'
 import './landing.css'
 
 function EditorPage() {
@@ -53,6 +54,7 @@ function DocsWrapper() {
 function App() {
   return (
     <BrowserRouter>
+      <GoogleAnalytics />
       <Routes>
         <Route path="/" element={<LandingPageWrapper />} />
         <Route path="/editor" element={<EditorPage />} />
