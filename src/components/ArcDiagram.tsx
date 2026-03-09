@@ -375,6 +375,7 @@ export interface ArcDiagramProps {
   interactive?: boolean  // Enable zoom/pan controls
   mode?: DiagramMode     // Light/dark appearance
   theme?: ThemeId        // Color palette theme
+  defaultZoom?: number | string  // Initial zoom level (ignored in static mode)
 }
 
 export function ArcDiagram({ data, className = '', interactive = true, mode = 'dark', theme = 'default' }: ArcDiagramProps) {
