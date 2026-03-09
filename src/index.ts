@@ -27,6 +27,9 @@ export {
   type DiagramColor,
   type DiagramMode,
   type DiagramLayout,
+  type DiagramGroup,
+  type GroupLabelAnchor,
+  type GroupLabelPlacement,
   type ThemeId,
 } from './components/ArcDiagram'
 

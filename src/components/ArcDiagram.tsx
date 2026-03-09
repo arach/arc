@@ -24,6 +24,7 @@ export interface NodeData {
   subtitle?: string
   description?: string
   color: DiagramColor
+  dashed?: boolean  // Dashed border for placeholder nodes
 }
 
 export interface Connector {
@@ -50,6 +51,20 @@ export interface DiagramLayout {
   height: number
 }
 
+export type GroupLabelAnchor = 'top' | 'bottom' | 'left' | 'right'
+export type GroupLabelPlacement = 'inset' | 'overlap'
+
+export interface DiagramGroup {
+  label: string
+  x: number
+  y: number
+  width: number
+  height: number
+  color?: DiagramColor
+  labelAnchor?: GroupLabelAnchor    // Which edge to place the label on (default: 'bottom')
+  labelPlacement?: GroupLabelPlacement  // Inset inside or overlap the border (default: 'overlap')
+}
+
 export interface ArcDiagramData {
   id?: string
   layout: DiagramLayout
@@ -57,6 +72,7 @@ export interface ArcDiagramData {
   nodeData: Record<string, NodeData>
   connectors: Connector[]
   connectorStyles: Record<string, ConnectorStyle>
+  groups?: DiagramGroup[]
 }
 
 // ============================================
@@ -66,8 +82,8 @@ export interface ArcDiagramData {
 const NODE_SIZES: Record<NodeSize, { width: number; height: number }> = {
   l: { width: 220, height: 90 },
   m: { width: 160, height: 75 },
-  s: { width: 110, height: 48 },
-  xs: { width: 80, height: 36 },
+  s: { width: 130, height: 48 },
+  xs: { width: 110, height: 36 },
 }
 
 // Mode = light/dark appearance, Theme = color palette
@@ -91,33 +107,45 @@ function Node({ node, data, mode, themeColors }: NodeProps) {
   const Icon = (LucideIcons as unknown as Record<string, LucideIcon>)[data.icon] || LucideIcons.Box
 
   const isLarge = node.size === 'l'
-  const isSmall = node.size === 's'
+  const isSmall = node.size === 's' || node.size === 'xs'
+  const isXs = node.size === 'xs'
   const isLight = mode === 'light'
 
   return (
     <div
       className={`
-        absolute rounded-xl border-2 ${color.border} ${color.bg}
-        ${isLarge ? 'px-5 py-3' : isSmall ? 'px-3 py-2' : 'px-4 py-2.5'}
-        ${isLight ? 'bg-white/80 shadow-sm' : 'bg-zinc-900/90'} backdrop-blur-sm
+        absolute rounded-xl
+        ${isLarge ? 'px-5 py-3.5' : isXs ? 'px-2.5 py-1.5' : isSmall ? 'px-3 py-2' : 'px-4 py-3'}
+        ${isLight
+          ? `bg-white border ${color.border} shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.03)]`
+          : `bg-zinc-800/80 border ${color.border} shadow-lg shadow-black/30`
+        } backdrop-blur-sm
       `}
-      style={{ left: node.x, top: node.y, width: size.width }}
+      style={{
+        left: node.x,
+        top: node.y,
+        width: size.width,
+        ...(data.dashed ? { borderStyle: 'dashed' } : {}),
+      }}
     >
-      <div className="flex items-center gap-3">
+      <div className={`flex items-center ${isXs ? 'gap-1.5' : isSmall ? 'gap-2.5' : 'gap-3'}`}>
         <div className={`
-          flex-shrink-0 rounded-lg
-          ${isLight ? 'border border-zinc-200 bg-white shadow-sm' : 'border border-zinc-700 bg-zinc-900'}
-          ${isLarge ? 'w-10 h-10' : isSmall ? 'w-6 h-6' : 'w-8 h-8'}
+          flex-shrink-0 rounded-lg ${color.bg}
+          ${isLight ? `border ${color.border}` : 'border border-zinc-700/50'}
+          ${isLarge ? 'w-9 h-9' : isXs ? 'w-5 h-5' : isSmall ? 'w-7 h-7' : 'w-8 h-8'}
           flex items-center justify-center
         `}>
-          <Icon className={`${isLarge ? 'w-5 h-5' : isSmall ? 'w-3 h-3' : 'w-4 h-4'} ${color.icon}`} />
+          <Icon className={`${isLarge ? 'w-[18px] h-[18px]' : isXs ? 'w-3 h-3' : isSmall ? 'w-3.5 h-3.5' : 'w-4 h-4'} ${color.icon}`} />
         </div>
         <div className="min-w-0">
-          <div className={`font-semibold ${themeColors.text.primary} ${isLarge ? 'text-sm' : isSmall ? 'text-[10px]' : 'text-xs'}`}>
+          <div
+            className={`font-medium leading-tight ${themeColors.text.primary} ${isLarge ? 'text-[13px]' : isXs ? 'text-[9px]' : isSmall ? 'text-[11px]' : 'text-xs'}`}
+            style={{ fontFamily: 'ui-sans-serif, system-ui, -apple-system, sans-serif' }}
+          >
             {data.name}
           </div>
           {data.subtitle && (
-            <div className={`font-mono ${themeColors.text.muted} ${isSmall ? 'text-[8px]' : 'text-[10px]'}`}>
+            <div className={`leading-tight ${isLight ? 'text-zinc-400' : 'text-zinc-500'} ${isSmall ? 'text-[8px]' : 'text-[10px]'}`}>
               {data.subtitle}
             </div>
           )}
@@ -168,25 +196,9 @@ function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors }
   const toNode = nodes[connector.to]
   if (!fromNode || !toNode) return null
 
-  // Validate node sizes exist
-  if (!NODE_SIZES[fromNode.size] || !NODE_SIZES[toNode.size]) {
-    console.warn(`Invalid node size: ${fromNode.size} or ${toNode.size}`)
-    return null
-  }
-
   const style = styles[connector.style] || { color: 'zinc', strokeWidth: 2 }
-
-  // Safely get anchor points
-  let from: { x: number; y: number }
-  let to: { x: number; y: number }
-  try {
-    from = getAnchorPoint(fromNode, connector.fromAnchor)
-    to = getAnchorPoint(toNode, connector.toAnchor)
-  } catch (e) {
-    console.warn(`Invalid anchor: ${connector.fromAnchor} or ${connector.toAnchor}`)
-    return null
-  }
-
+  const from = getAnchorPoint(fromNode, connector.fromAnchor)
+  const to = getAnchorPoint(toNode, connector.toAnchor)
   const color = themeColors.palette[style.color]?.stroke || themeColors.palette.zinc.stroke
   const gradientId = `connector-gradient-${connectorIndex}`
 
@@ -266,13 +278,16 @@ function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors }
         strokeDasharray={style.dashed ? '6 3' : undefined}
       />
 
-      {/* Arrow head - triangle at end point */}
-      <g transform={`translate(${to.x}, ${to.y}) rotate(${angle})`}>
-        <polygon
-          points={`0,0 ${-arrowSize},-${arrowSize/2.5} ${-arrowSize},${arrowSize/2.5}`}
-          fill={color}
-        />
-      </g>
+      {/* Arrow head - refined triangle at end point */}
+      {!style.dashed && (
+        <g transform={`translate(${to.x}, ${to.y}) rotate(${angle})`}>
+          <polygon
+            points={`0,0 ${-arrowSize},-${arrowSize/3} ${-arrowSize},${arrowSize/3}`}
+            fill={color}
+            opacity={0.8}
+          />
+        </g>
+      )}
 
       {/* Label */}
       {style.label && (
@@ -295,18 +310,17 @@ function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors }
 // Zoom Controls
 // ============================================
 
-const DEFAULT_ZOOM_LEVELS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2]
+const ZOOM_LEVELS = [0.5, 0.75, 1, 1.25, 1.5, 2]
 
 interface ZoomControlsProps {
   zoom: number
-  zoomLevels: number[]
   onZoomIn: () => void
   onZoomOut: () => void
   onReset: () => void
   mode: DiagramMode
 }
 
-function ZoomControls({ zoom, zoomLevels, onZoomIn, onZoomOut, onReset, mode }: ZoomControlsProps) {
+function ZoomControls({ zoom, onZoomIn, onZoomOut, onReset, mode }: ZoomControlsProps) {
   const { ZoomIn, ZoomOut } = LucideIcons
   const isLight = mode === 'light'
 
@@ -318,7 +332,7 @@ function ZoomControls({ zoom, zoomLevels, onZoomIn, onZoomOut, onReset, mode }: 
     }`}>
       <button
         onClick={onZoomOut}
-        disabled={zoom <= zoomLevels[0]}
+        disabled={zoom <= ZOOM_LEVELS[0]}
         className={`p-1 disabled:opacity-30 disabled:cursor-not-allowed transition-colors rounded-l-md ${
           isLight ? 'hover:bg-zinc-100' : 'hover:bg-zinc-700'
         }`}
@@ -339,7 +353,7 @@ function ZoomControls({ zoom, zoomLevels, onZoomIn, onZoomOut, onReset, mode }: 
       </button>
       <button
         onClick={onZoomIn}
-        disabled={zoom >= zoomLevels[zoomLevels.length - 1]}
+        disabled={zoom >= ZOOM_LEVELS[ZOOM_LEVELS.length - 1]}
         className={`p-1 disabled:opacity-30 disabled:cursor-not-allowed transition-colors rounded-r-md ${
           isLight ? 'hover:bg-zinc-100' : 'hover:bg-zinc-700'
         }`}
@@ -355,96 +369,46 @@ function ZoomControls({ zoom, zoomLevels, onZoomIn, onZoomOut, onReset, mode }: 
 // Main Component
 // ============================================
 
-interface ArcDiagramProps {
+export interface ArcDiagramProps {
   data: ArcDiagramData
   className?: string
   interactive?: boolean  // Enable zoom/pan controls
   mode?: DiagramMode     // Light/dark appearance
   theme?: ThemeId        // Color palette theme
-  /** Override the diagram label (bottom-left). Defaults to data.id */
-  label?: string
-  /** Initial zoom level. Use 'fit' to auto-fit content, or a number (e.g., 0.75). Default: 1 */
-  defaultZoom?: number | 'fit'
-  /** Custom zoom level steps. Default: [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2] */
-  zoomLevels?: number[]
 }
 
-export default function ArcDiagram({
-  data,
-  className = '',
-  interactive = true,
-  mode = 'dark',
-  theme = 'default',
-  label,
-  defaultZoom = 1,
-  zoomLevels = DEFAULT_ZOOM_LEVELS,
-}: ArcDiagramProps) {
-  const { id, layout, nodes, nodeData, connectors, connectorStyles } = data
+export function ArcDiagram({ data, className = '', interactive = true, mode = 'dark', theme = 'default' }: ArcDiagramProps) {
+  const { id, layout, nodes, nodeData, connectors, connectorStyles, groups } = data
   const isLight = mode === 'light'
-  const containerRef = React.useRef<HTMLDivElement>(null)
 
   // Resolve theme colors based on mode
   const themeData = getTheme(theme)
   const themeColors = isLight ? themeData.light : themeData.dark
-
-  // Calculate 'fit' zoom based on container size
-  const calculateFitZoom = useCallback(() => {
-    if (!containerRef.current) return 1
-    const container = containerRef.current
-    const containerWidth = container.clientWidth
-    const containerHeight = container.clientHeight
-    // Add padding for chrome (zoom controls, label)
-    const padding = 40
-    const fitX = (containerWidth - padding) / layout.width
-    const fitY = (containerHeight - padding) / layout.height
-    // Use the smaller ratio to fit both dimensions, cap at 1 (100%)
-    return Math.min(fitX, fitY, 1)
-  }, [layout.width, layout.height])
-
-  // Determine initial zoom
-  const getInitialZoom = useCallback(() => {
-    if (defaultZoom === 'fit') {
-      return calculateFitZoom()
-    }
-    return defaultZoom
-  }, [defaultZoom, calculateFitZoom])
 
   // Zoom & pan state
   const [zoom, setZoom] = useState(1)
   const [pan, setPan] = useState({ x: 0, y: 0 })
   const [isPanning, setIsPanning] = useState(false)
   const [panStart, setPanStart] = useState({ x: 0, y: 0 })
-  const [initialized, setInitialized] = useState(false)
-
-  // Set initial zoom after mount (needed for 'fit' to measure container)
-  React.useEffect(() => {
-    if (!initialized) {
-      setZoom(getInitialZoom())
-      setInitialized(true)
-    }
-  }, [initialized, getInitialZoom])
-
-  // Sorted zoom levels for consistent navigation
-  const sortedZoomLevels = React.useMemo(() => [...zoomLevels].sort((a, b) => a - b), [zoomLevels])
 
   const handleZoomIn = useCallback(() => {
     setZoom(z => {
-      const idx = sortedZoomLevels.findIndex(l => l >= z)
-      return sortedZoomLevels[Math.min(idx + 1, sortedZoomLevels.length - 1)]
+      const idx = ZOOM_LEVELS.findIndex(l => l >= z)
+      return ZOOM_LEVELS[Math.min(idx + 1, ZOOM_LEVELS.length - 1)]
     })
-  }, [sortedZoomLevels])
+  }, [])
 
   const handleZoomOut = useCallback(() => {
     setZoom(z => {
-      const idx = sortedZoomLevels.findIndex(l => l >= z)
-      return sortedZoomLevels[Math.max(idx - 1, 0)]
+      const idx = ZOOM_LEVELS.findIndex(l => l >= z)
+      return ZOOM_LEVELS[Math.max(idx - 1, 0)]
     })
-  }, [sortedZoomLevels])
+  }, [])
 
   const handleReset = useCallback(() => {
-    setZoom(getInitialZoom())
+    setZoom(1)
     setPan({ x: 0, y: 0 })
-  }, [getInitialZoom])
+  }, [])
 
   const handleWheel = useCallback((e: React.WheelEvent) => {
     if (!interactive) return
@@ -473,12 +437,8 @@ export default function ArcDiagram({
     setIsPanning(false)
   }, [])
 
-  // Displayed label: prop overrides data.id
-  const displayLabel = label ?? id
-
   return (
     <div
-      ref={containerRef}
       className={`rounded-2xl overflow-hidden relative ${themeColors.background.container} ${className}`}
       onWheel={handleWheel}
       onMouseDown={handleMouseDown}
@@ -511,6 +471,127 @@ export default function ArcDiagram({
           }}
         />
 
+        {/* Groups (behind connectors and nodes) */}
+        {groups && groups.length > 0 && (
+          <svg
+            className="absolute inset-0 w-full h-full pointer-events-none"
+            viewBox={`0 0 ${layout.width} ${layout.height}`}
+          >
+            {groups.map((group, i) => {
+              const groupColor = group.color
+                ? (themeColors.palette[group.color]?.stroke || themeColors.palette.zinc.stroke)
+                : themeColors.palette.zinc.stroke
+              const anchor = group.labelAnchor || 'bottom'
+              const placement = group.labelPlacement || 'overlap'
+              const labelWidth = group.label.length * 6.5 + 20
+              const labelHeight = 20
+              const maskId = `group-label-mask-${id || ''}-${i}`
+
+              // Calculate label position based on anchor and placement
+              let labelX: number
+              let labelY: number
+
+              if (anchor === 'top' || anchor === 'bottom') {
+                labelX = group.x + group.width / 2 - labelWidth / 2
+                if (anchor === 'top') {
+                  labelY = placement === 'overlap'
+                    ? group.y - labelHeight / 2
+                    : group.y + 8
+                } else {
+                  labelY = placement === 'overlap'
+                    ? group.y + group.height - labelHeight / 2
+                    : group.y + group.height - labelHeight - 8
+                }
+              } else {
+                labelY = group.y + group.height / 2 - labelHeight / 2
+                if (anchor === 'left') {
+                  labelX = placement === 'overlap'
+                    ? group.x - labelWidth / 2
+                    : group.x + 8
+                } else {
+                  labelX = placement === 'overlap'
+                    ? group.x + group.width - labelWidth / 2
+                    : group.x + group.width - labelWidth - 8
+                }
+              }
+
+              return (
+                <g key={i}>
+                  {/* Mask to cut out the label area from the dashed border */}
+                  <defs>
+                    <mask id={maskId}>
+                      {/* White = visible, black = hidden */}
+                      <rect x={group.x - 2} y={group.y - 2} width={group.width + 4} height={group.height + 4} fill="white" />
+                      {/* Cut out the label area with padding */}
+                      <rect
+                        x={labelX - 4}
+                        y={labelY - 2}
+                        width={labelWidth + 8}
+                        height={labelHeight + 4}
+                        rx={12}
+                        fill="black"
+                      />
+                    </mask>
+                  </defs>
+
+                  {/* Group fill (no mask needed) */}
+                  <rect
+                    x={group.x}
+                    y={group.y}
+                    width={group.width}
+                    height={group.height}
+                    rx={16}
+                    fill={groupColor}
+                    fillOpacity={isLight ? 0.04 : 0.08}
+                  />
+
+                  {/* Group dashed border (masked where label is) */}
+                  <rect
+                    x={group.x}
+                    y={group.y}
+                    width={group.width}
+                    height={group.height}
+                    rx={16}
+                    fill="none"
+                    stroke={groupColor}
+                    strokeWidth={1.5}
+                    strokeDasharray="6 4"
+                    opacity={isLight ? 0.4 : 0.35}
+                    mask={`url(#${maskId})`}
+                  />
+
+                  {/* Label pill background */}
+                  <rect
+                    x={labelX}
+                    y={labelY}
+                    width={labelWidth}
+                    height={labelHeight}
+                    rx={10}
+                    fill={groupColor}
+                    fillOpacity={isLight ? 0.08 : 0.18}
+                  />
+
+                  {/* Label text */}
+                  <text
+                    x={labelX + labelWidth / 2}
+                    y={labelY + labelHeight / 2 + 1}
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    fill={groupColor}
+                    fillOpacity={isLight ? 0.55 : 0.6}
+                    fontSize={9}
+                    fontWeight={600}
+                    fontFamily="ui-sans-serif, system-ui, sans-serif"
+                    letterSpacing="0.12em"
+                  >
+                    {group.label}
+                  </text>
+                </g>
+              )
+            })}
+          </svg>
+        )}
+
         {/* Connectors */}
         <svg
           className="absolute inset-0 w-full h-full pointer-events-none"
@@ -529,19 +610,17 @@ export default function ArcDiagram({
         </svg>
 
         {/* Nodes */}
-        {Object.entries(nodes).map(([nodeId, node]) => {
-          const data = nodeData[nodeId]
-          if (!data) return null  // Skip nodes without data
-          return <Node key={nodeId} node={node} data={data} mode={mode} themeColors={themeColors} />
-        })}
+        {Object.entries(nodes).map(([nodeId, node]) => (
+          <Node key={nodeId} node={node} data={nodeData[nodeId]} mode={mode} themeColors={themeColors} />
+        ))}
       </div>
 
       {/* Viewer chrome - fixed position regardless of zoom/pan */}
 
-      {/* Diagram label - bottom left */}
-      {displayLabel && (
+      {/* Diagram ID - bottom left */}
+      {id && (
         <div className={`absolute bottom-3 left-3 font-mono text-[9px] tracking-wider z-10 ${themeColors.text.muted}`}>
-          {displayLabel}
+          {id}
         </div>
       )}
 
@@ -549,7 +628,6 @@ export default function ArcDiagram({
       {interactive && (
         <ZoomControls
           zoom={zoom}
-          zoomLevels={sortedZoomLevels}
           onZoomIn={handleZoomIn}
           onZoomOut={handleZoomOut}
           onReset={handleReset}
@@ -559,3 +637,5 @@ export default function ArcDiagram({
     </div>
   )
 }
+
+export default ArcDiagram
