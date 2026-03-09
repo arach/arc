@@ -13,6 +13,9 @@ export type {
   DiagramColor,
   DiagramMode,
   LabelAlign,
+  DiagramGroup,
+  GroupLabelAnchor,
+  GroupLabelPlacement,
 } from './ArcDiagram'
 
 export {
