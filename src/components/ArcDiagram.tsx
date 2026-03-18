@@ -378,7 +378,7 @@ export interface ArcDiagramProps {
   defaultZoom?: number | string  // Initial zoom level (ignored in static mode)
 }
 
-export function ArcDiagram({ data, className = '', interactive = true, mode = 'dark', theme = 'default' }: ArcDiagramProps) {
+export function ArcDiagram({ data, className = '', interactive = true, mode = 'dark', theme = 'default', defaultZoom = 1 }: ArcDiagramProps) {
   const { id, layout, nodes, nodeData, connectors, connectorStyles, groups } = data
   const isLight = mode === 'light'
 
@@ -386,8 +386,9 @@ export function ArcDiagram({ data, className = '', interactive = true, mode = 'd
   const themeData = getTheme(theme)
   const themeColors = isLight ? themeData.light : themeData.dark
 
-  // Zoom & pan state
-  const [zoom, setZoom] = useState(1)
+  // Zoom & pan state — use defaultZoom immediately for numeric values to avoid flash
+  const initialZoom = typeof defaultZoom === 'number' ? defaultZoom : 1
+  const [zoom, setZoom] = useState(initialZoom)
   const [pan, setPan] = useState({ x: 0, y: 0 })
   const [isPanning, setIsPanning] = useState(false)
   const [panStart, setPanStart] = useState({ x: 0, y: 0 })
