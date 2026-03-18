@@ -1,5 +1,7 @@
-import { createContext, useContext, useReducer, useCallback } from 'react'
+import { createContext, useContext, useReducer, useCallback, useMemo } from 'react'
 import { editorReducer, initialState } from './editorReducer'
+import { getTheme } from '../../utils/themes'
+import type { ThemeId } from '../../utils/themes'
 
 // Define the context type
 interface EditorContextType {
@@ -10,10 +12,24 @@ interface EditorContextType {
 
 const EditorContext = createContext<EditorContextType | null>(null)
 
-export function EditorProvider({ children, initialDiagram }) {
+export function EditorProvider({ children, initialDiagram, initialThemeId = null, initialColorMode = 'dark', initialDiagramMeta }: {
+  children: React.ReactNode
+  initialDiagram?: any
+  initialThemeId?: string | null
+  initialColorMode?: 'light' | 'dark'
+  initialDiagramMeta?: Record<string, any>
+}) {
   const [state, dispatch] = useReducer(
     editorReducer,
-    initialDiagram ? { ...initialState, diagram: initialDiagram } : initialState
+    (() => {
+      const base = initialDiagram ? { ...initialState, diagram: initialDiagram } : initialState
+      const meta = initialDiagramMeta || { themeId: initialThemeId, colorMode: initialColorMode }
+      return {
+        ...base,
+        editor: { ...base.editor, themeId: initialThemeId, colorMode: initialColorMode },
+        meta: { ...base.meta, diagramMeta: meta },
+      }
+    })()
   )
 
   // Action creators for cleaner component code
@@ -196,6 +212,19 @@ export function EditorProvider({ children, initialDiagram }) {
     setViewMode: useCallback((viewMode: '2d' | 'isometric') => {
       dispatch({ type: 'viewMode/set', viewMode })
     }, []),
+
+    // Theme & color mode
+    setTheme: useCallback((themeId: string | null) => {
+      dispatch({ type: 'theme/set', themeId })
+    }, []),
+
+    setColorMode: useCallback((colorMode: 'light' | 'dark') => {
+      dispatch({ type: 'colorMode/set', colorMode })
+    }, []),
+
+    setDiagramMeta: useCallback((diagramMeta: Record<string, any>) => {
+      dispatch({ type: 'diagramMeta/set', diagramMeta })
+    }, []),
   }
 
   return (
@@ -242,4 +271,31 @@ export function useTemplate() {
 export function useViewMode() {
   const { state } = useEditor()
   return state.editor.viewMode
+}
+
+export function useThemeId() {
+  const { state } = useEditor()
+  return state.editor.themeId
+}
+
+export function useColorMode() {
+  const { state } = useEditor()
+  return state.editor.colorMode
+}
+
+export function useDiagramMeta() {
+  const { state } = useEditor()
+  return state.meta.diagramMeta
+}
+
+/** Returns the resolved theme palette (light or dark) for the current theme and color mode. */
+export function useResolvedTheme() {
+  const { state } = useEditor()
+  const themeId = state.editor.themeId
+  const colorMode = state.editor.colorMode
+  return useMemo(() => {
+    if (!themeId) return null
+    const theme = getTheme(themeId as ThemeId)
+    return colorMode === 'light' ? theme.light : theme.dark
+  }, [themeId, colorMode])
 }

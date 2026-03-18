@@ -1,8 +1,9 @@
 "use client"
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useMemo } from 'react'
 import * as LucideIcons from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { getTheme, type ThemeId, type Theme } from '../utils/themes'
+import { autoLayout } from '../utils/autoLayout'
 
 // ============================================
 // Types
@@ -24,7 +25,6 @@ export interface NodeData {
   subtitle?: string
   description?: string
   color: DiagramColor
-  dashed?: boolean  // Dashed border for placeholder nodes
 }
 
 export interface Connector {
@@ -51,20 +51,6 @@ export interface DiagramLayout {
   height: number
 }
 
-export type GroupLabelAnchor = 'top' | 'bottom' | 'left' | 'right'
-export type GroupLabelPlacement = 'inset' | 'overlap'
-
-export interface DiagramGroup {
-  label: string
-  x: number
-  y: number
-  width: number
-  height: number
-  color?: DiagramColor
-  labelAnchor?: GroupLabelAnchor    // Which edge to place the label on (default: 'bottom')
-  labelPlacement?: GroupLabelPlacement  // Inset inside or overlap the border (default: 'overlap')
-}
-
 export interface ArcDiagramData {
   id?: string
   layout: DiagramLayout
@@ -72,7 +58,6 @@ export interface ArcDiagramData {
   nodeData: Record<string, NodeData>
   connectors: Connector[]
   connectorStyles: Record<string, ConnectorStyle>
-  groups?: DiagramGroup[]
 }
 
 // ============================================
@@ -82,8 +67,8 @@ export interface ArcDiagramData {
 const NODE_SIZES: Record<NodeSize, { width: number; height: number }> = {
   l: { width: 220, height: 90 },
   m: { width: 160, height: 75 },
-  s: { width: 130, height: 48 },
-  xs: { width: 110, height: 36 },
+  s: { width: 110, height: 48 },
+  xs: { width: 80, height: 36 },
 }
 
 // Mode = light/dark appearance, Theme = color palette
@@ -101,51 +86,39 @@ interface NodeProps {
   themeColors: Theme['light'] | Theme['dark']
 }
 
-function Node({ node, data, mode, themeColors }: NodeProps) {
+export function Node({ node, data, mode, themeColors }: NodeProps) {
   const size = NODE_SIZES[node.size]
   const color = themeColors.palette[data.color] || themeColors.palette.zinc
   const Icon = (LucideIcons as unknown as Record<string, LucideIcon>)[data.icon] || LucideIcons.Box
 
   const isLarge = node.size === 'l'
-  const isSmall = node.size === 's' || node.size === 'xs'
-  const isXs = node.size === 'xs'
+  const isSmall = node.size === 's'
   const isLight = mode === 'light'
 
   return (
     <div
       className={`
-        absolute rounded-xl
-        ${isLarge ? 'px-5 py-3.5' : isXs ? 'px-2.5 py-1.5' : isSmall ? 'px-3 py-2' : 'px-4 py-3'}
-        ${isLight
-          ? `bg-white border ${color.border} shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.03)]`
-          : `bg-zinc-800/80 border ${color.border} shadow-lg shadow-black/30`
-        } backdrop-blur-sm
+        absolute rounded-xl border-2 ${color.border} ${color.bg}
+        ${isLarge ? 'px-5 py-3' : isSmall ? 'px-3 py-2' : 'px-4 py-2.5'}
+        ${isLight ? 'bg-white/80 shadow-sm' : 'bg-zinc-900/90'} backdrop-blur-sm
       `}
-      style={{
-        left: node.x,
-        top: node.y,
-        width: size.width,
-        ...(data.dashed ? { borderStyle: 'dashed' } : {}),
-      }}
+      style={{ left: node.x, top: node.y, width: size.width }}
     >
-      <div className={`flex items-center ${isXs ? 'gap-1.5' : isSmall ? 'gap-2.5' : 'gap-3'}`}>
+      <div className="flex items-center gap-3">
         <div className={`
-          flex-shrink-0 rounded-lg ${color.bg}
-          ${isLight ? `border ${color.border}` : 'border border-zinc-700/50'}
-          ${isLarge ? 'w-9 h-9' : isXs ? 'w-5 h-5' : isSmall ? 'w-7 h-7' : 'w-8 h-8'}
+          flex-shrink-0 rounded-lg
+          ${isLight ? 'border border-zinc-200 bg-white shadow-sm' : 'border border-zinc-700 bg-zinc-900'}
+          ${isLarge ? 'w-10 h-10' : isSmall ? 'w-6 h-6' : 'w-8 h-8'}
           flex items-center justify-center
         `}>
-          <Icon className={`${isLarge ? 'w-[18px] h-[18px]' : isXs ? 'w-3 h-3' : isSmall ? 'w-3.5 h-3.5' : 'w-4 h-4'} ${color.icon}`} />
+          <Icon className={`${isLarge ? 'w-5 h-5' : isSmall ? 'w-3 h-3' : 'w-4 h-4'} ${color.icon}`} />
         </div>
         <div className="min-w-0">
-          <div
-            className={`font-medium leading-tight ${themeColors.text.primary} ${isLarge ? 'text-[13px]' : isXs ? 'text-[9px]' : isSmall ? 'text-[11px]' : 'text-xs'}`}
-            style={{ fontFamily: 'ui-sans-serif, system-ui, -apple-system, sans-serif' }}
-          >
+          <div className={`font-semibold ${themeColors.text.primary} ${isLarge ? 'text-sm' : isSmall ? 'text-[10px]' : 'text-xs'}`}>
             {data.name}
           </div>
           {data.subtitle && (
-            <div className={`leading-tight ${isLight ? 'text-zinc-400' : 'text-zinc-500'} ${isSmall ? 'text-[8px]' : 'text-[10px]'}`}>
+            <div className={`font-mono ${themeColors.text.muted} ${isSmall ? 'text-[8px]' : 'text-[10px]'}`}>
               {data.subtitle}
             </div>
           )}
@@ -196,9 +169,25 @@ function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors }
   const toNode = nodes[connector.to]
   if (!fromNode || !toNode) return null
 
+  // Validate node sizes exist
+  if (!NODE_SIZES[fromNode.size] || !NODE_SIZES[toNode.size]) {
+    console.warn(`Invalid node size: ${fromNode.size} or ${toNode.size}`)
+    return null
+  }
+
   const style = styles[connector.style] || { color: 'zinc', strokeWidth: 2 }
-  const from = getAnchorPoint(fromNode, connector.fromAnchor)
-  const to = getAnchorPoint(toNode, connector.toAnchor)
+
+  // Safely get anchor points
+  let from: { x: number; y: number }
+  let to: { x: number; y: number }
+  try {
+    from = getAnchorPoint(fromNode, connector.fromAnchor)
+    to = getAnchorPoint(toNode, connector.toAnchor)
+  } catch (e) {
+    console.warn(`Invalid anchor: ${connector.fromAnchor} or ${connector.toAnchor}`)
+    return null
+  }
+
   const color = themeColors.palette[style.color]?.stroke || themeColors.palette.zinc.stroke
   const gradientId = `connector-gradient-${connectorIndex}`
 
@@ -278,16 +267,13 @@ function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors }
         strokeDasharray={style.dashed ? '6 3' : undefined}
       />
 
-      {/* Arrow head - refined triangle at end point */}
-      {!style.dashed && (
-        <g transform={`translate(${to.x}, ${to.y}) rotate(${angle})`}>
-          <polygon
-            points={`0,0 ${-arrowSize},-${arrowSize/3} ${-arrowSize},${arrowSize/3}`}
-            fill={color}
-            opacity={0.8}
-          />
-        </g>
-      )}
+      {/* Arrow head - triangle at end point */}
+      <g transform={`translate(${to.x}, ${to.y}) rotate(${angle})`}>
+        <polygon
+          points={`0,0 ${-arrowSize},-${arrowSize/2.5} ${-arrowSize},${arrowSize/2.5}`}
+          fill={color}
+        />
+      </g>
 
       {/* Label */}
       {style.label && (
@@ -310,17 +296,18 @@ function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors }
 // Zoom Controls
 // ============================================
 
-const ZOOM_LEVELS = [0.5, 0.75, 1, 1.25, 1.5, 2]
+const DEFAULT_ZOOM_LEVELS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2]
 
 interface ZoomControlsProps {
   zoom: number
+  zoomLevels: number[]
   onZoomIn: () => void
   onZoomOut: () => void
   onReset: () => void
   mode: DiagramMode
 }
 
-function ZoomControls({ zoom, onZoomIn, onZoomOut, onReset, mode }: ZoomControlsProps) {
+function ZoomControls({ zoom, zoomLevels, onZoomIn, onZoomOut, onReset, mode }: ZoomControlsProps) {
   const { ZoomIn, ZoomOut } = LucideIcons
   const isLight = mode === 'light'
 
@@ -332,7 +319,7 @@ function ZoomControls({ zoom, onZoomIn, onZoomOut, onReset, mode }: ZoomControls
     }`}>
       <button
         onClick={onZoomOut}
-        disabled={zoom <= ZOOM_LEVELS[0]}
+        disabled={zoom <= zoomLevels[0]}
         className={`p-1 disabled:opacity-30 disabled:cursor-not-allowed transition-colors rounded-l-md ${
           isLight ? 'hover:bg-zinc-100' : 'hover:bg-zinc-700'
         }`}
@@ -353,7 +340,7 @@ function ZoomControls({ zoom, onZoomIn, onZoomOut, onReset, mode }: ZoomControls
       </button>
       <button
         onClick={onZoomIn}
-        disabled={zoom >= ZOOM_LEVELS[ZOOM_LEVELS.length - 1]}
+        disabled={zoom >= zoomLevels[zoomLevels.length - 1]}
         className={`p-1 disabled:opacity-30 disabled:cursor-not-allowed transition-colors rounded-r-md ${
           isLight ? 'hover:bg-zinc-100' : 'hover:bg-zinc-700'
         }`}
@@ -366,51 +353,238 @@ function ZoomControls({ zoom, onZoomIn, onZoomOut, onReset, mode }: ZoomControls
 }
 
 // ============================================
+// .arc View & Controls
+// ============================================
+
+function generateSource(data: ArcDiagramData): string {
+  const clean = {
+    id: data.id,
+    layout: data.layout,
+    nodes: data.nodes,
+    nodeData: data.nodeData,
+    connectors: data.connectors,
+    connectorStyles: data.connectorStyles,
+  }
+  const json = JSON.stringify(clean, null, 2)
+    .replace(/"([^"]+)":/g, '$1:')
+    .replace(/"/g, "'")
+
+  return `import type { ArcDiagramData } from '@arach/arc'\n\nconst diagram: ArcDiagramData = ${json}\n\nexport default diagram\n`
+}
+
+function ArcSourceView({ source, mode }: {
+  source: string
+  mode: DiagramMode
+}) {
+  const isLight = mode === 'light'
+  const [copied, setCopied] = useState(false)
+
+  const handleCopy = useCallback(() => {
+    navigator.clipboard.writeText(source).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
+  }, [source])
+
+  const { Copy, Check } = LucideIcons
+
+  return (
+    <div className="absolute inset-0 overflow-auto z-[5]" style={{
+      backgroundColor: isLight ? 'rgba(250,250,250,0.97)' : 'rgba(9,9,11,0.97)',
+    }}>
+      <div className="flex items-center justify-end gap-1 px-4 pt-3">
+        <button
+          onClick={handleCopy}
+          className={`p-1 rounded transition-colors ${
+            isLight
+              ? 'hover:bg-zinc-200/60 text-zinc-400'
+              : 'hover:bg-zinc-700/60 text-zinc-500'
+          }`}
+          title={copied ? 'Copied!' : 'Copy'}
+        >
+          {copied
+            ? <Check className="w-3 h-3 text-emerald-500" />
+            : <Copy className="w-3 h-3" />
+          }
+        </button>
+      </div>
+      <pre
+        className={`px-5 pb-5 pt-2 text-[11px] leading-relaxed font-mono whitespace-pre ${
+          isLight ? 'text-zinc-600' : 'text-zinc-400'
+        }`}
+        style={{ fontFamily: '"JetBrains Mono", "Fira Code", "SF Mono", Consolas, monospace', tabSize: 2 }}
+      >
+        {source}
+      </pre>
+    </div>
+  )
+}
+
+function ViewToggle({ showArc, onToggle, mode }: {
+  showArc: boolean
+  onToggle: () => void
+  mode: DiagramMode
+}) {
+  const isLight = mode === 'light'
+  const { Braces, Layers } = LucideIcons
+
+  return (
+    <button
+      onClick={onToggle}
+      className={`absolute top-3 right-3 flex items-center gap-1.5 px-2 py-1 rounded-md backdrop-blur-sm z-10 text-[10px] font-mono transition-colors ${
+        isLight
+          ? 'bg-white/90 border border-zinc-200 shadow-sm text-zinc-500 hover:text-zinc-700 hover:bg-zinc-50'
+          : 'bg-zinc-900/90 border border-zinc-700 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800'
+      }`}
+      title={showArc ? 'Back to diagram' : 'View source'}
+    >
+      {showArc
+        ? <><Layers className="w-3 h-3" /> Diagram</>
+        : <><Braces className="w-3 h-3" /> Source</>
+      }
+    </button>
+  )
+}
+
+function AutoLayoutButton({ active, onToggle, mode }: {
+  active: boolean
+  onToggle: () => void
+  mode: DiagramMode
+}) {
+  const isLight = mode === 'light'
+  const { Wand2 } = LucideIcons
+
+  return (
+    <button
+      onClick={onToggle}
+      className={`absolute top-3 left-3 flex items-center gap-1.5 px-2 py-1 rounded-md backdrop-blur-sm z-10 text-[10px] font-mono transition-colors ${
+        active
+          ? isLight
+            ? 'bg-violet-50 border border-violet-200 text-violet-600 shadow-sm'
+            : 'bg-violet-950/80 border border-violet-700 text-violet-400'
+          : isLight
+            ? 'bg-white/90 border border-zinc-200 shadow-sm text-zinc-500 hover:text-zinc-700 hover:bg-zinc-50'
+            : 'bg-zinc-900/90 border border-zinc-700 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800'
+      }`}
+      title={active ? 'Reset to original layout' : 'Auto-layout nodes'}
+    >
+      <Wand2 className="w-3 h-3" /> Auto
+    </button>
+  )
+}
+
+// ============================================
 // Main Component
 // ============================================
 
-export interface ArcDiagramProps {
+interface ArcDiagramProps {
   data: ArcDiagramData
   className?: string
   interactive?: boolean  // Enable zoom/pan controls
   mode?: DiagramMode     // Light/dark appearance
   theme?: ThemeId        // Color palette theme
-  defaultZoom?: number | string  // Initial zoom level (ignored in static mode)
+  /** Override the diagram label (bottom-left). Defaults to data.id */
+  label?: string
+  /** Initial zoom level. Use 'fit' to auto-fit content, or a number (e.g., 0.75). Default: 1 */
+  defaultZoom?: number | 'fit'
+  /** Custom zoom level steps. Default: [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2] */
+  zoomLevels?: number[]
+  /** Show the .arc source toggle button. Default: true */
+  showArcToggle?: boolean
+  /** Show the auto-layout button. Default: false */
+  showAutoLayout?: boolean
 }
 
-export function ArcDiagram({ data, className = '', interactive = true, mode = 'dark', theme = 'default', defaultZoom = 1 }: ArcDiagramProps) {
-  const { id, layout, nodes, nodeData, connectors, connectorStyles, groups } = data
+export default function ArcDiagram({
+  data,
+  className = '',
+  interactive = true,
+  mode = 'dark',
+  theme = 'default',
+  label,
+  defaultZoom = 1,
+  zoomLevels = DEFAULT_ZOOM_LEVELS,
+  showArcToggle = true,
+  showAutoLayout = false,
+}: ArcDiagramProps) {
   const isLight = mode === 'light'
+  const containerRef = React.useRef<HTMLDivElement>(null)
+  const [showArc, setShowArc] = useState(false)
+  const [useAutoLayout, setUseAutoLayout] = useState(false)
+
+  // Apply auto-layout if toggled
+  const activeData = useMemo(
+    () => useAutoLayout ? autoLayout(data as any) as unknown as ArcDiagramData : data,
+    [data, useAutoLayout],
+  )
+
+  const { id, layout, nodes, nodeData, connectors, connectorStyles } = activeData
 
   // Resolve theme colors based on mode
   const themeData = getTheme(theme)
   const themeColors = isLight ? themeData.light : themeData.dark
 
+  // Generate source from the active (possibly auto-laid-out) data
+  const sourceCode = useMemo(() => generateSource(activeData), [activeData])
+
+  // Calculate 'fit' zoom based on container size
+  const calculateFitZoom = useCallback(() => {
+    if (!containerRef.current) return 1
+    const container = containerRef.current
+    const containerWidth = container.clientWidth
+    const containerHeight = container.clientHeight
+    // Add padding for chrome (zoom controls, label)
+    const padding = 40
+    const fitX = (containerWidth - padding) / layout.width
+    const fitY = (containerHeight - padding) / layout.height
+    // Use the smaller ratio to fit both dimensions, cap at 1 (100%)
+    return Math.min(fitX, fitY, 1)
+  }, [layout.width, layout.height])
+
+  // Determine initial zoom
+  const getInitialZoom = useCallback(() => {
+    if (defaultZoom === 'fit') {
+      return calculateFitZoom()
+    }
+    return defaultZoom
+  }, [defaultZoom, calculateFitZoom])
+
   // Zoom & pan state — use defaultZoom immediately for numeric values to avoid flash
-  const initialZoom = typeof defaultZoom === 'number' ? defaultZoom : 1
-  const [zoom, setZoom] = useState(initialZoom)
+  const [zoom, setZoom] = useState(typeof defaultZoom === 'number' ? defaultZoom : 1)
   const [pan, setPan] = useState({ x: 0, y: 0 })
   const [isPanning, setIsPanning] = useState(false)
   const [panStart, setPanStart] = useState({ x: 0, y: 0 })
+  const [initialized, setInitialized] = useState(typeof defaultZoom === 'number')
+
+  // Set initial zoom after mount (needed for 'fit' to measure container)
+  React.useEffect(() => {
+    if (!initialized) {
+      setZoom(getInitialZoom())
+      setInitialized(true)
+    }
+  }, [initialized, getInitialZoom])
+
+  // Sorted zoom levels for consistent navigation
+  const sortedZoomLevels = React.useMemo(() => [...zoomLevels].sort((a, b) => a - b), [zoomLevels])
 
   const handleZoomIn = useCallback(() => {
     setZoom(z => {
-      const idx = ZOOM_LEVELS.findIndex(l => l >= z)
-      return ZOOM_LEVELS[Math.min(idx + 1, ZOOM_LEVELS.length - 1)]
+      const idx = sortedZoomLevels.findIndex(l => l >= z)
+      return sortedZoomLevels[Math.min(idx + 1, sortedZoomLevels.length - 1)]
     })
-  }, [])
+  }, [sortedZoomLevels])
 
   const handleZoomOut = useCallback(() => {
     setZoom(z => {
-      const idx = ZOOM_LEVELS.findIndex(l => l >= z)
-      return ZOOM_LEVELS[Math.max(idx - 1, 0)]
+      const idx = sortedZoomLevels.findIndex(l => l >= z)
+      return sortedZoomLevels[Math.max(idx - 1, 0)]
     })
-  }, [])
+  }, [sortedZoomLevels])
 
   const handleReset = useCallback(() => {
-    setZoom(1)
+    setZoom(getInitialZoom())
     setPan({ x: 0, y: 0 })
-  }, [])
+  }, [getInitialZoom])
 
   const handleWheel = useCallback((e: React.WheelEvent) => {
     if (!interactive) return
@@ -439,8 +613,12 @@ export function ArcDiagram({ data, className = '', interactive = true, mode = 'd
     setIsPanning(false)
   }, [])
 
+  // Displayed label: prop overrides data.id
+  const displayLabel = label ?? id
+
   return (
     <div
+      ref={containerRef}
       className={`rounded-2xl overflow-hidden relative ${themeColors.background.container} ${className}`}
       onWheel={handleWheel}
       onMouseDown={handleMouseDown}
@@ -473,127 +651,6 @@ export function ArcDiagram({ data, className = '', interactive = true, mode = 'd
           }}
         />
 
-        {/* Groups (behind connectors and nodes) */}
-        {groups && groups.length > 0 && (
-          <svg
-            className="absolute inset-0 w-full h-full pointer-events-none"
-            viewBox={`0 0 ${layout.width} ${layout.height}`}
-          >
-            {groups.map((group, i) => {
-              const groupColor = group.color
-                ? (themeColors.palette[group.color]?.stroke || themeColors.palette.zinc.stroke)
-                : themeColors.palette.zinc.stroke
-              const anchor = group.labelAnchor || 'bottom'
-              const placement = group.labelPlacement || 'overlap'
-              const labelWidth = group.label.length * 6.5 + 20
-              const labelHeight = 20
-              const maskId = `group-label-mask-${id || ''}-${i}`
-
-              // Calculate label position based on anchor and placement
-              let labelX: number
-              let labelY: number
-
-              if (anchor === 'top' || anchor === 'bottom') {
-                labelX = group.x + group.width / 2 - labelWidth / 2
-                if (anchor === 'top') {
-                  labelY = placement === 'overlap'
-                    ? group.y - labelHeight / 2
-                    : group.y + 8
-                } else {
-                  labelY = placement === 'overlap'
-                    ? group.y + group.height - labelHeight / 2
-                    : group.y + group.height - labelHeight - 8
-                }
-              } else {
-                labelY = group.y + group.height / 2 - labelHeight / 2
-                if (anchor === 'left') {
-                  labelX = placement === 'overlap'
-                    ? group.x - labelWidth / 2
-                    : group.x + 8
-                } else {
-                  labelX = placement === 'overlap'
-                    ? group.x + group.width - labelWidth / 2
-                    : group.x + group.width - labelWidth - 8
-                }
-              }
-
-              return (
-                <g key={i}>
-                  {/* Mask to cut out the label area from the dashed border */}
-                  <defs>
-                    <mask id={maskId}>
-                      {/* White = visible, black = hidden */}
-                      <rect x={group.x - 2} y={group.y - 2} width={group.width + 4} height={group.height + 4} fill="white" />
-                      {/* Cut out the label area with padding */}
-                      <rect
-                        x={labelX - 4}
-                        y={labelY - 2}
-                        width={labelWidth + 8}
-                        height={labelHeight + 4}
-                        rx={12}
-                        fill="black"
-                      />
-                    </mask>
-                  </defs>
-
-                  {/* Group fill (no mask needed) */}
-                  <rect
-                    x={group.x}
-                    y={group.y}
-                    width={group.width}
-                    height={group.height}
-                    rx={16}
-                    fill={groupColor}
-                    fillOpacity={isLight ? 0.04 : 0.08}
-                  />
-
-                  {/* Group dashed border (masked where label is) */}
-                  <rect
-                    x={group.x}
-                    y={group.y}
-                    width={group.width}
-                    height={group.height}
-                    rx={16}
-                    fill="none"
-                    stroke={groupColor}
-                    strokeWidth={1.5}
-                    strokeDasharray="6 4"
-                    opacity={isLight ? 0.4 : 0.35}
-                    mask={`url(#${maskId})`}
-                  />
-
-                  {/* Label pill background */}
-                  <rect
-                    x={labelX}
-                    y={labelY}
-                    width={labelWidth}
-                    height={labelHeight}
-                    rx={10}
-                    fill={groupColor}
-                    fillOpacity={isLight ? 0.08 : 0.18}
-                  />
-
-                  {/* Label text */}
-                  <text
-                    x={labelX + labelWidth / 2}
-                    y={labelY + labelHeight / 2 + 1}
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    fill={groupColor}
-                    fillOpacity={isLight ? 0.55 : 0.6}
-                    fontSize={9}
-                    fontWeight={600}
-                    fontFamily="ui-sans-serif, system-ui, sans-serif"
-                    letterSpacing="0.12em"
-                  >
-                    {group.label}
-                  </text>
-                </g>
-              )
-            })}
-          </svg>
-        )}
-
         {/* Connectors */}
         <svg
           className="absolute inset-0 w-full h-full pointer-events-none"
@@ -612,24 +669,50 @@ export function ArcDiagram({ data, className = '', interactive = true, mode = 'd
         </svg>
 
         {/* Nodes */}
-        {Object.entries(nodes).map(([nodeId, node]) => (
-          <Node key={nodeId} node={node} data={nodeData[nodeId]} mode={mode} themeColors={themeColors} />
-        ))}
+        {Object.entries(nodes).map(([nodeId, node]) => {
+          const data = nodeData[nodeId]
+          if (!data) return null  // Skip nodes without data
+          return <Node key={nodeId} node={node} data={data} mode={mode} themeColors={themeColors} />
+        })}
       </div>
 
       {/* Viewer chrome - fixed position regardless of zoom/pan */}
 
-      {/* Diagram ID - bottom left */}
-      {id && (
+      {/* .arc source overlay */}
+      {showArc && (
+        <ArcSourceView source={sourceCode} mode={mode} />
+      )}
+
+      {/* .arc toggle - top right */}
+      {showArcToggle && (
+        <ViewToggle
+          showArc={showArc}
+          onToggle={() => setShowArc(s => !s)}
+          mode={mode}
+        />
+      )}
+
+      {/* Auto-layout button - top left */}
+      {showAutoLayout && !showArc && (
+        <AutoLayoutButton
+          active={useAutoLayout}
+          onToggle={() => setUseAutoLayout(v => !v)}
+          mode={mode}
+        />
+      )}
+
+      {/* Diagram label - bottom left */}
+      {displayLabel && (
         <div className={`absolute bottom-3 left-3 font-mono text-[9px] tracking-wider z-10 ${themeColors.text.muted}`}>
-          {id}
+          {displayLabel}
         </div>
       )}
 
       {/* Zoom controls - bottom right */}
-      {interactive && (
+      {interactive && !showArc && (
         <ZoomControls
           zoom={zoom}
+          zoomLevels={sortedZoomLevels}
           onZoomIn={handleZoomIn}
           onZoomOut={handleZoomOut}
           onReset={handleReset}
@@ -639,5 +722,3 @@ export function ArcDiagram({ data, className = '', interactive = true, mode = 'd
     </div>
   )
 }
-
-export default ArcDiagram

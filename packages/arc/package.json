@@ -1,6 +1,6 @@
 {
   "name": "@arach/arc",
-  "version": "0.2.0",
+  "version": "0.1.0",
   "description": "Declarative architecture diagram renderer for React",
   "type": "module",
   "main": "./dist/index.cjs",

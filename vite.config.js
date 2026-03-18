@@ -4,6 +4,7 @@ import tailwindcss from '@tailwindcss/vite'
 import { visualizer } from 'rollup-plugin-visualizer'
 import { resolve } from 'path'
 import { existsSync } from 'fs'
+import captureMiddleware from './plugins/captureMiddleware.js'
 
 const __dirname = new URL('.', import.meta.url).pathname
 
@@ -27,6 +28,7 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react(),
       tailwindcss(),
+      captureMiddleware(),
       visualizer({ open: false, gzipSize: true, filename: 'bundle-stats.html' }),
     ],
     resolve: {

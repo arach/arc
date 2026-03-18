@@ -1,6 +1,10 @@
 import { memo } from 'react'
 import { getIconComponent } from '../../utils/iconRegistry'
 import { NODE_SIZES } from '../../utils/constants'
+import { Node as PlayerNode } from '../ArcDiagram'
+import type { Theme } from '../../utils/themes'
+
+type ResolvedThemeMode = Theme['light'] | Theme['dark']
 
 // Color mappings for different accent positions
 const accentClasses = {
@@ -97,6 +101,7 @@ interface EditableNodeProps {
   onClick: (nodeId: string, e: React.MouseEvent) => void
   onMouseEnter: () => void
   onMouseLeave: () => void
+  themeColors?: ResolvedThemeMode | null
 }
 
 const EditableNode = memo(function EditableNode({
@@ -110,6 +115,7 @@ const EditableNode = memo(function EditableNode({
   onClick,
   onMouseEnter,
   onMouseLeave,
+  themeColors,
 }: EditableNodeProps) {
   const Icon = getIconComponent(data.icon)
   const size = node.size || 'm'
@@ -129,19 +135,47 @@ const EditableNode = memo(function EditableNode({
   const widthPercent = (width / layout.width) * 100
   const heightPercent = (height / layout.height) * 100
 
-  // Get template-specific styles
+  // Resolve color through theme palette when available
+  const resolvedPalette = themeColors?.palette?.[color as keyof typeof themeColors.palette]
+  const isThemed = !!resolvedPalette
+  // Detect light mode from the theme's background container class
+  const isLightTheme = isThemed && !themeColors?.background?.container?.includes('950')
+
+  // Get template-specific styles (used when no theme override)
   const nodeStyle = (template?.node || {}) as Record<string, string>
+
+  // Ring offset color based on mode
+  const ringOffsetClass = isLightTheme ? 'ring-offset-white' : (template?.canvas?.background?.includes('white') ? 'ring-offset-white' : 'ring-offset-zinc-950')
+
+  // When a theme is active, use the player's Node component directly — same rendering, same styles
+  if (isThemed) {
+    const colorMode = isLightTheme ? 'light' : 'dark'
+    return (
+      <div
+        className={`cursor-move select-none pointer-events-auto ${isSelected ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-white rounded-xl' : ''}`}
+        style={{ position: 'absolute', left: node.x, top: node.y, width: width }}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
+        onPointerDown={(e) => onPointerDown(e, nodeId)}
+        onClick={(e) => { e.stopPropagation(); onClick(nodeId, e) }}
+      >
+        <PlayerNode
+          node={{ x: 0, y: 0, size: (size as any) }}
+          data={{ icon: data.icon, name: data.name, subtitle: data.subtitle, color: (data.color || 'violet') as any }}
+          mode={colorMode as any}
+          themeColors={themeColors!}
+        />
+      </div>
+    )
+  }
+
+  // Default rendering (no theme override) — original editor style
   const accentPosition = (nodeStyle.accentPosition || 'left') as keyof typeof accentClasses
   const accentClass = accentClasses[accentPosition]?.[color as keyof typeof accentClasses['left']] || ''
   const iconBorderStyle = (nodeStyle.iconBorderStyle || 'colored') as keyof typeof iconBorderColors
   const iconBorderClass = iconBorderColors[iconBorderStyle]?.[color as keyof typeof iconBorderColors['colored']] || ''
   const subtitleStyle = (nodeStyle.subtitleStyle || 'colored') as keyof typeof subtitleColorMap
   const subtitleColorClass = subtitleColorMap[subtitleStyle]?.[color as keyof typeof subtitleColorMap['colored']] || 'text-zinc-500'
-
-  // Ring offset color based on canvas background
-  const ringOffsetClass = template?.canvas?.background?.includes('white')
-    ? 'ring-offset-white'
-    : 'ring-offset-zinc-950'
 
   return (
     <div
@@ -173,7 +207,6 @@ const EditableNode = memo(function EditableNode({
         `}
       >
         <div className="flex items-start gap-3">
-          {/* Icon container */}
           <div
             className={`
               flex-shrink-0 rounded-lg
@@ -185,8 +218,6 @@ const EditableNode = memo(function EditableNode({
           >
             <Icon className={`${isLarge ? 'w-6 h-6' : isSmall ? 'w-4 h-4' : 'w-5 h-5'} ${iconColors[color]}`} />
           </div>
-
-          {/* Text content */}
           <div className="min-w-0 flex-1 pt-0.5">
             <div className={`font-semibold ${nodeStyle.textColor || 'text-white'} ${isLarge ? 'text-base' : isSmall ? 'text-xs' : 'text-sm'}`}>
               {data.name}
@@ -198,8 +229,6 @@ const EditableNode = memo(function EditableNode({
             )}
           </div>
         </div>
-
-        {/* Description */}
         {data.description && !isSmall && !isExtraSmall && (
           <div className={`mt-2 ${nodeStyle.descriptionColor || 'text-zinc-500'} ${isLarge ? 'text-xs' : 'text-[11px]'}`}>
             {data.description}

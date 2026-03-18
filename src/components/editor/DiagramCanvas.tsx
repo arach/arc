@@ -1,6 +1,6 @@
 import { useRef, useCallback, useState, useEffect } from 'react'
 // @ts-ignore - JS module, will migrate later
-import { useEditor, useDiagram, useEditorState, useTemplate, useViewMode } from './EditorProvider'
+import { useEditor, useDiagram, useEditorState, useTemplate, useViewMode, useResolvedTheme } from './EditorProvider'
 // @ts-ignore - JS module
 import { NODE_SIZES } from '../../utils/constants'
 // @ts-ignore - JS module
@@ -26,6 +26,7 @@ import ExportZoneLayer from './ExportZoneLayer'
 import InfiniteGrid from './InfiniteGrid'
 import ZoomControls from './ZoomControls'
 import ViewModeToggle from './ViewModeToggle'
+import { getTheme } from '../../utils/themes'
 import IsometricNodeLayer from './IsometricNodeLayer'
 import IsometricConnectorLayer from './IsometricConnectorLayer'
 import type { EmbedConfig, ZoomConfig } from '../../types/editor'
@@ -47,15 +48,19 @@ interface DiagramCanvasProps {
   onViewportChange?: (bounds: { x: number; y: number; width: number; height: number }) => void
   embedConfig?: EmbedConfig
   zoomConfig?: ZoomConfig
+  /** Override canvas background with an Arc theme. */
+  themeOverride?: string
+  isDark?: boolean
 }
 
-export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfig }: DiagramCanvasProps) {
+export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfig, themeOverride, isDark }: DiagramCanvasProps) {
   const { actions } = useEditor()
   const diagram = useDiagram()
   const editor = useEditorState()
   const templateId = useTemplate()
   const viewMode = useViewMode()
   const template = getTemplate(templateId)
+  const themeColors = useResolvedTheme()
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null)
 
   // Merge embed config with defaults
@@ -654,7 +659,8 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
         ref={containerRef}
         className={`
           w-full h-full overflow-hidden
-          ${template.canvas.background}
+          ${themeColors ? '' : (themeOverride ? '' : template.canvas.background)}
+          ${themeColors ? themeColors.background.container : (themeOverride ? getTheme(themeOverride as any)?.[isDark ? 'dark' : 'light']?.background?.container || '' : '')}
           ${getCursorClass()}
         `}
         style={{ touchAction: 'none' }}
@@ -771,6 +777,7 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
                   connectorStyles={diagram.connectorStyles}
                   selectedConnectorIndex={editor.selectedConnectorIndex}
                   onConnectorClick={handleConnectorClick}
+                  themeColors={themeColors}
                 />
 
                 {/* Anchor points */}
@@ -803,6 +810,7 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
                         onClick={handleNodeClick}
                         onMouseEnter={() => editor.mode === 'addConnector' && setHoveredNodeId(nodeId)}
                         onMouseLeave={() => editor.mode === 'addConnector' && setHoveredNodeId(null)}
+                        themeColors={themeColors}
                       />
                     )
                   })}

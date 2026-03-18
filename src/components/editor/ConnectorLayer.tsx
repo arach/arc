@@ -1,7 +1,10 @@
 import React from 'react'
 import { anchor, midPoint } from '../../utils/diagramHelpers'
+import type { Theme } from '../../utils/themes'
 
-// Stroke colors for dark mode
+type ResolvedThemeMode = Theme['light'] | Theme['dark']
+
+// Stroke colors for dark mode (fallback when no theme is active)
 const strokeColors = {
   emerald: '#34d399',
   amber: '#fbbf24',
@@ -11,8 +14,17 @@ const strokeColors = {
   blue: '#60a5fa',
 }
 
+/** Resolve a stroke color from theme palette or fall back to hardcoded defaults */
+function resolveStrokeColor(color: string, themeColors?: ResolvedThemeMode | null): string {
+  if (themeColors) {
+    const paletteEntry = themeColors.palette?.[color as keyof typeof themeColors.palette]
+    if (paletteEntry?.stroke) return paletteEntry.stroke
+  }
+  return strokeColors[color] || strokeColors.zinc
+}
+
 // Arrow marker for one-directional arrows
-function ArrowMarker({ id, color }) {
+function ArrowMarker({ id, color, themeColors }: { id: string; color: string; themeColors?: ResolvedThemeMode | null }) {
   return (
     <marker
       id={id}
@@ -23,13 +35,13 @@ function ArrowMarker({ id, color }) {
       orient="auto"
       markerUnits="userSpaceOnUse"
     >
-      <polygon points="0 0, 8 3, 0 6" fill={strokeColors[color]} />
+      <polygon points="0 0, 8 3, 0 6" fill={resolveStrokeColor(color, themeColors)} />
     </marker>
   )
 }
 
 // Arrow marker for start of bidirectional arrows
-function ArrowMarkerStart({ id, color }) {
+function ArrowMarkerStart({ id, color, themeColors }: { id: string; color: string; themeColors?: ResolvedThemeMode | null }) {
   return (
     <marker
       id={id}
@@ -40,7 +52,7 @@ function ArrowMarkerStart({ id, color }) {
       orient="auto"
       markerUnits="userSpaceOnUse"
     >
-      <polygon points="8 0, 0 3, 8 6" fill={strokeColors[color]} />
+      <polygon points="8 0, 0 3, 8 6" fill={resolveStrokeColor(color, themeColors)} />
     </marker>
   )
 }
@@ -53,14 +65,14 @@ function getDotOffset() {
 }
 
 // Endpoint dot component with improved positioning
-function EndpointDot({ x, y, color, size = 4 }) {
+function EndpointDot({ x, y, color, size = 4, themeColors }: { x: number; y: number; color: string; size?: number; themeColors?: ResolvedThemeMode | null }) {
   const offset = getDotOffset()
   return (
     <circle
       cx={x + offset.dx}
       cy={y + offset.dy}
       r={size}
-      fill={strokeColors[color] || strokeColors.zinc}
+      fill={resolveStrokeColor(color, themeColors)}
       className="pointer-events-none"
     />
   )
@@ -126,7 +138,9 @@ function generatePath(from, to, fromAnchor, toAnchor, curve, curveDepth = 50) {
   return `M ${from.x} ${from.y} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${to.x} ${to.y}`
 }
 
-function Connector({ connector, nodes, connectorStyles, isSelected, onClick, index }) {
+function Connector({ connector, nodes, connectorStyles, isSelected, onClick, index, themeColors }: {
+  connector: any; nodes: any; connectorStyles: any; isSelected: boolean; onClick: (i: number) => void; index: number; themeColors?: ResolvedThemeMode | null
+}) {
   const style = connectorStyles[connector.style]
   if (!style) return null
 
@@ -137,7 +151,7 @@ function Connector({ connector, nodes, connectorStyles, isSelected, onClick, ind
   // Get curve depth from connector or use default
   const curveDepth = connector.curveDepth ?? 40
   const path = generatePath(from, to, connector.fromAnchor, connector.toAnchor, connector.curve, curveDepth)
-  const strokeColor = strokeColors[style.color] || strokeColors.zinc
+  const strokeColor = resolveStrokeColor(style.color, themeColors)
 
   // Arrow control - default to true if not specified
   const showArrow = style.showArrow !== false
@@ -234,8 +248,8 @@ function Connector({ connector, nodes, connectorStyles, isSelected, onClick, ind
       {/* Endpoint dots at node edges */}
       {showEndpoints && (
         <>
-          <EndpointDot x={from.x} y={from.y} color={style.color} size={4} />
-          <EndpointDot x={to.x} y={to.y} color={style.color} size={4} />
+          <EndpointDot x={from.x} y={from.y} color={style.color} size={4} themeColors={themeColors} />
+          <EndpointDot x={to.x} y={to.y} color={style.color} size={4} themeColors={themeColors} />
         </>
       )}
 
@@ -264,6 +278,9 @@ export default function ConnectorLayer({
   connectorStyles,
   selectedConnectorIndex,
   onConnectorClick,
+  themeColors,
+}: {
+  layout: any; nodes: any; connectors: any[]; connectorStyles: any; selectedConnectorIndex: number | null; onConnectorClick: (i: number) => void; themeColors?: ResolvedThemeMode | null
 }) {
   // Get unique colors used by connectors for marker definitions
   const usedColors = [...new Set(
@@ -315,8 +332,8 @@ export default function ConnectorLayer({
         <defs>
           {usedColors.map(color => (
             <React.Fragment key={color}>
-              <ArrowMarker id={`arrow-${color}`} color={color} />
-              <ArrowMarkerStart id={`arrow-start-${color}`} color={color} />
+              <ArrowMarker id={`arrow-${color}`} color={color} themeColors={themeColors} />
+              <ArrowMarkerStart id={`arrow-start-${color}`} color={color} themeColors={themeColors} />
             </React.Fragment>
           ))}
         </defs>
@@ -332,6 +349,7 @@ export default function ConnectorLayer({
               connectorStyles={connectorStyles}
               isSelected={selectedConnectorIndex === i}
               onClick={onConnectorClick}
+              themeColors={themeColors}
             />
           ))}
         </g>

@@ -1,8 +1,9 @@
 "use client"
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useMemo } from 'react'
 import * as LucideIcons from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { getTheme, type ThemeId, type Theme } from './themes'
+import { autoLayout } from './autoLayout'
 
 // ============================================
 // Types
@@ -24,7 +25,6 @@ export interface NodeData {
   subtitle?: string
   description?: string
   color: DiagramColor
-  dashed?: boolean  // Dashed border for placeholder nodes
 }
 
 export interface Connector {
@@ -51,20 +51,6 @@ export interface DiagramLayout {
   height: number
 }
 
-export type GroupLabelAnchor = 'top' | 'bottom' | 'left' | 'right'
-export type GroupLabelPlacement = 'inset' | 'overlap'
-
-export interface DiagramGroup {
-  label: string
-  x: number
-  y: number
-  width: number
-  height: number
-  color?: DiagramColor
-  labelAnchor?: GroupLabelAnchor    // Which edge to place the label on (default: 'bottom')
-  labelPlacement?: GroupLabelPlacement  // Inset inside or overlap the border (default: 'overlap')
-}
-
 export interface ArcDiagramData {
   id?: string
   layout: DiagramLayout
@@ -72,7 +58,6 @@ export interface ArcDiagramData {
   nodeData: Record<string, NodeData>
   connectors: Connector[]
   connectorStyles: Record<string, ConnectorStyle>
-  groups?: DiagramGroup[]
 }
 
 // ============================================
@@ -80,10 +65,10 @@ export interface ArcDiagramData {
 // ============================================
 
 const NODE_SIZES: Record<NodeSize, { width: number; height: number }> = {
-  l: { width: 220, height: 90 },
-  m: { width: 160, height: 75 },
-  s: { width: 130, height: 48 },
-  xs: { width: 110, height: 36 },
+  l: { width: 200, height: 68 },
+  m: { width: 140, height: 52 },
+  s: { width: 100, height: 40 },
+  xs: { width: 36, height: 52 },
 }
 
 // Mode = light/dark appearance, Theme = color palette
@@ -99,63 +84,101 @@ interface NodeProps {
   data: NodeData
   mode: DiagramMode
   themeColors: Theme['light'] | Theme['dark']
+  editable?: boolean
+  onDragStart?: (e: React.MouseEvent) => void
 }
 
-function Node({ node, data, mode, themeColors }: NodeProps) {
+function Node({ node, data, mode, themeColors, editable, onDragStart }: NodeProps) {
   const size = NODE_SIZES[node.size]
   const color = themeColors.palette[data.color] || themeColors.palette.zinc
   const Icon = (LucideIcons as unknown as Record<string, LucideIcon>)[data.icon] || LucideIcons.Box
 
   const isLarge = node.size === 'l'
-  const isSmall = node.size === 's' || node.size === 'xs'
+  const isSmall = node.size === 's'
   const isXs = node.size === 'xs'
   const isLight = mode === 'light'
 
+  const dragProps = editable ? {
+    onMouseDown: (e: React.MouseEvent) => { e.stopPropagation(); onDragStart?.(e) },
+  } : {}
+
+  const editClass = editable ? 'cursor-move hover:brightness-110' : ''
+
+  // XS: icon-only circle with label underneath
+  if (isXs) {
+    return (
+      <div
+        className={`absolute flex flex-col items-center ${editClass}`}
+        style={{ left: node.x, top: node.y, width: size.width, zIndex: editable ? 1 : undefined }}
+        {...dragProps}
+      >
+        <div className={`
+          rounded-full w-9 h-9 flex items-center justify-center
+          ${isLight ? 'bg-white border border-zinc-200/80 shadow-sm' : 'bg-zinc-800/90 border border-zinc-700/60'}
+        `}>
+          <Icon className={`w-4 h-4 ${color.icon}`} strokeWidth={1.5} />
+        </div>
+        {data.name && (
+          <div className={`mt-1.5 text-center ${themeColors.text.muted} text-[8px] tracking-wide uppercase`}
+            style={{ fontFamily: 'ui-sans-serif, system-ui, sans-serif' }}
+          >
+            {data.name}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // S/M/L: clean card — icon is inline color dot, not a boxed element
   return (
     <div
       className={`
-        absolute rounded-xl
-        ${isLarge ? 'px-5 py-3.5' : isXs ? 'px-2.5 py-1.5' : isSmall ? 'px-3 py-2' : 'px-4 py-3'}
+        absolute rounded-lg border
         ${isLight
-          ? `bg-white border ${color.border} shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.03)]`
-          : `bg-zinc-800/80 border ${color.border} shadow-lg shadow-black/30`
-        } backdrop-blur-sm
+          ? 'bg-white/90 border-zinc-200/70 shadow-sm'
+          : 'bg-zinc-900/80 border-zinc-700/50'
+        }
+        ${editClass}
       `}
       style={{
         left: node.x,
         top: node.y,
         width: size.width,
-        ...(data.dashed ? { borderStyle: 'dashed' } : {}),
+        zIndex: editable ? 1 : undefined,
+        backdropFilter: 'blur(8px)',
       }}
+      {...dragProps}
     >
-      <div className={`flex items-center ${isXs ? 'gap-1.5' : isSmall ? 'gap-2.5' : 'gap-3'}`}>
-        <div className={`
-          flex-shrink-0 rounded-lg ${color.bg}
-          ${isLight ? `border ${color.border}` : 'border border-zinc-700/50'}
-          ${isLarge ? 'w-9 h-9' : isXs ? 'w-5 h-5' : isSmall ? 'w-7 h-7' : 'w-8 h-8'}
-          flex items-center justify-center
-        `}>
-          <Icon className={`${isLarge ? 'w-[18px] h-[18px]' : isXs ? 'w-3 h-3' : isSmall ? 'w-3.5 h-3.5' : 'w-4 h-4'} ${color.icon}`} />
-        </div>
-        <div className="min-w-0">
-          <div
-            className={`font-medium leading-tight ${themeColors.text.primary} ${isLarge ? 'text-[13px]' : isXs ? 'text-[9px]' : isSmall ? 'text-[11px]' : 'text-xs'}`}
-            style={{ fontFamily: 'ui-sans-serif, system-ui, -apple-system, sans-serif' }}
-          >
+      {/* Accent top edge */}
+      <div
+        className="absolute top-0 left-3 right-3 h-[2px] rounded-full"
+        style={{ backgroundColor: color.stroke, opacity: 0.6 }}
+      />
+
+      <div className={`${isLarge ? 'px-4 py-3' : isSmall ? 'px-2.5 py-1.5' : 'px-3 py-2'}`}>
+        <div className="flex items-center gap-2">
+          <Icon
+            className={`flex-shrink-0 ${isLarge ? 'w-4 h-4' : isSmall ? 'w-3 h-3' : 'w-3.5 h-3.5'}`}
+            style={{ color: color.stroke }}
+            strokeWidth={1.5}
+          />
+          <span className={`font-medium ${themeColors.text.primary} ${isLarge ? 'text-[13px]' : isSmall ? 'text-[10px]' : 'text-[11px]'} leading-tight`}>
             {data.name}
+          </span>
+        </div>
+        {data.subtitle && (
+          <div className={`${themeColors.text.muted} ${isSmall ? 'text-[8px] mt-0.5' : 'text-[9px] mt-1'} leading-tight`}
+            style={{ fontFamily: 'ui-monospace, monospace' }}
+          >
+            {data.subtitle}
           </div>
-          {data.subtitle && (
-            <div className={`leading-tight ${isLight ? 'text-zinc-400' : 'text-zinc-500'} ${isSmall ? 'text-[8px]' : 'text-[10px]'}`}>
-              {data.subtitle}
-            </div>
-          )}
-        </div>
+        )}
+        {data.description && !isSmall && (
+          <div className={`mt-1 ${themeColors.text.secondary} text-[9px] leading-relaxed`}>
+            {data.description}
+          </div>
+        )}
       </div>
-      {data.description && !isSmall && (
-        <div className={`mt-1.5 ${themeColors.text.secondary} ${isLarge ? 'text-[11px]' : 'text-[10px]'}`}>
-          {data.description}
-        </div>
-      )}
     </div>
   )
 }
@@ -212,43 +235,47 @@ function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors }
   let labelOffset = { x: 0, y: 0 }
   let textAnchor: 'start' | 'middle' | 'end' = 'middle'
 
-  if (connector.curve === 'natural') {
-    // Curved path for diagonal connections
-    const dx = to.x - from.x
-    const dy = to.y - from.y
-    const cp1x = from.x + dx * 0.4
-    const cp1y = from.y + dy * 0.1
-    const cp2x = to.x - dx * 0.4
-    const cp2y = to.y - dy * 0.1
-    path = `M ${from.x} ${from.y} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${to.x} ${to.y}`
-    labelPos = { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 }
-    labelOffset = { x: 0, y: -8 }
-  } else {
-    path = `M ${from.x} ${from.y} L ${to.x} ${to.y}`
-    labelPos = { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 }
+  // Always use smooth bezier curves unless explicitly step
+  const dx = to.x - from.x
+  const dy = to.y - from.y
 
+  if (connector.curve === 'step') {
+    // Orthogonal step path
+    const midX = from.x + dx / 2
+    path = `M ${from.x} ${from.y} L ${midX} ${from.y} L ${midX} ${to.y} L ${to.x} ${to.y}`
+  } else {
+    // Smooth bezier — control points follow the dominant axis
+    const tension = 0.5
     if (isVertical) {
-      // Vertical connector - position label to left or right of line
-      if (labelAlign === 'right') {
-        labelOffset = { x: 8, y: 4 }
-        textAnchor = 'start'  // Left-aligned text on right side
-      } else if (labelAlign === 'left') {
-        labelOffset = { x: -8, y: 4 }
-        textAnchor = 'end'    // Right-aligned text on left side
-      } else {
-        labelOffset = { x: 0, y: -8 }
-        textAnchor = 'middle'
-      }
+      const cpy = dy * tension
+      path = `M ${from.x} ${from.y} C ${from.x} ${from.y + cpy}, ${to.x} ${to.y - cpy}, ${to.x} ${to.y}`
     } else {
-      // Horizontal connector - label above, centered
+      const cpx = dx * tension
+      path = `M ${from.x} ${from.y} C ${from.x + cpx} ${from.y}, ${to.x - cpx} ${to.y}, ${to.x} ${to.y}`
+    }
+  }
+
+  labelPos = { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 }
+
+  if (isVertical) {
+    if (labelAlign === 'right') {
+      labelOffset = { x: 8, y: 4 }
+      textAnchor = 'start'
+    } else if (labelAlign === 'left') {
+      labelOffset = { x: -8, y: 4 }
+      textAnchor = 'end'
+    } else {
       labelOffset = { x: 0, y: -8 }
       textAnchor = 'middle'
     }
+  } else {
+    labelOffset = { x: 0, y: -8 }
+    textAnchor = 'middle'
   }
 
   // Calculate arrow angle at endpoint
   const angle = getAngle(from, to)
-  const arrowSize = 8
+  const arrowSize = 6
 
   return (
     <g>
@@ -262,10 +289,10 @@ function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors }
           y2={to.y}
           gradientUnits="userSpaceOnUse"
         >
-          <stop offset="0%" stopColor={color} stopOpacity={0.3} />
-          <stop offset="15%" stopColor={color} stopOpacity={1} />
-          <stop offset="85%" stopColor={color} stopOpacity={1} />
-          <stop offset="100%" stopColor={color} stopOpacity={0.5} />
+          <stop offset="0%" stopColor={color} stopOpacity={0.4} />
+          <stop offset="10%" stopColor={color} stopOpacity={0.7} />
+          <stop offset="90%" stopColor={color} stopOpacity={0.7} />
+          <stop offset="100%" stopColor={color} stopOpacity={0.4} />
         </linearGradient>
       </defs>
 
@@ -278,29 +305,37 @@ function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors }
         strokeDasharray={style.dashed ? '6 3' : undefined}
       />
 
-      {/* Arrow head - refined triangle at end point */}
-      {!style.dashed && (
-        <g transform={`translate(${to.x}, ${to.y}) rotate(${angle})`}>
-          <polygon
-            points={`0,0 ${-arrowSize},-${arrowSize/3} ${-arrowSize},${arrowSize/3}`}
-            fill={color}
-            opacity={0.8}
-          />
-        </g>
-      )}
-
-      {/* Label */}
-      {style.label && (
-        <text
-          x={labelPos.x + labelOffset.x}
-          y={labelPos.y + labelOffset.y}
-          textAnchor={textAnchor}
+      {/* Arrow head - triangle at end point */}
+      <g transform={`translate(${to.x}, ${to.y}) rotate(${angle})`}>
+        <polygon
+          points={`0,0 ${-arrowSize},-${arrowSize/2.5} ${-arrowSize},${arrowSize/2.5}`}
           fill={color}
-          className="text-[10px] font-mono"
-          style={{ fontFamily: 'ui-monospace, monospace' }}
-        >
-          {style.label}
-        </text>
+        />
+      </g>
+
+      {/* Label with background pill */}
+      {style.label && (
+        <g>
+          <rect
+            x={labelPos.x + labelOffset.x - (textAnchor === 'middle' ? style.label.length * 3.2 : textAnchor === 'end' ? style.label.length * 6.4 : 0) - 4}
+            y={labelPos.y + labelOffset.y - 10}
+            width={style.label.length * 6.4 + 8}
+            height={14}
+            rx={4}
+            fill={color}
+            opacity={0.15}
+          />
+          <text
+            x={labelPos.x + labelOffset.x}
+            y={labelPos.y + labelOffset.y}
+            textAnchor={textAnchor}
+            fill={color}
+            className="text-[9px] font-mono"
+            style={{ fontFamily: 'ui-monospace, monospace', fontWeight: 500 }}
+          >
+            {style.label}
+          </text>
+        </g>
       )}
     </g>
   )
@@ -366,6 +401,148 @@ function ZoomControls({ zoom, onZoomIn, onZoomOut, onReset, mode }: ZoomControls
 }
 
 // ============================================
+// .arc View & Controls
+// ============================================
+
+function generateSource(data: ArcDiagramData): string {
+  const clean = {
+    id: data.id,
+    layout: data.layout,
+    nodes: data.nodes,
+    nodeData: data.nodeData,
+    connectors: data.connectors,
+    connectorStyles: data.connectorStyles,
+  }
+  const json = JSON.stringify(clean, null, 2)
+    .replace(/"([^"]+)":/g, '$1:')
+    .replace(/"/g, "'")
+
+  return `import type { ArcDiagramData } from '@arach/arc'\n\nconst diagram: ArcDiagramData = ${json}\n\nexport default diagram\n`
+}
+
+function ArcSourceView({ source, mode }: {
+  source: string
+  mode: DiagramMode
+}) {
+  const isLight = mode === 'light'
+  const [copied, setCopied] = useState(false)
+
+  const handleCopy = useCallback(() => {
+    navigator.clipboard.writeText(source).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
+  }, [source])
+
+  const { Copy, Check } = LucideIcons
+
+  return (
+    <div className="absolute inset-0 overflow-auto z-[5]" style={{
+      backgroundColor: isLight ? 'rgba(250,250,250,0.97)' : 'rgba(9,9,11,0.97)',
+    }}>
+      <div className="flex items-center justify-end gap-1 px-4 pt-3">
+        <button
+          onClick={handleCopy}
+          className={`p-1 rounded transition-colors ${
+            isLight
+              ? 'hover:bg-zinc-200/60 text-zinc-400'
+              : 'hover:bg-zinc-700/60 text-zinc-500'
+          }`}
+          title={copied ? 'Copied!' : 'Copy'}
+        >
+          {copied
+            ? <Check className="w-3 h-3 text-emerald-500" />
+            : <Copy className="w-3 h-3" />
+          }
+        </button>
+      </div>
+      <pre
+        className={`px-5 pb-5 pt-2 text-[11px] leading-relaxed font-mono whitespace-pre ${
+          isLight ? 'text-zinc-600' : 'text-zinc-400'
+        }`}
+        style={{ fontFamily: '"JetBrains Mono", "Fira Code", "SF Mono", Consolas, monospace', tabSize: 2 }}
+      >
+        {source}
+      </pre>
+    </div>
+  )
+}
+
+function ViewToggle({ showArc, onToggle, mode }: {
+  showArc: boolean
+  onToggle: () => void
+  mode: DiagramMode
+}) {
+  const isLight = mode === 'light'
+  const { Braces, Layers } = LucideIcons
+
+  return (
+    <button
+      onClick={onToggle}
+      className={`absolute top-3 right-3 flex items-center gap-1.5 px-2 py-1 rounded-md backdrop-blur-sm z-10 text-[10px] font-mono transition-colors ${
+        isLight
+          ? 'bg-white/90 border border-zinc-200 shadow-sm text-zinc-500 hover:text-zinc-700 hover:bg-zinc-50'
+          : 'bg-zinc-900/90 border border-zinc-700 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800'
+      }`}
+      title={showArc ? 'Back to diagram' : 'View source'}
+    >
+      {showArc
+        ? <><Layers className="w-3 h-3" /> Diagram</>
+        : <><Braces className="w-3 h-3" /> Source</>
+      }
+    </button>
+  )
+}
+
+function AutoLayoutButton({ active, onToggle, mode }: {
+  active: boolean
+  onToggle: () => void
+  mode: DiagramMode
+}) {
+  const isLight = mode === 'light'
+  const { Wand2 } = LucideIcons
+
+  return (
+    <button
+      onClick={onToggle}
+      className={`flex items-center gap-1.5 px-2 py-1 rounded-md backdrop-blur-sm text-[10px] font-mono transition-colors ${
+        active
+          ? isLight
+            ? 'bg-violet-50 border border-violet-200 text-violet-600 shadow-sm'
+            : 'bg-violet-950/80 border border-violet-700 text-violet-400'
+          : isLight
+            ? 'bg-white/90 border border-zinc-200 shadow-sm text-zinc-500 hover:text-zinc-700 hover:bg-zinc-50'
+            : 'bg-zinc-900/90 border border-zinc-700 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800'
+      }`}
+      title={active ? 'Reset to original layout' : 'Auto-layout nodes'}
+    >
+      <Wand2 className="w-3 h-3" /> Auto
+    </button>
+  )
+}
+
+function EditButton({ url, mode }: { url: string; mode: DiagramMode }) {
+  const isLight = mode === 'light'
+  const { Pencil } = LucideIcons
+
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={`flex items-center gap-1.5 px-2 py-1 rounded-md backdrop-blur-sm text-[10px] font-mono transition-colors no-underline ${
+        isLight
+          ? 'bg-white/90 border border-zinc-200 shadow-sm text-zinc-500 hover:text-zinc-700 hover:bg-zinc-50'
+          : 'bg-zinc-900/90 border border-zinc-700 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800'
+      }`}
+      title="Open in Arc editor"
+    >
+      <Pencil className="w-3 h-3" /> Edit
+    </a>
+  )
+}
+
+// ============================================
 // Main Component
 // ============================================
 
@@ -375,15 +552,77 @@ export interface ArcDiagramProps {
   interactive?: boolean  // Enable zoom/pan controls
   mode?: DiagramMode     // Light/dark appearance
   theme?: ThemeId        // Color palette theme
+  /** Show the source toggle button. Default: true */
+  showArcToggle?: boolean
+  /** Show the auto-layout button. Default: false */
+  showAutoLayout?: boolean
+  /** Enable drag-to-reposition nodes. Default: false */
+  editable?: boolean
+  /** URL of the Arc editor. When set with editable, shows an "Edit" button. */
+  editorUrl?: string
+  /** Metadata to pass to the editor (viewport size, theme, mode). */
+  editorMeta?: { viewport?: { width: number; height: number }; theme?: string; mode?: string }
 }
 
-export function ArcDiagram({ data, className = '', interactive = true, mode = 'dark', theme = 'default' }: ArcDiagramProps) {
-  const { id, layout, nodes, nodeData, connectors, connectorStyles, groups } = data
+export function ArcDiagram({ data, className = '', interactive = true, mode = 'dark', theme = 'default', showArcToggle = true, showAutoLayout = false, editable = false, editorUrl, editorMeta }: ArcDiagramProps) {
   const isLight = mode === 'light'
+  const [showArc, setShowArc] = useState(false)
+  const [useAutoLayout, setUseAutoLayout] = useState(false)
+
+  // Apply auto-layout if toggled
+  const baseData = useMemo(
+    () => useAutoLayout ? autoLayout(data) : data,
+    [data, useAutoLayout],
+  )
+
+  // Persistence key for localStorage
+  const storageKey = editable && data.id ? `arc-drag-${data.id}` : null
+
+  // Editable node positions — override base positions when dragged
+  const [draggedPositions, setDraggedPositions] = useState<Record<string, { x: number; y: number }>>(() => {
+    if (!storageKey) return {}
+    try {
+      const saved = localStorage.getItem(storageKey)
+      return saved ? JSON.parse(saved) : {}
+    } catch { return {} }
+  })
+  const [draggingNode, setDraggingNode] = useState<{ id: string; startX: number; startY: number; nodeX: number; nodeY: number } | null>(null)
+
+  // Persist dragged positions to localStorage
+  React.useEffect(() => {
+    if (!storageKey) return
+    if (Object.keys(draggedPositions).length === 0) {
+      localStorage.removeItem(storageKey)
+    } else {
+      localStorage.setItem(storageKey, JSON.stringify(draggedPositions))
+    }
+  }, [draggedPositions, storageKey])
+
+  // Reset dragged positions when auto-layout toggled
+  React.useEffect(() => {
+    setDraggedPositions({})
+  }, [useAutoLayout])
+
+  // Merge dragged positions into active data
+  const activeData = useMemo(() => {
+    if (Object.keys(draggedPositions).length === 0) return baseData
+    const mergedNodes = { ...baseData.nodes }
+    for (const [id, pos] of Object.entries(draggedPositions)) {
+      if (mergedNodes[id]) {
+        mergedNodes[id] = { ...mergedNodes[id], x: pos.x, y: pos.y }
+      }
+    }
+    return { ...baseData, nodes: mergedNodes }
+  }, [baseData, draggedPositions])
+
+  const { id, layout, nodes, nodeData, connectors, connectorStyles } = activeData
 
   // Resolve theme colors based on mode
   const themeData = getTheme(theme)
   const themeColors = isLight ? themeData.light : themeData.dark
+
+  // Generate source from the active data (reflects dragged positions)
+  const sourceCode = useMemo(() => generateSource(activeData), [activeData])
 
   // Zoom & pan state
   const [zoom, setZoom] = useState(1)
@@ -420,21 +659,34 @@ export function ArcDiagram({ data, className = '', interactive = true, mode = 'd
   }, [interactive, handleZoomIn, handleZoomOut])
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    if (!interactive) return
+    if (!interactive || draggingNode) return
     setIsPanning(true)
     setPanStart({ x: e.clientX - pan.x, y: e.clientY - pan.y })
-  }, [interactive, pan])
+  }, [interactive, pan, draggingNode])
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (draggingNode) {
+      const dx = (e.clientX - draggingNode.startX) / zoom
+      const dy = (e.clientY - draggingNode.startY) / zoom
+      setDraggedPositions(prev => ({
+        ...prev,
+        [draggingNode.id]: {
+          x: Math.round(draggingNode.nodeX + dx),
+          y: Math.round(draggingNode.nodeY + dy),
+        },
+      }))
+      return
+    }
     if (!isPanning) return
     setPan({
       x: e.clientX - panStart.x,
       y: e.clientY - panStart.y,
     })
-  }, [isPanning, panStart])
+  }, [isPanning, panStart, draggingNode, zoom])
 
   const handleMouseUp = useCallback(() => {
     setIsPanning(false)
+    setDraggingNode(null)
   }, [])
 
   return (
@@ -445,7 +697,7 @@ export function ArcDiagram({ data, className = '', interactive = true, mode = 'd
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
-      style={{ cursor: interactive ? (isPanning ? 'grabbing' : 'grab') : 'default' }}
+      style={{ cursor: draggingNode ? 'grabbing' : interactive ? (isPanning ? 'grabbing' : 'grab') : 'default' }}
     >
       <div
         className="relative transition-transform duration-150 ease-out"
@@ -471,127 +723,6 @@ export function ArcDiagram({ data, className = '', interactive = true, mode = 'd
           }}
         />
 
-        {/* Groups (behind connectors and nodes) */}
-        {groups && groups.length > 0 && (
-          <svg
-            className="absolute inset-0 w-full h-full pointer-events-none"
-            viewBox={`0 0 ${layout.width} ${layout.height}`}
-          >
-            {groups.map((group, i) => {
-              const groupColor = group.color
-                ? (themeColors.palette[group.color]?.stroke || themeColors.palette.zinc.stroke)
-                : themeColors.palette.zinc.stroke
-              const anchor = group.labelAnchor || 'bottom'
-              const placement = group.labelPlacement || 'overlap'
-              const labelWidth = group.label.length * 6.5 + 20
-              const labelHeight = 20
-              const maskId = `group-label-mask-${id || ''}-${i}`
-
-              // Calculate label position based on anchor and placement
-              let labelX: number
-              let labelY: number
-
-              if (anchor === 'top' || anchor === 'bottom') {
-                labelX = group.x + group.width / 2 - labelWidth / 2
-                if (anchor === 'top') {
-                  labelY = placement === 'overlap'
-                    ? group.y - labelHeight / 2
-                    : group.y + 8
-                } else {
-                  labelY = placement === 'overlap'
-                    ? group.y + group.height - labelHeight / 2
-                    : group.y + group.height - labelHeight - 8
-                }
-              } else {
-                labelY = group.y + group.height / 2 - labelHeight / 2
-                if (anchor === 'left') {
-                  labelX = placement === 'overlap'
-                    ? group.x - labelWidth / 2
-                    : group.x + 8
-                } else {
-                  labelX = placement === 'overlap'
-                    ? group.x + group.width - labelWidth / 2
-                    : group.x + group.width - labelWidth - 8
-                }
-              }
-
-              return (
-                <g key={i}>
-                  {/* Mask to cut out the label area from the dashed border */}
-                  <defs>
-                    <mask id={maskId}>
-                      {/* White = visible, black = hidden */}
-                      <rect x={group.x - 2} y={group.y - 2} width={group.width + 4} height={group.height + 4} fill="white" />
-                      {/* Cut out the label area with padding */}
-                      <rect
-                        x={labelX - 4}
-                        y={labelY - 2}
-                        width={labelWidth + 8}
-                        height={labelHeight + 4}
-                        rx={12}
-                        fill="black"
-                      />
-                    </mask>
-                  </defs>
-
-                  {/* Group fill (no mask needed) */}
-                  <rect
-                    x={group.x}
-                    y={group.y}
-                    width={group.width}
-                    height={group.height}
-                    rx={16}
-                    fill={groupColor}
-                    fillOpacity={isLight ? 0.04 : 0.08}
-                  />
-
-                  {/* Group dashed border (masked where label is) */}
-                  <rect
-                    x={group.x}
-                    y={group.y}
-                    width={group.width}
-                    height={group.height}
-                    rx={16}
-                    fill="none"
-                    stroke={groupColor}
-                    strokeWidth={1.5}
-                    strokeDasharray="6 4"
-                    opacity={isLight ? 0.4 : 0.35}
-                    mask={`url(#${maskId})`}
-                  />
-
-                  {/* Label pill background */}
-                  <rect
-                    x={labelX}
-                    y={labelY}
-                    width={labelWidth}
-                    height={labelHeight}
-                    rx={10}
-                    fill={groupColor}
-                    fillOpacity={isLight ? 0.08 : 0.18}
-                  />
-
-                  {/* Label text */}
-                  <text
-                    x={labelX + labelWidth / 2}
-                    y={labelY + labelHeight / 2 + 1}
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    fill={groupColor}
-                    fillOpacity={isLight ? 0.55 : 0.6}
-                    fontSize={9}
-                    fontWeight={600}
-                    fontFamily="ui-sans-serif, system-ui, sans-serif"
-                    letterSpacing="0.12em"
-                  >
-                    {group.label}
-                  </text>
-                </g>
-              )
-            })}
-          </svg>
-        )}
-
         {/* Connectors */}
         <svg
           className="absolute inset-0 w-full h-full pointer-events-none"
@@ -611,11 +742,51 @@ export function ArcDiagram({ data, className = '', interactive = true, mode = 'd
 
         {/* Nodes */}
         {Object.entries(nodes).map(([nodeId, node]) => (
-          <Node key={nodeId} node={node} data={nodeData[nodeId]} mode={mode} themeColors={themeColors} />
+          <Node
+            key={nodeId}
+            node={node}
+            data={nodeData[nodeId]}
+            mode={mode}
+            themeColors={themeColors}
+            editable={editable}
+            onDragStart={editable ? (e: React.MouseEvent) => {
+              setDraggingNode({ id: nodeId, startX: e.clientX, startY: e.clientY, nodeX: node.x, nodeY: node.y })
+            } : undefined}
+          />
         ))}
       </div>
 
       {/* Viewer chrome - fixed position regardless of zoom/pan */}
+
+      {/* .arc source overlay */}
+      {showArc && (
+        <ArcSourceView source={sourceCode} mode={mode} />
+      )}
+
+      {/* .arc toggle - top right */}
+      {showArcToggle && (
+        <ViewToggle
+          showArc={showArc}
+          onToggle={() => setShowArc(s => !s)}
+          mode={mode}
+        />
+      )}
+
+      {/* Top-left controls */}
+      {!showArc && (
+        <div className="absolute top-3 left-3 flex items-center gap-1.5 z-10">
+          {showAutoLayout && (
+            <AutoLayoutButton
+              active={useAutoLayout}
+              onToggle={() => setUseAutoLayout(v => !v)}
+              mode={mode}
+            />
+          )}
+          {editable && editorUrl && (
+            <EditButton url={`${editorUrl}#data=${btoa(JSON.stringify({ ...activeData, _viewport: editorMeta?.viewport, _theme: editorMeta?.theme, _mode: editorMeta?.mode }))}`} mode={mode} />
+          )}
+        </div>
+      )}
 
       {/* Diagram ID - bottom left */}
       {id && (
@@ -625,7 +796,7 @@ export function ArcDiagram({ data, className = '', interactive = true, mode = 'd
       )}
 
       {/* Zoom controls - bottom right */}
-      {interactive && (
+      {interactive && !showArc && (
         <ZoomControls
           zoom={zoom}
           onZoomIn={handleZoomIn}

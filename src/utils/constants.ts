@@ -51,12 +51,12 @@ export const GRID_COLORS: GridColorPreset[] = [
   { name: 'Emerald', value: '#34d399' },
 ]
 
-// Node size presets (ordered xs → l)
+// Node size presets (ordered xs → l) — matches ArcDiagram player sizes
 export const NODE_SIZES: Record<NodeSizeKey, NodeDimensions> = {
   xs: { width: 80, height: 36 },
-  s: { width: 95, height: 42 },
-  m: { width: 145, height: 68 },
-  l: { width: 210, height: 85 },
+  s: { width: 110, height: 48 },
+  m: { width: 160, height: 75 },
+  l: { width: 220, height: 90 },
 }
 
 // Color palette for connectors and boxes

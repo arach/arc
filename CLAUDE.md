@@ -66,12 +66,20 @@ Uses `useReducer` + Context for diagram state:
 
 ```javascript
 {
-  diagram: { layout, nodes, nodeData, connectors, connectorStyles },
-  editor: { selectedNodeId, selectedConnectorIndex, mode, pendingConnector, isDragging },
-  meta: { filename, isDirty, lastSaved },
+  diagram: { layout, nodes, nodeData, connectors, connectorStyles, groups, images },
+  editor: { selectedNodeIds, selectedConnectorIndex, mode, pendingConnector, isDragging, themeId, colorMode },
+  meta: { filename, isDirty, lastSaved, diagramMeta },
   history: { past, future }
 }
 ```
+
+### Theme System
+
+Four themes (`default`, `warm`, `cool`, `mono`) defined in `src/utils/themes.ts`. Each has light/dark palettes that remap logical colors (violet, emerald, etc.) to different Tailwind classes and hex stroke values.
+
+- `useResolvedTheme()` hook returns the current theme palette
+- `EditableNode` and `ConnectorLayer` resolve colors through the theme palette
+- Theme ID and color mode are persisted in editor state and saved with diagrams
 
 ### Editor Modes
 
@@ -163,6 +171,49 @@ Diagrams are stored as JSON:
 }
 ```
 
+## Routes
+
+| Route | Purpose |
+|-------|---------|
+| `/` | Landing page |
+| `/editor` | New diagram (generates session ID) |
+| `/editor/:sessionId` | Edit diagram with auto-save to localStorage |
+| `/player/*` | Read-only rendering with full theme fidelity |
+| `/capture/:sessionId` | PNG screenshot endpoint (Puppeteer middleware) |
+| `/docs` | Documentation |
+
+## Session Persistence
+
+Diagrams are auto-saved to `localStorage` keyed by session ID (`arc-session-{id}`). Utilities in `src/utils/sessionStorage.ts`.
+
+**Edit button flow:** Embedded `ArcDiagram` → click Edit → `#data=<base64>` hash → editor parses, saves to localStorage, redirects to `/editor/{id}`.
+
+**Diagram file format:** When saving to file, `_meta` is included:
+```json
+{
+  "layout": { ... },
+  "nodes": { ... },
+  "_meta": { "themeId": "cool", "colorMode": "light", "viewport": { "width": 800, "height": 400 } }
+}
+```
+
+## Screenshot API (Dev Only)
+
+The `/capture/:sessionId` endpoint (Vite middleware in `plugins/captureMiddleware.js`) returns a PNG:
+
+```bash
+# Capture with hash data
+curl "http://localhost:5188/capture/my-diagram?hash=<base64>" > out.png
+
+# Capture existing session
+curl "http://localhost:5188/capture/my-diagram" > out.png
+
+# Custom size
+curl "http://localhost:5188/capture/my-diagram?width=1200&height=600" > out.png
+```
+
+There is also `scripts/preview.mjs` for CLI-based iteration.
+
 ## Handoff to Talkie Docs
 
 Arc diagrams are consumed by the Talkie landing pages at `~/dev/TALKIE`.
@@ -176,7 +227,9 @@ See `handoff.md` for the full export format spec.
 
 ## Development Notes
 
-- Icons are stored as strings and resolved via `iconRegistry.js`
+- Icons are stored as strings and resolved via `iconRegistry.ts`
 - Drag uses native pointer events with pointer capture
 - SVG layer is `pointer-events-none` except for connectors
 - History is capped at 50 states for undo/redo
+- Theme colors flow through `useResolvedTheme()` → `EditableNode` / `ConnectorLayer`
+- Capture middleware keeps a Puppeteer browser alive for 60s between requests

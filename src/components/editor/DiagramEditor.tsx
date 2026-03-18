@@ -1,5 +1,6 @@
-import { useState, useCallback } from 'react'
-import { EditorProvider, useEditor, useDiagram, useEditorState, useMeta } from './EditorProvider'
+import { useState, useCallback, useEffect } from 'react'
+import { EditorProvider, useEditor, useDiagram, useEditorState, useMeta, useThemeId } from './EditorProvider'
+import { saveDiagramSession, loadDiagramSession } from '../../utils/sessionStorage'
 import { useMeta as usePageMeta } from '../../hooks/useMeta'
 import TopBar from './TopBar'
 import FloatingToolbar from './FloatingToolbar'
@@ -92,13 +93,36 @@ const sampleDiagram = {
   },
 }
 
-function EditorContent({ isDark, onToggleTheme }) {
-  const { actions } = useEditor()
+function EditorContent({ isDark, onToggleTheme, sessionId = null }: { isDark: boolean; onToggleTheme: () => void; sessionId?: string | null }) {
+  const { actions, state } = useEditor()
   const diagram = useDiagram()
   const editor = useEditorState()
   const meta = useMeta()
+  const themeId = useThemeId()
   const [showShare, setShowShare] = useState(false)
   const [viewportBounds, setViewportBounds] = useState(null)
+
+  // Preserve originalDiagram from initial session (for player rendering)
+  const [originalDiagram] = useState(() => {
+    if (!sessionId) return null
+    const existing = loadDiagramSession(sessionId)
+    return existing?.originalDiagram || null
+  })
+
+  // Auto-save to localStorage when sessionId is present
+  useEffect(() => {
+    if (!sessionId) return
+    const timeout = setTimeout(() => {
+      saveDiagramSession(sessionId, {
+        diagram: state.diagram,
+        originalDiagram,
+        themeId: state.editor.themeId,
+        colorMode: state.editor.colorMode as 'light' | 'dark',
+        diagramMeta: state.meta.diagramMeta || {},
+      })
+    }, 1000)
+    return () => clearTimeout(timeout)
+  }, [sessionId, state.diagram, state.editor.themeId, state.editor.colorMode, state.meta.diagramMeta, originalDiagram])
 
   // Set page-specific meta tags
   usePageMeta({
@@ -115,18 +139,29 @@ function EditorContent({ isDark, onToggleTheme }) {
 
   const handleOpen = useCallback(async () => {
     if (meta.isDirty && !window.confirm('Discard unsaved changes?')) return
-    const result = await loadDiagram() as { diagram: any; filename: string } | null
+    const result = await loadDiagram() as { diagram: any; filename: string; meta?: any } | null
     if (result) {
-      actions.loadDiagram(result.diagram, result.filename)
+      // Extract _meta from diagram if present
+      const { _meta, ...diagramData } = result.diagram
+      const diagramMeta = _meta || result.meta || {}
+      actions.loadDiagram(diagramData, result.filename)
+      if (diagramMeta.themeId) actions.setTheme(diagramMeta.themeId)
+      if (diagramMeta.colorMode) actions.setColorMode(diagramMeta.colorMode)
+      if (Object.keys(diagramMeta).length > 0) actions.setDiagramMeta(diagramMeta)
     }
   }, [meta.isDirty, actions])
 
   const handleSave = useCallback(async () => {
-    const filename = await saveDiagram(diagram, meta.filename || 'diagram.json')
+    // Include diagram metadata when saving to file
+    const diagramWithMeta = {
+      ...diagram,
+      _meta: meta.diagramMeta || {},
+    }
+    const filename = await saveDiagram(diagramWithMeta, meta.filename || 'diagram.json')
     if (filename) {
       actions.markSaved(filename)
     }
-  }, [diagram, meta.filename, actions])
+  }, [diagram, meta.filename, meta.diagramMeta, actions])
 
   const handleExport = useCallback(() => {
     setShowShare(true)
@@ -166,7 +201,11 @@ function EditorContent({ isDark, onToggleTheme }) {
   })
 
   return (
-    <div className="flex flex-col h-screen bg-zinc-100 dark:bg-zinc-950">
+    <div className={`flex flex-col h-screen ${themeId ? '' : 'bg-zinc-100 dark:bg-zinc-950'}`}
+      style={themeId ? {
+        background: isDark ? '#0a0a0f' : '#f0f2f5',
+      } : undefined}
+    >
       {/* Top bar */}
       <TopBar
         onNew={handleNew}
@@ -181,11 +220,17 @@ function EditorContent({ isDark, onToggleTheme }) {
       <div className="flex-1 flex overflow-hidden">
         {/* Canvas area */}
         <div className="flex-1 relative p-4 overflow-hidden">
-          <div className="w-full h-full rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 shadow-sm">
+          <div className={`w-full h-full rounded-xl overflow-hidden shadow-sm ${themeId ? '' : 'border border-zinc-200 dark:border-zinc-800'}`}
+            style={themeId ? {
+              border: isDark ? '1px solid rgba(100,116,139,0.2)' : '1px solid rgba(148,163,184,0.3)',
+            } : undefined}
+          >
             <ErrorBoundary>
               <DiagramCanvas
                 onViewportChange={setViewportBounds}
                 embedConfig={{ enableViewModeToggle: true }}
+                themeOverride={themeId || undefined}
+                isDark={isDark}
               />
             </ErrorBoundary>
           </div>
@@ -209,10 +254,23 @@ function EditorContent({ isDark, onToggleTheme }) {
   )
 }
 
-export default function DiagramEditor({ isDark, onToggleTheme }) {
+export default function DiagramEditor({ isDark, onToggleTheme, initialData = null, themeId = null, colorMode, sessionId = null, initialDiagramMeta }: {
+  isDark: boolean
+  onToggleTheme: () => void
+  initialData?: any
+  themeId?: string | null
+  colorMode?: 'light' | 'dark'
+  sessionId?: string | null
+  initialDiagramMeta?: Record<string, any>
+}) {
   return (
-    <EditorProvider initialDiagram={sampleDiagram}>
-      <EditorContent isDark={isDark} onToggleTheme={onToggleTheme} />
+    <EditorProvider
+      initialDiagram={initialData || sampleDiagram}
+      initialDiagramMeta={initialDiagramMeta}
+      initialThemeId={themeId}
+      initialColorMode={colorMode || (isDark ? 'dark' : 'light')}
+    >
+      <EditorContent isDark={isDark} onToggleTheme={onToggleTheme} sessionId={sessionId} />
     </EditorProvider>
   )
 }

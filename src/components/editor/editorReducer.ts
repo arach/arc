@@ -33,11 +33,14 @@ export const initialState = {
     template: DEFAULT_TEMPLATE, // Current style template
     zoom: 1, // Zoom level (0.5 to 2)
     viewMode: '2d', // '2d' | 'isometric'
+    themeId: null, // Arc theme override (null = use template defaults)
+    colorMode: 'dark', // 'light' | 'dark'
   },
   meta: {
     filename: null,
     isDirty: false,
     lastSaved: null,
+    diagramMeta: {}, // Persisted theme/viewport/source metadata
   },
   history: {
     past: [],
@@ -638,6 +641,7 @@ export function editorReducer(state, action) {
           filename: action.filename || null,
           isDirty: false,
           lastSaved: null,
+          diagramMeta: action.diagramMeta || state.meta.diagramMeta || {},
         },
         history: { past: [], future: [] },
         editor: {
@@ -646,6 +650,8 @@ export function editorReducer(state, action) {
           selectedConnectorIndex: null,
           mode: 'select',
           pendingConnector: null,
+          themeId: action.diagramMeta?.themeId ?? state.editor.themeId,
+          colorMode: action.diagramMeta?.colorMode ?? state.editor.colorMode,
         },
       }
 
@@ -653,6 +659,15 @@ export function editorReducer(state, action) {
       return {
         ...initialState,
         diagram: createInitialDiagram(),
+        editor: {
+          ...initialState.editor,
+          themeId: null,
+          colorMode: 'dark',
+        },
+        meta: {
+          ...initialState.meta,
+          diagramMeta: {},
+        },
       }
 
     case 'diagram/saved':
@@ -790,6 +805,46 @@ export function editorReducer(state, action) {
         editor: {
           ...state.editor,
           viewMode: action.viewMode,
+        },
+      }
+
+    // ============================================
+    // THEME & COLOR MODE
+    // ============================================
+
+    case 'theme/set':
+      return {
+        ...state,
+        editor: {
+          ...state.editor,
+          themeId: action.themeId,
+        },
+        meta: {
+          ...state.meta,
+          isDirty: true,
+          diagramMeta: { ...state.meta.diagramMeta, themeId: action.themeId },
+        },
+      }
+
+    case 'colorMode/set':
+      return {
+        ...state,
+        editor: {
+          ...state.editor,
+          colorMode: action.colorMode,
+        },
+        meta: {
+          ...state.meta,
+          diagramMeta: { ...state.meta.diagramMeta, colorMode: action.colorMode },
+        },
+      }
+
+    case 'diagramMeta/set':
+      return {
+        ...state,
+        meta: {
+          ...state.meta,
+          diagramMeta: { ...state.meta.diagramMeta, ...action.diagramMeta },
         },
       }
 

@@ -13,9 +13,6 @@ export type {
   DiagramColor,
   DiagramMode,
   LabelAlign,
-  DiagramGroup,
-  GroupLabelAnchor,
-  GroupLabelPlacement,
 } from './ArcDiagram'
 
 export {
@@ -30,3 +27,7 @@ export type {
   ThemeBackground,
   ColorPalette,
 } from './themes'
+
+// Auto-layout
+export { autoLayout, createAutoLayout } from './autoLayout'
+export type { LayoutOptions, AutoDiagramInput } from './autoLayout'

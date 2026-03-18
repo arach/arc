@@ -2,11 +2,12 @@ import { useState, useRef, useCallback } from 'react'
 import {
   Plus, Link2, MousePointer2, Move,
   Undo2, Redo2, Trash2,
-  Square, Circle, Crop, GripVertical,
+  Square, Circle, Crop, GripVertical, Wand2,
   type LucideIcon,
 } from 'lucide-react'
 import { useEditor, useEditorState, useHistory, useDiagram } from './EditorProvider'
 import { NODE_SIZES } from '../../utils/constants'
+import { autoLayout } from '../../utils/autoLayout'
 
 interface ToolButtonProps {
   icon: LucideIcon
@@ -214,6 +215,30 @@ export default function FloatingToolbar() {
           label="Circle group (O)"
           onClick={() => actions.setMode('addCircle')}
           active={editor.mode === 'addCircle'}
+        />
+
+        <Divider />
+
+        {/* Auto-layout */}
+        <ToolButton
+          icon={Wand2}
+          label="Auto-layout (A)"
+          onClick={() => {
+            const diagramData = {
+              layout: diagram.layout,
+              nodes: diagram.nodes,
+              nodeData: diagram.nodeData,
+              connectors: diagram.connectors,
+              connectorStyles: diagram.connectorStyles,
+            }
+            const laid = autoLayout(diagramData as any)
+            actions.loadDiagram({
+              ...diagram,
+              layout: laid.layout,
+              nodes: laid.nodes as any,
+              connectors: laid.connectors as any,
+            }, undefined)
+          }}
         />
 
         <Divider />

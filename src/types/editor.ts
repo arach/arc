@@ -25,7 +25,7 @@ export type AnchorPosition =
   | 'bottomLeft'
   | 'bottomRight'
 
-export type EditorMode = 'select' | 'addNode' | 'addConnector' | 'pan'
+export type EditorMode = 'select' | 'addNode' | 'addConnector' | 'addGroup' | 'pan'
 
 export type ViewMode = '2d' | 'isometric'
 
@@ -129,12 +129,22 @@ export interface EditorState {
   pan: Point
   isPanning: boolean
   viewMode: ViewMode  // '2d' | 'isometric'
+  themeId: string | null       // Arc theme override (null = use template defaults)
+  colorMode: 'light' | 'dark'  // Light/dark appearance
+}
+
+export interface DiagramMeta {
+  themeId?: string | null
+  colorMode?: 'light' | 'dark'
+  viewport?: { width: number; height: number }
+  sourceUrl?: string  // e.g. 'operate/control-plane' — where this diagram came from
 }
 
 export interface MetaState {
   filename: string | null
   isDirty: boolean
   lastSaved: string | null
+  diagramMeta: DiagramMeta  // Persisted alongside diagram data
 }
 
 export interface HistoryState {

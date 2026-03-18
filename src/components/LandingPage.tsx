@@ -405,6 +405,52 @@ export default function LandingPage({ onLaunchEditor }: LandingPageProps) {
           </div>
         </section>
 
+        <section className="arc-workflows-section">
+          <div className="arc-section arc-workflows-inner">
+            <div className="arc-section-header">
+              <h2>Session, player, capture</h2>
+              <p>
+                Every diagram gets a stable URL, a read-only player, and a screenshot API.
+                Share, embed, and iterate without leaving the browser.
+              </p>
+            </div>
+            <div className="arc-grid arc-grid-4">
+              <div className="arc-card">
+                <span className="arc-card-label">Sessions</span>
+                <h3>Stable URLs</h3>
+                <p>
+                  Each diagram lives at a path like <code>/editor/operate-control-001</code>.
+                  Refresh the page and pick up where you left off — state auto-saves to localStorage.
+                </p>
+              </div>
+              <div className="arc-card">
+                <span className="arc-card-label">Player</span>
+                <h3>Read-only rendering</h3>
+                <p>
+                  Open <code>/player/&#123;id&#125;</code> for a clean, non-editable view with full theme fidelity.
+                  Perfect for sharing links and embedding in docs.
+                </p>
+              </div>
+              <div className="arc-card">
+                <span className="arc-card-label">Capture</span>
+                <h3>Screenshot API</h3>
+                <p>
+                  Hit <code>/capture/&#123;id&#125;</code> and get a PNG back directly.
+                  Enables agent-driven design iteration loops — draft, capture, refine.
+                </p>
+              </div>
+              <div className="arc-card">
+                <span className="arc-card-label">Integration</span>
+                <h3>Edit button</h3>
+                <p>
+                  Embedded diagrams include an "Edit" button that opens the full editor with theme parity.
+                  One click from viewing to editing.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section className="arc-section" id="docs">
           <div className="arc-section-header">
             <h2>Documentation</h2>

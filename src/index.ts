@@ -9,7 +9,7 @@
 // =============================================================================
 export { default as DiagramEditor } from './components/editor/DiagramEditor'
 export { default as DiagramCanvas } from './components/editor/DiagramCanvas'
-export { EditorProvider, useEditor, useDiagram, useEditorState, useViewMode } from './components/editor/EditorProvider'
+export { EditorProvider, useEditor, useDiagram, useEditorState, useViewMode, useThemeId, useColorMode, useResolvedTheme, useDiagramMeta } from './components/editor/EditorProvider'
 
 // =============================================================================
 // Player / Viewer Components
@@ -27,9 +27,6 @@ export {
   type DiagramColor,
   type DiagramMode,
   type DiagramLayout,
-  type DiagramGroup,
-  type GroupLabelAnchor,
-  type GroupLabelPlacement,
   type ThemeId,
 } from './components/ArcDiagram'
 
@@ -59,7 +56,18 @@ export {
 export { parseYamlConfig, configToYaml } from './utils/yamlConfig'
 
 // =============================================================================
+// Auto-Layout
+// =============================================================================
+export { autoLayout, createAutoLayout, type AutoDiagramInput } from './utils/autoLayout'
+
+// =============================================================================
 // Types
 // =============================================================================
-export type { ViewMode, EmbedConfig, NodePosition, ConnectorStyle } from './types/editor'
+export type { ViewMode, EmbedConfig, NodePosition, ConnectorStyle, DiagramMeta } from './types/editor'
+
+// =============================================================================
+// Session Persistence
+// =============================================================================
+export { generateSessionId, deriveSessionId, saveDiagramSession, loadDiagramSession, listDiagramSessions, deleteDiagramSession } from './utils/sessionStorage'
+export type { DiagramSession } from './utils/sessionStorage'
 export type { DiagramConfig, DiagramNode, TierConfig } from './player/types'

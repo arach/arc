@@ -691,6 +691,54 @@
   font-family: 'SFMono-Regular', 'SF Mono', 'Menlo', monospace;
 }
 
+/* Workflows section */
+.arc-workflows-section {
+  background: linear-gradient(180deg, rgba(240, 246, 244, 0.5) 0%, rgba(247, 243, 236, 0) 100%);
+  border-top: 1px solid rgba(16, 21, 24, 0.06);
+  padding: 36px 0 40px;
+}
+
+.arc-workflows-section .arc-section {
+  padding: 0;
+}
+
+.arc-grid-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+@media (max-width: 960px) {
+  .arc-grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 560px) {
+  .arc-grid-4 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.arc-card-label {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--arc-accent);
+  background: rgba(240, 124, 79, 0.1);
+  padding: 3px 8px;
+  border-radius: 6px;
+  width: fit-content;
+}
+
+.arc-card code {
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+  font-size: 12px;
+  background: rgba(16, 21, 24, 0.06);
+  padding: 2px 5px;
+  border-radius: 4px;
+}
+
 /* Documentation grid */
 .arc-doc-grid {
   display: grid;
