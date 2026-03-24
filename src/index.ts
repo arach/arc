@@ -61,6 +61,11 @@ export { parseYamlConfig, configToYaml } from './utils/yamlConfig'
 export { autoLayout, createAutoLayout, type AutoDiagramInput } from './utils/autoLayout'
 
 // =============================================================================
+// ASCII Renderer
+// =============================================================================
+export { renderAscii, type AsciiOptions } from './utils/asciiRenderer'
+
+// =============================================================================
 // Types
 // =============================================================================
 export type { ViewMode, EmbedConfig, NodePosition, ConnectorStyle, DiagramMeta } from './types/editor'
