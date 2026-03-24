@@ -10,7 +10,7 @@ export default defineConfig({
   plugins: [
     react(),
     dts({
-      include: ['src/index.ts', 'src/types/**/*.ts', 'src/player/types.ts'],
+      include: ['src/index.ts', 'src/types/**/*.ts', 'src/player/types.ts', 'src/utils/asciiRenderer.ts'],
       outDir: 'lib',
       rollupTypes: true,
     }),

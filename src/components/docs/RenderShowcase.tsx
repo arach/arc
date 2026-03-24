@@ -112,7 +112,7 @@ export default function RenderShowcase({ data }: RenderShowcaseProps) {
               background: 'linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%)',
             }}
           >
-            <ArcDiagram data={data} mode="light" interactive={false} defaultZoom="fit" maxFitZoom={0.95} />
+            <ArcDiagram data={data} mode="light" interactive={false} defaultZoom="fit" />
           </div>
         )}
 
