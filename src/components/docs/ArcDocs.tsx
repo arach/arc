@@ -1398,7 +1398,7 @@ function DocPage({ pageId }: { pageId: string }) {
           {/* Hero diagram - prominent example for each page */}
           {docsDiagrams[pageId] && (
             <div className="mb-10 not-prose">
-              {pageId === 'diagram-format' ? (
+              {(pageId === 'diagram-format' || pageId === 'architecture') ? (
                 <RenderShowcase data={docsDiagrams[pageId]} />
               ) : (
                 <div
