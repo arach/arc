@@ -16,6 +16,7 @@ import {
   type PromptParam,
 } from '@arach/dewey'
 import { ArcDiagram, type ArcDiagramData } from '@arach/arc'
+import RenderShowcase from './RenderShowcase'
 
 // ============================================
 // CodePreviewToggle - Tabbed code/preview component
@@ -1395,21 +1396,26 @@ function DocPage({ pageId }: { pageId: string }) {
 
           {/* Hero diagram - prominent example for each page */}
           {docsDiagrams[pageId] && (
-            <div
-              className="mb-10 not-prose"
-              style={{
-                background: 'linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%)',
-                borderRadius: '12px',
-                padding: '1.5rem',
-                border: '1px solid rgba(0, 0, 0, 0.06)',
-              }}
-            >
-              <ArcDiagram
-                data={docsDiagrams[pageId]}
-                mode="light"
-                interactive={false}
-                defaultZoom="fit"
-              />
+            <div className="mb-10 not-prose">
+              {pageId === 'diagram-format' ? (
+                <RenderShowcase data={docsDiagrams[pageId]} />
+              ) : (
+                <div
+                  style={{
+                    background: 'linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%)',
+                    borderRadius: '12px',
+                    padding: '1.5rem',
+                    border: '1px solid rgba(0, 0, 0, 0.06)',
+                  }}
+                >
+                  <ArcDiagram
+                    data={docsDiagrams[pageId]}
+                    mode="light"
+                    interactive={false}
+                    defaultZoom="fit"
+                  />
+                </div>
+              )}
             </div>
           )}
 
