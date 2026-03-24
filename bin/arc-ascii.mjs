@@ -4,18 +4,29 @@
  * arc-ascii — Render Arc diagram JSON as monospace ASCII art.
  *
  * Usage:
- *   node bin/arc-ascii.mjs diagram.json
- *   cat diagram.json | node bin/arc-ascii.mjs
- *   node bin/arc-ascii.mjs diagram.json --charset ascii
- *   node bin/arc-ascii.mjs diagram.json --max-width 80
+ *   bunx @arach/arc diagram.json
+ *   cat diagram.json | bunx @arach/arc
+ *   bunx @arach/arc diagram.json --charset ascii
+ *   bunx @arach/arc diagram.json --max-width 80
  */
 
 import { readFileSync } from 'node:fs'
+import { createRequire } from 'node:module'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-// Dynamic import so we can use the source TS via tsx or the built lib
-const { renderAscii } = await import('../src/utils/asciiRenderer.ts').catch(() =>
-  import('../lib/arc.es.js')
-)
+const __dirname = dirname(fileURLToPath(import.meta.url))
+
+// Import renderAscii from the built lib (works when installed from npm)
+// or from source (works during local dev with tsx)
+let renderAscii
+try {
+  const lib = await import(resolve(__dirname, '..', 'lib', 'arc.es.js'))
+  renderAscii = lib.renderAscii
+} catch {
+  const src = await import(resolve(__dirname, '..', 'src', 'utils', 'asciiRenderer.ts'))
+  renderAscii = src.renderAscii
+}
 
 // ── Parse args ──────────────────────────────
 
@@ -41,7 +52,6 @@ try {
   if (filePath) {
     json = readFileSync(filePath, 'utf-8')
   } else if (!process.stdin.isTTY) {
-    // Read from stdin
     const chunks = []
     for await (const chunk of process.stdin) chunks.push(chunk)
     json = Buffer.concat(chunks).toString('utf-8')
@@ -60,11 +70,9 @@ let data
 try {
   data = JSON.parse(json)
 } catch {
-  // Try extracting a JS object from a TS/JS module
   const match = json.match(/(?:export\s+default\s+|(?:const|let|var)\s+\w+(?::\s*\S+)?\s*=\s*)(\{[\s\S]*\})/)
   if (match) {
     try {
-      // Convert JS object literal to JSON
       const normalized = match[1]
         .replace(/'/g, '"')
         .replace(/,(\s*[}\]])/g, '$1')
@@ -85,7 +93,6 @@ if (!data.layout || !data.nodes || !data.nodeData) {
   process.exit(1)
 }
 
-// Default connectorStyles to empty if missing
 if (!data.connectorStyles) data.connectorStyles = {}
 
 console.log(renderAscii(data, opts))
@@ -97,8 +104,8 @@ function printHelp() {
 arc-ascii — Render Arc diagrams as ASCII art
 
 Usage:
-  arc-ascii <file.json>              Read diagram from file
-  cat diagram.json | arc-ascii       Read from stdin
+  bunx @arach/arc <file.json>        Read diagram from file
+  cat diagram.json | bunx @arach/arc Read from stdin
 
 Options:
   -c, --charset <unicode|ascii>      Character set (default: unicode)

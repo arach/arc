@@ -96,9 +96,9 @@ const narrow = renderAscii(diagram, { maxWidth: 80 })       // Auto-scale to 80 
 ### CLI
 
 ```bash
-npx tsx bin/arc-ascii.mjs diagram.json
-cat diagram.json | npx tsx bin/arc-ascii.mjs
-npx tsx bin/arc-ascii.mjs diagram.json --charset ascii --max-width 80
+bunx tsx bin/arc-ascii.mjs diagram.json
+cat diagram.json | bunx tsx bin/arc-ascii.mjs
+bunx tsx bin/arc-ascii.mjs diagram.json --charset ascii --max-width 80
 ```
 
 ## Requirements

@@ -1,6 +1,6 @@
 {
   "name": "@arach/arc",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "type": "module",
   "description": "Visual diagram editor for creating architecture diagrams",
   "author": "Arach Tchoupani",
@@ -17,10 +17,14 @@
     "react",
     "isometric"
   ],
+  "bin": {
+    "arc-ascii": "./bin/arc-ascii.mjs"
+  },
   "files": [
     "lib/arc.es.js",
     "lib/arc.umd.js",
-    "lib/index.d.ts"
+    "lib/index.d.ts",
+    "bin/arc-ascii.mjs"
   ],
   "main": "./lib/arc.umd.js",
   "module": "./lib/arc.es.js",
