@@ -17,6 +17,7 @@ import {
 } from '@arach/dewey'
 import { ArcDiagram, type ArcDiagramData } from '@arach/arc'
 import RenderShowcase from './RenderShowcase'
+import Showcase from './Showcase'
 
 // ============================================
 // CodePreviewToggle - Tabbed code/preview component
@@ -1426,6 +1427,13 @@ function DocPage({ pageId }: { pageId: string }) {
 
           {/* Render diagram toggle components via portals */}
           <DiagramTogglePortals blocks={diagramBlocks} containerRef={contentRef} />
+
+          {/* Showcase section on overview page */}
+          {pageId === 'overview' && (
+            <div className="not-prose">
+              <Showcase />
+            </div>
+          )}
         </div>
       </main>
 
