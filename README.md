@@ -61,6 +61,46 @@ const diagram: ArcDiagramData = {
 }
 ```
 
+## ASCII Renderer
+
+The same diagram renders as precise monospace text — for READMEs, CLI output, or anywhere you can't embed a React component:
+
+```
+                                                     ┌──────────────────┐
+                                                     │ ◆ Auth           │
+                                                   ┌▶│ JWT              │
+                                                   │ └──────────────────┘
+                                                   │
+┌──────────────────┐   ╔═════════════════════════╗ │
+│ ◆ Client         │   ║ ◆ API Gateway           ║ │ ┌──────────────────┐       ┌──────────────────┐
+│ React App        │─┐ ║ Express                 ║ │ │ ◆ API            │ SQL   │ ◆ PostgreSQL     │
+│                  │ └▶║ Load balanced           ║─┴▶│ REST             │──────▶│ Primary          │
+└──────────────────┘   ║                         ║╌┐ └──────────────────┘       └──────────────────┘
+                       ╚═════════════════════════╝ ╎
+                                                   ╎
+                                                   ╎ ┌───────────┐
+                                                   └▶│ ◆ Cache   │
+                                                     └───────────┘
+```
+
+### Programmatic
+
+```typescript
+import { renderAscii } from '@arach/arc'
+
+const ascii = renderAscii(diagram)                          // Unicode box-drawing
+const plain = renderAscii(diagram, { charset: 'ascii' })    // +-- style
+const narrow = renderAscii(diagram, { maxWidth: 80 })       // Auto-scale to 80 cols
+```
+
+### CLI
+
+```bash
+npx tsx bin/arc-ascii.mjs diagram.json
+cat diagram.json | npx tsx bin/arc-ascii.mjs
+npx tsx bin/arc-ascii.mjs diagram.json --charset ascii --max-width 80
+```
+
 ## Requirements
 
 The `ArcDiagram` player component requires:
