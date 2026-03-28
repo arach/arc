@@ -3,8 +3,7 @@ node_modules
 
 # Build output
 dist
-dist-ssr
-dist-iso
+dist-*
 lib
 bundle-stats.html
 *.tsbuildinfo
@@ -40,8 +39,11 @@ lerna-debug.log*
 .DS_Store
 Thumbs.db
 
-# Claude Code
-.claude
+# Dotfiles
+.*
+!.gitignore
+!.github
+!.dewey
 
 # Test coverage
 coverage
