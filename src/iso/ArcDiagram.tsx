@@ -1,6 +1,6 @@
 /**
  * ArcDiagram - Lightweight isometric diagram renderer
- * This is the core player component, optimized for embedding.
+ * Core isometric component, optimized for embedding.
  */
 import React, { useState, useEffect } from 'react'
 import { isoToScreen, isoBox } from '../utils/isometric'

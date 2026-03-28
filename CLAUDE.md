@@ -157,6 +157,63 @@ interface ZoomConfig {
 - **Step:** 5% increments
 - **Initial:** 100% (or calculated if `defaultZoom: 'fit'`)
 
+## Node Hover Interactivity
+
+Nodes respond to hover and click with visual feedback — enabled by default:
+
+- **Hovered node** lifts up 2px with a colored glow shadow
+- **Other nodes** dim to 45% opacity
+- **Connected connectors** get a thicker stroke and bolder labels
+- **Unconnected connectors** dim to 25% opacity
+- **Click-to-lock** — click a node to lock the highlight state (works on touch devices), click again or click background to release
+- All transitions animate at 200ms ease-out
+
+### `hoverEffects` Prop
+
+```tsx
+// All effects (default)
+<ArcDiagram data={diagram} hoverEffects={true} />
+
+// No hover effects
+<ArcDiagram data={diagram} hoverEffects={false} />
+
+// Granular control
+<ArcDiagram data={diagram} hoverEffects={{
+  dim: true,            // dim unrelated nodes/connectors (default: true)
+  dimOpacity: 0.45,     // 0–1 for dimmed nodes, connectors get ~56% of this (default: 0.45)
+  lift: true,           // translateY(-2px) on hover (default: true)
+  glow: true,           // colored shadow on hover (default: true)
+  highlightEdges: true, // thicken connected edges (default: true)
+}} />
+
+// Highlight without dimming (good for dense diagrams)
+<ArcDiagram data={diagram} hoverEffects={{ dim: false }} />
+
+// Subtle dim, no lift
+<ArcDiagram data={diagram} hoverEffects={{ dimOpacity: 0.7, lift: false }} />
+```
+
+### `onNodeHover` Callback
+
+```tsx
+<ArcDiagram
+  data={diagram}
+  onNodeHover={(nodeId) => {
+    // nodeId is the hovered/clicked node's key, or null on release
+    console.log('Active:', nodeId)
+  }}
+/>
+```
+
+### `maxFitZoom` Prop
+
+When using `defaultZoom="fit"`, caps the calculated zoom level:
+
+```tsx
+// Fit to container but never exceed 85%
+<ArcDiagram data={diagram} defaultZoom="fit" maxFitZoom={0.85} />
+```
+
 ## Diagram Config Format
 
 Diagrams are stored as JSON:

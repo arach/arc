@@ -1,5 +1,5 @@
 /**
- * Arc Player (Vanilla) - Zero dependencies, pure SVG output
+ * Arc Isometric (Vanilla) - Zero dependencies, pure SVG output
  * Smallest possible bundle for static rendering
  */
 

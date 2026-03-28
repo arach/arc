@@ -27,7 +27,7 @@
 The documentation correctly identifies the core architecture pattern (useReducer + Context) and lists the three main modules. However:
 
 **Issues Found:**
-- Module table lists `src/player/` but documentation says nothing about what the player module does or how it differs from the editor
+- Module table lists `src/iso/` but documentation says nothing about what the isometric module does or how it differs from the editor
 - No mention of the TypeScript stack (docs imply JSX but codebase is TypeScript)
 - Missing mention of the `types/` directory which defines core interfaces
 

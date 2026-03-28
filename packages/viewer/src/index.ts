@@ -13,6 +13,7 @@ export type {
   DiagramColor,
   DiagramMode,
   LabelAlign,
+  HoverEffectsConfig,
 } from './ArcDiagram'
 
 export {

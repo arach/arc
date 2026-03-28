@@ -324,12 +324,12 @@ export default defineConfig({
   agent: {
     outputPath: './docs',    // Where to output AGENTS.md, llms.txt, docs.json
     criticalContext: [
-      'Arc exports @arach/arc and @arach/arc-player npm packages',
+      'Arc exports @arach/arc, @arach/arc-viewer, and @arach/arc-iso npm packages',
       'Diagrams are declarative JSON configs',
     ],
     entryPoints: {
       'editor': 'src/components/editor/',
-      'player': 'src/player/',
+      'iso': 'src/iso/',
     },
   },
 

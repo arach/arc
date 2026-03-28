@@ -112,7 +112,7 @@ Arc is a visual diagram editor. Diagrams are JSON configs with:
 - connectors: from/to with anchors
 - connectorStyles: color, strokeWidth, label
 
-Use @arach/arc for React, @arach/arc-player for vanilla JS.
+Use @arach/arc for React, @arach/arc-iso for isometric rendering.
 ```
 
 ### Generic LLM

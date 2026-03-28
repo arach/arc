@@ -12,7 +12,7 @@ order: 6
 
 **IMPORTANT:** Read these rules before making any changes:
 
-- Arc exports two npm packages: @arach/arc (full editor) and @arach/arc-player (lightweight renderer)
+- Arc exports three npm packages: @arach/arc (full editor), @arach/arc-viewer (lightweight viewer), and @arach/arc-iso (isometric renderer)
 - Diagrams are stored as declarative JSON/TypeScript configs, not binary files
 - The editor uses useReducer + Context for state management (EditorProvider)
 - Never modify diagram configs without understanding the schema in src/types/
@@ -23,7 +23,7 @@ order: 6
 | Component | Path |
 |-----------|------|
 | Editor | src/components/editor/ |
-| Player | src/player/ |
+| Isometric | src/iso/ |
 | Landing Page | src/components/LandingPage.tsx |
 | Documentation | src/components/docs/ |
 | Utilities | src/utils/ |
@@ -52,8 +52,9 @@ Architecture diagrams typically live in design tools, disconnected from the code
 
 | Package | Description |
 |---------|-------------|
-| `@arach/arc` | Core player/renderer component |
-| `@arach/arc-player` | Lightweight embeddable player |
+| `@arach/arc` | Full editor + renderer |
+| `@arach/arc-viewer` | Lightweight diagram viewer |
+| `@arach/arc-iso` | Isometric diagram renderer |
 
 ## Key Features
 
@@ -113,7 +114,7 @@ function App() {
 
 ```html
 <script type="module">
-  import { renderDiagram } from '@arach/arc-player'
+  import { renderDiagram } from '@arach/arc-iso'
   renderDiagram(document.getElementById('diagram'), diagramConfig)
 </script>
 ```
@@ -133,7 +134,7 @@ pnpm lint     # Run ESLint
 | Module | Path | Purpose |
 |--------|------|---------|
 | Editor | `src/components/editor/` | Visual drag-and-drop editor |
-| Player | `src/player/` | Lightweight renderer |
+| Isometric | `src/iso/` | Isometric renderer |
 | Utils | `src/utils/` | Shared helpers |
 
 ### State Model

@@ -1,5 +1,5 @@
 /**
- * Arc Player Types
+ * Arc Isometric Types
  */
 
 export interface TierConfig {

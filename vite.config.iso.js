@@ -10,17 +10,17 @@ export default defineConfig({
   plugins: [
     react(),
     dts({
-      include: ['src/player/index.ts', 'src/player/types.ts'],
-      outDir: 'dist-player',
+      include: ['src/iso/index.ts', 'src/iso/types.ts'],
+      outDir: 'dist-iso',
       rollupTypes: true,
     }),
   ],
   build: {
     lib: {
-      entry: resolve(__dirname, 'src/player/index.ts'),
-      name: 'ArcPlayer',
+      entry: resolve(__dirname, 'src/iso/index.ts'),
+      name: 'ArcIso',
       formats: ['es', 'umd'],
-      fileName: (format) => `arc-player.${format}.js`,
+      fileName: (format) => `arc-iso.${format}.js`,
     },
     rollupOptions: {
       // Externalize React for the ES build (users provide their own)
@@ -32,7 +32,7 @@ export default defineConfig({
         },
       },
     },
-    outDir: 'dist-player',
+    outDir: 'dist-iso',
     minify: 'esbuild',
   },
 })

@@ -4,7 +4,7 @@
 
 ## TL;DR
 - Diagrams are data (JSON/TS), not images
-- Two packages: `@arach/arc` (editor), `@arach/arc-player` (renderer)
+- Three packages: `@arach/arc` (editor), `@arach/arc-viewer` (viewer), `@arach/arc-iso` (isometric)
 - React 19 + Vite + TailwindCSS
 - State: useReducer + Context in EditorProvider
 
@@ -13,7 +13,8 @@
 | Package | Purpose | Install |
 |---------|---------|---------|
 | `@arach/arc` | Full editor + renderer | `npm install @arach/arc` |
-| `@arach/arc-player` | Lightweight embed | `npm install @arach/arc-player` |
+| `@arach/arc-viewer` | Lightweight viewer | `npm install @arach/arc-viewer` |
+| `@arach/arc-iso` | Isometric renderer | `npm install @arach/arc-iso` |
 
 ## Why Declarative?
 - Version control: diffs show changes

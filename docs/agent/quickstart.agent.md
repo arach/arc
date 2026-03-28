@@ -44,7 +44,7 @@ function App() {
 
 ```html
 <script type="module">
-  import { renderDiagram } from '@arach/arc-player'
+  import { renderDiagram } from '@arach/arc-iso'
   renderDiagram(document.getElementById('diagram'), diagramConfig)
 </script>
 ```

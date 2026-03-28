@@ -13,7 +13,7 @@ Arc is organized into several key modules:
 | Module | Path | Purpose |
 |--------|------|---------|
 | Editor | `src/components/editor/` | Visual drag-and-drop editor |
-| Player | `src/player/` | Lightweight renderer |
+| Isometric | `src/iso/` | Isometric renderer |
 | Utils | `src/utils/` | Shared helpers |
 
 ## State Model

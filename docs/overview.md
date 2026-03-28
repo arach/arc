@@ -40,8 +40,9 @@ Arc exports two npm packages:
 
 | Package | Description |
 |---------|-------------|
-| `@arach/arc` | Core player/renderer component |
-| `@arach/arc-player` | Lightweight embeddable player |
+| `@arach/arc` | Full editor + renderer |
+| `@arach/arc-viewer` | Lightweight diagram viewer |
+| `@arach/arc-iso` | Isometric diagram renderer |
 
 ## Next Steps
 

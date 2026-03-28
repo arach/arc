@@ -61,6 +61,48 @@ export interface ArcDiagramData {
 }
 
 // ============================================
+// Hover Effects
+// ============================================
+
+export interface HoverEffectsConfig {
+  /** Dim unrelated nodes/connectors. Default: true */
+  dim?: boolean
+  /** 0–1 opacity for dimmed nodes. Connectors dim to ~56% of this. Default: 0.45 */
+  dimOpacity?: number
+  /** Lift hovered node up 2px. Default: true */
+  lift?: boolean
+  /** Colored glow shadow on hover. Default: true */
+  glow?: boolean
+  /** Thicken connected edges. Default: true */
+  highlightEdges?: boolean
+}
+
+interface ResolvedHoverEffects {
+  enabled: boolean
+  dim: boolean
+  dimOpacity: number
+  connectorDimOpacity: number
+  lift: boolean
+  glow: boolean
+  highlightEdges: boolean
+}
+
+function resolveHoverEffects(input?: boolean | HoverEffectsConfig): ResolvedHoverEffects {
+  if (input === false) return { enabled: false, dim: false, dimOpacity: 1, connectorDimOpacity: 1, lift: false, glow: false, highlightEdges: false }
+  const cfg = typeof input === 'object' ? input : {}
+  const dimOpacity = cfg.dimOpacity ?? 0.45
+  return {
+    enabled: true,
+    dim: cfg.dim ?? true,
+    dimOpacity,
+    connectorDimOpacity: dimOpacity * 0.56,
+    lift: cfg.lift ?? true,
+    glow: cfg.glow ?? true,
+    highlightEdges: cfg.highlightEdges ?? true,
+  }
+}
+
+// ============================================
 // Constants
 // ============================================
 
@@ -84,9 +126,17 @@ interface NodeProps {
   data: NodeData
   mode: DiagramMode
   themeColors: Theme['light'] | Theme['dark']
+  hovered?: boolean
+  dimmed?: boolean
+  lift?: boolean
+  glow?: boolean
+  dimOpacity?: number
+  onMouseEnter?: () => void
+  onMouseLeave?: () => void
+  onClick?: () => void
 }
 
-export function Node({ node, data, mode, themeColors }: NodeProps) {
+export function Node({ node, data, mode, themeColors, hovered, dimmed, lift = true, glow = true, dimOpacity = 0.45, onMouseEnter, onMouseLeave, onClick }: NodeProps) {
   const size = NODE_SIZES[node.size]
   const color = themeColors.palette[data.color] || themeColors.palette.zinc
   const Icon = (LucideIcons as unknown as Record<string, LucideIcon>)[data.icon] || LucideIcons.Box
@@ -101,8 +151,24 @@ export function Node({ node, data, mode, themeColors }: NodeProps) {
         absolute rounded-xl border-2 ${color.border} ${color.bg}
         ${isLarge ? 'px-5 py-3' : isSmall ? 'px-3 py-2' : 'px-4 py-2.5'}
         ${isLight ? 'bg-white/80 shadow-sm' : 'bg-zinc-900/90'} backdrop-blur-sm
+        transition-all duration-200 ease-out
       `}
-      style={{ left: node.x, top: node.y, width: size.width }}
+      style={{
+        left: node.x,
+        top: node.y,
+        width: size.width,
+        transform: hovered && lift ? 'translateY(-2px)' : 'none',
+        boxShadow: hovered && glow
+          ? `0 8px 24px -4px ${color.stroke}33, 0 0 0 1px ${color.stroke}22`
+          : 'none',
+        opacity: dimmed ? dimOpacity : 1,
+        zIndex: hovered ? 10 : undefined,
+        cursor: onClick ? 'pointer' : undefined,
+      }}
+      data-arc-node
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+      onClick={onClick}
     >
       <div className="flex items-center gap-3">
         <div className={`
@@ -162,9 +228,12 @@ interface ConnectorProps {
   nodes: Record<string, NodePosition>
   styles: Record<string, ConnectorStyle>
   themeColors: Theme['light'] | Theme['dark']
+  highlighted?: boolean
+  dimmed?: boolean
+  dimOpacity?: number
 }
 
-function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors }: ConnectorProps) {
+function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors, highlighted, dimmed, dimOpacity = 0.25 }: ConnectorProps) {
   const fromNode = nodes[connector.from]
   const toNode = nodes[connector.to]
   if (!fromNode || !toNode) return null
@@ -240,7 +309,10 @@ function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors }
   const arrowSize = 8
 
   return (
-    <g>
+    <g style={{
+      opacity: dimmed ? dimOpacity : 1,
+      transition: 'opacity 200ms ease-out',
+    }}>
       {/* Gradient definition - fades at both ends */}
       <defs>
         <linearGradient
@@ -251,10 +323,10 @@ function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors }
           y2={to.y}
           gradientUnits="userSpaceOnUse"
         >
-          <stop offset="0%" stopColor={color} stopOpacity={0.3} />
+          <stop offset="0%" stopColor={color} stopOpacity={highlighted ? 0.5 : 0.3} />
           <stop offset="15%" stopColor={color} stopOpacity={1} />
           <stop offset="85%" stopColor={color} stopOpacity={1} />
-          <stop offset="100%" stopColor={color} stopOpacity={0.5} />
+          <stop offset="100%" stopColor={color} stopOpacity={highlighted ? 0.7 : 0.5} />
         </linearGradient>
       </defs>
 
@@ -263,8 +335,9 @@ function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors }
         d={path}
         fill="none"
         stroke={`url(#${gradientId})`}
-        strokeWidth={style.strokeWidth}
+        strokeWidth={highlighted ? style.strokeWidth + 1 : style.strokeWidth}
         strokeDasharray={style.dashed ? '6 3' : undefined}
+        style={{ transition: 'stroke-width 200ms ease-out' }}
       />
 
       {/* Arrow head - triangle at end point */}
@@ -283,7 +356,11 @@ function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors }
           textAnchor={textAnchor}
           fill={color}
           className="text-[10px] font-mono"
-          style={{ fontFamily: 'ui-monospace, monospace' }}
+          style={{
+            fontFamily: 'ui-monospace, monospace',
+            fontWeight: highlighted ? 700 : 400,
+            transition: 'font-weight 200ms ease-out',
+          }}
         >
           {style.label}
         </text>
@@ -487,12 +564,18 @@ interface ArcDiagramProps {
   label?: string
   /** Initial zoom level. Use 'fit' to auto-fit content, or a number (e.g., 0.75). Default: 1 */
   defaultZoom?: number | 'fit'
+  /** Max zoom when defaultZoom='fit'. E.g., 0.85 caps fit at 85%. Default: 1 */
+  maxFitZoom?: number
   /** Custom zoom level steps. Default: [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2] */
   zoomLevels?: number[]
   /** Show the .arc source toggle button. Default: true */
   showArcToggle?: boolean
   /** Show the auto-layout button. Default: false */
   showAutoLayout?: boolean
+  /** Control hover behavior. true = all effects (default), false = none, object = granular control */
+  hoverEffects?: boolean | HoverEffectsConfig
+  /** Called when a node is hovered/clicked (nodeId) or released (null) */
+  onNodeHover?: (nodeId: string | null) => void
 }
 
 export default function ArcDiagram({
@@ -506,11 +589,20 @@ export default function ArcDiagram({
   zoomLevels = DEFAULT_ZOOM_LEVELS,
   showArcToggle = true,
   showAutoLayout = false,
+  hoverEffects,
+  onNodeHover,
+  maxFitZoom = 1,
 }: ArcDiagramProps) {
   const isLight = mode === 'light'
   const containerRef = React.useRef<HTMLDivElement>(null)
   const [showArc, setShowArc] = useState(false)
   const [useAutoLayout, setUseAutoLayout] = useState(false)
+  const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null)
+  const [lockedNodeId, setLockedNodeId] = useState<string | null>(null)
+  const fx = useMemo(() => resolveHoverEffects(hoverEffects), [hoverEffects])
+
+  // Active node = locked takes priority over hovered
+  const activeNodeId = fx.enabled ? (lockedNodeId ?? hoveredNodeId) : null
 
   // Apply auto-layout if toggled
   const activeData = useMemo(
@@ -537,9 +629,9 @@ export default function ArcDiagram({
     const padding = 40
     const fitX = (containerWidth - padding) / layout.width
     const fitY = (containerHeight - padding) / layout.height
-    // Use the smaller ratio to fit both dimensions, cap at 1 (100%)
-    return Math.min(fitX, fitY, 1)
-  }, [layout.width, layout.height])
+    // Use the smaller ratio to fit both dimensions, cap at maxFitZoom
+    return Math.min(fitX, fitY, maxFitZoom)
+  }, [layout.width, layout.height, maxFitZoom])
 
   // Determine initial zoom
   const getInitialZoom = useCallback(() => {
@@ -595,11 +687,25 @@ export default function ArcDiagram({
     }
   }, [interactive, handleZoomIn, handleZoomOut])
 
+  // Click-to-lock: clicking a node locks the highlight, clicking background or same node unlocks
+  const handleNodeClick = useCallback((nodeId: string) => {
+    setLockedNodeId(prev => {
+      const next = prev === nodeId ? null : nodeId
+      onNodeHover?.(next)
+      return next
+    })
+  }, [onNodeHover])
+
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (!interactive) return
+    // Clicking background clears locked node
+    if (lockedNodeId && (e.target as HTMLElement).closest('[data-arc-node]') === null) {
+      setLockedNodeId(null)
+      onNodeHover?.(null)
+    }
     setIsPanning(true)
     setPanStart({ x: e.clientX - pan.x, y: e.clientY - pan.y })
-  }, [interactive, pan])
+  }, [interactive, pan, lockedNodeId, onNodeHover])
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (!isPanning) return
@@ -656,23 +762,46 @@ export default function ArcDiagram({
           className="absolute inset-0 w-full h-full pointer-events-none"
           viewBox={`0 0 ${layout.width} ${layout.height}`}
         >
-          {connectors.map((conn, i) => (
-            <ConnectorPath
-              key={i}
-              connector={conn}
-              connectorIndex={i}
-              nodes={nodes}
-              styles={connectorStyles}
-              themeColors={themeColors}
-            />
-          ))}
+          {connectors.map((conn, i) => {
+            const isConnected = activeNodeId != null && (conn.from === activeNodeId || conn.to === activeNodeId)
+            return (
+              <ConnectorPath
+                key={i}
+                connector={conn}
+                connectorIndex={i}
+                nodes={nodes}
+                styles={connectorStyles}
+                themeColors={themeColors}
+                highlighted={fx.highlightEdges && isConnected}
+                dimmed={fx.dim && activeNodeId != null && !isConnected}
+                dimOpacity={fx.connectorDimOpacity}
+              />
+            )
+          })}
         </svg>
 
         {/* Nodes */}
         {Object.entries(nodes).map(([nodeId, node]) => {
-          const data = nodeData[nodeId]
-          if (!data) return null  // Skip nodes without data
-          return <Node key={nodeId} node={node} data={data} mode={mode} themeColors={themeColors} />
+          const nd = nodeData[nodeId]
+          if (!nd) return null
+          const isActive = activeNodeId === nodeId
+          return (
+            <Node
+              key={nodeId}
+              node={node}
+              data={nd}
+              mode={mode}
+              themeColors={themeColors}
+              hovered={isActive}
+              dimmed={fx.dim && activeNodeId != null && !isActive}
+              lift={fx.lift}
+              glow={fx.glow}
+              dimOpacity={fx.dimOpacity}
+              onMouseEnter={() => { if (!lockedNodeId) { setHoveredNodeId(nodeId); onNodeHover?.(nodeId) } }}
+              onMouseLeave={() => { if (!lockedNodeId) { setHoveredNodeId(null); onNodeHover?.(null) } }}
+              onClick={() => handleNodeClick(nodeId)}
+            />
+          )
         })}
       </div>
 

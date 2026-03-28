@@ -1,5 +1,5 @@
 {
-  "name": "@arach/arc-player",
+  "name": "@arach/arc-iso",
   "version": "0.1.0",
   "type": "module",
   "description": "Lightweight isometric diagram renderer for embedding Arc diagrams",
@@ -8,7 +8,7 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/arach/arc.git",
-    "directory": "packages/player"
+    "directory": "packages/iso"
   },
   "keywords": [
     "diagram",
@@ -21,19 +21,19 @@
   "files": [
     "dist"
   ],
-  "main": "./dist/arc-player.umd.js",
-  "module": "./dist/arc-player.es.js",
+  "main": "./dist/arc-iso.umd.js",
+  "module": "./dist/arc-iso.es.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/arc-player.es.js",
-      "require": "./dist/arc-player.umd.js"
+      "import": "./dist/arc-iso.es.js",
+      "require": "./dist/arc-iso.umd.js"
     },
     "./slim": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/arc-player-slim.es.js",
-      "require": "./dist/arc-player-slim.umd.js"
+      "import": "./dist/arc-iso-slim.es.js",
+      "require": "./dist/arc-iso-slim.umd.js"
     }
   },
   "sideEffects": false,

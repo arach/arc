@@ -9,7 +9,7 @@
 - **What**: Drag-and-drop architecture diagram editor
 - **Output**: JSON/TypeScript configs (not images)
 - **Stack**: React 19, Vite 7, TailwindCSS 4
-- **Packages**: @arach/arc (full), @arach/arc-player (lightweight)
+- **Packages**: @arach/arc (full), @arach/arc-viewer (viewer), @arach/arc-iso (isometric)
 
 ## Installation
 

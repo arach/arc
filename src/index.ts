@@ -34,8 +34,8 @@ export {
 export { THEMES, getTheme, getThemeList, type Theme, type ColorPalette } from './utils/themes'
 
 // 3D Isometric Diagram Player (tiers, floorSize, nodes format)
-export { default as ArcDiagramIsometric } from './player/ArcDiagram'
-export { renderToElement, renderToString } from './player/vanilla'
+export { default as ArcDiagramIsometric } from './iso/ArcDiagram'
+export { renderToElement, renderToString } from './iso/vanilla'
 
 // =============================================================================
 // Isometric Utilities
@@ -75,4 +75,4 @@ export type { ViewMode, EmbedConfig, NodePosition, ConnectorStyle, DiagramMeta }
 // =============================================================================
 export { generateSessionId, deriveSessionId, saveDiagramSession, loadDiagramSession, listDiagramSessions, deleteDiagramSession } from './utils/sessionStorage'
 export type { DiagramSession } from './utils/sessionStorage'
-export type { DiagramConfig, DiagramNode, TierConfig } from './player/types'
+export type { DiagramConfig, DiagramNode, TierConfig } from './iso/types'

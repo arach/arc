@@ -1,13 +1,9 @@
 /**
- * Arc Player - Embeddable isometric diagram renderer
+ * Arc Isometric - Embeddable isometric diagram renderer
  *
  * Usage:
- *   import { ArcPlayer, createDiagram } from '@anthropic/arc-player'
+ *   import { ArcDiagram } from '@arach/arc-iso'
  *
- *   // Render to a container
- *   ArcPlayer.render(container, diagramConfig)
- *
- *   // Or use as React component
  *   <ArcDiagram config={diagramConfig} />
  */
 

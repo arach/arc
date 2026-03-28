@@ -1,5 +1,5 @@
 /**
- * Arc Player (Slim) - Core renderer without YAML parsing
+ * Arc Isometric (Slim) - Core renderer without YAML parsing
  * Use this for smallest bundle size when you don't need YAML config
  */
 

@@ -9,10 +9,10 @@ export default defineConfig({
   plugins: [react()],
   build: {
     lib: {
-      entry: resolve(__dirname, 'src/player/index.slim.ts'),
-      name: 'ArcPlayer',
+      entry: resolve(__dirname, 'src/iso/index.slim.ts'),
+      name: 'ArcIso',
       formats: ['es', 'umd'],
-      fileName: (format) => `arc-player-slim.${format}.js`,
+      fileName: (format) => `arc-iso-slim.${format}.js`,
     },
     rollupOptions: {
       external: ['react', 'react-dom'],
@@ -23,7 +23,7 @@ export default defineConfig({
         },
       },
     },
-    outDir: 'dist-player',
+    outDir: 'dist-iso',
     emptyOutDir: false,
     minify: 'esbuild',
   },

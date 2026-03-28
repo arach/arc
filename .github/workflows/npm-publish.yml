@@ -44,12 +44,15 @@ jobs:
       - name: Build library
         run: pnpm build:lib
 
-      - name: Build player
+      - name: Build viewer
+        run: pnpm --filter @arach/arc-viewer build
+
+      - name: Build isometric
         run: |
-          pnpm build:player
-          mkdir -p packages/player/dist
-          cp dist-player/*.js packages/player/dist/
-          cp dist-player/*.d.ts packages/player/dist/ 2>/dev/null || true
+          pnpm build:iso
+          mkdir -p packages/iso/dist
+          cp dist-iso/*.js packages/iso/dist/
+          cp dist-iso/*.d.ts packages/iso/dist/ 2>/dev/null || true
 
       - name: Get version from tag
         if: startsWith(github.ref, 'refs/tags/v')
@@ -70,9 +73,18 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: Publish @arach/arc-player (tag)
+      - name: Publish @arach/arc-viewer (tag)
         if: startsWith(github.ref, 'refs/tags/v')
-        working-directory: packages/player
+        working-directory: packages/viewer
+        run: |
+          npm version ${{ steps.tag_version.outputs.VERSION }} --no-git-tag-version --allow-same-version
+          npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish @arach/arc-iso (tag)
+        if: startsWith(github.ref, 'refs/tags/v')
+        working-directory: packages/iso
         run: |
           npm version ${{ steps.tag_version.outputs.VERSION }} --no-git-tag-version --allow-same-version
           npm publish --provenance --access public
@@ -91,13 +103,27 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: Publish @arach/arc-player (manual)
+      - name: Publish @arach/arc-viewer (manual)
         if: github.event_name == 'workflow_dispatch'
-        working-directory: packages/player
+        working-directory: packages/viewer
         run: |
           npm version ${{ inputs.version }} --no-git-tag-version --allow-same-version
           if [ "${{ inputs.dry_run }}" = "true" ]; then
-            echo "DRY RUN: Would publish @arach/arc-player"
+            echo "DRY RUN: Would publish @arach/arc-viewer"
+            npm publish --dry-run --access public
+          else
+            npm publish --provenance --access public
+          fi
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish @arach/arc-iso (manual)
+        if: github.event_name == 'workflow_dispatch'
+        working-directory: packages/iso
+        run: |
+          npm version ${{ inputs.version }} --no-git-tag-version --allow-same-version
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            echo "DRY RUN: Would publish @arach/arc-iso"
             npm publish --dry-run --access public
           else
             npm publish --provenance --access public

@@ -61,6 +61,48 @@ export interface ArcDiagramData {
 }
 
 // ============================================
+// Hover Effects
+// ============================================
+
+export interface HoverEffectsConfig {
+  /** Dim unrelated nodes/connectors. Default: true */
+  dim?: boolean
+  /** 0–1 opacity for dimmed nodes. Connectors dim to ~56% of this. Default: 0.45 */
+  dimOpacity?: number
+  /** Lift hovered node up 2px. Default: true */
+  lift?: boolean
+  /** Colored glow shadow on hover. Default: true */
+  glow?: boolean
+  /** Thicken connected edges. Default: true */
+  highlightEdges?: boolean
+}
+
+interface ResolvedHoverEffects {
+  enabled: boolean
+  dim: boolean
+  dimOpacity: number
+  connectorDimOpacity: number
+  lift: boolean
+  glow: boolean
+  highlightEdges: boolean
+}
+
+function resolveHoverEffects(input?: boolean | HoverEffectsConfig): ResolvedHoverEffects {
+  if (input === false) return { enabled: false, dim: false, dimOpacity: 1, connectorDimOpacity: 1, lift: false, glow: false, highlightEdges: false }
+  const cfg = typeof input === 'object' ? input : {}
+  const dimOpacity = cfg.dimOpacity ?? 0.45
+  return {
+    enabled: true,
+    dim: cfg.dim ?? true,
+    dimOpacity,
+    connectorDimOpacity: dimOpacity * 0.56,
+    lift: cfg.lift ?? true,
+    glow: cfg.glow ?? true,
+    highlightEdges: cfg.highlightEdges ?? true,
+  }
+}
+
+// ============================================
 // Constants
 // ============================================
 
@@ -86,9 +128,17 @@ interface NodeProps {
   themeColors: Theme['light'] | Theme['dark']
   editable?: boolean
   onDragStart?: (e: React.MouseEvent) => void
+  hovered?: boolean
+  dimmed?: boolean
+  lift?: boolean
+  glow?: boolean
+  dimOpacity?: number
+  onMouseEnter?: () => void
+  onMouseLeave?: () => void
+  onClick?: () => void
 }
 
-function Node({ node, data, mode, themeColors, editable, onDragStart }: NodeProps) {
+function Node({ node, data, mode, themeColors, editable, onDragStart, hovered, dimmed, lift = true, glow = true, dimOpacity = 0.45, onMouseEnter, onMouseLeave, onClick }: NodeProps) {
   const size = NODE_SIZES[node.size]
   const color = themeColors.palette[data.color] || themeColors.palette.zinc
   const Icon = (LucideIcons as unknown as Record<string, LucideIcon>)[data.icon] || LucideIcons.Box
@@ -108,8 +158,20 @@ function Node({ node, data, mode, themeColors, editable, onDragStart }: NodeProp
   if (isXs) {
     return (
       <div
-        className={`absolute flex flex-col items-center ${editClass}`}
-        style={{ left: node.x, top: node.y, width: size.width, zIndex: editable ? 1 : undefined }}
+        className={`absolute flex flex-col items-center transition-all duration-200 ease-out ${editClass}`}
+        style={{
+          left: node.x,
+          top: node.y,
+          width: size.width,
+          zIndex: hovered ? 10 : editable ? 1 : undefined,
+          transform: hovered && lift ? 'translateY(-2px)' : 'none',
+          opacity: dimmed ? dimOpacity : 1,
+          cursor: onClick ? 'pointer' : undefined,
+        }}
+        data-arc-node
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
+        onClick={onClick}
         {...dragProps}
       >
         <div className={`
@@ -133,7 +195,7 @@ function Node({ node, data, mode, themeColors, editable, onDragStart }: NodeProp
   return (
     <div
       className={`
-        absolute rounded-lg border
+        absolute rounded-lg border transition-all duration-200 ease-out
         ${isLight
           ? 'bg-white/90 border-zinc-200/70 shadow-sm'
           : 'bg-zinc-900/80 border-zinc-700/50'
@@ -144,9 +206,19 @@ function Node({ node, data, mode, themeColors, editable, onDragStart }: NodeProp
         left: node.x,
         top: node.y,
         width: size.width,
-        zIndex: editable ? 1 : undefined,
+        zIndex: hovered ? 10 : editable ? 1 : undefined,
         backdropFilter: 'blur(8px)',
+        transform: hovered && lift ? 'translateY(-2px)' : 'none',
+        boxShadow: hovered && glow
+          ? `0 8px 24px -4px ${color.stroke}33, 0 0 0 1px ${color.stroke}22`
+          : 'none',
+        opacity: dimmed ? dimOpacity : 1,
+        cursor: onClick ? 'pointer' : undefined,
       }}
+      data-arc-node
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+      onClick={onClick}
       {...dragProps}
     >
       {/* Accent top edge */}
@@ -212,9 +284,12 @@ interface ConnectorProps {
   nodes: Record<string, NodePosition>
   styles: Record<string, ConnectorStyle>
   themeColors: Theme['light'] | Theme['dark']
+  highlighted?: boolean
+  dimmed?: boolean
+  dimOpacity?: number
 }
 
-function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors }: ConnectorProps) {
+function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors, highlighted, dimmed, dimOpacity = 0.25 }: ConnectorProps) {
   const fromNode = nodes[connector.from]
   const toNode = nodes[connector.to]
   if (!fromNode || !toNode) return null
@@ -278,7 +353,10 @@ function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors }
   const arrowSize = 6
 
   return (
-    <g>
+    <g style={{
+      opacity: dimmed ? dimOpacity : 1,
+      transition: 'opacity 200ms ease-out',
+    }}>
       {/* Gradient definition - fades at both ends */}
       <defs>
         <linearGradient
@@ -289,10 +367,10 @@ function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors }
           y2={to.y}
           gradientUnits="userSpaceOnUse"
         >
-          <stop offset="0%" stopColor={color} stopOpacity={0.4} />
-          <stop offset="10%" stopColor={color} stopOpacity={0.7} />
-          <stop offset="90%" stopColor={color} stopOpacity={0.7} />
-          <stop offset="100%" stopColor={color} stopOpacity={0.4} />
+          <stop offset="0%" stopColor={color} stopOpacity={highlighted ? 0.6 : 0.4} />
+          <stop offset="10%" stopColor={color} stopOpacity={highlighted ? 0.9 : 0.7} />
+          <stop offset="90%" stopColor={color} stopOpacity={highlighted ? 0.9 : 0.7} />
+          <stop offset="100%" stopColor={color} stopOpacity={highlighted ? 0.6 : 0.4} />
         </linearGradient>
       </defs>
 
@@ -301,8 +379,9 @@ function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors }
         d={path}
         fill="none"
         stroke={`url(#${gradientId})`}
-        strokeWidth={style.strokeWidth}
+        strokeWidth={highlighted ? style.strokeWidth + 1 : style.strokeWidth}
         strokeDasharray={style.dashed ? '6 3' : undefined}
+        style={{ transition: 'stroke-width 200ms ease-out' }}
       />
 
       {/* Arrow head - triangle at end point */}
@@ -315,7 +394,7 @@ function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors }
 
       {/* Label with background pill */}
       {style.label && (
-        <g>
+        <g style={{ transition: 'opacity 200ms ease-out' }}>
           <rect
             x={labelPos.x + labelOffset.x - (textAnchor === 'middle' ? style.label.length * 3.2 : textAnchor === 'end' ? style.label.length * 6.4 : 0) - 4}
             y={labelPos.y + labelOffset.y - 10}
@@ -323,7 +402,7 @@ function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors }
             height={14}
             rx={4}
             fill={color}
-            opacity={0.15}
+            opacity={highlighted ? 0.3 : 0.15}
           />
           <text
             x={labelPos.x + labelOffset.x}
@@ -331,7 +410,7 @@ function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors }
             textAnchor={textAnchor}
             fill={color}
             className="text-[9px] font-mono"
-            style={{ fontFamily: 'ui-monospace, monospace', fontWeight: 500 }}
+            style={{ fontFamily: 'ui-monospace, monospace', fontWeight: highlighted ? 700 : 500 }}
           >
             {style.label}
           </text>
@@ -562,12 +641,31 @@ export interface ArcDiagramProps {
   editorUrl?: string
   /** Metadata to pass to the editor (viewport size, theme, mode). */
   editorMeta?: { viewport?: { width: number; height: number }; theme?: string; mode?: string }
+  /** Control hover behavior. true = all effects (default), false = none, object = granular control */
+  hoverEffects?: boolean | HoverEffectsConfig
+  /** Called when a node is hovered/clicked (nodeId) or released (null) */
+  onNodeHover?: (nodeId: string | null) => void
 }
 
-export function ArcDiagram({ data, className = '', interactive = true, mode = 'dark', theme = 'default', showArcToggle = true, showAutoLayout = false, editable = false, editorUrl, editorMeta }: ArcDiagramProps) {
+export function ArcDiagram({ data, className = '', interactive = true, mode = 'dark', theme = 'default', showArcToggle = true, showAutoLayout = false, editable = false, editorUrl, editorMeta, hoverEffects, onNodeHover }: ArcDiagramProps) {
   const isLight = mode === 'light'
   const [showArc, setShowArc] = useState(false)
   const [useAutoLayout, setUseAutoLayout] = useState(false)
+  const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null)
+  const [lockedNodeId, setLockedNodeId] = useState<string | null>(null)
+  const fx = useMemo(() => resolveHoverEffects(hoverEffects), [hoverEffects])
+
+  // Active node = locked takes priority over hovered
+  const activeNodeId = fx.enabled ? (lockedNodeId ?? hoveredNodeId) : null
+
+  // Click-to-lock: clicking a node locks the highlight, clicking background or same node unlocks
+  const handleNodeClick = useCallback((nodeId: string) => {
+    setLockedNodeId(prev => {
+      const next = prev === nodeId ? null : nodeId
+      onNodeHover?.(next)
+      return next
+    })
+  }, [onNodeHover])
 
   // Apply auto-layout if toggled
   const baseData = useMemo(
@@ -660,9 +758,14 @@ export function ArcDiagram({ data, className = '', interactive = true, mode = 'd
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (!interactive || draggingNode) return
+    // Clicking background clears locked node
+    if (lockedNodeId && (e.target as HTMLElement).closest('[data-arc-node]') === null) {
+      setLockedNodeId(null)
+      onNodeHover?.(null)
+    }
     setIsPanning(true)
     setPanStart({ x: e.clientX - pan.x, y: e.clientY - pan.y })
-  }, [interactive, pan, draggingNode])
+  }, [interactive, pan, draggingNode, lockedNodeId, onNodeHover])
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (draggingNode) {
@@ -728,32 +831,49 @@ export function ArcDiagram({ data, className = '', interactive = true, mode = 'd
           className="absolute inset-0 w-full h-full pointer-events-none"
           viewBox={`0 0 ${layout.width} ${layout.height}`}
         >
-          {connectors.map((conn, i) => (
-            <ConnectorPath
-              key={i}
-              connector={conn}
-              connectorIndex={i}
-              nodes={nodes}
-              styles={connectorStyles}
-              themeColors={themeColors}
-            />
-          ))}
+          {connectors.map((conn, i) => {
+            const isConnected = activeNodeId != null && (conn.from === activeNodeId || conn.to === activeNodeId)
+            return (
+              <ConnectorPath
+                key={i}
+                connector={conn}
+                connectorIndex={i}
+                nodes={nodes}
+                styles={connectorStyles}
+                themeColors={themeColors}
+                highlighted={fx.highlightEdges && isConnected}
+                dimmed={fx.dim && activeNodeId != null && !isConnected}
+                dimOpacity={fx.connectorDimOpacity}
+              />
+            )
+          })}
         </svg>
 
         {/* Nodes */}
-        {Object.entries(nodes).map(([nodeId, node]) => (
-          <Node
-            key={nodeId}
-            node={node}
-            data={nodeData[nodeId]}
-            mode={mode}
-            themeColors={themeColors}
-            editable={editable}
-            onDragStart={editable ? (e: React.MouseEvent) => {
-              setDraggingNode({ id: nodeId, startX: e.clientX, startY: e.clientY, nodeX: node.x, nodeY: node.y })
-            } : undefined}
-          />
-        ))}
+        {Object.entries(nodes).map(([nodeId, node]) => {
+          const isActive = activeNodeId === nodeId
+          return (
+            <Node
+              key={nodeId}
+              node={node}
+              data={nodeData[nodeId]}
+              mode={mode}
+              themeColors={themeColors}
+              editable={editable}
+              onDragStart={editable ? (e: React.MouseEvent) => {
+                setDraggingNode({ id: nodeId, startX: e.clientX, startY: e.clientY, nodeX: node.x, nodeY: node.y })
+              } : undefined}
+              hovered={isActive}
+              dimmed={fx.dim && activeNodeId != null && !isActive}
+              lift={fx.lift}
+              glow={fx.glow}
+              dimOpacity={fx.dimOpacity}
+              onMouseEnter={() => { if (!lockedNodeId) { setHoveredNodeId(nodeId); onNodeHover?.(nodeId) } }}
+              onMouseLeave={() => { if (!lockedNodeId) { setHoveredNodeId(null); onNodeHover?.(null) } }}
+              onClick={() => handleNodeClick(nodeId)}
+            />
+          )
+        })}
       </div>
 
       {/* Viewer chrome - fixed position regardless of zoom/pan */}
