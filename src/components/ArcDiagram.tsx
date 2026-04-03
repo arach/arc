@@ -43,6 +43,7 @@ export interface ConnectorStyle {
   strokeWidth: number
   label?: string
   labelAlign?: LabelAlign  // For vertical: 'right' = right of line, 'left' = left of line. Default: 'right'
+  labelVisibility?: 'always' | 'highlighted' | 'never'
   dashed?: boolean
 }
 
@@ -51,13 +52,71 @@ export interface DiagramLayout {
   height: number
 }
 
+export interface GroupShape {
+  id: string
+  x: number
+  y: number
+  width: number
+  height: number
+  type: 'rect' | 'circle'
+  color: DiagramColor
+  label?: string
+  dashed?: boolean
+}
+
+export type LayoutBoundary = 'start' | 'center' | 'end'
+export type GroupLayoutDirection = 'horizontal' | 'vertical'
+
+export interface NodeLayoutHint {
+  group?: string
+  layer?: number
+  order?: number
+  boundary?: LayoutBoundary
+  affinity?: Record<string, number>
+}
+
+export interface GroupLayoutHint {
+  direction?: GroupLayoutDirection
+  padding?: number
+  layerGap?: number
+  itemGap?: number
+  align?: LayoutBoundary
+  justify?: LayoutBoundary | 'space-between'
+}
+
+export interface LayoutHints {
+  nodes?: Record<string, NodeLayoutHint>
+  groups?: Record<string, GroupLayoutHint>
+}
+
+export interface FocusConnectorRef {
+  from: string
+  to: string
+}
+
+export interface FocusStep {
+  icon: string
+  label: string
+}
+
+export interface FocusTarget {
+  mode?: 'append' | 'replace'
+  nodes?: string[]
+  connectors?: FocusConnectorRef[]
+  caption?: string
+  steps?: FocusStep[]
+}
+
 export interface ArcDiagramData {
   id?: string
   layout: DiagramLayout
+  layoutHints?: LayoutHints
   nodes: Record<string, NodePosition>
   nodeData: Record<string, NodeData>
   connectors: Connector[]
   connectorStyles: Record<string, ConnectorStyle>
+  groups?: GroupShape[]
+  focusTargets?: Record<string, FocusTarget>
 }
 
 // ============================================
@@ -115,6 +174,7 @@ const NODE_SIZES: Record<NodeSize, { width: number; height: number }> = {
 
 // Mode = light/dark appearance, Theme = color palette
 export type DiagramMode = 'dark' | 'light'
+export type NodeChrome = 'default' | 'technical'
 export { type ThemeId } from '../utils/themes'
 
 // ============================================
@@ -125,6 +185,7 @@ interface NodeProps {
   node: NodePosition
   data: NodeData
   mode: DiagramMode
+  nodeChrome?: NodeChrome
   themeColors: Theme['light'] | Theme['dark']
   hovered?: boolean
   dimmed?: boolean
@@ -136,7 +197,7 @@ interface NodeProps {
   onClick?: () => void
 }
 
-export function Node({ node, data, mode, themeColors, hovered, dimmed, lift = true, glow = true, dimOpacity = 0.45, onMouseEnter, onMouseLeave, onClick }: NodeProps) {
+export function Node({ node, data, mode, nodeChrome = 'default', themeColors, hovered, dimmed, lift = true, glow = true, dimOpacity = 0.45, onMouseEnter, onMouseLeave, onClick }: NodeProps) {
   const size = NODE_SIZES[node.size]
   const color = themeColors.palette[data.color] || themeColors.palette.zinc
   const Icon = (LucideIcons as unknown as Record<string, LucideIcon>)[data.icon] || LucideIcons.Box
@@ -144,6 +205,69 @@ export function Node({ node, data, mode, themeColors, hovered, dimmed, lift = tr
   const isLarge = node.size === 'l'
   const isSmall = node.size === 's'
   const isLight = mode === 'light'
+  const isTechnical = nodeChrome === 'technical'
+
+  if (isTechnical) {
+    return (
+      <div
+        className={`
+          absolute border transition-all duration-200 ease-out
+          ${isLight ? 'bg-white/92' : 'bg-zinc-950/92'}
+          ${isLarge ? 'px-4 py-3.5' : isSmall ? 'px-2.5 py-2' : 'px-3 py-2.5'}
+        `}
+        style={{
+          left: node.x,
+          top: node.y,
+          width: size.width,
+          borderRadius: isSmall ? 8 : 10,
+          borderColor: isLight ? `${color.stroke}55` : `${color.stroke}66`,
+          backdropFilter: 'blur(10px)',
+          transform: hovered && lift ? 'translateY(-2px)' : 'none',
+          boxShadow: hovered && glow
+            ? `0 10px 30px -16px ${color.stroke}80, 0 0 0 1px ${color.stroke}33`
+            : 'none',
+          opacity: dimmed ? dimOpacity : 1,
+          zIndex: hovered ? 10 : undefined,
+          cursor: onClick ? 'pointer' : undefined,
+        }}
+        data-arc-node
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
+        onClick={onClick}
+      >
+        <div
+          className="absolute top-0 left-3 right-3 h-px"
+          style={{ backgroundColor: color.stroke, opacity: isLight ? 0.6 : 0.72 }}
+        />
+        <div className="flex items-start gap-2.5">
+          <Icon
+            className={`mt-[1px] shrink-0 ${isLarge ? 'w-4 h-4' : isSmall ? 'w-3 h-3' : 'w-3.5 h-3.5'}`}
+            style={{ color: color.stroke }}
+            strokeWidth={1.6}
+          />
+          <div className="min-w-0">
+            <div
+              className={`${themeColors.text.primary} ${isLarge ? 'text-[13px]' : isSmall ? 'text-[10px]' : 'text-[11px]'} leading-none tracking-[0.01em]`}
+            >
+              {data.name}
+            </div>
+            {data.subtitle && (
+              <div
+                className={`mt-1 font-mono uppercase tracking-[0.14em] ${themeColors.text.muted} ${isSmall ? 'text-[7px]' : 'text-[8px]'}`}
+              >
+                {data.subtitle}
+              </div>
+            )}
+          </div>
+        </div>
+        {data.description && !isSmall && (
+          <div className={`mt-1.5 ${themeColors.text.secondary} ${isLarge ? 'text-[10px]' : 'text-[9px]'} leading-relaxed`}>
+            {data.description}
+          </div>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div
@@ -233,6 +357,55 @@ interface ConnectorProps {
   dimOpacity?: number
 }
 
+function GroupOverlay({ group, mode, themeColors }: {
+  group: GroupShape
+  mode: DiagramMode
+  themeColors: Theme['light'] | Theme['dark']
+}) {
+  const color = themeColors.palette[group.color] || themeColors.palette.zinc
+  const isLight = mode === 'light'
+  const radius = group.type === 'circle' ? '999px' : '16px'
+  const backgroundOpacity = isLight ? '12' : group.color === 'emerald' ? '16' : '14'
+  const borderOpacity = isLight ? '38' : group.color === 'emerald' ? '46' : '3f'
+
+  return (
+    <div
+      className="absolute pointer-events-none overflow-hidden"
+      style={{
+        left: group.x,
+        top: group.y,
+        width: group.width,
+        height: group.height,
+        borderRadius: radius,
+        border: `1px ${group.dashed ? 'dashed' : 'solid'} ${color.stroke}${borderOpacity}`,
+        background: `linear-gradient(180deg, ${color.stroke}${backgroundOpacity}, ${color.stroke}06)`,
+        boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.02)',
+      }}
+    >
+      {group.label && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 14,
+            left: 14,
+            padding: '5px 8px',
+            borderRadius: '6px',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
+            backgroundColor: isLight ? 'rgba(255, 255, 255, 0.85)' : 'rgba(10, 10, 10, 0.72)',
+            color: isLight ? 'rgba(39, 39, 42, 0.72)' : 'rgba(229, 229, 229, 0.76)',
+            fontFamily: '"IBM Plex Mono", ui-monospace, monospace',
+            fontSize: '10px',
+            letterSpacing: '0.14em',
+            textTransform: 'uppercase',
+          }}
+        >
+          {group.label}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors, highlighted, dimmed, dimOpacity = 0.25 }: ConnectorProps) {
   const fromNode = nodes[connector.from]
   const toNode = nodes[connector.to]
@@ -264,6 +437,11 @@ function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors, 
   let path: string
   const isVertical = Math.abs(to.y - from.y) > Math.abs(to.x - from.x)
   const labelAlign = style.labelAlign || (isVertical ? 'right' : 'center')
+  const shouldShowLabel = Boolean(
+    style.label &&
+      style.labelVisibility !== 'never' &&
+      (style.labelVisibility !== 'highlighted' || highlighted)
+  )
 
   // Label positioning
   let labelPos: { x: number; y: number }
@@ -349,7 +527,7 @@ function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors, 
       </g>
 
       {/* Label */}
-      {style.label && (
+      {shouldShowLabel && (
         <text
           x={labelPos.x + labelOffset.x}
           y={labelPos.y + labelOffset.y}
@@ -366,6 +544,74 @@ function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors, 
         </text>
       )}
     </g>
+  )
+}
+
+function FocusStory({
+  target,
+  mode,
+}: {
+  target: FocusTarget
+  mode: DiagramMode
+}) {
+  if (!target.caption && (!target.steps || target.steps.length === 0)) return null
+
+  const isLight = mode === 'light'
+
+  return (
+    <div
+      className={`absolute top-3 left-3 right-24 z-10 ${
+        isLight ? 'bg-white/82 border border-zinc-200/80' : 'bg-zinc-950/72 border border-zinc-800/80'
+      }`}
+      style={{
+        padding: '10px 12px',
+        borderRadius: 10,
+        backdropFilter: 'blur(10px)',
+      }}
+    >
+      {target.caption && (
+        <div
+          className={isLight ? 'text-zinc-700' : 'text-zinc-300'}
+          style={{
+            fontSize: '12px',
+            lineHeight: 1.5,
+            marginBottom: target.steps?.length ? 10 : 0,
+          }}
+        >
+          {target.caption}
+        </div>
+      )}
+      {target.steps && target.steps.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {target.steps.map((step) => {
+            const Icon = (LucideIcons as unknown as Record<string, LucideIcon>)[step.icon] || LucideIcons.Box
+            return (
+              <div
+                key={`${step.icon}-${step.label}`}
+                className={`inline-flex items-center gap-2 ${
+                  isLight ? 'bg-zinc-100/90 border border-zinc-200/90 text-zinc-700' : 'bg-zinc-900/72 border border-zinc-800 text-zinc-200'
+                }`}
+                style={{
+                  padding: '6px 8px',
+                  borderRadius: 8,
+                  fontFamily: '"IBM Plex Mono", ui-monospace, monospace',
+                  fontSize: '10px',
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                }}
+              >
+                <Icon
+                  className={isLight ? 'text-zinc-500' : 'text-sky-300'}
+                  style={{ width: 13, height: 13 }}
+                  strokeWidth={1.7}
+                />
+                <span>{step.label}</span>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -437,10 +683,13 @@ function generateSource(data: ArcDiagramData): string {
   const clean = {
     id: data.id,
     layout: data.layout,
+    ...(data.layoutHints ? { layoutHints: data.layoutHints } : {}),
     nodes: data.nodes,
     nodeData: data.nodeData,
     connectors: data.connectors,
     connectorStyles: data.connectorStyles,
+    ...(data.groups ? { groups: data.groups } : {}),
+    ...(data.focusTargets ? { focusTargets: data.focusTargets } : {}),
   }
   const json = JSON.stringify(clean, null, 2)
     .replace(/"([^"]+)":/g, '$1:')
@@ -554,12 +803,14 @@ function AutoLayoutButton({ active, onToggle, mode }: {
 // Main Component
 // ============================================
 
-interface ArcDiagramProps {
+export interface ArcDiagramProps {
   data: ArcDiagramData
   className?: string
   interactive?: boolean  // Enable zoom/pan controls
   mode?: DiagramMode     // Light/dark appearance
   theme?: ThemeId        // Color palette theme
+  /** Node surface treatment. Default: 'default' */
+  nodeChrome?: NodeChrome
   /** Override the diagram label (bottom-left). Defaults to data.id */
   label?: string
   /** Initial zoom level. Use 'fit' to auto-fit content, or a number (e.g., 0.75). Default: 1 */
@@ -572,6 +823,8 @@ interface ArcDiagramProps {
   showArcToggle?: boolean
   /** Show the auto-layout button. Default: false */
   showAutoLayout?: boolean
+  /** Show the active focus target's caption and step chips inside the diagram. Default: false */
+  showFocusStory?: boolean
   /** Control hover behavior. true = all effects (default), false = none, object = granular control */
   hoverEffects?: boolean | HoverEffectsConfig
   /** Called when a node is hovered/clicked (nodeId) or released (null) */
@@ -584,11 +837,13 @@ export default function ArcDiagram({
   interactive = true,
   mode = 'dark',
   theme = 'default',
+  nodeChrome = 'default',
   label,
   defaultZoom = 1,
   zoomLevels = DEFAULT_ZOOM_LEVELS,
   showArcToggle = true,
   showAutoLayout = false,
+  showFocusStory = false,
   hoverEffects,
   onNodeHover,
   maxFitZoom = 1,
@@ -611,6 +866,49 @@ export default function ArcDiagram({
   )
 
   const { id, layout, nodes, nodeData, connectors, connectorStyles } = activeData
+  const groups = activeData.groups || []
+  const focusTargets = activeData.focusTargets || {}
+  const activeFocusTarget = activeNodeId ? focusTargets[activeNodeId] : undefined
+
+  const focusState = useMemo(() => {
+    const nodeIds = new Set<string>()
+    const connectorIndexes = new Set<number>()
+
+    if (!activeNodeId) return { nodeIds, connectorIndexes }
+
+    nodeIds.add(activeNodeId)
+
+    const target = focusTargets[activeNodeId]
+    const includeDirect = !target || target.mode !== 'replace'
+
+    if (includeDirect) {
+      connectors.forEach((conn, index) => {
+        if (conn.from === activeNodeId || conn.to === activeNodeId) {
+          connectorIndexes.add(index)
+          nodeIds.add(conn.from)
+          nodeIds.add(conn.to)
+        }
+      })
+    }
+
+    for (const nodeId of target?.nodes || []) {
+      nodeIds.add(nodeId)
+    }
+
+    for (const ref of target?.connectors || []) {
+      connectors.forEach((conn, index) => {
+        const matchesForward = conn.from === ref.from && conn.to === ref.to
+        const matchesReverse = conn.from === ref.to && conn.to === ref.from
+        if (matchesForward || matchesReverse) {
+          connectorIndexes.add(index)
+          nodeIds.add(conn.from)
+          nodeIds.add(conn.to)
+        }
+      })
+    }
+
+    return { nodeIds, connectorIndexes }
+  }, [activeNodeId, connectors, focusTargets])
 
   // Resolve theme colors based on mode
   const themeData = getTheme(theme)
@@ -757,13 +1055,23 @@ export default function ArcDiagram({
           }}
         />
 
+        {/* Groups */}
+        {groups.map((group) => (
+          <GroupOverlay
+            key={group.id}
+            group={group}
+            mode={mode}
+            themeColors={themeColors}
+          />
+        ))}
+
         {/* Connectors */}
         <svg
           className="absolute inset-0 w-full h-full pointer-events-none"
           viewBox={`0 0 ${layout.width} ${layout.height}`}
         >
           {connectors.map((conn, i) => {
-            const isConnected = activeNodeId != null && (conn.from === activeNodeId || conn.to === activeNodeId)
+            const isConnected = activeNodeId != null && focusState.connectorIndexes.has(i)
             return (
               <ConnectorPath
                 key={i}
@@ -785,15 +1093,17 @@ export default function ArcDiagram({
           const nd = nodeData[nodeId]
           if (!nd) return null
           const isActive = activeNodeId === nodeId
+          const isInFocus = focusState.nodeIds.has(nodeId)
           return (
             <Node
               key={nodeId}
               node={node}
               data={nd}
               mode={mode}
+              nodeChrome={nodeChrome}
               themeColors={themeColors}
               hovered={isActive}
-              dimmed={fx.dim && activeNodeId != null && !isActive}
+              dimmed={fx.dim && activeNodeId != null && !isInFocus}
               lift={fx.lift}
               glow={fx.glow}
               dimOpacity={fx.dimOpacity}
@@ -810,6 +1120,10 @@ export default function ArcDiagram({
       {/* .arc source overlay */}
       {showArc && (
         <ArcSourceView source={sourceCode} mode={mode} />
+      )}
+
+      {!showArc && showFocusStory && activeFocusTarget && (
+        <FocusStory target={activeFocusTarget} mode={mode} />
       )}
 
       {/* .arc toggle - top right */}

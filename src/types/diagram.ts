@@ -38,6 +38,7 @@ export interface ConnectorStyle {
   color: DiagramColor
   strokeWidth: number
   label?: string
+  labelVisibility?: 'always' | 'highlighted' | 'never'
   dashed?: boolean
 }
 
@@ -66,6 +67,49 @@ export interface GroupShape {
   dashed?: boolean
 }
 
+export type LayoutBoundary = 'start' | 'center' | 'end'
+export type GroupLayoutDirection = 'horizontal' | 'vertical'
+
+export interface NodeLayoutHint {
+  group?: string
+  layer?: number
+  order?: number
+  boundary?: LayoutBoundary
+  affinity?: Record<string, number>
+}
+
+export interface GroupLayoutHint {
+  direction?: GroupLayoutDirection
+  padding?: number
+  layerGap?: number
+  itemGap?: number
+  align?: LayoutBoundary
+  justify?: LayoutBoundary | 'space-between'
+}
+
+export interface LayoutHints {
+  nodes?: Record<string, NodeLayoutHint>
+  groups?: Record<string, GroupLayoutHint>
+}
+
+export interface FocusConnectorRef {
+  from: string
+  to: string
+}
+
+export interface FocusStep {
+  icon: string
+  label: string
+}
+
+export interface FocusTarget {
+  mode?: 'append' | 'replace'
+  nodes?: string[]
+  connectors?: FocusConnectorRef[]
+  caption?: string
+  steps?: FocusStep[]
+}
+
 export interface DiagramImage {
   id: string
   src: string
@@ -88,11 +132,13 @@ export interface ExportZone {
 export interface ArcDiagram {
   layout: DiagramLayout
   grid: GridConfig
+  layoutHints?: LayoutHints
   nodes: Record<string, NodePosition>
   nodeData: Record<string, NodeData>
   connectors: Connector[]
   connectorStyles: Record<string, ConnectorStyle>
   groups?: GroupShape[]
+  focusTargets?: Record<string, FocusTarget>
   images?: DiagramImage[]
   exportZone?: ExportZone | null
 }
@@ -100,20 +146,26 @@ export interface ArcDiagram {
 // Clean export format (for consumers)
 export interface ArcDiagramData {
   layout: DiagramLayout
+  layoutHints?: LayoutHints
   nodes: Record<string, NodePosition>
   nodeData: Record<string, NodeData>
   connectors: Connector[]
   connectorStyles: Record<string, ConnectorStyle>
+  groups?: GroupShape[]
+  focusTargets?: Record<string, FocusTarget>
 }
 
 // Convert full diagram to clean export format
 export function toExportFormat(diagram: ArcDiagram): ArcDiagramData {
   return {
     layout: diagram.layout,
+    layoutHints: diagram.layoutHints,
     nodes: diagram.nodes,
     nodeData: diagram.nodeData,
     connectors: diagram.connectors,
     connectorStyles: diagram.connectorStyles,
+    groups: diagram.groups,
+    focusTargets: diagram.focusTargets,
   }
 }
 

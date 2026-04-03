@@ -115,6 +115,7 @@ const NODE_SIZES: Record<NodeSize, { width: number; height: number }> = {
 
 // Mode = light/dark appearance, Theme = color palette
 export type DiagramMode = 'dark' | 'light'
+export type DiagramVariant = 'default' | 'compact'
 export { type ThemeId } from './themes'
 
 // ============================================
@@ -432,22 +433,65 @@ interface ZoomControlsProps {
   onZoomOut: () => void
   onReset: () => void
   mode: DiagramMode
+  compact?: boolean
 }
 
-function ZoomControls({ zoom, onZoomIn, onZoomOut, onReset, mode }: ZoomControlsProps) {
+function ZoomControls({ zoom, onZoomIn, onZoomOut, onReset, mode, compact }: ZoomControlsProps) {
   const { ZoomIn, ZoomOut } = LucideIcons
   const isLight = mode === 'light'
 
+  if (compact) {
+    return (
+      <div className={`absolute bottom-2 right-2 flex items-center backdrop-blur-md rounded z-10 ${
+        isLight
+          ? 'bg-white/80 border border-zinc-200/60'
+          : 'bg-zinc-900/80 border border-zinc-700/50'
+      }`}>
+        <button
+          onClick={onZoomOut}
+          disabled={zoom <= ZOOM_LEVELS[0]}
+          className={`p-1 disabled:opacity-30 disabled:cursor-not-allowed transition-colors rounded-l ${
+            isLight ? 'hover:bg-zinc-100' : 'hover:bg-zinc-700'
+          }`}
+          title="Zoom out"
+        >
+          <ZoomOut className={`w-2.5 h-2.5 ${isLight ? 'text-zinc-400' : 'text-zinc-500'}`} />
+        </button>
+        <button
+          onClick={onReset}
+          className={`px-1.5 py-1 text-[8px] font-mono transition-colors min-w-[34px] ${
+            isLight
+              ? 'text-zinc-400 hover:bg-zinc-100 border-x border-zinc-200/60'
+              : 'text-zinc-500 hover:bg-zinc-700 border-x border-zinc-700/50'
+          }`}
+          title="Reset zoom"
+        >
+          {Math.round(zoom * 100)}%
+        </button>
+        <button
+          onClick={onZoomIn}
+          disabled={zoom >= ZOOM_LEVELS[ZOOM_LEVELS.length - 1]}
+          className={`p-1 disabled:opacity-30 disabled:cursor-not-allowed transition-colors rounded-r ${
+            isLight ? 'hover:bg-zinc-100' : 'hover:bg-zinc-700'
+          }`}
+          title="Zoom in"
+        >
+          <ZoomIn className={`w-2.5 h-2.5 ${isLight ? 'text-zinc-400' : 'text-zinc-500'}`} />
+        </button>
+      </div>
+    )
+  }
+
   return (
-    <div className={`absolute bottom-3 right-3 flex items-center backdrop-blur-sm rounded-md z-10 ${
+    <div className={`absolute bottom-3 right-3 flex items-center backdrop-blur-md rounded-md z-10 shadow-sm ${
       isLight
-        ? 'bg-white/90 border border-zinc-200 shadow-sm'
-        : 'bg-zinc-900/90 border border-zinc-700'
+        ? 'bg-white/88 border border-zinc-200/90'
+        : 'bg-zinc-900/88 border border-zinc-700/80'
     }`}>
       <button
         onClick={onZoomOut}
         disabled={zoom <= ZOOM_LEVELS[0]}
-        className={`p-1 disabled:opacity-30 disabled:cursor-not-allowed transition-colors rounded-l-md ${
+        className={`p-1.5 disabled:opacity-30 disabled:cursor-not-allowed transition-colors rounded-l-md ${
           isLight ? 'hover:bg-zinc-100' : 'hover:bg-zinc-700'
         }`}
         title="Zoom out"
@@ -456,7 +500,7 @@ function ZoomControls({ zoom, onZoomIn, onZoomOut, onReset, mode }: ZoomControls
       </button>
       <button
         onClick={onReset}
-        className={`px-1.5 py-1 text-[9px] font-mono transition-colors min-w-[36px] ${
+        className={`px-2 py-1.5 text-[9px] font-mono transition-colors min-w-[42px] ${
           isLight
             ? 'text-zinc-500 hover:bg-zinc-100 border-x border-zinc-200'
             : 'text-zinc-400 hover:bg-zinc-700 border-x border-zinc-700'
@@ -468,7 +512,7 @@ function ZoomControls({ zoom, onZoomIn, onZoomOut, onReset, mode }: ZoomControls
       <button
         onClick={onZoomIn}
         disabled={zoom >= ZOOM_LEVELS[ZOOM_LEVELS.length - 1]}
-        className={`p-1 disabled:opacity-30 disabled:cursor-not-allowed transition-colors rounded-r-md ${
+        className={`p-1.5 disabled:opacity-30 disabled:cursor-not-allowed transition-colors rounded-r-md ${
           isLight ? 'hover:bg-zinc-100' : 'hover:bg-zinc-700'
         }`}
         title="Zoom in"
@@ -476,6 +520,29 @@ function ZoomControls({ zoom, onZoomIn, onZoomOut, onReset, mode }: ZoomControls
         <ZoomIn className={`w-3 h-3 ${isLight ? 'text-zinc-500' : 'text-zinc-400'}`} />
       </button>
     </div>
+  )
+}
+
+// ============================================
+// Expand / Fullscreen Button (compact variant)
+// ============================================
+
+function ExpandButton({ mode, onExpand }: { mode: DiagramMode; onExpand: () => void }) {
+  const isLight = mode === 'light'
+  const { Maximize2 } = LucideIcons
+
+  return (
+    <button
+      onClick={onExpand}
+      className={`absolute top-2 right-2 p-1 rounded backdrop-blur-md z-10 transition-colors ${
+        isLight
+          ? 'bg-white/80 border border-zinc-200/60 text-zinc-400 hover:text-zinc-600 hover:bg-zinc-50'
+          : 'bg-zinc-900/80 border border-zinc-700/50 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800'
+      }`}
+      title="Expand diagram"
+    >
+      <Maximize2 className="w-3 h-3" />
+    </button>
   )
 }
 
@@ -628,10 +695,20 @@ function EditButton({ url, mode }: { url: string; mode: DiagramMode }) {
 export interface ArcDiagramProps {
   data: ArcDiagramData
   className?: string
+  /** Display variant. 'compact' uses tighter chrome, smaller radius, quieter styling, and adds expand button. Default: 'default' */
+  variant?: DiagramVariant
   interactive?: boolean  // Enable zoom/pan controls
   mode?: DiagramMode     // Light/dark appearance
   theme?: ThemeId        // Color palette theme
-  /** Show the source toggle button. Default: true */
+  /** Override the diagram label shown at bottom-left. Defaults to data.id. */
+  label?: string
+  /** Show the diagram label in the bottom-left corner. Default: true (compact: false) */
+  showDiagramId?: boolean
+  /** Show zoom controls in the bottom-right corner. Default: interactive */
+  showZoomControls?: boolean
+  /** Tailwind radius utility for the outer frame. Default: 'rounded-2xl' (compact: 'rounded-lg') */
+  radiusClassName?: string
+  /** Show the source toggle button. Default: true (compact: false) */
   showArcToggle?: boolean
   /** Show the auto-layout button. Default: false */
   showAutoLayout?: boolean
@@ -645,14 +722,41 @@ export interface ArcDiagramProps {
   hoverEffects?: boolean | HoverEffectsConfig
   /** Called when a node is hovered/clicked (nodeId) or released (null) */
   onNodeHover?: (nodeId: string | null) => void
+  /** Called when the expand button is clicked (compact variant only). If not provided, expand opens a fullscreen overlay. */
+  onExpand?: () => void
 }
 
-export function ArcDiagram({ data, className = '', interactive = true, mode = 'dark', theme = 'default', showArcToggle = true, showAutoLayout = false, editable = false, editorUrl, editorMeta, hoverEffects, onNodeHover }: ArcDiagramProps) {
+export function ArcDiagram(props: ArcDiagramProps) {
+  const {
+    data,
+    className = '',
+    variant = 'default',
+    interactive = true,
+    mode = 'dark',
+    theme = 'default',
+    label,
+    editable = false,
+    editorUrl,
+    editorMeta,
+    hoverEffects,
+    onNodeHover,
+    onExpand,
+  } = props
+
+  // Variant-aware defaults: explicit props override variant defaults
+  const isCompact = variant === 'compact'
+  const showDiagramId = props.showDiagramId ?? (isCompact ? false : true)
+  const showZoomControls = props.showZoomControls
+  const radiusClassName = props.radiusClassName ?? (isCompact ? 'rounded-lg' : 'rounded-2xl')
+  const showArcToggle = props.showArcToggle ?? (isCompact ? false : true)
+  const showAutoLayout = props.showAutoLayout ?? false
+
   const isLight = mode === 'light'
   const [showArc, setShowArc] = useState(false)
   const [useAutoLayout, setUseAutoLayout] = useState(false)
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null)
   const [lockedNodeId, setLockedNodeId] = useState<string | null>(null)
+  const [isExpanded, setIsExpanded] = useState(false)
   const fx = useMemo(() => resolveHoverEffects(hoverEffects), [hoverEffects])
 
   // Active node = locked takes priority over hovered
@@ -721,6 +825,8 @@ export function ArcDiagram({ data, className = '', interactive = true, mode = 'd
 
   // Generate source from the active data (reflects dragged positions)
   const sourceCode = useMemo(() => generateSource(activeData), [activeData])
+  const displayLabel = label ?? id
+  const shouldShowZoomControls = showZoomControls ?? interactive
 
   // Zoom & pan state
   const [zoom, setZoom] = useState(1)
@@ -792,9 +898,47 @@ export function ArcDiagram({ data, className = '', interactive = true, mode = 'd
     setDraggingNode(null)
   }, [])
 
+  // Compact: override container to quieter chrome
+  const containerClasses = isCompact
+    ? `${radiusClassName} overflow-hidden relative ${
+        isLight
+          ? 'bg-white/60 border border-zinc-200/50'
+          : 'bg-zinc-950/60 border border-zinc-800/50'
+      } ${className}`
+    : `${radiusClassName} overflow-hidden relative ${themeColors.background.container} ${className}`
+
+  // Expand handler: use callback if provided, otherwise toggle built-in fullscreen overlay
+  const handleExpand = useCallback(() => {
+    if (onExpand) { onExpand(); return }
+    setIsExpanded(e => !e)
+  }, [onExpand])
+
+  // Fullscreen overlay for built-in expand (when no onExpand callback)
+  if (isExpanded && !onExpand) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={() => setIsExpanded(false)}>
+        <div className="relative max-w-[95vw] max-h-[95vh] overflow-auto" onClick={e => e.stopPropagation()}>
+          <ArcDiagram
+            {...props}
+            variant="default"
+            className={`${className} shadow-2xl`}
+            onExpand={undefined}
+          />
+          <button
+            onClick={() => setIsExpanded(false)}
+            className="absolute top-3 right-3 p-1.5 rounded-md bg-zinc-900/90 border border-zinc-700 text-zinc-400 hover:text-white hover:bg-zinc-800 z-20 backdrop-blur-md"
+            title="Close"
+          >
+            <LucideIcons.X className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div
-      className={`rounded-2xl overflow-hidden relative ${themeColors.background.container} ${className}`}
+      className={containerClasses}
       onWheel={handleWheel}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
@@ -822,7 +966,7 @@ export function ArcDiagram({ data, className = '', interactive = true, mode = 'd
             height: layout.height + 4000,
             backgroundImage: `radial-gradient(circle, ${themeColors.background.grid.color} 1px, transparent 1px)`,
             backgroundSize: `${themeColors.background.grid.size}px ${themeColors.background.grid.size}px`,
-            opacity: themeColors.background.grid.opacity,
+            opacity: isCompact ? themeColors.background.grid.opacity * 0.5 : themeColors.background.grid.opacity,
           }}
         />
 
@@ -883,8 +1027,8 @@ export function ArcDiagram({ data, className = '', interactive = true, mode = 'd
         <ArcSourceView source={sourceCode} mode={mode} />
       )}
 
-      {/* .arc toggle - top right */}
-      {showArcToggle && (
+      {/* .arc toggle - top right (not shown in compact) */}
+      {showArcToggle && !isCompact && (
         <ViewToggle
           showArc={showArc}
           onToggle={() => setShowArc(s => !s)}
@@ -892,9 +1036,14 @@ export function ArcDiagram({ data, className = '', interactive = true, mode = 'd
         />
       )}
 
+      {/* Expand button - top right (compact only) */}
+      {isCompact && (
+        <ExpandButton mode={mode} onExpand={handleExpand} />
+      )}
+
       {/* Top-left controls */}
       {!showArc && (
-        <div className="absolute top-3 left-3 flex items-center gap-1.5 z-10">
+        <div className={`absolute ${isCompact ? 'top-2 left-2' : 'top-3 left-3'} flex items-center gap-1.5 z-10`}>
           {showAutoLayout && (
             <AutoLayoutButton
               active={useAutoLayout}
@@ -909,20 +1058,27 @@ export function ArcDiagram({ data, className = '', interactive = true, mode = 'd
       )}
 
       {/* Diagram ID - bottom left */}
-      {id && (
-        <div className={`absolute bottom-3 left-3 font-mono text-[9px] tracking-wider z-10 ${themeColors.text.muted}`}>
-          {id}
+      {showDiagramId && displayLabel && (
+        <div className={`absolute ${isCompact ? 'bottom-2 left-2' : 'bottom-3 left-3'} px-2 py-1 rounded-[4px] border backdrop-blur-md font-mono text-[9px] tracking-[0.22em] uppercase z-10 ${
+          isCompact ? '' : 'shadow-sm'
+        } ${
+          isLight
+            ? 'bg-white/82 border-zinc-200/90 text-zinc-500'
+            : 'bg-zinc-900/82 border-zinc-700/80 text-zinc-500'
+        }`}>
+          {displayLabel}
         </div>
       )}
 
       {/* Zoom controls - bottom right */}
-      {interactive && !showArc && (
+      {shouldShowZoomControls && !showArc && (
         <ZoomControls
           zoom={zoom}
           onZoomIn={handleZoomIn}
           onZoomOut={handleZoomOut}
           onReset={handleReset}
           mode={mode}
+          compact={isCompact}
         />
       )}
     </div>

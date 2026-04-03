@@ -12,6 +12,7 @@ export type {
   AnchorPosition,
   DiagramColor,
   DiagramMode,
+  DiagramVariant,
   LabelAlign,
   HoverEffectsConfig,
 } from './ArcDiagram'
@@ -32,3 +33,7 @@ export type {
 // Auto-layout
 export { autoLayout, createAutoLayout } from './autoLayout'
 export type { LayoutOptions, AutoDiagramInput } from './autoLayout'
+
+// Mermaid import
+export { importMermaid } from './mermaid'
+export type { MermaidImportResult, MermaidImportOptions } from './mermaid'

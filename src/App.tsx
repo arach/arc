@@ -19,6 +19,101 @@ interface HashPayload {
   sourceId?: string // diagram ID from source (e.g. "OPERATE.CONTROL.001")
 }
 
+interface EditorImportRequest {
+  kind: 'file' | 'src'
+  value: string
+  sessionId: string
+  themeId: string | null
+  colorMode: 'light' | 'dark'
+  viewport?: { width: number; height: number } | null
+  sourceId?: string | null
+}
+
+interface ResolvedEditorSession {
+  sessionId: string
+  initialData: any
+  originalDiagram: any
+  themeId: string | null
+  colorMode: 'light' | 'dark'
+  diagramMeta: Record<string, any>
+  needsRedirect: boolean
+  importRequest: EditorImportRequest | null
+  importError: string | null
+}
+
+function parseViewport(searchParams: URLSearchParams) {
+  const raw = searchParams.get('viewport')
+  if (!raw) return null
+  const [w, h] = raw.split('x').map(Number)
+  return w && h ? { width: w, height: h } : null
+}
+
+function buildImportedDiagramPayload(rawDiagram: any, overrides: Partial<HashPayload> = {}): HashPayload {
+  const sanitized = { ...rawDiagram }
+  delete sanitized._viewport
+  delete sanitized._theme
+  delete sanitized._mode
+
+  const viewport = overrides.viewport ?? rawDiagram._viewport
+  const theme = overrides.theme ?? rawDiagram._theme
+  const mode = overrides.mode ?? rawDiagram._mode
+  const sourceId = overrides.sourceId ?? rawDiagram.id
+
+  // Canvas is slightly larger than content to give room for the viewport frame
+  const diagramLayout = sanitized.layout || { width: 800, height: 400 }
+  const padding = viewport ? 80 : 100
+  const layout = {
+    width: Math.max(diagramLayout.width, viewport?.width || 0) + padding,
+    height: Math.max(diagramLayout.height, viewport?.height || 0) + padding,
+  }
+
+  const offset = viewport ? 40 : 0
+  const nodes = sanitized.nodes || {}
+  const offsetNodes: Record<string, any> = {}
+  for (const [id, node] of Object.entries(nodes)) {
+    const n = node as any
+    offsetNodes[id] = { ...n, x: n.x + offset, y: n.y + offset }
+  }
+
+  const viewportGroup = viewport ? [{
+    id: '_viewport',
+    x: offset,
+    y: offset,
+    width: viewport.width,
+    height: viewport.height,
+    type: 'rect' as const,
+    color: 'blue' as const,
+    label: `Viewport ${viewport.width}×${viewport.height}`,
+    dashed: true,
+  }] : []
+
+  const pad = 40
+  const paddedNodes: Record<string, any> = {}
+  for (const [id, node] of Object.entries(nodes)) {
+    const n = node as any
+    paddedNodes[id] = { ...n, x: n.x + pad, y: n.y + pad }
+  }
+
+  return {
+    diagram: {
+      ...sanitized,
+      layout,
+      grid: sanitized.grid || { enabled: true, size: 24, color: '#71717a', opacity: 0.1, type: 'dots' },
+      nodes: offsetNodes,
+      groups: [...(sanitized.groups || []), ...viewportGroup],
+    },
+    originalDiagram: {
+      ...sanitized,
+      layout: { width: diagramLayout.width + pad * 2, height: diagramLayout.height + pad * 2 },
+      nodes: paddedNodes,
+    },
+    viewport,
+    theme,
+    mode,
+    sourceId,
+  }
+}
+
 function parseHashData(): HashPayload | null {
   const hash = window.location.hash
   if (!hash.startsWith('#data=')) return null
@@ -26,82 +121,49 @@ function parseHashData(): HashPayload | null {
     const encoded = hash.slice(6)
     const json = atob(encoded)
     const d = JSON.parse(json)
-
-    const viewport = d._viewport
-    const theme = d._theme
-    const mode = d._mode
-    const sourceId = d.id // diagram ID from the source site
-
-    // Canvas is slightly larger than content to give room for the viewport frame
-    const diagramLayout = d.layout || { width: 800, height: 400 }
-    const padding = viewport ? 80 : 100  // Just enough for the frame + breathing room
-    const layout = {
-      width: Math.max(diagramLayout.width, viewport?.width || 0) + padding,
-      height: Math.max(diagramLayout.height, viewport?.height || 0) + padding,
-    }
-
-    // Offset to place nodes inside a viewport frame
-    const offset = viewport ? 40 : 0
-    const nodes = d.nodes || {}
-    const offsetNodes: Record<string, any> = {}
-    for (const [id, node] of Object.entries(nodes)) {
-      const n = node as any
-      offsetNodes[id] = { ...n, x: n.x + offset, y: n.y + offset }
-    }
-
-    // Add a viewport frame as a dashed group rectangle
-    const groups = viewport ? [{
-      id: '_viewport',
-      x: offset,
-      y: offset,
-      width: viewport.width,
-      height: viewport.height,
-      type: 'rect' as const,
-      color: 'blue' as const,
-      label: `Viewport ${viewport.width}×${viewport.height}`,
-      dashed: true,
-    }] : []
-
-    // Original diagram (clean, no offsets) — for player rendering
-    // Add padding to layout so edge nodes (especially xs with text labels) aren't clipped
-    const pad = 40
-    const paddedNodes: Record<string, any> = {}
-    for (const [id, node] of Object.entries(d.nodes || {})) {
-      const n = node as any
-      paddedNodes[id] = { ...n, x: n.x + pad, y: n.y + pad }
-    }
-    const originalDiagram = {
-      layout: { width: diagramLayout.width + pad * 2, height: diagramLayout.height + pad * 2 },
-      nodes: paddedNodes,
-      nodeData: d.nodeData || {},
-      connectors: d.connectors || [],
-      connectorStyles: d.connectorStyles || {},
-    }
-
-    return {
-      diagram: {
-        layout,
-        grid: { enabled: true, size: 24, color: '#71717a', opacity: 0.1, type: 'dots' },
-        nodes: offsetNodes,
-        nodeData: d.nodeData || {},
-        connectors: d.connectors || [],
-        connectorStyles: d.connectorStyles || {},
-        groups,
-      },
-      originalDiagram,
-      viewport,
-      theme,
-      mode,
-      sourceId,
-    }
+    return buildImportedDiagramPayload(d)
   } catch (e) {
     console.warn('Failed to load diagram from URL hash:', e)
     return null
   }
 }
 
+function parseEditorImportRequest(urlSessionId?: string): EditorImportRequest | null {
+  const search = new URLSearchParams(window.location.search)
+  const file = search.get('file')
+  const src = search.get('src')
+  if (!file && !src) return null
+
+  const kind = file ? 'file' : 'src'
+  const value = file || src || ''
+  const sourceId = search.get('id') || value
+  const sessionId = urlSessionId || deriveSessionId(sourceId)
+  const mode = (search.get('mode') as 'light' | 'dark' | null) || 'dark'
+
+  return {
+    kind,
+    value,
+    sessionId,
+    themeId: search.get('theme'),
+    colorMode: mode,
+    viewport: parseViewport(search),
+    sourceId,
+  }
+}
+
+async function loadImportRequest(importRequest: EditorImportRequest) {
+  const requestUrl = importRequest.kind === 'file'
+    ? `/__arc/dev/file?path=${encodeURIComponent(importRequest.value)}`
+    : importRequest.value
+  const response = await fetch(requestUrl)
+  if (!response.ok) {
+    throw new Error(`Import failed with ${response.status}`)
+  }
+  return response.json()
+}
+
 /** Resolve initial editor state synchronously from hash or localStorage */
-function resolveEditorSession(urlSessionId?: string) {
+function resolveEditorSession(urlSessionId?: string): ResolvedEditorSession {
   // Priority 1: Hash data (incoming from edit button)
   const hashPayload = parseHashData()
   if (hashPayload) {
@@ -125,20 +187,72 @@ function resolveEditorSession(urlSessionId?: string) {
     })
 
     const diagramMeta = { themeId: hashPayload.theme, colorMode: mode, viewport: hashPayload.viewport, sourceId: hashPayload.sourceId }
-    return { sessionId: id, initialData: hashPayload.diagram, originalDiagram: hashPayload.originalDiagram, themeId: hashPayload.theme || null, colorMode: mode, diagramMeta, needsRedirect: true }
-  }
-
-  // Priority 2: URL session ID — restore from localStorage
-  if (urlSessionId) {
-    const session = loadDiagramSession(urlSessionId)
-    if (session) {
-      return { sessionId: urlSessionId, initialData: session.diagram, originalDiagram: session.originalDiagram, themeId: session.themeId, colorMode: session.colorMode, diagramMeta: session.diagramMeta, needsRedirect: false }
+    return {
+      sessionId: id,
+      initialData: hashPayload.diagram,
+      originalDiagram: hashPayload.originalDiagram,
+      themeId: hashPayload.theme || null,
+      colorMode: mode,
+      diagramMeta,
+      needsRedirect: true,
+      importRequest: null,
+      importError: null,
     }
   }
 
-  // Priority 3: Fresh editor
+  // Priority 2: Dev import via file path or remote src
+  const importRequest = parseEditorImportRequest(urlSessionId)
+  if (importRequest) {
+    return {
+      sessionId: importRequest.sessionId,
+      initialData: null,
+      originalDiagram: null,
+      themeId: importRequest.themeId,
+      colorMode: importRequest.colorMode,
+      diagramMeta: {
+        themeId: importRequest.themeId,
+        colorMode: importRequest.colorMode,
+        viewport: importRequest.viewport,
+        sourceId: importRequest.sourceId,
+        [importRequest.kind]: importRequest.value,
+      },
+      needsRedirect: false,
+      importRequest,
+      importError: null,
+    }
+  }
+
+  // Priority 3: URL session ID — restore from localStorage
+  if (urlSessionId) {
+    const session = loadDiagramSession(urlSessionId)
+    if (session) {
+      return {
+        sessionId: urlSessionId,
+        initialData: session.diagram,
+        originalDiagram: session.originalDiagram,
+        themeId: session.themeId,
+        colorMode: session.colorMode,
+        diagramMeta: session.diagramMeta,
+        needsRedirect: false,
+        importRequest: null,
+        importError: null,
+      }
+    }
+  }
+
+  // Priority 4: Fresh editor
   const newId = generateSessionId()
-  return { sessionId: newId, initialData: null, originalDiagram: null, themeId: null, colorMode: 'dark' as const, diagramMeta: {}, needsRedirect: !urlSessionId }
+  return {
+    sessionId: newId,
+    initialData: null,
+    originalDiagram: null,
+    themeId: null,
+    colorMode: 'dark' as const,
+    diagramMeta: {},
+    needsRedirect: !urlSessionId,
+    importRequest: null,
+    importError: null,
+  }
 }
 
 function EditorPage() {
@@ -146,15 +260,75 @@ function EditorPage() {
 
   // Resolve session synchronously on first render
   const [resolved] = useState(() => resolveEditorSession(urlSessionId))
+  const [editorState, setEditorState] = useState(resolved)
   const [isDark, setIsDark] = useState(resolved.colorMode === 'dark')
+
+  useEffect(() => {
+    let cancelled = false
+    if (!editorState.importRequest) return
+
+    ;(async () => {
+      try {
+        const imported = await loadImportRequest(editorState.importRequest!)
+        const payload = buildImportedDiagramPayload(imported, {
+          viewport: editorState.importRequest?.viewport || undefined,
+          theme: editorState.importRequest?.themeId || undefined,
+          mode: editorState.importRequest?.colorMode,
+          sourceId: editorState.importRequest?.sourceId || undefined,
+        })
+        const mode = payload.mode || 'dark'
+        const themeId = payload.theme || null
+        const diagramMeta = {
+          themeId,
+          colorMode: mode,
+          viewport: payload.viewport,
+          sourceId: payload.sourceId,
+          [editorState.importRequest!.kind]: editorState.importRequest!.value,
+        }
+
+        saveDiagramSession(editorState.sessionId, {
+          diagram: payload.diagram,
+          originalDiagram: payload.originalDiagram,
+          themeId,
+          colorMode: mode,
+          diagramMeta,
+        })
+
+        if (cancelled) return
+        setEditorState({
+          sessionId: editorState.sessionId,
+          initialData: payload.diagram,
+          originalDiagram: payload.originalDiagram,
+          themeId,
+          colorMode: mode,
+          diagramMeta,
+          needsRedirect: true,
+          importRequest: null,
+          importError: null,
+        })
+        setIsDark(mode === 'dark')
+      } catch (error) {
+        if (cancelled) return
+        setEditorState((current) => ({
+          ...current,
+          importRequest: null,
+          importError: error instanceof Error ? error.message : 'Failed to import diagram',
+        }))
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [editorState.importRequest, editorState.sessionId])
 
   // Redirect to clean session URL if needed (hash import or fresh editor)
   useEffect(() => {
-    if (resolved.needsRedirect) {
+    if (editorState.needsRedirect) {
       // Use window.history directly to avoid React Router unmount/remount
-      window.history.replaceState(null, '', `/editor/${resolved.sessionId}`)
+      window.history.replaceState(null, '', `/editor/${editorState.sessionId}`)
     }
-  }, [resolved.needsRedirect, resolved.sessionId])
+  }, [editorState.needsRedirect, editorState.sessionId])
 
   useEffect(() => {
     if (isDark) {
@@ -170,15 +344,35 @@ function EditorPage() {
     }
   }, [])
 
+  if (editorState.importRequest) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-white">
+        <div className="text-center">
+          <p className="text-sm text-zinc-400">Loading diagram from {editorState.importRequest.kind}…</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (editorState.importError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-white">
+        <div className="text-center">
+          <p className="text-sm text-zinc-400">{editorState.importError}</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <DiagramEditor
       isDark={isDark}
       onToggleTheme={() => setIsDark(!isDark)}
-      initialData={resolved.initialData}
-      themeId={resolved.themeId}
-      colorMode={resolved.colorMode}
-      sessionId={resolved.sessionId}
-      initialDiagramMeta={resolved.diagramMeta}
+      initialData={editorState.initialData}
+      themeId={editorState.themeId}
+      colorMode={editorState.colorMode}
+      sessionId={editorState.sessionId}
+      initialDiagramMeta={editorState.diagramMeta}
     />
   )
 }
