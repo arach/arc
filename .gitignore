@@ -56,3 +56,14 @@ coverage
 
 # External dependencies (local dev only)
 ext/
+
+# design-sync: ignore staged scripts + build output; track durable inputs under
+# .design-sync/ (re-included past the .* dotfile rule), but ignore cache + generated CSS.
+.ds-sync/
+ds-bundle/
+!.design-sync/
+.design-sync/.cache/
+.design-sync/learnings/
+.design-sync/node_modules
+.design-sync/arc-ds.css
+.design-sync/arc-ds.tw.css
