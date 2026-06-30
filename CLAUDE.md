@@ -17,10 +17,10 @@ This file provides guidance to Claude Code when working with this repository.
 ## Build Commands
 
 ```bash
-pnpm dev      # Start dev server with HMR
-pnpm build    # Production build to dist/
-pnpm preview  # Preview production build
-pnpm lint     # Run ESLint
+bun run dev      # Start dev server with HMR
+bun run build    # Production build to dist/
+bun run preview  # Preview production build
+bun run lint     # Run ESLint
 ```
 
 ## Architecture

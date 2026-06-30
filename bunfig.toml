@@ -1,0 +1,4 @@
+# Use pnpm-style isolated (symlinked) node_modules so packages with peer
+# dependencies (e.g. api-extractor's ajv-draft-04 -> ajv@8) resolve correctly.
+[install]
+linker = "isolated"
