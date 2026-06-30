@@ -1404,7 +1404,7 @@ function DocPage({ pageId }: { pageId: string }) {
                 <div
                   style={{
                     background: 'linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%)',
-                    borderRadius: '12px',
+                    borderRadius: '6px',
                     padding: '1.5rem',
                     border: '1px solid rgba(0, 0, 0, 0.06)',
                   }}

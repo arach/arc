@@ -57,8 +57,8 @@ function GroupShape({ group, isSelected, onClick, onDragStart, onResize }) {
           y={y}
           width={width}
           height={height}
-          rx={12}
-          ry={12}
+          rx={6}
+          ry={6}
           fill={colors.fill}
           stroke={isSelected ? '#3b82f6' : colors.stroke}
           strokeWidth={isSelected ? 2 : 1.5}

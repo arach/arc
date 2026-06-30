@@ -188,7 +188,7 @@ export function InlineCode({ children }: { children: React.ReactNode }) {
         fontFamily: "'JetBrains Mono', 'SF Mono', monospace",
         fontSize: '13px',
         padding: '2px 6px',
-        borderRadius: '4px',
+        borderRadius: '2px',
         background: 'rgba(16, 21, 24, 0.06)',
         color: '#101518',
       }}

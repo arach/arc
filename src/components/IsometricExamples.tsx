@@ -676,7 +676,7 @@ function IsometricDiagram({ config, drawerOpen = false }: { config: DiagramConfi
           fontSize: '10px',
           padding: '2px 6px',
           backgroundColor: theme === 'dark' ? '#1e293b' : '#f1f5f9',
-          borderRadius: '4px'
+          borderRadius: '2px'
         }}>
           {tiers.length} tiers
         </span>
@@ -1335,7 +1335,7 @@ function MarkupViewer({ config, isOpen, onToggle }: { config: DiagramConfig; isO
               color: '#78716c',
               backgroundColor: '#1c1917',
               padding: '2px 6px',
-              borderRadius: '3px',
+              borderRadius: '2px',
             }}>
               YAML
             </span>
@@ -1396,7 +1396,7 @@ export default function IsometricExamples() {
                 fontSize: '11px',
                 fontWeight: 500,
                 padding: '6px 14px',
-                borderRadius: '6px',
+                borderRadius: '3px',
                 transition: 'all 0.15s',
                 backgroundColor: selectedExample === i ? '#3b82f6' : '#1e293b',
                 color: selectedExample === i ? '#fff' : '#94a3b8',

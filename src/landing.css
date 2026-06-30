@@ -120,7 +120,7 @@
 .arc-nav a,
 .arc-nav-link {
   padding: 6px 12px;
-  border-radius: 6px;
+  border-radius: 3px;
   border: none;
   background: transparent;
   font-family: inherit;
@@ -141,7 +141,7 @@
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
-  border-radius: 6px;
+  border-radius: 3px;
   border: 1px solid var(--arc-border);
   background: rgba(255, 255, 255, 0.6);
   font-weight: 500;
@@ -160,7 +160,7 @@
   justify-content: center;
   gap: 8px;
   padding: 12px 18px;
-  border-radius: 12px;
+  border-radius: 6px;
   border: none;
   background: linear-gradient(135deg, var(--arc-accent), #f2a071);
   color: #1c120a;
@@ -252,7 +252,7 @@
   display: inline-flex;
   background: rgba(255, 255, 255, 0.95);
   border: 1px solid var(--arc-border);
-  border-radius: 12px;
+  border-radius: 6px;
   padding: 3px;
   gap: 1px;
 }
@@ -263,7 +263,7 @@
   gap: 6px;
   padding: 7px 14px;
   border: none;
-  border-radius: 9px;
+  border-radius: 5px;
   background: transparent;
   color: var(--arc-muted);
   font-size: 12px;
@@ -294,7 +294,7 @@
   margin-top: 6px;
   padding: 11px 14px;
   background: #1a1a1a;
-  border-radius: 10px;
+  border-radius: 5px;
 }
 
 .arc-install-command code {
@@ -309,7 +309,7 @@
   justify-content: center;
   padding: 4px;
   border: none;
-  border-radius: 4px;
+  border-radius: 2px;
   background: transparent;
   color: rgba(255, 255, 255, 0.4);
   cursor: pointer;
@@ -445,7 +445,7 @@
 
 .arc-card {
   background: rgba(255, 255, 255, 0.75);
-  border-radius: 20px;
+  border-radius: 10px;
   border: 1px solid var(--arc-border);
   padding: 20px;
   box-shadow: var(--arc-shadow-soft);
@@ -483,7 +483,7 @@
 .arc-markup {
   margin-top: 16px;
   border: 1px solid var(--arc-border);
-  border-radius: 16px;
+  border-radius: 8px;
   padding: 12px 16px;
   background: rgba(255, 255, 255, 0.85);
 }
@@ -506,7 +506,7 @@
 
 .arc-diagram-stage {
   background: rgba(255, 255, 255, 0.8);
-  border-radius: 24px;
+  border-radius: 12px;
   border: 1px solid var(--arc-border);
   padding: 24px;
   box-shadow: var(--arc-shadow);
@@ -515,7 +515,7 @@
 
 .arc-next-stage {
   position: relative;
-  border-radius: 26px;
+  border-radius: 13px;
   border: 1px solid var(--arc-border);
   padding: 28px;
   background:
@@ -531,7 +531,7 @@
   content: '';
   position: absolute;
   inset: 16px;
-  border-radius: 20px;
+  border-radius: 10px;
   background-image: radial-gradient(rgba(18, 37, 55, 0.12) 1px, transparent 0);
   background-size: 26px 26px;
   opacity: 0.35;
@@ -560,7 +560,7 @@
 
 .arc-next-node {
   position: absolute;
-  border-radius: 18px;
+  border-radius: 9px;
   border: 1px solid var(--arc-next-border);
   background: linear-gradient(160deg, rgba(255, 255, 255, 0.96), var(--arc-next-wash));
   box-shadow: 0 12px 24px rgba(17, 26, 35, 0.12);
@@ -578,7 +578,7 @@
 .arc-next-icon {
   width: 34px;
   height: 34px;
-  border-radius: 12px;
+  border-radius: 6px;
   display: grid;
   place-items: center;
   background: rgba(255, 255, 255, 0.92);
@@ -621,7 +621,7 @@
 
 .arc-diagram-node {
   position: absolute;
-  border-radius: 16px;
+  border-radius: 8px;
   border: 1px solid var(--node-border, rgba(16, 21, 24, 0.2));
   background: linear-gradient(160deg, rgba(255, 255, 255, 0.95), var(--node-wash, rgba(240, 124, 79, 0.12)));
   padding: 14px;
@@ -651,7 +651,7 @@
 .arc-node-icon {
   width: 36px;
   height: 36px;
-  border-radius: 12px;
+  border-radius: 6px;
   display: grid;
   place-items: center;
   background: #ffffff;
@@ -679,7 +679,7 @@
 .arc-code {
   background: #0c1416;
   color: #e6ecef;
-  border-radius: 18px;
+  border-radius: 9px;
   padding: 18px;
   font-size: 13px;
   overflow-x: auto;
@@ -727,7 +727,7 @@
   color: var(--arc-accent);
   background: rgba(240, 124, 79, 0.1);
   padding: 3px 8px;
-  border-radius: 6px;
+  border-radius: 3px;
   width: fit-content;
 }
 
@@ -736,7 +736,7 @@
   font-size: 12px;
   background: rgba(16, 21, 24, 0.06);
   padding: 2px 5px;
-  border-radius: 4px;
+  border-radius: 2px;
 }
 
 /* Documentation grid */
@@ -757,7 +757,7 @@
   flex-direction: column;
   gap: 6px;
   padding: 20px;
-  border-radius: 14px;
+  border-radius: 7px;
   border: 1px solid var(--arc-border);
   background: rgba(255, 255, 255, 0.9);
   box-shadow: var(--arc-shadow-soft);
@@ -795,7 +795,7 @@
   justify-content: space-between;
   gap: 12px;
   padding: 16px;
-  border-radius: 16px;
+  border-radius: 8px;
   border: 1px solid var(--arc-border);
   background: rgba(255, 255, 255, 0.8);
   box-shadow: var(--arc-shadow-soft);
@@ -872,7 +872,7 @@
 
 .arc-showcase-code {
   background: rgba(255, 255, 255, 0.85);
-  border-radius: 16px;
+  border-radius: 8px;
   border: 1px solid var(--arc-border);
   overflow: hidden;
   box-shadow: var(--arc-shadow-soft);
@@ -944,7 +944,7 @@
   padding: 8px 16px;
   border: 1px solid var(--arc-border);
   background: rgba(255, 255, 255, 0.6);
-  border-radius: 8px;
+  border-radius: 4px;
   font-size: 13px;
   font-weight: 500;
   color: var(--arc-muted);
@@ -968,7 +968,7 @@
   display: flex;
   gap: 2px;
   padding: 2px;
-  border-radius: 8px;
+  border-radius: 4px;
   background: rgba(255, 255, 255, 0.5);
   border: 1px solid var(--arc-border);
 }
@@ -978,7 +978,7 @@
   height: 28px;
   border: none;
   background: transparent;
-  border-radius: 6px;
+  border-radius: 3px;
   font-size: 14px;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -1012,7 +1012,7 @@
   padding: 4px 10px;
   border: 1px solid var(--arc-border);
   background: rgba(255, 255, 255, 0.5);
-  border-radius: 6px;
+  border-radius: 3px;
   font-size: 11px;
   font-weight: 500;
   color: var(--arc-text-muted);

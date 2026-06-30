@@ -1,5 +1,16 @@
 @import "tailwindcss";
 
+/* Reduced radius scale — less rounded, more technical.
+   Halved from Tailwind v4 defaults; drives every rounded-* utility app-wide.
+   (Bare `rounded` stays 4px; `rounded-full` keeps pills/circles.) */
+@theme {
+  --radius-sm: 0.125rem;  /* 2px  (was 4px)  */
+  --radius-md: 0.1875rem; /* 3px  (was 6px)  */
+  --radius-lg: 0.25rem;   /* 4px  (was 8px)  */
+  --radius-xl: 0.375rem;  /* 6px  (was 12px) */
+  --radius-2xl: 0.5rem;   /* 8px  (was 16px) */
+}
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;

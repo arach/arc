@@ -737,7 +737,7 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
                     y={Math.min(drawingGroup.startY, drawingGroup.currentY)}
                     width={Math.abs(drawingGroup.currentX - drawingGroup.startX)}
                     height={Math.abs(drawingGroup.currentY - drawingGroup.startY)}
-                    rx={12}
+                    rx={6}
                     fill="rgba(113, 113, 122, 0.1)"
                     stroke="rgba(113, 113, 122, 0.5)"
                     strokeWidth="2"

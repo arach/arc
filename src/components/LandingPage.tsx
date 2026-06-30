@@ -209,7 +209,7 @@ function DiagramShowcase() {
             <ArcDiagram data={architectureDiagram} mode={mode} theme={theme} className="min-w-[860px]" />
           </div>
         ) : (
-          <div className="arc-showcase-code" style={{ margin: 0, borderRadius: '16px' }}>
+          <div className="arc-showcase-code" style={{ margin: 0, borderRadius: '8px' }}>
             <div className="arc-showcase-code-header">
               <span className="arc-showcase-dot arc-showcase-dot-red" />
               <span className="arc-showcase-dot arc-showcase-dot-yellow" />
@@ -392,7 +392,7 @@ export default function LandingPage({ onLaunchEditor }: LandingPageProps) {
               generate them programmatically, and consume them in any UI.
             </p>
           </div>
-          <div className="arc-showcase-code" style={{ margin: 0, borderRadius: '16px' }}>
+          <div className="arc-showcase-code" style={{ margin: 0, borderRadius: '8px' }}>
             <div className="arc-showcase-code-header">
               <span className="arc-showcase-dot arc-showcase-dot-red" />
               <span className="arc-showcase-dot arc-showcase-dot-yellow" />

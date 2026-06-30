@@ -289,7 +289,7 @@ function TopDown2DCanvas({
                 fill={shading.top}
                 stroke="rgba(0,0,0,0.3)"
                 strokeWidth="1"
-                rx="4"
+                rx="2"
               />
               <foreignObject
                 x={sx}

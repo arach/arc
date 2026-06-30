@@ -77,7 +77,7 @@ export default function MiniMap({
             height={group.height}
             fill={nodeColors[group.color] || nodeColors.zinc}
             opacity={0.2}
-            rx={4}
+            rx={2}
           />
         ))}
 
@@ -137,7 +137,7 @@ export default function MiniMap({
               width={node.width || w}
               height={node.height || h}
               fill={color}
-              rx={4}
+              rx={2}
             />
           )
         })}

@@ -36,7 +36,7 @@ export default function RenderShowcase({ data }: RenderShowcaseProps) {
   return (
     <div
       style={{
-        borderRadius: '12px',
+        borderRadius: '6px',
         overflow: 'hidden',
         background: '#fff',
         border: '1px solid rgba(0, 0, 0, 0.06)',
@@ -60,7 +60,7 @@ export default function RenderShowcase({ data }: RenderShowcaseProps) {
               className="flex items-center gap-1.5 transition-all duration-150"
               style={{
                 padding: '5px 10px',
-                borderRadius: '6px',
+                borderRadius: '3px',
                 fontSize: '12px',
                 fontWeight: mode === id ? 600 : 400,
                 fontFamily: "'Inter', system-ui, sans-serif",
@@ -85,7 +85,7 @@ export default function RenderShowcase({ data }: RenderShowcaseProps) {
               fontSize: '11px',
               color: '#888',
               padding: '4px 8px',
-              borderRadius: '4px',
+              borderRadius: '2px',
               cursor: 'pointer',
               background: 'transparent',
               border: 'none',

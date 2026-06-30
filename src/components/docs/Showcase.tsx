@@ -52,7 +52,7 @@ export default function Showcase() {
             key={p.name}
             style={{
               padding: '14px 16px',
-              borderRadius: '10px',
+              borderRadius: '5px',
               border: '1px solid rgba(0, 0, 0, 0.06)',
               background: '#fff',
             }}
@@ -85,7 +85,7 @@ export default function Showcase() {
                   style={{
                     fontSize: '10px',
                     padding: '2px 6px',
-                    borderRadius: '4px',
+                    borderRadius: '2px',
                     background: 'rgba(0, 0, 0, 0.04)',
                     color: '#666',
                   }}
