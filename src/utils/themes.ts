@@ -1,7 +1,7 @@
 // Diagram color themes - palettes and background treatments
 // Separate from templates (structural) - themes handle colors only
 
-export type ThemeId = 'default' | 'warm' | 'cool' | 'mono'
+export type ThemeId = 'default' | 'warm' | 'cool' | 'mono' | 'engineering' | 'workbench' | 'tactical'
 
 export interface ColorPalette {
   violet:  { border: string; bg: string; icon: string; stroke: string }
@@ -23,6 +23,31 @@ export interface ThemeBackground {
   }
 }
 
+// Optional brand design language layered on a theme's colors — typography,
+// node geometry, and connector treatment. Omit for color-only themes.
+export interface BrandSpec {
+  /** Font stack for the whole diagram (node names inherit this). */
+  fontFamily?: string
+  /** Monospace stack for subtitles + connector labels. */
+  monoFamily?: string
+  /** Stylesheet URL injected once so the families load (e.g. Google Fonts). */
+  fontImport?: string
+  /** Node + icon corner radius (CSS length). '0px' = square tiles. */
+  nodeRadius?: string
+  /** Node border width (CSS length), overrides the default 2px. */
+  nodeBorderWidth?: string
+  /** Uppercase + letter-space the subtitle and connector labels. */
+  upperLabels?: boolean
+  /** Arrowhead shape at connector ends. */
+  arrowhead?: 'triangle' | 'chevron'
+  /** Background grid system. */
+  gridType?: 'dots' | 'lines' | 'crosshair' | 'none'
+  /** Edge/frame treatment at the diagram boundary. */
+  frame?: 'hairline' | 'inset' | 'brackets' | 'ticks' | 'cropmarks' | 'corners' | 'none'
+  /** Render an engineering-drawing title block in the bottom-right corner. */
+  titleBlock?: boolean
+}
+
 export interface Theme {
   id: ThemeId
   name: string
@@ -37,6 +62,8 @@ export interface Theme {
     background: ThemeBackground
     text: { primary: string; secondary: string; muted: string }
   }
+  /** Optional brand design language (typography, node shape, arrows). */
+  brand?: BrandSpec
 }
 
 // Default theme - clean and neutral
@@ -203,11 +230,157 @@ const monoTheme: Theme = {
   },
 }
 
+// Engineering - systematic technical blue on structured gray (graph grid)
+// Shared technical palette — the three style explorations use ONE color scheme
+// (cohesive indigo/blue/teal/amber/gray) and differ by grid, frame, and type,
+// not color. Mid-tone so it reads on any of their dark surfaces.
+const techDark: ColorPalette = {
+  violet:  { border: 'border-[#7c8cff]/55', bg: 'bg-[#7c8cff]/[0.08]', icon: 'text-[#7c8cff]', stroke: '#7c8cff' },
+  emerald: { border: 'border-[#2dd4bf]/55', bg: 'bg-[#2dd4bf]/[0.08]', icon: 'text-[#2dd4bf]', stroke: '#2dd4bf' },
+  blue:    { border: 'border-[#4f8cff]/55', bg: 'bg-[#4f8cff]/[0.08]', icon: 'text-[#4f8cff]', stroke: '#4f8cff' },
+  amber:   { border: 'border-[#e0a83d]/55', bg: 'bg-[#e0a83d]/[0.08]', icon: 'text-[#e0a83d]', stroke: '#e0a83d' },
+  sky:     { border: 'border-[#54b6e6]/55', bg: 'bg-[#54b6e6]/[0.08]', icon: 'text-[#54b6e6]', stroke: '#54b6e6' },
+  zinc:    { border: 'border-[#8b93a0]/55', bg: 'bg-[#8b93a0]/[0.08]', icon: 'text-[#8b93a0]', stroke: '#8b93a0' },
+  rose:    { border: 'border-[#e0726e]/55', bg: 'bg-[#e0726e]/[0.08]', icon: 'text-[#e0726e]', stroke: '#e0726e' },
+  orange:  { border: 'border-[#e0884a]/55', bg: 'bg-[#e0884a]/[0.08]', icon: 'text-[#e0884a]', stroke: '#e0884a' },
+}
+
+const engineeringTheme: Theme = {
+  id: 'engineering',
+  name: 'Engineering',
+  description: 'Graph grid, technical mono',
+  light: {
+    palette: {
+      violet:  { border: 'border-[#4589ff]', bg: 'bg-[#4589ff]/10', icon: 'text-[#4589ff]', stroke: '#4589ff' },
+      emerald: { border: 'border-[#007d79]', bg: 'bg-[#007d79]/10', icon: 'text-[#007d79]', stroke: '#007d79' },
+      blue:    { border: 'border-[#0f62fe]', bg: 'bg-[#0f62fe]/10', icon: 'text-[#0f62fe]', stroke: '#0f62fe' },
+      amber:   { border: 'border-[#6f6f6f]', bg: 'bg-[#6f6f6f]/10', icon: 'text-[#6f6f6f]', stroke: '#6f6f6f' },
+      sky:     { border: 'border-[#1192e8]', bg: 'bg-[#1192e8]/10', icon: 'text-[#1192e8]', stroke: '#1192e8' },
+      zinc:    { border: 'border-[#525252]', bg: 'bg-[#525252]/10', icon: 'text-[#525252]', stroke: '#525252' },
+      rose:    { border: 'border-[#6f6f6f]', bg: 'bg-[#6f6f6f]/10', icon: 'text-[#6f6f6f]', stroke: '#6f6f6f' },
+      orange:  { border: 'border-[#393939]', bg: 'bg-[#393939]/10', icon: 'text-[#393939]', stroke: '#393939' },
+    },
+    background: {
+      container: 'bg-[#f4f4f4] border border-[#e0e0e0] shadow-sm',
+      grid: { color: 'rgba(22, 22, 22, 0.08)', opacity: 0.4, size: 16 },
+    },
+    text: { primary: 'text-[#161616]', secondary: 'text-[#525252]', muted: 'text-[#8d8d8d]' },
+  },
+  dark: {
+    palette: techDark,
+    background: {
+      container: 'bg-[#0e1116] border border-[#393939]',
+      grid: { color: 'rgba(125, 170, 255, 0.20)', opacity: 1, size: 18 },
+    },
+    text: { primary: 'text-[#f4f4f4]', secondary: 'text-[#c6c6c6]', muted: 'text-[#8d8d8d]' },
+  },
+  brand: {
+    fontFamily: "system-ui, -apple-system, sans-serif",
+    monoFamily: "'JetBrains Mono', ui-monospace, monospace",
+    nodeRadius: '0px',
+    nodeBorderWidth: '1px',
+    upperLabels: true,
+    arrowhead: 'chevron',
+    gridType: 'lines',
+    frame: 'corners',
+    titleBlock: true,
+  },
+}
+
+// Workbench - dark slate with signature intent colors
+const workbenchTheme: Theme = {
+  id: 'workbench',
+  name: 'Workbench',
+  description: 'Slate workbench, intent colors',
+  light: {
+    palette: {
+      violet:  { border: 'border-[#634dbf]', bg: 'bg-[#634dbf]/10', icon: 'text-[#634dbf]', stroke: '#634dbf' },
+      emerald: { border: 'border-[#238551]', bg: 'bg-[#238551]/10', icon: 'text-[#238551]', stroke: '#238551' },
+      blue:    { border: 'border-[#2d72d2]', bg: 'bg-[#2d72d2]/10', icon: 'text-[#2d72d2]', stroke: '#2d72d2' },
+      amber:   { border: 'border-[#c87619]', bg: 'bg-[#c87619]/10', icon: 'text-[#c87619]', stroke: '#c87619' },
+      sky:     { border: 'border-[#147eb3]', bg: 'bg-[#147eb3]/10', icon: 'text-[#147eb3]', stroke: '#147eb3' },
+      zinc:    { border: 'border-[#5f6b7c]', bg: 'bg-[#5f6b7c]/10', icon: 'text-[#5f6b7c]', stroke: '#5f6b7c' },
+      rose:    { border: 'border-[#cd4246]', bg: 'bg-[#cd4246]/10', icon: 'text-[#cd4246]', stroke: '#cd4246' },
+      orange:  { border: 'border-[#9e2b0e]', bg: 'bg-[#9e2b0e]/10', icon: 'text-[#9e2b0e]', stroke: '#9e2b0e' },
+    },
+    background: {
+      container: 'bg-[#f6f7f9] border border-[#d3d8de]',
+      grid: { color: 'rgba(95, 107, 124, 0.18)', opacity: 0.4, size: 20 },
+    },
+    text: { primary: 'text-[#1c2127]', secondary: 'text-[#404854]', muted: 'text-[#738091]' },
+  },
+  dark: {
+    palette: techDark,
+    background: {
+      container: 'bg-[#1c2127] border border-[#2f343c]',
+      grid: { color: 'rgba(180, 188, 200, 0.22)', opacity: 1, size: 16 },
+    },
+    text: { primary: 'text-[#f6f7f9]', secondary: 'text-[#abb3bf]', muted: 'text-[#738091]' },
+  },
+  brand: {
+    fontFamily: "'Inter', system-ui, sans-serif",
+    monoFamily: "'JetBrains Mono', ui-monospace, monospace",
+    fontImport: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap',
+    nodeRadius: '3px',
+    nodeBorderWidth: '1px',
+    upperLabels: false,
+    arrowhead: 'triangle',
+    gridType: 'dots',
+    frame: 'hairline',
+  },
+}
+
+// Tactical - tactical near-black with signature amber
+const tacticalTheme: Theme = {
+  id: 'tactical',
+  name: 'Tactical',
+  description: 'Tactical black, signature amber',
+  light: {
+    palette: {
+      violet:  { border: 'border-[#6b6b73]', bg: 'bg-[#6b6b73]/[0.07]', icon: 'text-[#6b6b73]', stroke: '#6b6b73' },
+      emerald: { border: 'border-[#5e6f50]', bg: 'bg-[#5e6f50]/[0.07]', icon: 'text-[#5e6f50]', stroke: '#5e6f50' },
+      blue:    { border: 'border-[#5a6f80]', bg: 'bg-[#5a6f80]/[0.07]', icon: 'text-[#5a6f80]', stroke: '#5a6f80' },
+      amber:   { border: 'border-[#a8741a]', bg: 'bg-[#a8741a]/[0.14]', icon: 'text-[#a8741a]', stroke: '#a8741a' },
+      sky:     { border: 'border-[#5f7d87]', bg: 'bg-[#5f7d87]/[0.07]', icon: 'text-[#5f7d87]', stroke: '#5f7d87' },
+      zinc:    { border: 'border-[#6b6f73]', bg: 'bg-[#6b6f73]/[0.07]', icon: 'text-[#6b6f73]', stroke: '#6b6f73' },
+      rose:    { border: 'border-[#a8463d]', bg: 'bg-[#a8463d]/10', icon: 'text-[#a8463d]', stroke: '#a8463d' },
+      orange:  { border: 'border-[#a85e22]', bg: 'bg-[#a85e22]/12', icon: 'text-[#a85e22]', stroke: '#a85e22' },
+    },
+    background: {
+      container: 'bg-[#e7e3da] border border-[#cfc8ba]',
+      grid: { color: 'rgba(40, 40, 40, 0.1)', opacity: 0.4, size: 20 },
+    },
+    text: { primary: 'text-[#1a1c1d]', secondary: 'text-[#4a4f52]', muted: 'text-[#80868a]' },
+  },
+  dark: {
+    palette: techDark,
+    background: {
+      container: 'bg-[#0b0d0e] border border-[#23292d]',
+      grid: { color: 'rgba(224, 168, 61, 0.24)', opacity: 1, size: 24 },
+    },
+    text: { primary: 'text-[#e8e6e1]', secondary: 'text-[#9aa0a4]', muted: 'text-[#5f676c]' },
+  },
+  brand: {
+    fontFamily: "'Chakra Petch', system-ui, sans-serif",
+    monoFamily: "'JetBrains Mono', ui-monospace, monospace",
+    fontImport: 'https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap',
+    nodeRadius: '0px',
+    nodeBorderWidth: '1px',
+    upperLabels: true,
+    arrowhead: 'chevron',
+    gridType: 'crosshair',
+    frame: 'brackets',
+  },
+}
+
 export const THEMES: Record<ThemeId, Theme> = {
   default: defaultTheme,
   warm: warmTheme,
   cool: coolTheme,
   mono: monoTheme,
+  engineering: engineeringTheme,
+  workbench: workbenchTheme,
+  tactical: tacticalTheme,
 }
 
 export const DEFAULT_THEME: ThemeId = 'default'

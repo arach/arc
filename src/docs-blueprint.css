@@ -1,0 +1,108 @@
+/* Docs "technical blueprint" theme — overrides the Dewey warm preset so the docs
+ * match Arc's landing design (cool #fbfcfd, blue #2e5fa5, Space Grotesk headings,
+ * flat hairline cards, no orange, no pills). Imported in ArcDocs.tsx AFTER
+ * @arach/dewey/css/colors/warm.css so it wins by source order.
+ * Dewey is token-driven, so most of the migration is the variable block below;
+ * the rest overrides the handful of hardcoded rules in the package's base.css. */
+
+:root {
+  /* No serif — Space Grotesk everywhere (kills Fraunces on brand, hero, h1, prose h*) */
+  --font-dw-serif: 'Space Grotesk', 'Segoe UI', sans-serif;
+
+  /* Cool surfaces */
+  --color-dw-background: #fbfcfd;
+  --color-dw-secondary: #ffffff;
+  --color-dw-secondary-foreground: #101518;
+  --color-dw-muted-foreground: #6b757a;
+
+  /* Blue accent (replaces terracotta) */
+  --color-dw-primary: #2e5fa5;
+  --color-dw-primary-foreground: #ffffff;
+  --color-dw-primary-gradient: #2e5fa5;
+  --color-dw-primary-shadow: none;
+  --color-dw-primary-glow: 0 0 0 4px #eaf0f8;
+  --color-dw-accent: #eaf0f8;
+  --color-dw-accent-foreground: #2e5fa5;
+  --color-dw-ring: #2e5fa5;
+
+  /* Sidebar */
+  --color-dw-sidebar-bg: #fbfcfd;
+  --color-dw-sidebar-active: #2e5fa5;
+  --color-dw-sidebar-active-bg: #eaf0f8;
+
+  /* Cards / code — flat white */
+  --color-dw-card-bg: #ffffff;
+  --color-dw-card-shadow: none;
+  --color-dw-code-bg: #ffffff;
+
+  /* Hero icon */
+  --color-dw-hero-icon-bg: #eaf0f8;
+  --color-dw-hero-icon-border: rgba(46, 95, 165, 0.25);
+}
+
+.dark {
+  --color-dw-primary: #4f8fe0;
+  --color-dw-accent: rgba(46, 95, 165, 0.18);
+  --color-dw-accent-foreground: #7fb0ee;
+  --color-dw-ring: #4f8fe0;
+  --color-dw-sidebar-active: #7fb0ee;
+  --color-dw-sidebar-active-bg: rgba(46, 95, 165, 0.18);
+  --color-dw-hero-icon-bg: rgba(46, 95, 165, 0.18);
+  --color-dw-hero-icon-border: rgba(46, 95, 165, 0.30);
+}
+
+/* ---- Hardcoded base.css rules the variables don't reach (class names are
+       Dewey-only, so these never leak outside the docs) ---- */
+
+/* Cool header + blue brand dot */
+.dw-header { background: rgba(251, 252, 253, 0.9); }
+.dw-header-brand-dot {
+  background: #2e5fa5;
+  box-shadow: 0 0 0 4px #eaf0f8;
+}
+
+/* Blueprint grid over the cool page field */
+.dw-layout {
+  background-color: #fbfcfd;
+  background-image:
+    linear-gradient(rgba(46, 95, 165, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(46, 95, 165, 0.04) 1px, transparent 1px);
+  background-size: 46px 46px;
+}
+
+/* Hero icon box — blue, lower radius */
+.dw-hero-icon-box {
+  border-radius: 8px;
+  background: #eaf0f8;
+  border-color: rgba(46, 95, 165, 0.25);
+  color: #2e5fa5;
+}
+
+/* Flat hairline nav cards — no big radius, no soft shadow; hover = accent border */
+.dw-card {
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: none;
+}
+.dw-card:hover {
+  transform: translateY(-2px);
+  border-color: #2e5fa5;
+  box-shadow: 0 10px 28px -22px rgba(16, 21, 24, 0.45);
+}
+.dw-card-icon-box { border-radius: 6px; }
+
+/* No pills */
+.dw-quick-link { border-radius: 4px; }
+
+/* Primary quick-link → flat blue */
+.dw-docs-quick-link-primary {
+  background: #2e5fa5;
+  color: #ffffff;
+  box-shadow: none;
+}
+.dw-docs-quick-link-primary:hover { background: #27508c; transform: translateY(-1px); }
+
+/* Mono treatment for uppercase section / group / TOC labels (blueprint label idiom) */
+.dw-docs-section-title,
+.dw-sidebar-group-title,
+.dw-toc-title { font-family: var(--font-dw-mono); }

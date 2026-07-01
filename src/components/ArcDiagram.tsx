@@ -2,7 +2,7 @@
 import React, { useState, useCallback, useMemo } from 'react'
 import * as LucideIcons from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import { getTheme, type ThemeId, type Theme } from '../utils/themes'
+import { getTheme, type ThemeId, type Theme, type BrandSpec } from '../utils/themes'
 import { autoLayout } from '../utils/autoLayout'
 
 // ============================================
@@ -126,6 +126,7 @@ interface NodeProps {
   data: NodeData
   mode: DiagramMode
   themeColors: Theme['light'] | Theme['dark']
+  brand?: BrandSpec
   hovered?: boolean
   dimmed?: boolean
   lift?: boolean
@@ -136,7 +137,7 @@ interface NodeProps {
   onClick?: () => void
 }
 
-export function Node({ node, data, mode, themeColors, hovered, dimmed, lift = true, glow = true, dimOpacity = 0.45, onMouseEnter, onMouseLeave, onClick }: NodeProps) {
+export function Node({ node, data, mode, themeColors, brand, hovered, dimmed, lift = true, glow = true, dimOpacity = 0.45, onMouseEnter, onMouseLeave, onClick }: NodeProps) {
   const size = NODE_SIZES[node.size]
   const color = themeColors.palette[data.color] || themeColors.palette.zinc
   const Icon = (LucideIcons as unknown as Record<string, LucideIcon>)[data.icon] || LucideIcons.Box
@@ -157,6 +158,8 @@ export function Node({ node, data, mode, themeColors, hovered, dimmed, lift = tr
         left: node.x,
         top: node.y,
         width: size.width,
+        borderRadius: brand?.nodeRadius,
+        borderWidth: brand?.nodeBorderWidth,
         transform: hovered && lift ? 'translateY(-2px)' : 'none',
         boxShadow: hovered && glow
           ? `0 8px 24px -4px ${color.stroke}33, 0 0 0 1px ${color.stroke}22`
@@ -176,7 +179,7 @@ export function Node({ node, data, mode, themeColors, hovered, dimmed, lift = tr
           ${isLight ? 'border border-zinc-200 bg-white shadow-sm' : 'border border-zinc-700 bg-zinc-900'}
           ${isLarge ? 'w-10 h-10' : isSmall ? 'w-6 h-6' : 'w-8 h-8'}
           flex items-center justify-center
-        `}>
+        `} style={{ borderRadius: brand?.nodeRadius }}>
           <Icon className={`${isLarge ? 'w-5 h-5' : isSmall ? 'w-3 h-3' : 'w-4 h-4'} ${color.icon}`} />
         </div>
         <div className="min-w-0">
@@ -184,7 +187,10 @@ export function Node({ node, data, mode, themeColors, hovered, dimmed, lift = tr
             {data.name}
           </div>
           {data.subtitle && (
-            <div className={`font-mono ${themeColors.text.muted} ${isSmall ? 'text-[8px]' : 'text-[10px]'}`}>
+            <div
+              className={`font-mono ${themeColors.text.muted} ${isSmall ? 'text-[8px]' : 'text-[10px]'}`}
+              style={brand ? { fontFamily: brand.monoFamily, textTransform: brand.upperLabels ? 'uppercase' : undefined, letterSpacing: brand.upperLabels ? '0.05em' : undefined } : undefined}
+            >
               {data.subtitle}
             </div>
           )}
@@ -228,12 +234,13 @@ interface ConnectorProps {
   nodes: Record<string, NodePosition>
   styles: Record<string, ConnectorStyle>
   themeColors: Theme['light'] | Theme['dark']
+  brand?: BrandSpec
   highlighted?: boolean
   dimmed?: boolean
   dimOpacity?: number
 }
 
-function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors, highlighted, dimmed, dimOpacity = 0.25 }: ConnectorProps) {
+function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors, brand, highlighted, dimmed, dimOpacity = 0.25 }: ConnectorProps) {
   const fromNode = nodes[connector.from]
   const toNode = nodes[connector.to]
   if (!fromNode || !toNode) return null
@@ -340,12 +347,23 @@ function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors, 
         style={{ transition: 'stroke-width 200ms ease-out' }}
       />
 
-      {/* Arrow head - triangle at end point */}
+      {/* Arrow head — chevron (brand) or filled triangle */}
       <g transform={`translate(${to.x}, ${to.y}) rotate(${angle})`}>
-        <polygon
-          points={`0,0 ${-arrowSize},-${arrowSize/2.5} ${-arrowSize},${arrowSize/2.5}`}
-          fill={color}
-        />
+        {brand?.arrowhead === 'chevron' ? (
+          <polyline
+            points={`${-arrowSize},${-arrowSize / 2.2} 0,0 ${-arrowSize},${arrowSize / 2.2}`}
+            fill="none"
+            stroke={color}
+            strokeWidth={Math.max(1.25, style.strokeWidth)}
+            strokeLinecap="square"
+            strokeLinejoin="miter"
+          />
+        ) : (
+          <polygon
+            points={`0,0 ${-arrowSize},-${arrowSize / 2.5} ${-arrowSize},${arrowSize / 2.5}`}
+            fill={color}
+          />
+        )}
       </g>
 
       {/* Label */}
@@ -357,8 +375,10 @@ function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors, 
           fill={color}
           className="text-[10px] font-mono"
           style={{
-            fontFamily: 'ui-monospace, monospace',
+            fontFamily: brand?.monoFamily || 'ui-monospace, monospace',
             fontWeight: highlighted ? 700 : 400,
+            textTransform: brand?.upperLabels ? 'uppercase' : undefined,
+            letterSpacing: brand?.upperLabels ? '0.08em' : undefined,
             transition: 'font-weight 200ms ease-out',
           }}
         >
@@ -382,18 +402,24 @@ interface ZoomControlsProps {
   onZoomOut: () => void
   onReset: () => void
   mode: DiagramMode
+  brand?: BrandSpec
+  /** Corner placement classes (e.g. 'bottom-3 right-3'). */
+  position?: string
 }
 
-function ZoomControls({ zoom, zoomLevels, onZoomIn, onZoomOut, onReset, mode }: ZoomControlsProps) {
+function ZoomControls({ zoom, zoomLevels, onZoomIn, onZoomOut, onReset, mode, brand, position = 'bottom-3 right-3' }: ZoomControlsProps) {
   const { ZoomIn, ZoomOut } = LucideIcons
   const isLight = mode === 'light'
 
   return (
-    <div className={`absolute bottom-3 right-3 flex items-center backdrop-blur-sm rounded-md z-10 ${
-      isLight
-        ? 'bg-white/90 border border-zinc-200 shadow-sm'
-        : 'bg-zinc-900/90 border border-zinc-700'
-    }`}>
+    <div
+      className={`absolute ${position} flex items-center backdrop-blur-sm rounded-md overflow-hidden z-10 ${
+        isLight
+          ? 'bg-white/90 border border-zinc-200 shadow-sm'
+          : 'bg-zinc-900/90 border border-zinc-700'
+      }`}
+      style={{ borderRadius: brand?.nodeRadius }}
+    >
       <button
         onClick={onZoomOut}
         disabled={zoom <= zoomLevels[0]}
@@ -411,6 +437,7 @@ function ZoomControls({ zoom, zoomLevels, onZoomIn, onZoomOut, onReset, mode }: 
             ? 'text-zinc-500 hover:bg-zinc-100 border-x border-zinc-200'
             : 'text-zinc-400 hover:bg-zinc-700 border-x border-zinc-700'
         }`}
+        style={{ fontFamily: brand?.monoFamily }}
         title="Reset zoom"
       >
         {Math.round(zoom * 100)}%
@@ -425,6 +452,57 @@ function ZoomControls({ zoom, zoomLevels, onZoomIn, onZoomOut, onReset, mode }: 
       >
         <ZoomIn className={`w-3 h-3 ${isLight ? 'text-zinc-500' : 'text-zinc-400'}`} />
       </button>
+    </div>
+  )
+}
+
+// ============================================
+// MiniMap
+// ============================================
+
+interface MiniMapProps {
+  nodes: Record<string, NodePosition>
+  nodeData: Record<string, NodeData>
+  layout: { width: number; height: number }
+  themeColors: Theme['light'] | Theme['dark']
+  brand?: BrandSpec
+  mode: DiagramMode
+}
+
+function MiniMap({ nodes, nodeData, layout, themeColors, brand, mode }: MiniMapProps) {
+  const isLight = mode === 'light'
+  const W = 132
+  const H = Math.max(56, Math.min(120, Math.round((layout.height / layout.width) * W)))
+  const sx = W / layout.width
+  const sy = H / layout.height
+  const square = brand?.nodeRadius === '0px'
+
+  return (
+    <div
+      className={`absolute bottom-3 left-3 z-10 backdrop-blur-sm overflow-hidden ${
+        isLight ? 'bg-white/90 border border-zinc-200 shadow-sm' : 'bg-zinc-900/90 border border-zinc-700'
+      }`}
+      style={{ width: W, height: H, borderRadius: brand?.nodeRadius }}
+    >
+      <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
+        {Object.entries(nodes).map(([id, n]) => {
+          const sz = NODE_SIZES[n.size]
+          if (!sz) return null
+          const stroke = themeColors.palette[nodeData[id]?.color]?.stroke || themeColors.palette.zinc.stroke
+          return (
+            <rect
+              key={id}
+              x={n.x * sx}
+              y={n.y * sy}
+              width={Math.max(4, sz.width * sx)}
+              height={Math.max(3, sz.height * sy)}
+              rx={square ? 0 : 1}
+              fill={stroke}
+              fillOpacity={0.82}
+            />
+          )
+        })}
+      </svg>
     </div>
   )
 }
@@ -554,14 +632,167 @@ function AutoLayoutButton({ active, onToggle, mode }: {
 // Main Component
 // ============================================
 
+// Grid motif rendered into an SVG <pattern> — varies the background grid system.
+function gridMotif(type: BrandSpec['gridType'], s: number, color: string) {
+  const c = s / 2
+  if (type === 'lines') return <path d={`M ${s} 0 L 0 0 L 0 ${s}`} stroke={color} strokeWidth={1} fill="none" />
+  if (type === 'crosshair') {
+    const r = 3
+    return <path d={`M ${c} ${c - r} L ${c} ${c + r} M ${c - r} ${c} L ${c + r} ${c}`} stroke={color} strokeWidth={1} />
+  }
+  return <circle cx={1} cy={1} r={1} fill={color} />
+}
+
+// Edge/frame treatments drawn as an inset overlay with a consistent margin, so
+// the treatment reads as a deliberate frame rather than floating inside the
+// container border (the container border is suppressed when one of these is active).
+const FRAME_INSET = 12 // px margin/padding from the diagram edge
+
+function DiagramFrame({ variant, color }: { variant: NonNullable<BrandSpec['frame']>; color: string }) {
+  if (variant === 'hairline' || variant === 'none') return null
+  const m = FRAME_INSET
+
+  if (variant === 'inset') {
+    return <div className="absolute pointer-events-none z-[6]" style={{ inset: m, border: `1px solid ${color}` }} />
+  }
+
+  if (variant === 'brackets') {
+    // Flush at the diagram's boundary corners (no inset, no competing border).
+    const len = 26, wt = 2
+    const c = (extra: React.CSSProperties): React.CSSProperties => ({ position: 'absolute', width: len, height: len, ...extra })
+    return (
+      <div className="absolute inset-0 pointer-events-none z-[6]">
+        <div style={c({ top: 0, left: 0, borderTop: `${wt}px solid ${color}`, borderLeft: `${wt}px solid ${color}` })} />
+        <div style={c({ top: 0, right: 0, borderTop: `${wt}px solid ${color}`, borderRight: `${wt}px solid ${color}` })} />
+        <div style={c({ bottom: 0, left: 0, borderBottom: `${wt}px solid ${color}`, borderLeft: `${wt}px solid ${color}` })} />
+        <div style={c({ bottom: 0, right: 0, borderBottom: `${wt}px solid ${color}`, borderRight: `${wt}px solid ${color}` })} />
+      </div>
+    )
+  }
+
+  if (variant === 'ticks') {
+    const gap = 16
+    const vert = `repeating-linear-gradient(to right, ${color} 0 1px, transparent 1px ${gap}px)`
+    const horiz = `repeating-linear-gradient(to bottom, ${color} 0 1px, transparent 1px ${gap}px)`
+    const e = (img: string, extra: React.CSSProperties): React.CSSProperties => ({ position: 'absolute', backgroundImage: img, ...extra })
+    return (
+      <div className="absolute pointer-events-none z-[6]" style={{ inset: m, border: `1px solid ${color}33` }}>
+        <div style={e(vert, { top: -3, left: 0, right: 0, height: 6 })} />
+        <div style={e(vert, { bottom: -3, left: 0, right: 0, height: 6 })} />
+        <div style={e(horiz, { top: 0, bottom: 0, left: -3, width: 6 })} />
+        <div style={e(horiz, { top: 0, bottom: 0, right: -3, width: 6 })} />
+      </div>
+    )
+  }
+
+  if (variant === 'corners') {
+    // Full, closed L-brackets at each corner — thin drafting-sheet treatment,
+    // inset from the edge so the content reads as framed within a sheet.
+    const len = 24, wt = 1
+    const c = (extra: React.CSSProperties): React.CSSProperties => ({ position: 'absolute', width: len, height: len, ...extra })
+    return (
+      <div className="absolute pointer-events-none z-[6]" style={{ inset: m }}>
+        <div style={c({ top: 0, left: 0, borderTop: `${wt}px solid ${color}`, borderLeft: `${wt}px solid ${color}` })} />
+        <div style={c({ top: 0, right: 0, borderTop: `${wt}px solid ${color}`, borderRight: `${wt}px solid ${color}` })} />
+        <div style={c({ bottom: 0, left: 0, borderBottom: `${wt}px solid ${color}`, borderLeft: `${wt}px solid ${color}` })} />
+        <div style={c({ bottom: 0, right: 0, borderBottom: `${wt}px solid ${color}`, borderRight: `${wt}px solid ${color}` })} />
+      </div>
+    )
+  }
+
+  if (variant === 'cropmarks') {
+    // Classic open-corner trim marks: a short tick on each edge near each corner,
+    // leaving the corner itself open. Symmetric and pinned to the edges.
+    const gap = 8, len = 14, wt = 1
+    const seg = (s: React.CSSProperties): React.CSSProperties => ({ position: 'absolute', background: color, ...s })
+    return (
+      <div className="absolute pointer-events-none z-[6]" style={{ inset: FRAME_INSET }}>
+        <div style={seg({ top: 0, left: gap, width: len, height: wt })} />
+        <div style={seg({ top: gap, left: 0, width: wt, height: len })} />
+        <div style={seg({ top: 0, right: gap, width: len, height: wt })} />
+        <div style={seg({ top: gap, right: 0, width: wt, height: len })} />
+        <div style={seg({ bottom: 0, left: gap, width: len, height: wt })} />
+        <div style={seg({ bottom: gap, left: 0, width: wt, height: len })} />
+        <div style={seg({ bottom: 0, right: gap, width: len, height: wt })} />
+        <div style={seg({ bottom: gap, right: 0, width: wt, height: len })} />
+      </div>
+    )
+  }
+
+  return null
+}
+
+/** Content for the engineering-drawing title block (Engineering theme). */
+export interface TitleBlockInfo {
+  /** Project / drawing title shown in the top strip. */
+  title?: string
+  /** Drawing number. Defaults to the diagram label (data.id). */
+  drawing?: string
+  /** Scale field. Default 'NTS'. */
+  scale?: string
+  /** Revision field. Default 'A'. */
+  rev?: string
+  /** Sheet field. Default '1 / 1'. */
+  sheet?: string
+}
+
+// Engineering-drawing title block, pinned to the bottom-right of the sheet.
+// `bottom` is raised when zoom controls share the corner, so it stacks above them.
+function TitleBlock({ info, mode, mono, bottom = 16 }: { info: Required<TitleBlockInfo>; mode: DiagramMode; mono?: string; bottom?: number }) {
+  const isLight = mode === 'light'
+  const line = isLight ? 'rgba(20,20,20,0.45)' : 'rgba(220,226,235,0.36)'
+  const label = isLight ? 'rgba(20,20,20,0.5)' : 'rgba(205,214,228,0.5)'
+  const value = isLight ? 'rgba(16,20,26,0.9)' : 'rgba(236,240,246,0.92)'
+  const font = mono || "'JetBrains Mono', ui-monospace, monospace"
+  const cells: [string, string][] = [
+    ['DWG NO', info.drawing],
+    ['SCALE', info.scale],
+    ['REV', info.rev],
+    ['SHEET', info.sheet],
+  ]
+  return (
+    <div
+      className="absolute z-10 pointer-events-none"
+      style={{
+        right: 16, bottom, fontFamily: font,
+        border: `1px solid ${line}`,
+        background: isLight ? 'rgba(255,255,255,0.55)' : 'rgba(10,14,20,0.5)',
+        backdropFilter: 'blur(2px)',
+      }}
+    >
+      <div style={{ padding: '4px 10px', borderBottom: `1px solid ${line}`, color: value, fontSize: 9, fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
+        {info.title}
+      </div>
+      <div style={{ display: 'flex' }}>
+        {cells.map(([k, v], i) => (
+          <div key={k} style={{ padding: '3px 10px 4px', borderLeft: i === 0 ? 'none' : `1px solid ${line}` }}>
+            <div style={{ color: label, fontSize: 6.5, letterSpacing: '0.14em', textTransform: 'uppercase' }}>{k}</div>
+            <div style={{ color: value, fontSize: 10.5, letterSpacing: '0.03em', marginTop: 1, whiteSpace: 'nowrap' }}>{v}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+export type LabelCorner = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
+const CORNER_POS: Record<LabelCorner, string> = {
+  'top-left': 'top-3 left-3',
+  'top-right': 'top-3 right-3',
+  'bottom-left': 'bottom-3 left-3',
+  'bottom-right': 'bottom-3 right-3',
+}
+
 interface ArcDiagramProps {
   data: ArcDiagramData
   className?: string
   interactive?: boolean  // Enable zoom/pan controls
   mode?: DiagramMode     // Light/dark appearance
   theme?: ThemeId        // Color palette theme
-  /** Override the diagram label (bottom-left). Defaults to data.id */
+  /** Override the diagram label. Defaults to data.id */
   label?: string
+  /** Which corner the label sits in. Default: 'top-left'. Zoom controls auto-avoid it. */
+  labelPosition?: LabelCorner
   /** Initial zoom level. Use 'fit' to auto-fit content, or a number (e.g., 0.75). Default: 1 */
   defaultZoom?: number | 'fit'
   /** Max zoom when defaultZoom='fit'. E.g., 0.85 caps fit at 85%. Default: 1 */
@@ -572,10 +803,18 @@ interface ArcDiagramProps {
   showArcToggle?: boolean
   /** Show the auto-layout button. Default: false */
   showAutoLayout?: boolean
+  /** Show zoom controls even when not interactive (branded reader chrome). Default: follows `interactive` */
+  showControls?: boolean
+  /** Show a minimap overview (bottom-left). Default: false */
+  showMinimap?: boolean
+  /** Override the edge/frame treatment (else the theme's brand.frame). */
+  frame?: BrandSpec['frame']
   /** Control hover behavior. true = all effects (default), false = none, object = granular control */
   hoverEffects?: boolean | HoverEffectsConfig
   /** Called when a node is hovered/clicked (nodeId) or released (null) */
   onNodeHover?: (nodeId: string | null) => void
+  /** Override the engineering title-block fields (shown when the theme opts in). */
+  titleBlock?: TitleBlockInfo
 }
 
 export default function ArcDiagram({
@@ -585,12 +824,17 @@ export default function ArcDiagram({
   mode = 'dark',
   theme = 'default',
   label,
+  labelPosition = 'top-left',
   defaultZoom = 1,
   zoomLevels = DEFAULT_ZOOM_LEVELS,
   showArcToggle = true,
   showAutoLayout = false,
+  showControls,
+  showMinimap = false,
+  frame,
   hoverEffects,
   onNodeHover,
+  titleBlock,
   maxFitZoom = 1,
 }: ArcDiagramProps) {
   const isLight = mode === 'light'
@@ -615,6 +859,21 @@ export default function ArcDiagram({
   // Resolve theme colors based on mode
   const themeData = getTheme(theme)
   const themeColors = isLight ? themeData.light : themeData.dark
+  const brand = themeData.brand
+  const gridId = React.useId()
+  const frameVariant = frame ?? brand?.frame ?? 'hairline'
+
+  // Inject the brand font stylesheet once (only for themes that set a fontImport).
+  React.useEffect(() => {
+    const href = brand?.fontImport
+    if (!href || typeof document === 'undefined') return
+    if (document.querySelector(`link[data-arc-font="${href}"]`)) return
+    const link = document.createElement('link')
+    link.rel = 'stylesheet'
+    link.href = href
+    link.setAttribute('data-arc-font', href)
+    document.head.appendChild(link)
+  }, [brand?.fontImport])
 
   // Generate source from the active (possibly auto-laid-out) data
   const sourceCode = useMemo(() => generateSource(activeData), [activeData])
@@ -722,16 +981,25 @@ export default function ArcDiagram({
   // Displayed label: prop overrides data.id
   const displayLabel = label ?? id
 
+  // Chrome corner layout: the label position is declarative. The zoom controls
+  // keep their fixed home (bottom-right); anything that would share that corner
+  // (the title block, or a bottom-right label) stacks just above them on the
+  // y-axis instead of displacing them.
+  const showLabel = !!displayLabel && !brand?.titleBlock
+  const zoomShown = (interactive || showControls) && !showArc
+  const labelRaised = showLabel && labelPosition === 'bottom-right' && zoomShown
+
   return (
     <div
       ref={containerRef}
+      data-arc-diagram
       className={`rounded-2xl overflow-hidden relative ${themeColors.background.container} ${className}`}
       onWheel={handleWheel}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
-      style={{ cursor: interactive ? (isPanning ? 'grabbing' : 'grab') : 'default' }}
+      style={{ cursor: interactive ? (isPanning ? 'grabbing' : 'grab') : 'default', fontFamily: brand?.fontFamily, borderRadius: brand?.nodeRadius, borderColor: frameVariant !== 'hairline' && frameVariant !== 'none' ? 'transparent' : undefined }}
     >
       <div
         className="relative transition-transform duration-150 ease-out"
@@ -744,18 +1012,25 @@ export default function ArcDiagram({
         }}
       >
         {/* Grid background - extends beyond content for pan */}
-        <div
-          className="absolute"
-          style={{
-            top: -2000,
-            left: -2000,
-            width: layout.width + 4000,
-            height: layout.height + 4000,
-            backgroundImage: `radial-gradient(circle, ${themeColors.background.grid.color} 1px, transparent 1px)`,
-            backgroundSize: `${themeColors.background.grid.size}px ${themeColors.background.grid.size}px`,
-            opacity: themeColors.background.grid.opacity,
-          }}
-        />
+        {brand?.gridType !== 'none' && (
+          <svg
+            className="absolute pointer-events-none"
+            style={{
+              top: -2000,
+              left: -2000,
+              width: layout.width + 4000,
+              height: layout.height + 4000,
+              opacity: themeColors.background.grid.opacity,
+            }}
+          >
+            <defs>
+              <pattern id={gridId} width={themeColors.background.grid.size} height={themeColors.background.grid.size} patternUnits="userSpaceOnUse">
+                {gridMotif(brand?.gridType, themeColors.background.grid.size, themeColors.background.grid.color)}
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill={`url(#${gridId})`} />
+          </svg>
+        )}
 
         {/* Connectors */}
         <svg
@@ -772,6 +1047,7 @@ export default function ArcDiagram({
                 nodes={nodes}
                 styles={connectorStyles}
                 themeColors={themeColors}
+                brand={brand}
                 highlighted={fx.highlightEdges && isConnected}
                 dimmed={fx.dim && activeNodeId != null && !isConnected}
                 dimOpacity={fx.connectorDimOpacity}
@@ -792,6 +1068,7 @@ export default function ArcDiagram({
               data={nd}
               mode={mode}
               themeColors={themeColors}
+              brand={brand}
               hovered={isActive}
               dimmed={fx.dim && activeNodeId != null && !isActive}
               lift={fx.lift}
@@ -806,6 +1083,26 @@ export default function ArcDiagram({
       </div>
 
       {/* Viewer chrome - fixed position regardless of zoom/pan */}
+
+      {/* Edge/frame treatment at the diagram boundary */}
+      <DiagramFrame variant={frameVariant} color={isLight ? 'rgba(20,20,20,0.55)' : 'rgba(230,230,235,0.55)'} />
+
+      {/* Engineering title block - bottom right (theme opt-in) */}
+      {brand?.titleBlock && !showArc && (
+        <TitleBlock
+          mode={mode}
+          mono={brand.monoFamily}
+          bottom={zoomShown ? 48 : 16}
+          info={{
+            title: titleBlock?.title ?? 'System Architecture',
+            drawing: titleBlock?.drawing ?? displayLabel ?? '—',
+            scale: titleBlock?.scale ?? 'NTS',
+            rev: titleBlock?.rev ?? 'A',
+            sheet: titleBlock?.sheet ?? '1 / 1',
+          }}
+        />
+      )}
+
 
       {/* .arc source overlay */}
       {showArc && (
@@ -830,15 +1127,30 @@ export default function ArcDiagram({
         />
       )}
 
-      {/* Diagram label - bottom left */}
-      {displayLabel && (
-        <div className={`absolute bottom-3 left-3 font-mono text-[9px] tracking-wider z-10 ${themeColors.text.muted}`}>
+      {/* Diagram label - bottom left (hidden when the title block already shows the drawing no.) */}
+      {showLabel && (
+        <div
+          className={`absolute font-mono text-[9px] tracking-wider z-10 ${themeColors.text.muted} ${labelRaised ? 'right-3' : CORNER_POS[labelPosition]}`}
+          style={{ fontFamily: brand?.monoFamily, ...(labelRaised ? { bottom: 46 } : null) }}
+        >
           {displayLabel}
         </div>
       )}
 
+      {/* Minimap - bottom left */}
+      {showMinimap && !showArc && (
+        <MiniMap
+          nodes={nodes}
+          nodeData={nodeData}
+          layout={layout}
+          themeColors={themeColors}
+          brand={brand}
+          mode={mode}
+        />
+      )}
+
       {/* Zoom controls - bottom right */}
-      {interactive && !showArc && (
+      {(interactive || showControls) && !showArc && (
         <ZoomControls
           zoom={zoom}
           zoomLevels={sortedZoomLevels}
@@ -846,6 +1158,7 @@ export default function ArcDiagram({
           onZoomOut={handleZoomOut}
           onReset={handleReset}
           mode={mode}
+          brand={brand}
         />
       )}
     </div>

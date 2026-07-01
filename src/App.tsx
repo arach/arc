@@ -6,6 +6,8 @@ import ArcDocs from './components/docs/ArcDocs'
 import ArcDiagram from './components/ArcDiagram'
 import IsometricDemo from './components/IsometricDemo'
 import IsometricExamples from './components/IsometricExamples'
+import architectureDiagram from './components/diagrams/architecture.diagram'
+import type { ThemeId } from './utils/themes'
 import { GoogleAnalytics } from './components/GoogleAnalytics'
 import { generateSessionId, deriveSessionId, saveDiagramSession, loadDiagramSession } from './utils/sessionStorage'
 import './landing.css'
@@ -193,6 +195,8 @@ function useUrlOverrides() {
       const [w, h] = searchParams.get('viewport')!.split('x').map(Number)
       return w && h ? { width: w, height: h } : null
     })() : null,
+    // ?chrome=false strips the Source toggle + zoom controls for clean captures
+    chrome: searchParams.get('chrome') !== 'false',
   }
 }
 
@@ -277,8 +281,10 @@ function PlayerPage() {
           data={playerData}
           mode={colorMode}
           theme={themeId as any}
-          interactive
+          interactive={urlOverrides.chrome}
           defaultZoom="fit"
+          showArcToggle={urlOverrides.chrome}
+          showControls={urlOverrides.chrome}
         />
       </div>
     </div>
@@ -307,6 +313,62 @@ function DocsWrapper() {
   return <ArcDocs pageId={page || 'index'} />
 }
 
+const EXPLORATIONS: { id: ThemeId; label: string; sub: string }[] = [
+  { id: 'engineering', label: 'Engineering', sub: 'graph grid · framed corners · square tiles · uppercase mono' },
+  { id: 'workbench', label: 'Workbench', sub: 'dot grid · hairline edge · soft corners · sentence case' },
+  { id: 'tactical', label: 'Tactical', sub: 'crosshair grid · corner brackets · hard edges · uppercase' },
+]
+
+const FRAMES: { id: 'hairline' | 'inset' | 'brackets' | 'ticks' | 'cropmarks'; label: string }[] = [
+  { id: 'hairline', label: 'Hairline' },
+  { id: 'inset', label: 'Inset frame' },
+  { id: 'brackets', label: 'Corner brackets' },
+  { id: 'ticks', label: 'Ruler ticks' },
+  { id: 'cropmarks', label: 'Crop marks' },
+]
+
+function InspirationPage() {
+  useEffect(() => { document.documentElement.classList.remove('dark') }, [])
+  return (
+    <div style={{ minHeight: '100vh', background: '#0a0a0c', padding: '40px 24px', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+      <div style={{ maxWidth: 1000, margin: '0 auto' }}>
+        <h1 style={{ color: '#fff', fontSize: 24, fontWeight: 700, margin: '0 0 6px' }}>Diagram style explorations</h1>
+        <p style={{ color: '#9aa0a6', fontSize: 14, margin: '0 0 36px' }}>
+          One shared color scheme, three drafting grammars. The nodes and palette stay the same — what changes is the grid system, the edge treatment, the type, and the geometry. Pan/zoom is live.
+        </p>
+        {EXPLORATIONS.map((b) => (
+          <section key={b.id} style={{ marginBottom: 44 }}>
+            <div style={{ marginBottom: 12 }}>
+              <h2 style={{ color: '#e6e6e6', fontSize: 13, fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', margin: 0 }}>{b.label}</h2>
+              <div style={{ color: '#6b7178', fontSize: 12, marginTop: 2 }}>{b.sub} · <code style={{ color: '#9aa0a6' }}>theme="{b.id}"</code></div>
+            </div>
+            <div style={{ height: 460 }}>
+              <ArcDiagram data={architectureDiagram} mode="dark" theme={b.id} interactive defaultZoom="fit" showControls showMinimap />
+            </div>
+          </section>
+        ))}
+
+        <h2 style={{ color: '#fff', fontSize: 18, fontWeight: 700, margin: '24px 0 6px' }}>Edge treatments</h2>
+        <p style={{ color: '#9aa0a6', fontSize: 13, margin: '0 0 20px' }}>
+          Same diagram, exploring the frame at the boundary. Each is inset with a consistent margin (no competing container border) — corners are just one option.
+        </p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 20, marginBottom: 44 }}>
+          {FRAMES.map((f) => (
+            <div key={f.id}>
+              <div style={{ color: '#6b7178', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 8px' }}>
+                {f.label} · <code style={{ color: '#9aa0a6' }}>frame="{f.id}"</code>
+              </div>
+              <div style={{ height: 280 }}>
+                <ArcDiagram data={architectureDiagram} mode="dark" theme="workbench" frame={f.id} interactive={false} defaultZoom="fit" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function App() {
   return (
     <BrowserRouter>
@@ -320,6 +382,7 @@ function App() {
         <Route path="/docs/:page" element={<DocsWrapper />} />
         <Route path="/iso-demo" element={<IsometricDemo />} />
         <Route path="/iso-examples" element={<IsometricExamples />} />
+        <Route path="/inspiration" element={<InspirationPage />} />
       </Routes>
     </BrowserRouter>
   )

@@ -44,3 +44,28 @@ Mapped two app-internal pages as cards for design iteration: **`LandingPage`** (
 - **Previews** authored at `.design-sync/previews/{LandingPage,DiagramStudio}.tsx` (import the wrapper by relative path; story-imports Rule 2 redirects to `window.Arc.*`).
 - Both render-checked (Playwright) before push; validate clean (4/4). The old "editor previews poorly as a card" worry did NOT hold — the studio renders the full shell + sample diagram fine.
 - **Re-sync watch:** `DiagramEditor`/`DiagramCanvas` stay `null` in `componentSrcMap` (excluded as raw exports) — the studio is mapped via the `DiagramStudio` wrapper instead. Don't un-null them.
+
+## Third pass — staleness audit + durability (2026-07-01)
+Remote was last built **Jun 30 16:49**; source moved on **Jul 01**. Per-component verdict:
+- **ArcDiagram + Engineering/Workbench/Tactical — materially STALE.** `ArcDiagram.tsx` (+284 lines) added brand frames + 3 new public props (`showControls`, `showMinimap`, `frame`); `themes.ts` (+173) rewrote palettes and added logical node colors **`rose`/`orange`**. The three theme wrappers render through this.
+- **DiagramStudio + LandingPage — source-current but STALE CSS.** They ride the compiled `arc-ds.css`, which is invalidated by the Jul-1 `@custom-variant dark` addition in `src/index.css` (fixes the studio dark toggle).
+- **ArcDiagramIsometric — effectively CURRENT** (own theme in `src/iso/`, not `themes.ts`).
+
+**CLI blocker (the real gate):** no `design-sync` CLI on PATH and it is not a package dep. `buildCmd` only refreshes *inputs* (`lib/arc.*`, `arc-ds.tw.css`, `arc-ds.css`); it **cannot** rebuild `ds-bundle/_ds_bundle.*`, `_preview/*`, `components/*`, `_ds_sync.json`, screenshots, or clear `_ds_needs_recompile`. A full component re-sync therefore requires running `/design-sync` (which owns the CLI). Hold that push until the parallel engineering-template work settles so we don't sync a WIP.
+
+**Hand-mirror updates done this pass (durable, so the next sync ships the right contract):**
+- `config.json` → `dtsPropsFor.ArcDiagram`: added `showControls?` / `showMinimap?` / `frame?: 'hairline' | 'inset' | 'brackets' | 'ticks' | 'cropmarks' | 'corners' | 'none'`, and `rose`/`orange` to the node-color union.
+- `conventions.md`: node-color list now includes `rose`, `orange`.
+
+**Token-kind durability:** kinds are derived from Tailwind's `--tw-*` internals (`arc-ds.tw.css` → `arc-ds.css` → CLI classifier → `_adherence.oxlintrc.json`); there is **no in-repo override knob**. The remote `_adherence.oxlintrc.json` was hand-patched (32 `--tw-*` mislabels → `other`) and also had leaked `guidelines/docs/{DEWEY_EXTRACTION,PROMPT_IMPROVEMENT_PLAN}.md` removed. **These remote hand-edits HOLD until a CLI recompile regenerates the artifact**, which will revert the 32 labels and re-derive the `<ArcDiagram>` prop whitelist (still missing the 3 new props remotely). Durable fix is upstream in the CLI's classifier.
+
+## Fourth pass — full re-sync COMPLETED (2026-07-01)
+The Third-pass "no CLI" blocker is **resolved**: the `/design-sync` skill bundles the converter (stage into `.ds-sync/` via its `cp -r` line; deps `esbuild ts-morph @types/react`). Full atomic-path re-sync ran and uploaded: 7 components live (ArcDiagram, ArcDiagramEngineering/Workbench/Tactical, DiagramStudio, LandingPage, ArcDiagramIsometric); rename-on-remote deleted the old IBM/Palantir/Anduril cards (15 deletes; 3 `_preview/*.css` were already absent). Build/validate exit 0. Entry = `./lib/arc.es.js`; `--node-modules ./node_modules` (react resolves there).
+
+**Ran with `--no-render-check`** (Chromium not installed; user opted out). So this run: renders were NOT machine-verified and the changed/added components (ArcDiagram + the 3 theme wrappers) shipped **ungraded**. Next sync with a browser should capture+grade them.
+
+**Re-sync risks / known warns (check against these next run):**
+- `[TOKENS_MISSING]` — `--arc-next-border`, `--arc-next-wash`, `--arc-next-accent`, `--arc-text-muted` are referenced in `src/landing.css` but **defined nowhere** (engineering-template WIP). LandingPage card degrades on those elements. Define them (in `landing.css` or `arc-ds.head.css`) then re-sync.
+- `[FONT_REMOTE]` — known-benign (Space Grotesk / JetBrains Mono / Fraunces via remote @import).
+- **Guidelines re-inclusion:** the default `guidelinesGlob` (`docs/*.md`) re-copied `docs/DEWEY_EXTRACTION.md` + `docs/PROMPT_IMPROVEMENT_PLAN.md` into `guidelines/`, reverting the earlier remote removal. `matchGlob` has **no `!` negation**, and those two aren't in the repo-meta skip list — durable fix = move them out of top-level `docs/` (e.g. `docs/internal/`, which `docs/*.md` won't match) or enumerate `guidelinesGlob`.
+- **Adherence regeneration:** the app self-check regenerates `_adherence.oxlintrc.json` from the uploaded `.d.ts` on project open → the 32-label token-kind hand-patch is reverted (re-derived heuristically), but the `<ArcDiagram>` prop whitelist now **correctly includes** `showControls`/`showMinimap`/`frame`. Token-kind durable fix remains upstream.

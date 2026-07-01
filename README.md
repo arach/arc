@@ -1,8 +1,73 @@
+<div align="center">
+
 # Arc
 
-A visual diagram editor for creating architecture diagrams. Design visually, export as code.
+### Design architecture diagrams visually. Ship them as code.
 
-![Arc Editor](public/og-editor.png)
+Arc is a React component **and** a visual editor for building clean, themeable
+architecture diagrams — then exporting them as **TypeScript, JSON, SVG, PNG, or
+crisp ASCII**. Design in the canvas, drop the component in your app, or render
+straight to text for a README. Same diagram, everywhere.
+
+[![npm version](https://img.shields.io/npm/v/@arach/arc.svg?color=6d5efc&label=%40arach%2Farc)](https://www.npmjs.com/package/@arach/arc)
+[![license](https://img.shields.io/npm/l/@arach/arc.svg?color=41b883)](./LICENSE)
+[![types](https://img.shields.io/npm/types/@arach/arc.svg?color=3b82f6)](./lib/index.d.ts)
+
+![A microservices architecture rendered by Arc's ArcDiagram component in the Engineering theme](public/hero.png)
+
+<sub>Not a screenshot of a drawing tool — that's the config in <a href="#example-output">Example Output</a>, rendered by <code>&lt;ArcDiagram /&gt;</code> in the Engineering theme.</sub>
+
+</div>
+
+---
+
+## Install
+
+```bash
+npm install @arach/arc
+# or:  bun add @arach/arc  ·  pnpm add @arach/arc  ·  yarn add @arach/arc
+```
+
+`react`, `react-dom`, and `lucide-react` are peer dependencies.
+
+## Quick Start
+
+Render any diagram config as a polished, interactive component:
+
+```tsx
+import { ArcDiagram } from '@arach/arc'
+import type { ArcDiagramData } from '@arach/arc'
+
+export function Architecture() {
+  return (
+    <ArcDiagram
+      data={diagram}      // your ArcDiagramData (see below)
+      theme="default"     // seven themes, each with light & dark
+      mode="dark"         // light · dark
+      defaultZoom="fit"   // auto-fit to the container
+    />
+  )
+}
+```
+
+You get pan/zoom, hover highlighting, light/dark modes, and seven color themes
+out of the box.
+
+## The Studio
+
+Prefer to design visually? Arc ships a full drag-and-drop **studio** — infinite
+canvas, floating toolbar, reusable connector styles, live properties panel, and
+a minimap. Clone the repo and open it:
+
+```bash
+git clone https://github.com/arach/arc && cd arc
+bun install && bun dev      # → http://localhost:5188/editor
+```
+
+![The Arc Studio — a drag-and-drop editor for architecture diagrams](public/studio.png)
+
+Design on the canvas, then **Export** to TypeScript, JSON, SVG, PNG, or a
+shareable link — and drop the result straight into `<ArcDiagram />`.
 
 ## Features
 
@@ -10,21 +75,37 @@ A visual diagram editor for creating architecture diagrams. Design visually, exp
 - **Multiple Node Sizes** - Large, medium, small
 - **Color Themes** - Violet, emerald, blue, amber, sky, zinc, rose, orange
 - **Connector Styles** - Solid/dashed lines, labels, curved paths
-- **Export Options** - TypeScript, JSON, SVG, PNG, shareable links
+- **Export Options** - TypeScript, JSON, SVG, PNG, ASCII, shareable links
 - **Interactive Canvas** - Infinite pan/zoom, grid snapping
 - **Groups & Images** - Visual grouping, background images
 - **Templates** - Quick-start layouts
 
-## Getting Started
+## Themes
 
-```bash
-pnpm install
-pnpm dev
-```
+One diagram, several drafting grammars. The nodes and palette stay the same —
+what changes is the grid system, edge treatment, type, and geometry. Here's
+Arc's own architecture rendered three ways:
+
+<div align="center">
+  <img src="public/theme-engineering.png" alt="Arc's architecture in the Engineering theme" width="840" />
+  <br/>
+  <sub><strong>Engineering</strong> — graph grid, framed corners, drawing title block, uppercase mono</sub>
+  <br/><br/>
+  <img src="public/theme-workbench.png" alt="Arc's architecture in the Workbench theme" width="840" />
+  <br/>
+  <sub><strong>Workbench</strong> — dot grid, hairline frame, soft corners</sub>
+  <br/><br/>
+  <img src="public/theme-tactical.png" alt="Arc's architecture in the Tactical theme" width="840" />
+  <br/>
+  <sub><strong>Tactical</strong> — crosshair grid, corner brackets, hard edges</sub>
+</div>
+
+Plus `default`, `warm`, `cool`, and `mono` — seven in all, each with light and dark modes.
 
 ## Example Output
 
-Arc exports diagrams as clean TypeScript. Here's a microservices architecture:
+Arc stores diagrams as plain, typed data — the same config that renders the
+diagram at the top of this README:
 
 ```typescript
 const diagram: ArcDiagramData = {

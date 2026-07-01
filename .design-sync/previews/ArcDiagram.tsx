@@ -56,3 +56,18 @@ export function Cool() {
 export function Warm() {
   return <Frame><ArcDiagram data={architecture} mode="dark" theme="warm" interactive={false} defaultZoom="fit" /></Frame>
 }
+
+/** Engineering — systematic enterprise blue (#0f62fe) on structured gray, shown light. */
+export function Engineering() {
+  return <Frame><ArcDiagram data={architecture} mode="light" theme="engineering" interactive={false} defaultZoom="fit" /></Frame>
+}
+
+/** Workbench — dark slate with signature intent colors. */
+export function Workbench() {
+  return <Frame><ArcDiagram data={architecture} mode="dark" theme="workbench" interactive={false} defaultZoom="fit" /></Frame>
+}
+
+/** Tactical — tactical near-black with signature amber. */
+export function Tactical() {
+  return <Frame><ArcDiagram data={architecture} mode="dark" theme="tactical" interactive={false} defaultZoom="fit" /></Frame>
+}

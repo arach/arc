@@ -39,8 +39,8 @@ export default function RenderShowcase({ data }: RenderShowcaseProps) {
         borderRadius: '6px',
         overflow: 'hidden',
         background: '#fff',
-        border: '1px solid rgba(0, 0, 0, 0.06)',
-        boxShadow: '0 4px 24px rgba(0, 0, 0, 0.06)',
+        border: '1px solid rgba(16, 21, 24, 0.10)',
+        boxShadow: '0 1px 0 rgba(16, 21, 24, 0.04)',
       }}
     >
       {/* Tab bar */}
@@ -48,8 +48,8 @@ export default function RenderShowcase({ data }: RenderShowcaseProps) {
         className="flex items-center justify-between"
         style={{
           padding: '6px 12px',
-          background: '#f8f8f7',
-          borderBottom: '1px solid rgba(0, 0, 0, 0.06)',
+          background: '#fbfcfd',
+          borderBottom: '1px solid rgba(16, 21, 24, 0.10)',
         }}
       >
         <div className="flex items-center gap-0.5">
@@ -63,9 +63,9 @@ export default function RenderShowcase({ data }: RenderShowcaseProps) {
                 borderRadius: '3px',
                 fontSize: '12px',
                 fontWeight: mode === id ? 600 : 400,
-                fontFamily: "'Inter', system-ui, sans-serif",
+                fontFamily: "'JetBrains Mono', ui-monospace, monospace",
                 background: mode === id ? '#fff' : 'transparent',
-                color: mode === id ? '#101518' : '#888',
+                color: mode === id ? '#101518' : '#8a9298',
                 boxShadow: mode === id ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
                 border: mode === id ? '1px solid rgba(0,0,0,0.06)' : '1px solid transparent',
                 cursor: 'pointer',
@@ -109,10 +109,10 @@ export default function RenderShowcase({ data }: RenderShowcaseProps) {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              background: 'linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%)',
+              background: '#ffffff',
             }}
           >
-            <ArcDiagram data={data} mode="light" interactive={false} defaultZoom="fit" />
+            <ArcDiagram data={data} mode="light" theme="cool" interactive={false} defaultZoom="fit" />
           </div>
         )}
 

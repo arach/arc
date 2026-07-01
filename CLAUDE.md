@@ -75,7 +75,7 @@ Uses `useReducer` + Context for diagram state:
 
 ### Theme System
 
-Four themes (`default`, `warm`, `cool`, `mono`) defined in `src/utils/themes.ts`. Each has light/dark palettes that remap logical colors (violet, emerald, etc.) to different Tailwind classes and hex stroke values.
+Seven themes (`default`, `warm`, `cool`, `mono`, plus company-aligned `ibm`, `palantir`, `anduril`) defined in `src/utils/themes.ts`. Each has light/dark palettes that remap logical colors (violet, emerald, etc.) to different Tailwind classes and hex stroke values.
 
 - `useResolvedTheme()` hook returns the current theme palette
 - `EditableNode` and `ConnectorLayer` resolve colors through the theme palette

@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* Drive `dark:` utilities from the `.dark` class (set by the editor's theme
+   toggle) instead of Tailwind v4's default `prefers-color-scheme`. Without this
+   the studio chrome ignores the toggle and follows the OS setting. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* Reduced radius scale — less rounded, more technical.
    Halved from Tailwind v4 defaults; drives every rounded-* utility app-wide.
    (Bare `rounded` stays 4px; `rounded-full` keeps pills/circles.) */

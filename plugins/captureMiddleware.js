@@ -119,10 +119,17 @@ export default function captureMiddleware() {
             }
           }
 
-          // Step 3: Navigate to target view
+          // Step 3: Navigate to target view.
+          // Forward presentation overrides (theme, mode, chrome) to the player URL.
+          const passthrough = new URLSearchParams()
+          for (const key of ['theme', 'mode', 'chrome']) {
+            const val = url.searchParams.get(key)
+            if (val !== null) passthrough.set(key, val)
+          }
+          const qs = passthrough.toString()
           const targetUrl = viewMode === 'editor'
             ? `${baseUrl}/editor/${sessionId}`
-            : `${baseUrl}/player/${sessionId}`
+            : `${baseUrl}/player/${sessionId}${qs ? `?${qs}` : ''}`
 
           await page.goto(targetUrl, { waitUntil: 'networkidle0', timeout: 10000 })
           await new Promise(r => setTimeout(r, 1500))

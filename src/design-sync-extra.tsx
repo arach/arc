@@ -8,8 +8,10 @@
 //
 // Wired in via `extraEntries` in .design-sync/config.json.
 import { MemoryRouter } from 'react-router-dom'
+import { ArcDiagram } from '@arach/arc'
 import LandingPageImpl from './components/LandingPage'
 import DiagramEditorImpl from './components/editor/DiagramEditor'
+import architectureDiagram from './components/diagrams/architecture.diagram'
 
 /**
  * Standalone Arc homepage — the full marketing page (hero, install, architecture,
@@ -33,3 +35,21 @@ export function LandingPage() {
 export function DiagramStudio() {
   return <DiagramEditorImpl isDark={false} onToggleTheme={() => {}} />
 }
+
+// Design-language diagram versions — the canonical Arc architecture diagram
+// rendered in each design-language theme. Each is its OWN export so it becomes a distinct
+// card/tile in the design pane (not just a cell inside the ArcDiagram card).
+function BrandDiagram({ theme, mode }: { theme: 'engineering' | 'workbench' | 'tactical'; mode: 'light' | 'dark' }) {
+  return (
+    <div style={{ width: 860, height: 420 }}>
+      <ArcDiagram data={architectureDiagram} mode={mode} theme={theme} interactive={false} defaultZoom="fit" showControls showMinimap />
+    </div>
+  )
+}
+
+/** Arc architecture diagram in the Engineering theme (systematic blue on structured gray). */
+export function ArcDiagramEngineering() { return <BrandDiagram theme="engineering" mode="dark" /> }
+/** Arc architecture diagram in the Workbench theme (dark slate + intents). */
+export function ArcDiagramWorkbench() { return <BrandDiagram theme="workbench" mode="dark" /> }
+/** Arc architecture diagram in the Tactical theme (tactical black + amber). */
+export function ArcDiagramTactical() { return <BrandDiagram theme="tactical" mode="dark" /> }

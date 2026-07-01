@@ -27,9 +27,10 @@ const data = {
 
 ## The styling idiom — configure by DATA + props, not classes
 You do **not** style Arc components with CSS classes. Appearance is controlled by:
-- **Props:** `mode` = `"light" | "dark"`; `theme` = `"default" | "warm" | "cool" | "mono"`; plus
+- **Props:** `mode` = `"light" | "dark"`; `theme` = `"default" | "warm" | "cool" | "mono" | "engineering" | "workbench" | "tactical"`
+  (the last three are opinionated design-language palettes — Engineering, Workbench, Tactical); plus
   `interactive`, `defaultZoom` (`number | "fit"`), `maxFitZoom`, `hoverEffects`.
-- **Node colors** (`nodeData[*].color`) are logical names: `violet`, `emerald`, `blue`, `amber`, `zinc`, `sky`.
+- **Node colors** (`nodeData[*].color`) are logical names: `violet`, `emerald`, `blue`, `amber`, `zinc`, `sky`, `rose`, `orange`.
   The active `theme` remaps these to its palette — never pass hex to a node color.
 - **Icons** (`nodeData[*].icon`) are lucide-react icon names as strings, e.g. `"Monitor"`, `"Server"`, `"Cloud"`.
 - `ArcDiagramIsometric` takes `config` (`{ theme, tiers[], floorSize, nodes[] }`) + `options`

@@ -130,7 +130,7 @@ function CodePreviewToggle({ diagram, codeHtml }: CodePreviewToggleProps) {
             fontSize: '0.8125rem',
             fontWeight: 500,
             border: 'none',
-            background: view === 'preview' ? '#f07c4f' : 'transparent',
+            background: view === 'preview' ? '#2e5fa5' : 'transparent',
             color: view === 'preview' ? '#fff' : 'rgba(255, 255, 255, 0.5)',
             cursor: 'pointer',
             borderRadius: '0 0.25rem 0.25rem 0',
@@ -154,7 +154,7 @@ function CodePreviewToggle({ diagram, codeHtml }: CodePreviewToggleProps) {
             background: '#fff',
           }}
         >
-          <ArcDiagram data={diagram} mode="light" interactive={false} defaultZoom="fit" />
+          <ArcDiagram data={diagram} mode="light" theme="cool" interactive={false} defaultZoom="fit" />
         </div>
       )}
     </div>
@@ -527,6 +527,8 @@ const docsDiagrams: Record<string, ArcDiagramData> = {
 // Import Dewey CSS from npm package
 import '@arach/dewey/css/colors/warm.css'
 import '@arach/dewey/css/base.css'
+// Blueprint override — must come AFTER Dewey CSS to win by source order
+import '../../docs-blueprint.css'
 
 // Import human-readable markdown files
 import overviewMd from '../../../docs/overview.md?raw'
@@ -535,6 +537,8 @@ import apiMd from '../../../docs/api.md?raw'
 import examplesMd from '../../../docs/examples.md?raw'
 import architectureMd from '../../../docs/architecture.md?raw'
 import agentsMd from '../../../docs/AGENTS.md?raw'
+import themesMd from '../../../docs/themes.md?raw'
+import exportsMd from '../../../docs/exports.md?raw'
 
 // Import agent-optimized markdown files
 import overviewAgentMd from '../../../docs/agent/overview.agent.md?raw'
@@ -581,6 +585,13 @@ const pageTree: PageNode[] = [
     children: [
       { type: 'page', id: 'templates', name: 'Templates', icon: 'Layers', description: 'Structural styling' },
       { type: 'page', id: 'themes', name: 'Themes', icon: 'Palette', description: 'Color palettes' },
+    ],
+  },
+  {
+    type: 'folder',
+    name: 'Exports',
+    children: [
+      { type: 'page', id: 'exports', name: 'Export Formats', icon: 'Upload', description: 'SVG, PNG, JSON, TS' },
     ],
   },
   {
@@ -1001,7 +1012,7 @@ Return the complete config with:
     badge: 'Styling',
   },
   themes: {
-    content: stripFrontmatter(examplesMd),
+    content: stripFrontmatter(themesMd),
     agentContent: stripFrontmatter(apiAgentMd),
     prompt: {
       title: 'Apply Color Theme',
@@ -1086,6 +1097,13 @@ Return the complete config with:
     title: 'Themes',
     description: 'Color palettes that can be applied to any template.',
     badge: 'Styling',
+  },
+  exports: {
+    content: stripFrontmatter(exportsMd),
+    agentContent: stripFrontmatter(exportsMd),
+    title: 'Export Formats',
+    description: 'Take a diagram out as JSON, TypeScript, SVG, PNG, or ASCII.',
+    badge: 'Exports',
   },
   agents: {
     content: stripFrontmatter(agentsMd),
@@ -1311,7 +1329,7 @@ function DocPage({ pageId }: { pageId: string }) {
             {/* Title */}
             <h1
               className="text-3xl md:text-4xl font-semibold tracking-tight"
-              style={{ fontFamily: "'Fraunces', serif", color: '#101518' }}
+              style={{ fontFamily: "'Space Grotesk', 'Segoe UI', sans-serif", color: '#101518' }}
             >
               {page.title}
             </h1>
@@ -1324,9 +1342,9 @@ function DocPage({ pageId }: { pageId: string }) {
                   onClick={() => setPromptOpen(true)}
                   className="group relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
                   style={{
-                    color: '#f07c4f',
-                    border: '1px solid rgba(240, 124, 79, 0.3)',
-                    background: 'rgba(240, 124, 79, 0.08)',
+                    color: '#2e5fa5',
+                    border: '1px solid rgba(46, 95, 165, 0.3)',
+                    background: '#eaf0f8',
                     cursor: 'pointer',
                     whiteSpace: 'nowrap',
                   }}
@@ -1355,7 +1373,7 @@ function DocPage({ pageId }: { pageId: string }) {
           </div>
 
           {/* Description - full width */}
-          <p className="text-lg leading-relaxed mb-8" style={{ color: '#5c676c' }}>
+          <p className="text-lg leading-relaxed mb-8" style={{ color: '#3a4248' }}>
             {page.description}
           </p>
 
@@ -1364,13 +1382,13 @@ function DocPage({ pageId }: { pageId: string }) {
             <div
               className="mb-8 p-4 rounded-xl"
               style={{
-                background: 'linear-gradient(135deg, rgba(240, 124, 79, 0.08) 0%, rgba(240, 124, 79, 0.02) 100%)',
-                border: '1px solid rgba(240, 124, 79, 0.2)',
+                background: 'linear-gradient(135deg, rgba(46, 95, 165, 0.08) 0%, rgba(46, 95, 165, 0.02) 100%)',
+                border: '1px solid rgba(46, 95, 165, 0.2)',
               }}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <Bot className="w-5 h-5" style={{ color: '#f07c4f' }} />
+                  <Bot className="w-5 h-5" style={{ color: '#2e5fa5' }} />
                   <div>
                     <div className="font-medium" style={{ color: '#101518' }}>
                       Download Complete Context
@@ -1384,7 +1402,7 @@ function DocPage({ pageId }: { pageId: string }) {
                   onClick={handleDownloadLLM}
                   className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm"
                   style={{
-                    background: '#f07c4f',
+                    background: '#2e5fa5',
                     color: 'white',
                   }}
                 >
@@ -1403,15 +1421,16 @@ function DocPage({ pageId }: { pageId: string }) {
               ) : (
                 <div
                   style={{
-                    background: 'linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%)',
+                    background: '#ffffff',
                     borderRadius: '6px',
                     padding: '1.5rem',
-                    border: '1px solid rgba(0, 0, 0, 0.06)',
+                    border: '1px solid rgba(16, 21, 24, 0.10)',
                   }}
                 >
                   <ArcDiagram
                     data={docsDiagrams[pageId]}
                     mode="light"
+                    theme="cool"
                     interactive={false}
                     defaultZoom="fit"
                   />
