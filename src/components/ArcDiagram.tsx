@@ -700,6 +700,18 @@ function DiagramFrame({ variant, color }: { variant: NonNullable<BrandSpec['fram
     )
   }
 
+  if (variant === 'sheet') {
+    // Full drafting-sheet border: a crisp rectangle inset from the edge, with a
+    // faint inner rule a few px inside for the classic double-line drawing border.
+    // Everything reads as framed on a sheet, with the title block seated in a corner.
+    return (
+      <div className="absolute pointer-events-none z-[6]" style={{ inset: m }}>
+        <div className="absolute inset-0" style={{ border: `1px solid ${color}` }} />
+        <div className="absolute" style={{ inset: 4, border: `1px solid ${color}`, opacity: 0.35 }} />
+      </div>
+    )
+  }
+
   if (variant === 'cropmarks') {
     // Classic open-corner trim marks: a short tick on each edge near each corner,
     // leaving the corner itself open. Symmetric and pinned to the edges.
@@ -754,7 +766,7 @@ function TitleBlock({ info, mode, mono, bottom = 16 }: { info: Required<TitleBlo
     <div
       className="absolute z-10 pointer-events-none"
       style={{
-        right: 16, bottom, fontFamily: font,
+        right: FRAME_INSET, bottom, fontFamily: font,
         border: `1px solid ${line}`,
         background: isLight ? 'rgba(255,255,255,0.55)' : 'rgba(10,14,20,0.5)',
         backdropFilter: 'blur(2px)',
@@ -1092,7 +1104,7 @@ export default function ArcDiagram({
         <TitleBlock
           mode={mode}
           mono={brand.monoFamily}
-          bottom={zoomShown ? 48 : 16}
+          bottom={zoomShown ? 48 : FRAME_INSET}
           info={{
             title: titleBlock?.title ?? 'System Architecture',
             drawing: titleBlock?.drawing ?? displayLabel ?? '—',

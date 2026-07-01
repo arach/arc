@@ -60,7 +60,7 @@ out of the box.
 | `data` | `ArcDiagramData` | The diagram config (required) — see [Example Output](#example-output). |
 | `theme` | `'default' \| 'warm' \| 'cool' \| 'mono' \| 'engineering' \| 'workbench' \| 'tactical'` | Palette + drafting grammar (grid, frame, type). |
 | `mode` | `'light' \| 'dark'` | Appearance. |
-| `frame` | `'hairline' \| 'inset' \| 'brackets' \| 'ticks' \| 'cropmarks' \| 'corners' \| 'none'` | Override the theme's edge treatment. |
+| `frame` | `'hairline' \| 'inset' \| 'brackets' \| 'ticks' \| 'cropmarks' \| 'corners' \| 'sheet' \| 'none'` | Override the theme's edge treatment. |
 | `interactive` | `boolean` | Pan/zoom controls. |
 | `defaultZoom` | `number \| 'fit'` | Initial zoom, or `'fit'` to auto-fit (`maxFitZoom` caps it). |
 | `showControls` / `showMinimap` | `boolean` | Zoom controls / minimap for read-only chrome. |
@@ -103,7 +103,7 @@ Arc's own architecture rendered three ways:
 <div align="center">
   <img src="public/theme-engineering.png" alt="Arc's architecture in the Engineering theme" width="840" />
   <br/>
-  <sub><strong>Engineering</strong> — graph grid, framed corners, drawing title block, uppercase mono</sub>
+  <sub><strong>Engineering</strong> — graph grid, drawing-sheet border, title block, uppercase mono</sub>
   <br/><br/>
   <img src="public/theme-workbench.png" alt="Arc's architecture in the Workbench theme" width="840" />
   <br/>

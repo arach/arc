@@ -43,7 +43,7 @@ export interface BrandSpec {
   /** Background grid system. */
   gridType?: 'dots' | 'lines' | 'crosshair' | 'none'
   /** Edge/frame treatment at the diagram boundary. */
-  frame?: 'hairline' | 'inset' | 'brackets' | 'ticks' | 'cropmarks' | 'corners' | 'none'
+  frame?: 'hairline' | 'inset' | 'brackets' | 'ticks' | 'cropmarks' | 'corners' | 'sheet' | 'none'
   /** Render an engineering-drawing title block in the bottom-right corner. */
   titleBlock?: boolean
 }
@@ -282,7 +282,7 @@ const engineeringTheme: Theme = {
     upperLabels: true,
     arrowhead: 'chevron',
     gridType: 'lines',
-    frame: 'corners',
+    frame: 'sheet',
     titleBlock: true,
   },
 }
