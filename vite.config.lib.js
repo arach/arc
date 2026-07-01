@@ -10,7 +10,10 @@ export default defineConfig({
   plugins: [
     react(),
     dts({
-      include: ['src/index.ts', 'src/types/**/*.ts', 'src/iso/types.ts', 'src/utils/asciiRenderer.ts'],
+      // Must cover every source file reachable from src/index.ts (components,
+      // utils, iso, editor) — otherwise api-extractor can't inline their types
+      // and leaves dangling source-relative imports in the rolled-up index.d.ts.
+      include: ['src'],
       outDir: 'lib',
       rollupTypes: true,
     }),
