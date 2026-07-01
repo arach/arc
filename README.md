@@ -53,6 +53,20 @@ export function Architecture() {
 You get pan/zoom, hover highlighting, light/dark modes, and seven color themes
 out of the box.
 
+### Key props
+
+| Prop | Type | Notes |
+|------|------|-------|
+| `data` | `ArcDiagramData` | The diagram config (required) — see [Example Output](#example-output). |
+| `theme` | `'default' \| 'warm' \| 'cool' \| 'mono' \| 'engineering' \| 'workbench' \| 'tactical'` | Palette + drafting grammar (grid, frame, type). |
+| `mode` | `'light' \| 'dark'` | Appearance. |
+| `frame` | `'hairline' \| 'inset' \| 'brackets' \| 'ticks' \| 'cropmarks' \| 'corners' \| 'none'` | Override the theme's edge treatment. |
+| `interactive` | `boolean` | Pan/zoom controls. |
+| `defaultZoom` | `number \| 'fit'` | Initial zoom, or `'fit'` to auto-fit (`maxFitZoom` caps it). |
+| `showControls` / `showMinimap` | `boolean` | Zoom controls / minimap for read-only chrome. |
+| `hoverEffects` | `boolean \| { dim, lift, glow, highlightEdges }` | Hover highlighting (granular). |
+| `label` | `string` | Override the bottom-left label. |
+
 ## The Studio
 
 Prefer to design visually? Arc ships a full drag-and-drop **studio** — infinite
