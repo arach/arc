@@ -33,7 +33,7 @@ export const initialState = {
     template: DEFAULT_TEMPLATE, // Current style template
     zoom: 1, // Zoom level (0.5 to 2)
     viewMode: '2d', // '2d' | 'isometric'
-    themeId: null, // Arc theme override (null = use template defaults)
+    themeId: 'command', // Arc diagram theme (command = HUD console default)
     colorMode: 'dark', // 'light' | 'dark'
   },
   meta: {

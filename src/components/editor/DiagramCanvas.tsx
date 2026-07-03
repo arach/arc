@@ -1,6 +1,6 @@
 import { useRef, useCallback, useState, useEffect } from 'react'
 // @ts-ignore - JS module, will migrate later
-import { useEditor, useDiagram, useEditorState, useTemplate, useViewMode, useResolvedTheme } from './EditorProvider'
+import { useEditor, useDiagram, useEditorState, useTemplate, useViewMode, useResolvedTheme, useResolvedBrand } from './EditorProvider'
 // @ts-ignore - JS module
 import { NODE_SIZES } from '../../utils/constants'
 // @ts-ignore - JS module
@@ -61,6 +61,7 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
   const viewMode = useViewMode()
   const template = getTemplate(templateId)
   const themeColors = useResolvedTheme()
+  const brand = useResolvedBrand()
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null)
 
   // Merge embed config with defaults
@@ -778,6 +779,7 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
                   selectedConnectorIndex={editor.selectedConnectorIndex}
                   onConnectorClick={handleConnectorClick}
                   themeColors={themeColors}
+                  brand={brand}
                 />
 
                 {/* Anchor points */}
@@ -811,6 +813,7 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
                         onMouseEnter={() => editor.mode === 'addConnector' && setHoveredNodeId(nodeId)}
                         onMouseLeave={() => editor.mode === 'addConnector' && setHoveredNodeId(null)}
                         themeColors={themeColors}
+                        brand={brand}
                       />
                     )
                   })}

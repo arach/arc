@@ -69,8 +69,8 @@ body,
   --accent-foreground: 0.99 0.002 205;
   --destructive: 0.54 0.19 25;
   --destructive-foreground: 0.99 0 0;
-  --warning: 0.62 0.14 75;
-  --success: 0.48 0.1 165;
+  --warning: 0.48 0.14 250;
+  --success: 0.48 0.14 250;
   --info: 0.48 0.14 250;
   --border: 0.88 0.012 245;
   --input: 0.84 0.013 245;
@@ -107,8 +107,8 @@ body,
   --accent-foreground: 0.16 0.015 245;
   --destructive: 0.62 0.24 25;
   --destructive-foreground: 0.98 0 0;
-  --warning: 0.75 0.14 75;
-  --success: 0.58 0.11 165;
+  --warning: 0.62 0.14 250;
+  --success: 0.62 0.14 250;
   --info: 0.62 0.14 250;
   --border: 0.28 0.02 245;
   --input: 0.32 0.02 245;
@@ -451,10 +451,11 @@ body,
 }
 
 .arc-editor-nav-center .is-dirty {
-  color: var(--arc-string);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-size: var(--arc-text-2xs);
+  color: var(--arc-muted);
+  text-transform: none;
+  letter-spacing: 0.01em;
+  font-size: var(--arc-text-sm);
+  font-family: var(--arc-font-body);
 }
 
 .arc-editor-status-mode {

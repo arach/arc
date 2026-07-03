@@ -130,7 +130,7 @@ export function useArcEditorStatus(): { label: string; color: StatusColor } {
   const nodeCount = Object.keys(diagram.nodes || {}).length
 
   if (meta.isDirty) {
-    return { label: `${nodeCount} nodes · edited`, color: 'amber' }
+    return { label: `${nodeCount} nodes · edited`, color: 'neutral' }
   }
 
   const modeLabel = MODE_LABELS[editor.mode] || editor.mode

@@ -1,6 +1,6 @@
 import React from 'react'
 import { anchor, midPoint } from '../../utils/diagramHelpers'
-import type { Theme } from '../../utils/themes'
+import type { BrandSpec, Theme } from '../../utils/themes'
 
 type ResolvedThemeMode = Theme['light'] | Theme['dark']
 
@@ -23,36 +23,58 @@ function resolveStrokeColor(color: string, themeColors?: ResolvedThemeMode | nul
   return strokeColors[color] || strokeColors.zinc
 }
 
-// Arrow marker for one-directional arrows
-function ArrowMarker({ id, color, themeColors }: { id: string; color: string; themeColors?: ResolvedThemeMode | null }) {
+function EndMarker({
+  id,
+  color,
+  themeColors,
+  chevron,
+  start,
+}: {
+  id: string
+  color: string
+  themeColors?: ResolvedThemeMode | null
+  chevron?: boolean
+  start?: boolean
+}) {
+  const stroke = resolveStrokeColor(color, themeColors)
+  if (chevron) {
+    return (
+      <marker
+        id={id}
+        markerWidth="10"
+        markerHeight="10"
+        refX={start ? 1 : 9}
+        refY="5"
+        orient="auto"
+        markerUnits="userSpaceOnUse"
+      >
+        <path
+          d={start ? 'M9,1 L2,5 L9,9' : 'M1,1 L8,5 L1,9'}
+          fill="none"
+          stroke={stroke}
+          strokeWidth="1.15"
+          strokeOpacity="0.9"
+          strokeLinecap="square"
+          strokeLinejoin="miter"
+        />
+      </marker>
+    )
+  }
   return (
     <marker
       id={id}
       markerWidth="8"
       markerHeight="6"
-      refX="7"
+      refX={start ? 1 : 7}
       refY="3"
       orient="auto"
       markerUnits="userSpaceOnUse"
     >
-      <polygon points="0 0, 8 3, 0 6" fill={resolveStrokeColor(color, themeColors)} />
-    </marker>
-  )
-}
-
-// Arrow marker for start of bidirectional arrows
-function ArrowMarkerStart({ id, color, themeColors }: { id: string; color: string; themeColors?: ResolvedThemeMode | null }) {
-  return (
-    <marker
-      id={id}
-      markerWidth="8"
-      markerHeight="6"
-      refX="1"
-      refY="3"
-      orient="auto"
-      markerUnits="userSpaceOnUse"
-    >
-      <polygon points="8 0, 0 3, 8 6" fill={resolveStrokeColor(color, themeColors)} />
+      <polygon
+        points={start ? '8 0, 0 3, 8 6' : '0 0, 8 3, 0 6'}
+        fill={stroke}
+        fillOpacity="0.88"
+      />
     </marker>
   )
 }
@@ -65,7 +87,7 @@ function getDotOffset() {
 }
 
 // Endpoint dot component with improved positioning
-function EndpointDot({ x, y, color, size = 4, themeColors }: { x: number; y: number; color: string; size?: number; themeColors?: ResolvedThemeMode | null }) {
+function EndpointDot({ x, y, color, size = 3, themeColors }: { x: number; y: number; color: string; size?: number; themeColors?: ResolvedThemeMode | null }) {
   const offset = getDotOffset()
   return (
     <circle
@@ -73,6 +95,7 @@ function EndpointDot({ x, y, color, size = 4, themeColors }: { x: number; y: num
       cy={y + offset.dy}
       r={size}
       fill={resolveStrokeColor(color, themeColors)}
+      fillOpacity={0.75}
       className="pointer-events-none"
     />
   )
@@ -138,8 +161,8 @@ function generatePath(from, to, fromAnchor, toAnchor, curve, curveDepth = 50) {
   return `M ${from.x} ${from.y} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${to.x} ${to.y}`
 }
 
-function Connector({ connector, nodes, connectorStyles, isSelected, onClick, index, themeColors }: {
-  connector: any; nodes: any; connectorStyles: any; isSelected: boolean; onClick: (i: number) => void; index: number; themeColors?: ResolvedThemeMode | null
+function Connector({ connector, nodes, connectorStyles, isSelected, onClick, index, themeColors, brand }: {
+  connector: any; nodes: any; connectorStyles: any; isSelected: boolean; onClick: (i: number) => void; index: number; themeColors?: ResolvedThemeMode | null; brand?: BrandSpec
 }) {
   const style = connectorStyles[connector.style]
   if (!style) return null
@@ -224,10 +247,25 @@ function Connector({ connector, nodes, connectorStyles, isSelected, onClick, ind
         <path
           d={path}
           fill="none"
-          stroke="#3b82f6"
-          strokeWidth={style.strokeWidth + 6}
-          strokeOpacity={0.3}
+          stroke={strokeColor}
+          strokeWidth={style.strokeWidth + 7}
+          strokeOpacity={0.22}
           strokeDasharray={dashArray}
+          style={{ filter: 'blur(4px)' }}
+        />
+      )}
+
+      {brand?.connectorGlow && (
+        <path
+          d={path}
+          fill="none"
+          stroke={strokeColor}
+          strokeWidth={style.strokeWidth + 5}
+          strokeOpacity={0.16}
+          strokeDasharray={dashArray}
+          strokeLinecap="round"
+          style={{ filter: 'blur(2.5px)' }}
+          className={animationClass}
         />
       )}
 
@@ -243,6 +281,7 @@ function Connector({ connector, nodes, connectorStyles, isSelected, onClick, ind
         strokeLinecap="round"
         strokeLinejoin="round"
         className={animationClass}
+        strokeOpacity={0.92}
       />
 
       {/* Endpoint dots at node edges */}
@@ -260,9 +299,12 @@ function Connector({ connector, nodes, connectorStyles, isSelected, onClick, ind
           y={labelY}
           textAnchor={textAnchor}
           fill={strokeColor}
-          fontSize="11"
-          fontFamily="ui-monospace, monospace"
+          fontSize="9"
+          fontFamily={brand?.upperLabels ? (brand.monoFamily || 'ui-monospace, monospace') : (brand?.fontFamily || 'system-ui, sans-serif')}
           fontWeight="500"
+          letterSpacing={brand?.upperLabels ? '0.08em' : '0.02em'}
+          fillOpacity={0.82}
+          style={{ textTransform: brand?.upperLabels ? 'uppercase' : 'none' }}
         >
           {style.label}
         </text>
@@ -279,8 +321,9 @@ export default function ConnectorLayer({
   selectedConnectorIndex,
   onConnectorClick,
   themeColors,
+  brand,
 }: {
-  layout: any; nodes: any; connectors: any[]; connectorStyles: any; selectedConnectorIndex: number | null; onConnectorClick: (i: number) => void; themeColors?: ResolvedThemeMode | null
+  layout: any; nodes: any; connectors: any[]; connectorStyles: any; selectedConnectorIndex: number | null; onConnectorClick: (i: number) => void; themeColors?: ResolvedThemeMode | null; brand?: BrandSpec
 }) {
   // Get unique colors used by connectors for marker definitions
   const usedColors = [...new Set(
@@ -332,8 +375,8 @@ export default function ConnectorLayer({
         <defs>
           {usedColors.map(color => (
             <React.Fragment key={color}>
-              <ArrowMarker id={`arrow-${color}`} color={color} themeColors={themeColors} />
-              <ArrowMarkerStart id={`arrow-start-${color}`} color={color} themeColors={themeColors} />
+              <EndMarker id={`arrow-${color}`} color={color} themeColors={themeColors} chevron={brand?.arrowhead === 'chevron'} />
+              <EndMarker id={`arrow-start-${color}`} color={color} themeColors={themeColors} chevron={brand?.arrowhead === 'chevron'} start />
             </React.Fragment>
           ))}
         </defs>
@@ -350,6 +393,7 @@ export default function ConnectorLayer({
               isSelected={selectedConnectorIndex === i}
               onClick={onConnectorClick}
               themeColors={themeColors}
+              brand={brand}
             />
           ))}
         </g>

@@ -2,7 +2,7 @@ import { memo } from 'react'
 import { getIconComponent } from '../../utils/iconRegistry'
 import { NODE_SIZES } from '../../utils/constants'
 import { Node as PlayerNode } from '../ArcDiagram'
-import type { Theme } from '../../utils/themes'
+import type { BrandSpec, Theme } from '../../utils/themes'
 
 type ResolvedThemeMode = Theme['light'] | Theme['dark']
 
@@ -102,6 +102,7 @@ interface EditableNodeProps {
   onMouseEnter: () => void
   onMouseLeave: () => void
   themeColors?: ResolvedThemeMode | null
+  brand?: BrandSpec
 }
 
 const EditableNode = memo(function EditableNode({
@@ -116,6 +117,7 @@ const EditableNode = memo(function EditableNode({
   onMouseEnter,
   onMouseLeave,
   themeColors,
+  brand,
 }: EditableNodeProps) {
   const Icon = getIconComponent(data.icon)
   const size = node.size || 'm'
@@ -164,6 +166,7 @@ const EditableNode = memo(function EditableNode({
           data={{ icon: data.icon, name: data.name, subtitle: data.subtitle, color: (data.color || 'violet') as any }}
           mode={colorMode as any}
           themeColors={themeColors!}
+          brand={brand}
         />
       </div>
     )

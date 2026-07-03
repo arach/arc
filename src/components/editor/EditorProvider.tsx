@@ -1,6 +1,6 @@
 import { createContext, useContext, useReducer, useCallback, useMemo } from 'react'
 import { editorReducer, initialState } from './editorReducer'
-import { getTheme } from '../../utils/themes'
+import { DEFAULT_THEME, getTheme } from '../../utils/themes'
 import type { ThemeId } from '../../utils/themes'
 
 // Define the context type
@@ -12,7 +12,7 @@ interface EditorContextType {
 
 const EditorContext = createContext<EditorContextType | null>(null)
 
-export function EditorProvider({ children, initialDiagram, initialThemeId = null, initialColorMode = 'dark', initialDiagramMeta }: {
+export function EditorProvider({ children, initialDiagram, initialThemeId = DEFAULT_THEME, initialColorMode = 'dark', initialDiagramMeta }: {
   children: React.ReactNode
   initialDiagram?: any
   initialThemeId?: string | null
@@ -294,8 +294,16 @@ export function useResolvedTheme() {
   const themeId = state.editor.themeId
   const colorMode = state.editor.colorMode
   return useMemo(() => {
-    if (!themeId) return null
-    const theme = getTheme(themeId as ThemeId)
+    const theme = getTheme((themeId || DEFAULT_THEME) as ThemeId)
     return colorMode === 'light' ? theme.light : theme.dark
   }, [themeId, colorMode])
+}
+
+/** Returns the active theme's brand spec (typography, node shape, connector treatment). */
+export function useResolvedBrand() {
+  const { state } = useEditor()
+  const themeId = state.editor.themeId
+  return useMemo(() => {
+    return getTheme((themeId || DEFAULT_THEME) as ThemeId).brand
+  }, [themeId])
 }

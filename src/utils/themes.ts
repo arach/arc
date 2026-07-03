@@ -1,7 +1,7 @@
 // Diagram color themes - palettes and background treatments
 // Separate from templates (structural) - themes handle colors only
 
-export type ThemeId = 'default' | 'warm' | 'cool' | 'mono' | 'engineering' | 'workbench' | 'tactical'
+export type ThemeId = 'default' | 'warm' | 'cool' | 'mono' | 'engineering' | 'workbench' | 'tactical' | 'command'
 
 export interface ColorPalette {
   violet:  { border: string; bg: string; icon: string; stroke: string }
@@ -46,6 +46,27 @@ export interface BrandSpec {
   frame?: 'hairline' | 'inset' | 'brackets' | 'ticks' | 'cropmarks' | 'corners' | 'sheet' | 'reticle' | 'none'
   /** Render an engineering-drawing title block in the bottom-right corner. */
   titleBlock?: boolean
+  /** Node silhouette when nodeRadius is not set explicitly. */
+  nodeShape?: 'rounded' | 'square' | 'chamfer' | 'pill'
+  /** Overall node opacity (0–1). */
+  nodeOpacity?: number
+  /** Frosted glass backdrop on nodes. */
+  nodeGlass?: boolean
+  /** Colored accent stripe on the node shell. */
+  accentBar?: 'left' | 'top' | 'none'
+  /** Soft bloom on connector strokes. */
+  connectorGlow?: boolean
+}
+
+/** Resolve CSS border-radius from brand shape overrides. */
+export function resolveNodeRadius(brand?: BrandSpec): string | undefined {
+  if (brand?.nodeRadius != null) return brand.nodeRadius
+  switch (brand?.nodeShape) {
+    case 'square': return '0px'
+    case 'chamfer': return '2px'
+    case 'pill': return '9999px'
+    default: return undefined
+  }
 }
 
 export interface Theme {
@@ -373,6 +394,61 @@ const tacticalTheme: Theme = {
   },
 }
 
+// Command — editor-aligned HUD console (cyan glass tiles, crosshair grid)
+const commandTheme: Theme = {
+  id: 'command',
+  name: 'Command',
+  description: 'HUD console, cyan glass, crosshair grid',
+  light: {
+    palette: {
+      violet:  { border: 'border-[#6e7cff]/60', bg: 'bg-[#6e7cff]/[0.07]', icon: 'text-[#5a68e8]', stroke: '#5a68e8' },
+      emerald: { border: 'border-[#1f9a84]/60', bg: 'bg-[#1f9a84]/[0.07]', icon: 'text-[#1f9a84]', stroke: '#1f9a84' },
+      blue:    { border: 'border-[#2b7fd4]/65', bg: 'bg-[#2b7fd4]/[0.09]', icon: 'text-[#2b7fd4]', stroke: '#2b7fd4' },
+      amber:   { border: 'border-[#c4882a]/60', bg: 'bg-[#c4882a]/[0.08]', icon: 'text-[#b87a1f]', stroke: '#b87a1f' },
+      sky:     { border: 'border-[#2b9fd4]/60', bg: 'bg-[#2b9fd4]/[0.08]', icon: 'text-[#2490c4]', stroke: '#2490c4' },
+      zinc:    { border: 'border-[#6b7785]/55', bg: 'bg-[#6b7785]/[0.06]', icon: 'text-[#5c6878]', stroke: '#5c6878' },
+      rose:    { border: 'border-[#d45d6a]/55', bg: 'bg-[#d45d6a]/[0.07]', icon: 'text-[#c44e5c]', stroke: '#c44e5c' },
+      orange:  { border: 'border-[#d47a2a]/55', bg: 'bg-[#d47a2a]/[0.07]', icon: 'text-[#c46e22]', stroke: '#c46e22' },
+    },
+    background: {
+      container: 'bg-[#e8edf3]/90 border border-[#c5d0dc]',
+      grid: { color: 'rgba(43, 127, 212, 0.14)', opacity: 0.55, size: 40 },
+    },
+    text: { primary: 'text-[#0c1014]', secondary: 'text-[#3a4248]', muted: 'text-[#6b7785]' },
+  },
+  dark: {
+    palette: {
+      violet:  { border: 'border-[#8b9cff]/50', bg: 'bg-[#8b9cff]/[0.07]', icon: 'text-[#8b9cff]', stroke: '#8b9cff' },
+      emerald: { border: 'border-[#3dd6b5]/50', bg: 'bg-[#3dd6b5]/[0.07]', icon: 'text-[#3dd6b5]', stroke: '#3dd6b5' },
+      blue:    { border: 'border-[#4db8ff]/55', bg: 'bg-[#4db8ff]/[0.08]', icon: 'text-[#4db8ff]', stroke: '#4db8ff' },
+      amber:   { border: 'border-[#e0b04a]/50', bg: 'bg-[#e0b04a]/[0.08]', icon: 'text-[#e0b04a]', stroke: '#e0b04a' },
+      sky:     { border: 'border-[#5ec8e8]/50', bg: 'bg-[#5ec8e8]/[0.07]', icon: 'text-[#5ec8e8]', stroke: '#5ec8e8' },
+      zinc:    { border: 'border-[#8b93a0]/45', bg: 'bg-[#8b93a0]/[0.06]', icon: 'text-[#9aa4ae]', stroke: '#9aa4ae' },
+      rose:    { border: 'border-[#f0808c]/45', bg: 'bg-[#f0808c]/[0.07]', icon: 'text-[#f0808c]', stroke: '#f0808c' },
+      orange:  { border: 'border-[#e89850]/45', bg: 'bg-[#e89850]/[0.07]', icon: 'text-[#e89850]', stroke: '#e89850' },
+    },
+    background: {
+      container: 'bg-[#06090e]/95 border border-[#1a2533]',
+      grid: { color: 'rgba(77, 184, 255, 0.16)', opacity: 0.9, size: 40 },
+    },
+    text: { primary: 'text-[#e8edf2]', secondary: 'text-[#b4bec9]', muted: 'text-[#7d8a98]' },
+  },
+  brand: {
+    fontFamily: "'Space Grotesk', system-ui, sans-serif",
+    monoFamily: "'JetBrains Mono', ui-monospace, monospace",
+    nodeShape: 'chamfer',
+    nodeBorderWidth: '1px',
+    nodeOpacity: 0.88,
+    nodeGlass: true,
+    accentBar: 'left',
+    upperLabels: false,
+    arrowhead: 'chevron',
+    gridType: 'crosshair',
+    frame: 'corners',
+    connectorGlow: true,
+  },
+}
+
 export const THEMES: Record<ThemeId, Theme> = {
   default: defaultTheme,
   warm: warmTheme,
@@ -381,9 +457,10 @@ export const THEMES: Record<ThemeId, Theme> = {
   engineering: engineeringTheme,
   workbench: workbenchTheme,
   tactical: tacticalTheme,
+  command: commandTheme,
 }
 
-export const DEFAULT_THEME: ThemeId = 'default'
+export const DEFAULT_THEME: ThemeId = 'command'
 
 export function getTheme(id: ThemeId): Theme {
   return THEMES[id] || THEMES[DEFAULT_THEME]

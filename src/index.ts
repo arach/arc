@@ -9,7 +9,7 @@
 // =============================================================================
 export { default as DiagramEditor } from './components/editor/DiagramEditor'
 export { default as DiagramCanvas } from './components/editor/DiagramCanvas'
-export { EditorProvider, useEditor, useDiagram, useEditorState, useViewMode, useThemeId, useColorMode, useResolvedTheme, useDiagramMeta } from './components/editor/EditorProvider'
+export { EditorProvider, useEditor, useDiagram, useEditorState, useViewMode, useThemeId, useColorMode, useResolvedTheme, useResolvedBrand, useDiagramMeta } from './components/editor/EditorProvider'
 
 // =============================================================================
 // Player / Viewer Components

@@ -141,7 +141,7 @@ function resolveEditorSession(urlSessionId?: string) {
 
   // Priority 3: Fresh editor
   const newId = generateSessionId()
-  return { sessionId: newId, initialData: null, originalDiagram: null, themeId: null, colorMode: 'dark' as const, diagramMeta: {}, needsRedirect: !urlSessionId }
+  return { sessionId: newId, initialData: null, originalDiagram: null, themeId: 'command', colorMode: 'dark' as const, diagramMeta: { themeId: 'command', colorMode: 'dark' }, needsRedirect: !urlSessionId }
 }
 
 function EditorPage() {
@@ -298,6 +298,7 @@ function DocsWrapper() {
 }
 
 const EXPLORATIONS: { id: ThemeId; label: string; sub: string }[] = [
+  { id: 'command', label: 'Command', sub: 'crosshair grid · chamfer glass · cyan accent bar · connector glow' },
   { id: 'engineering', label: 'Engineering', sub: 'graph grid · framed corners · square tiles · uppercase mono' },
   { id: 'workbench', label: 'Workbench', sub: 'dot grid · hairline edge · soft corners · sentence case' },
   { id: 'tactical', label: 'Tactical', sub: 'crosshair grid · corner brackets · hard edges · uppercase' },

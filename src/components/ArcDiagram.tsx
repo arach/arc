@@ -2,7 +2,7 @@
 import React, { useState, useCallback, useMemo } from 'react'
 import * as LucideIcons from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import { getTheme, type ThemeId, type Theme, type BrandSpec } from '../utils/themes'
+import { getTheme, resolveNodeRadius, type ThemeId, type Theme, type BrandSpec } from '../utils/themes'
 import { autoLayout } from '../utils/autoLayout'
 
 // ============================================
@@ -145,26 +145,36 @@ export function Node({ node, data, mode, themeColors, brand, hovered, dimmed, li
   const isLarge = node.size === 'l'
   const isSmall = node.size === 's'
   const isLight = mode === 'light'
+  const nodeRadius = resolveNodeRadius(brand)
+  const shellOpacity = brand?.nodeOpacity ?? 1
+  const accentBar = brand?.accentBar ?? 'none'
 
   return (
     <div
       className={`
-        absolute rounded-xl border-2 ${color.border} ${color.bg}
+        absolute border ${color.border} ${color.bg}
+        ${!nodeRadius ? 'rounded-xl' : ''}
         ${isLarge ? 'px-5 py-3' : isSmall ? 'px-3 py-2' : 'px-4 py-2.5'}
-        ${isLight ? 'bg-white/80 shadow-sm' : 'bg-zinc-900/90'} backdrop-blur-sm
+        ${isLight && !brand?.nodeGlass ? 'bg-white/80 shadow-sm' : ''}
+        ${brand?.nodeGlass ? 'backdrop-blur-md' : isLight ? '' : 'backdrop-blur-sm'}
         transition-all duration-200 ease-out
       `}
       style={{
         left: node.x,
         top: node.y,
         width: size.width,
-        borderRadius: brand?.nodeRadius,
-        borderWidth: brand?.nodeBorderWidth,
+        borderRadius: nodeRadius,
+        borderWidth: brand?.nodeBorderWidth || '1px',
+        borderLeftWidth: accentBar === 'left' ? '2px' : brand?.nodeBorderWidth || '1px',
+        borderTopWidth: accentBar === 'top' ? '1px' : undefined,
+        borderLeftColor: accentBar === 'left' ? color.stroke : undefined,
+        borderTopColor: accentBar === 'top' ? color.stroke : undefined,
+        fontFamily: brand?.fontFamily,
         transform: hovered && lift ? 'translateY(-2px)' : 'none',
         boxShadow: hovered && glow
-          ? `0 8px 24px -4px ${color.stroke}33, 0 0 0 1px ${color.stroke}22`
-          : 'none',
-        opacity: dimmed ? dimOpacity : 1,
+          ? `0 0 20px -6px ${color.stroke}55, 0 8px 24px -8px ${color.stroke}33, inset 0 1px 0 rgba(255,255,255,${isLight ? 0.35 : 0.06})`
+          : `inset 0 1px 0 rgba(255,255,255,${isLight ? 0.25 : 0.04})`,
+        opacity: dimmed ? dimOpacity : shellOpacity,
         zIndex: hovered ? 10 : undefined,
         cursor: onClick ? 'pointer' : undefined,
       }}
@@ -175,21 +185,39 @@ export function Node({ node, data, mode, themeColors, brand, hovered, dimmed, li
     >
       <div className="flex items-center gap-3">
         <div className={`
-          flex-shrink-0 rounded-lg
-          ${isLight ? 'border border-zinc-200 bg-white shadow-sm' : 'border border-zinc-700 bg-zinc-900'}
-          ${isLarge ? 'w-10 h-10' : isSmall ? 'w-6 h-6' : 'w-8 h-8'}
+          flex-shrink-0
+          ${isLarge ? 'w-9 h-9' : isSmall ? 'w-6 h-6' : 'w-7 h-7'}
           flex items-center justify-center
-        `} style={{ borderRadius: brand?.nodeRadius }}>
-          <Icon className={`${isLarge ? 'w-5 h-5' : isSmall ? 'w-3 h-3' : 'w-4 h-4'} ${color.icon}`} />
+        `} style={{
+          borderRadius: nodeRadius === '9999px' ? '9999px' : (nodeRadius || '2px'),
+          border: `1px solid ${color.stroke}30`,
+          background: `${color.stroke}12`,
+          backdropFilter: 'blur(6px)',
+          WebkitBackdropFilter: 'blur(6px)',
+          boxShadow: `inset 0 1px 0 ${color.stroke}18`,
+        }}>
+          <Icon
+            className={`${isLarge ? 'w-4 h-4' : isSmall ? 'w-3 h-3' : 'w-3.5 h-3.5'} ${color.icon}`}
+            style={{ opacity: 0.82 }}
+            strokeWidth={1.5}
+          />
         </div>
         <div className="min-w-0">
-          <div className={`font-semibold ${themeColors.text.primary} ${isLarge ? 'text-sm' : isSmall ? 'text-[10px]' : 'text-xs'}`}>
+          <div
+            className={`font-medium ${themeColors.text.primary} ${isLarge ? 'text-xs' : isSmall ? 'text-[9px]' : 'text-[11px]'}`}
+            style={brand?.fontFamily ? { fontFamily: brand.fontFamily, letterSpacing: '-0.015em' } : undefined}
+          >
             {data.name}
           </div>
           {data.subtitle && (
             <div
-              className={`font-mono ${themeColors.text.muted} ${isSmall ? 'text-[8px]' : 'text-[10px]'}`}
-              style={brand ? { fontFamily: brand.monoFamily, textTransform: brand.upperLabels ? 'uppercase' : undefined, letterSpacing: brand.upperLabels ? '0.05em' : undefined } : undefined}
+              className={`${themeColors.text.muted} ${isSmall ? 'text-[8px]' : 'text-[9px]'}`}
+              style={{
+                fontFamily: brand?.upperLabels ? brand.monoFamily : (brand?.fontFamily || undefined),
+                textTransform: brand?.upperLabels ? 'uppercase' : 'none',
+                letterSpacing: brand?.upperLabels ? '0.06em' : '0.01em',
+                opacity: 0.72,
+              }}
             >
               {data.subtitle}
             </div>
@@ -197,7 +225,10 @@ export function Node({ node, data, mode, themeColors, brand, hovered, dimmed, li
         </div>
       </div>
       {data.description && !isSmall && (
-        <div className={`mt-1.5 ${themeColors.text.secondary} ${isLarge ? 'text-[11px]' : 'text-[10px]'}`}>
+        <div
+          className={`mt-1 ${themeColors.text.secondary} ${isLarge ? 'text-[9px]' : 'text-[9px]'}`}
+          style={{ opacity: 0.65, letterSpacing: '0.01em' }}
+        >
           {data.description}
         </div>
       )}
@@ -337,6 +368,18 @@ function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors, 
         </linearGradient>
       </defs>
 
+      {brand?.connectorGlow && (
+        <path
+          d={path}
+          fill="none"
+          stroke={color}
+          strokeWidth={(highlighted ? style.strokeWidth + 1 : style.strokeWidth) + 4}
+          strokeOpacity={0.18}
+          strokeDasharray={style.dashed ? '6 3' : undefined}
+          style={{ filter: 'blur(3px)', transition: 'stroke-width 200ms ease-out' }}
+        />
+      )}
+
       {/* Main path with gradient */}
       <path
         d={path}
@@ -344,6 +387,7 @@ function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors, 
         stroke={`url(#${gradientId})`}
         strokeWidth={highlighted ? style.strokeWidth + 1 : style.strokeWidth}
         strokeDasharray={style.dashed ? '6 3' : undefined}
+        strokeLinecap="round"
         style={{ transition: 'stroke-width 200ms ease-out' }}
       />
 
@@ -351,10 +395,11 @@ function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors, 
       <g transform={`translate(${to.x}, ${to.y}) rotate(${angle})`}>
         {brand?.arrowhead === 'chevron' ? (
           <polyline
-            points={`${-arrowSize},${-arrowSize / 2.2} 0,0 ${-arrowSize},${arrowSize / 2.2}`}
+            points={`${-arrowSize},${-arrowSize / 2.4} 0,0 ${-arrowSize},${arrowSize / 2.4}`}
             fill="none"
             stroke={color}
-            strokeWidth={Math.max(1.25, style.strokeWidth)}
+            strokeWidth={Math.max(1, style.strokeWidth * 0.85)}
+            strokeOpacity={0.9}
             strokeLinecap="square"
             strokeLinejoin="miter"
           />
@@ -376,9 +421,11 @@ function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors, 
           className="text-[10px] font-mono"
           style={{
             fontFamily: brand?.monoFamily || 'ui-monospace, monospace',
-            fontWeight: highlighted ? 700 : 400,
-            textTransform: brand?.upperLabels ? 'uppercase' : undefined,
-            letterSpacing: brand?.upperLabels ? '0.08em' : undefined,
+            fontWeight: highlighted ? 600 : 500,
+            fontSize: brand?.upperLabels ? undefined : '9px',
+            textTransform: brand?.upperLabels ? 'uppercase' : 'none',
+            letterSpacing: brand?.upperLabels ? '0.08em' : '0.02em',
+            opacity: 0.82,
             transition: 'font-weight 200ms ease-out',
           }}
         >
