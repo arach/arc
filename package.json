@@ -61,6 +61,7 @@
   "dependencies": {
     "@arach/dewey": "^0.2.0",
     "@base-ui/react": "^1.0.0",
+    "hudsonkit": "^0.3.3",
     "js-yaml": "^4.1.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",

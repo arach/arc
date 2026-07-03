@@ -403,22 +403,23 @@ interface ZoomControlsProps {
   onReset: () => void
   mode: DiagramMode
   brand?: BrandSpec
-  /** Corner placement classes (e.g. 'bottom-3 right-3'). */
-  position?: string
+  /** Distance (px) from the right and bottom edges. */
+  right?: number
+  bottom?: number
 }
 
-function ZoomControls({ zoom, zoomLevels, onZoomIn, onZoomOut, onReset, mode, brand, position = 'bottom-3 right-3' }: ZoomControlsProps) {
+function ZoomControls({ zoom, zoomLevels, onZoomIn, onZoomOut, onReset, mode, brand, right = 12, bottom = 12 }: ZoomControlsProps) {
   const { ZoomIn, ZoomOut } = LucideIcons
   const isLight = mode === 'light'
 
   return (
     <div
-      className={`absolute ${position} flex items-center backdrop-blur-sm rounded-md overflow-hidden z-10 ${
+      className={`absolute flex items-center backdrop-blur-sm rounded-md overflow-hidden z-10 ${
         isLight
           ? 'bg-white/90 border border-zinc-200 shadow-sm'
           : 'bg-zinc-900/90 border border-zinc-700'
       }`}
-      style={{ borderRadius: brand?.nodeRadius }}
+      style={{ right, bottom, borderRadius: brand?.nodeRadius }}
     >
       <button
         onClick={onZoomOut}
@@ -467,9 +468,11 @@ interface MiniMapProps {
   themeColors: Theme['light'] | Theme['dark']
   brand?: BrandSpec
   mode: DiagramMode
+  /** Distance (px) from the bottom and left edges. */
+  inset?: number
 }
 
-function MiniMap({ nodes, nodeData, layout, themeColors, brand, mode }: MiniMapProps) {
+function MiniMap({ nodes, nodeData, layout, themeColors, brand, mode, inset = 12 }: MiniMapProps) {
   const isLight = mode === 'light'
   const W = 132
   const H = Math.max(56, Math.min(120, Math.round((layout.height / layout.width) * W)))
@@ -479,10 +482,10 @@ function MiniMap({ nodes, nodeData, layout, themeColors, brand, mode }: MiniMapP
 
   return (
     <div
-      className={`absolute bottom-3 left-3 z-10 backdrop-blur-sm overflow-hidden ${
+      className={`absolute z-10 backdrop-blur-sm overflow-hidden ${
         isLight ? 'bg-white/90 border border-zinc-200 shadow-sm' : 'bg-zinc-900/90 border border-zinc-700'
       }`}
-      style={{ width: W, height: H, borderRadius: brand?.nodeRadius }}
+      style={{ bottom: inset, left: inset, width: W, height: H, borderRadius: brand?.nodeRadius }}
     >
       <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
         {Object.entries(nodes).map(([id, n]) => {
@@ -575,10 +578,11 @@ function ArcSourceView({ source, mode }: {
   )
 }
 
-function ViewToggle({ showArc, onToggle, mode }: {
+function ViewToggle({ showArc, onToggle, mode, inset = 12 }: {
   showArc: boolean
   onToggle: () => void
   mode: DiagramMode
+  inset?: number
 }) {
   const isLight = mode === 'light'
   const { Braces, Layers } = LucideIcons
@@ -586,7 +590,8 @@ function ViewToggle({ showArc, onToggle, mode }: {
   return (
     <button
       onClick={onToggle}
-      className={`absolute top-3 right-3 flex items-center gap-1.5 px-2 py-1 rounded-md backdrop-blur-sm z-10 text-[10px] font-mono transition-colors ${
+      style={{ top: inset, right: inset }}
+      className={`absolute flex items-center gap-1.5 px-2 py-1 rounded-md backdrop-blur-sm z-10 text-[10px] font-mono transition-colors ${
         isLight
           ? 'bg-white/90 border border-zinc-200 shadow-sm text-zinc-500 hover:text-zinc-700 hover:bg-zinc-50'
           : 'bg-zinc-900/90 border border-zinc-700 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800'
@@ -601,10 +606,11 @@ function ViewToggle({ showArc, onToggle, mode }: {
   )
 }
 
-function AutoLayoutButton({ active, onToggle, mode }: {
+function AutoLayoutButton({ active, onToggle, mode, inset = 12 }: {
   active: boolean
   onToggle: () => void
   mode: DiagramMode
+  inset?: number
 }) {
   const isLight = mode === 'light'
   const { Wand2 } = LucideIcons
@@ -612,7 +618,8 @@ function AutoLayoutButton({ active, onToggle, mode }: {
   return (
     <button
       onClick={onToggle}
-      className={`absolute top-3 left-3 flex items-center gap-1.5 px-2 py-1 rounded-md backdrop-blur-sm z-10 text-[10px] font-mono transition-colors ${
+      style={{ top: inset, left: inset }}
+      className={`absolute flex items-center gap-1.5 px-2 py-1 rounded-md backdrop-blur-sm z-10 text-[10px] font-mono transition-colors ${
         active
           ? isLight
             ? 'bg-violet-50 border border-violet-200 text-violet-600 shadow-sm'
@@ -637,8 +644,15 @@ function gridMotif(type: BrandSpec['gridType'], s: number, color: string) {
   const c = s / 2
   if (type === 'lines') return <path d={`M ${s} 0 L 0 0 L 0 ${s}`} stroke={color} strokeWidth={1} fill="none" />
   if (type === 'crosshair') {
-    const r = 3
-    return <path d={`M ${c} ${c - r} L ${c} ${c + r} M ${c - r} ${c} L ${c + r} ${c}`} stroke={color} strokeWidth={1} />
+    const r = 3, tk = 2
+    // Center plus + 1px registration ticks at the four cell-edge midpoints, so
+    // cells read as a ruled reticle rather than scattered dots.
+    return (
+      <>
+        <path d={`M ${c} ${c - r} L ${c} ${c + r} M ${c - r} ${c} L ${c + r} ${c}`} stroke={color} strokeWidth={1} />
+        <path d={`M ${c} 0 L ${c} ${tk} M ${c} ${s} L ${c} ${s - tk} M 0 ${c} L ${tk} ${c} M ${s} ${c} L ${s - tk} ${c}`} stroke={color} strokeWidth={1} opacity={0.5} />
+      </>
+    )
   }
   return <circle cx={1} cy={1} r={1} fill={color} />
 }
@@ -731,6 +745,28 @@ function DiagramFrame({ variant, color }: { variant: NonNullable<BrandSpec['fram
     )
   }
 
+  if (variant === 'reticle') {
+    // Calibrated bezel: flush corner brackets + centered edge registration ticks +
+    // a faint inset rule. FRAME_INSET (12px) is exactly half the 24px grid cell, so
+    // the inset bezel lands on grid lines — intentional alignment with the reticle grid.
+    const len = 26, wt = 1.5, tick = 8, tw = 1
+    const c = (extra: React.CSSProperties): React.CSSProperties => ({ position: 'absolute', width: len, height: len, ...extra })
+    const t = (extra: React.CSSProperties): React.CSSProperties => ({ position: 'absolute', background: color, ...extra })
+    return (
+      <div className="absolute inset-0 pointer-events-none z-[6]">
+        <div className="absolute" style={{ inset: m, border: `1px solid ${color}`, opacity: 0.35 }} />
+        <div style={c({ top: 0, left: 0, borderTop: `${wt}px solid ${color}`, borderLeft: `${wt}px solid ${color}` })} />
+        <div style={c({ top: 0, right: 0, borderTop: `${wt}px solid ${color}`, borderRight: `${wt}px solid ${color}` })} />
+        <div style={c({ bottom: 0, left: 0, borderBottom: `${wt}px solid ${color}`, borderLeft: `${wt}px solid ${color}` })} />
+        <div style={c({ bottom: 0, right: 0, borderBottom: `${wt}px solid ${color}`, borderRight: `${wt}px solid ${color}` })} />
+        <div style={t({ top: 0, left: '50%', width: tw, height: tick, transform: 'translateX(-50%)' })} />
+        <div style={t({ bottom: 0, left: '50%', width: tw, height: tick, transform: 'translateX(-50%)' })} />
+        <div style={t({ left: 0, top: '50%', width: tick, height: tw, transform: 'translateY(-50%)' })} />
+        <div style={t({ right: 0, top: '50%', width: tick, height: tw, transform: 'translateY(-50%)' })} />
+      </div>
+    )
+  }
+
   return null
 }
 
@@ -750,7 +786,7 @@ export interface TitleBlockInfo {
 
 // Engineering-drawing title block, pinned to the bottom-right of the sheet.
 // `bottom` is raised when zoom controls share the corner, so it stacks above them.
-function TitleBlock({ info, mode, mono, bottom = 16 }: { info: Required<TitleBlockInfo>; mode: DiagramMode; mono?: string; bottom?: number }) {
+function TitleBlock({ info, mode, mono, bottom = 16, right = 16, onHeight }: { info: Required<TitleBlockInfo>; mode: DiagramMode; mono?: string; bottom?: number; right?: number; onHeight?: (h: number) => void }) {
   const isLight = mode === 'light'
   const line = isLight ? 'rgba(20,20,20,0.45)' : 'rgba(220,226,235,0.36)'
   const label = isLight ? 'rgba(20,20,20,0.5)' : 'rgba(205,214,228,0.5)'
@@ -762,11 +798,23 @@ function TitleBlock({ info, mode, mono, bottom = 16 }: { info: Required<TitleBlo
     ['REV', info.rev],
     ['SHEET', info.sheet],
   ]
+  // Report the rendered height so neighbouring chrome (the zoom controls) can
+  // position itself clear of the title block, re-measuring on font load / resize.
+  const ref = React.useRef<HTMLDivElement>(null)
+  React.useLayoutEffect(() => {
+    const el = ref.current
+    if (!el || !onHeight) return
+    onHeight(el.offsetHeight)
+    const ro = new ResizeObserver(() => onHeight(el.offsetHeight))
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [onHeight])
   return (
     <div
+      ref={ref}
       className="absolute z-10 pointer-events-none"
       style={{
-        right: FRAME_INSET, bottom, fontFamily: font,
+        right, bottom, fontFamily: font,
         border: `1px solid ${line}`,
         background: isLight ? 'rgba(255,255,255,0.55)' : 'rgba(10,14,20,0.5)',
         backdropFilter: 'blur(2px)',
@@ -788,12 +836,6 @@ function TitleBlock({ info, mode, mono, bottom = 16 }: { info: Required<TitleBlo
 }
 
 export type LabelCorner = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
-const CORNER_POS: Record<LabelCorner, string> = {
-  'top-left': 'top-3 left-3',
-  'top-right': 'top-3 right-3',
-  'bottom-left': 'bottom-3 left-3',
-  'bottom-right': 'bottom-3 right-3',
-}
 
 interface ArcDiagramProps {
   data: ArcDiagramData
@@ -855,6 +897,8 @@ export default function ArcDiagram({
   const [useAutoLayout, setUseAutoLayout] = useState(false)
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null)
   const [lockedNodeId, setLockedNodeId] = useState<string | null>(null)
+  // Measured title-block height, so the zoom controls can slide clear of it.
+  const [titleBlockH, setTitleBlockH] = useState(48)
   const fx = useMemo(() => resolveHoverEffects(hoverEffects), [hoverEffects])
 
   // Active node = locked takes priority over hovered
@@ -993,13 +1037,30 @@ export default function ArcDiagram({
   // Displayed label: prop overrides data.id
   const displayLabel = label ?? id
 
-  // Chrome corner layout: the label position is declarative. The zoom controls
-  // keep their fixed home (bottom-right); anything that would share that corner
-  // (the title block, or a bottom-right label) stacks just above them on the
-  // y-axis instead of displacing them.
+  // Chrome inset: when a full-rectangle frame border is drawn, the floating
+  // chrome (source toggle, minimap, label, zoom, title block) sits INSIDE the
+  // border with a gap instead of welding to the container edge. Otherwise it
+  // hugs the edge at the usual 12px.
+  const borderedFrame = frameVariant === 'sheet' || frameVariant === 'inset'
+  const chromeInset = borderedFrame ? 28 : 12
+
+  const showTitleBlock = !!brand?.titleBlock && !showArc
   const showLabel = !!displayLabel && !brand?.titleBlock
   const zoomShown = (interactive || showControls) && !showArc
-  const labelRaised = showLabel && labelPosition === 'bottom-right' && zoomShown
+
+  // The bottom-right corner belongs to "content" — the title block (a drawing
+  // element) or a bottom-right label — which anchors there. The zoom controls
+  // are utility chrome: they're the ones that yield, sliding up to clear that
+  // content (measured height for the title block, ~one line for a label).
+  const brLabel = showLabel && labelPosition === 'bottom-right'
+  const cornerContentH = showTitleBlock ? titleBlockH : (brLabel ? 14 : 0)
+  const zoomBottom = chromeInset + (zoomShown && cornerContentH ? cornerContentH + 10 : 0)
+
+  // Declarative label placement resolved to pixel offsets (respects the frame inset).
+  const labelStyle: React.CSSProperties = {
+    ...(labelPosition.includes('top') ? { top: chromeInset } : { bottom: chromeInset }),
+    ...(labelPosition.includes('left') ? { left: chromeInset } : { right: chromeInset }),
+  }
 
   return (
     <div
@@ -1039,8 +1100,20 @@ export default function ArcDiagram({
               <pattern id={gridId} width={themeColors.background.grid.size} height={themeColors.background.grid.size} patternUnits="userSpaceOnUse">
                 {gridMotif(brand?.gridType, themeColors.background.grid.size, themeColors.background.grid.color)}
               </pattern>
+              {brand?.gridType === 'crosshair' && (() => {
+                // Major graticule at 5× the cell — a longer, heavier crosshair every
+                // fifth line for a minor/major rhythm. Origin-aligned so major marks
+                // land on minor crosshair centers. Crosshair-only; other grids untouched.
+                const M = themeColors.background.grid.size * 5, C = M / 2, r = 5
+                return (
+                  <pattern id={`${gridId}-major`} width={M} height={M} patternUnits="userSpaceOnUse">
+                    <path d={`M ${C} ${C - r} L ${C} ${C + r} M ${C - r} ${C} L ${C + r} ${C}`} stroke={themeColors.background.grid.color} strokeWidth={1} />
+                  </pattern>
+                )
+              })()}
             </defs>
             <rect width="100%" height="100%" fill={`url(#${gridId})`} />
+            {brand?.gridType === 'crosshair' && <rect width="100%" height="100%" fill={`url(#${gridId}-major)`} />}
           </svg>
         )}
 
@@ -1104,7 +1177,9 @@ export default function ArcDiagram({
         <TitleBlock
           mode={mode}
           mono={brand.monoFamily}
-          bottom={zoomShown ? 48 : FRAME_INSET}
+          right={chromeInset}
+          bottom={chromeInset}
+          onHeight={setTitleBlockH}
           info={{
             title: titleBlock?.title ?? 'System Architecture',
             drawing: titleBlock?.drawing ?? displayLabel ?? '—',
@@ -1127,6 +1202,7 @@ export default function ArcDiagram({
           showArc={showArc}
           onToggle={() => setShowArc(s => !s)}
           mode={mode}
+          inset={chromeInset}
         />
       )}
 
@@ -1136,14 +1212,15 @@ export default function ArcDiagram({
           active={useAutoLayout}
           onToggle={() => setUseAutoLayout(v => !v)}
           mode={mode}
+          inset={chromeInset}
         />
       )}
 
       {/* Diagram label - bottom left (hidden when the title block already shows the drawing no.) */}
       {showLabel && (
         <div
-          className={`absolute font-mono text-[9px] tracking-wider z-10 ${themeColors.text.muted} ${labelRaised ? 'right-3' : CORNER_POS[labelPosition]}`}
-          style={{ fontFamily: brand?.monoFamily, ...(labelRaised ? { bottom: 46 } : null) }}
+          className={`absolute font-mono text-[9px] tracking-wider z-10 ${themeColors.text.muted}`}
+          style={{ fontFamily: brand?.monoFamily, ...labelStyle }}
         >
           {displayLabel}
         </div>
@@ -1158,6 +1235,7 @@ export default function ArcDiagram({
           themeColors={themeColors}
           brand={brand}
           mode={mode}
+          inset={chromeInset}
         />
       )}
 
@@ -1171,6 +1249,8 @@ export default function ArcDiagram({
           onReset={handleReset}
           mode={mode}
           brand={brand}
+          right={chromeInset}
+          bottom={zoomBottom}
         />
       )}
     </div>

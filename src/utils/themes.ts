@@ -43,7 +43,7 @@ export interface BrandSpec {
   /** Background grid system. */
   gridType?: 'dots' | 'lines' | 'crosshair' | 'none'
   /** Edge/frame treatment at the diagram boundary. */
-  frame?: 'hairline' | 'inset' | 'brackets' | 'ticks' | 'cropmarks' | 'corners' | 'sheet' | 'none'
+  frame?: 'hairline' | 'inset' | 'brackets' | 'ticks' | 'cropmarks' | 'corners' | 'sheet' | 'reticle' | 'none'
   /** Render an engineering-drawing title block in the bottom-right corner. */
   titleBlock?: boolean
 }
@@ -356,7 +356,7 @@ const tacticalTheme: Theme = {
     palette: techDark,
     background: {
       container: 'bg-[#0b0d0e] border border-[#23292d]',
-      grid: { color: 'rgba(224, 168, 61, 0.24)', opacity: 1, size: 24 },
+      grid: { color: 'rgba(224, 168, 61, 0.20)', opacity: 1, size: 24 },
     },
     text: { primary: 'text-[#e8e6e1]', secondary: 'text-[#9aa0a4]', muted: 'text-[#5f676c]' },
   },
@@ -369,7 +369,7 @@ const tacticalTheme: Theme = {
     upperLabels: true,
     arrowhead: 'chevron',
     gridType: 'crosshair',
-    frame: 'brackets',
+    frame: 'reticle',
   },
 }
 

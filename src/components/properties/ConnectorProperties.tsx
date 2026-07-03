@@ -1,29 +1,43 @@
-
 import { useEditor, useDiagram } from '../editor/EditorProvider'
 import { ANCHOR_POSITIONS } from '../../utils/constants'
+import {
+  InspSection,
+  InspTitle,
+  InspField,
+  InspLabel,
+  InspSelect,
+  InspDivider,
+  InspMeta,
+  InspGrid2,
+  InspCheckbox,
+  InspRange,
+  InspSubsectionTitle,
+} from '../editor/inspector-ui'
 
-function SelectField({ label, value, onChange, options }) {
+function SelectField({
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string
+  value: string
+  onChange: (value: string) => void
+  options: { value: string; label: string }[]
+}) {
   return (
-    <div>
-      <label className="block text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-1">
-        {label}
-      </label>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full px-3 py-1.5 text-sm rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800"
-      >
-        {options.map(opt => (
-          <option key={opt.value} value={opt.value}>
-            {opt.label}
-          </option>
+    <InspField>
+      <InspLabel>{label}</InspLabel>
+      <InspSelect value={value} onChange={(e) => onChange(e.target.value)}>
+        {options.map((opt) => (
+          <option key={opt.value} value={opt.value}>{opt.label}</option>
         ))}
-      </select>
-    </div>
+      </InspSelect>
+    </InspField>
   )
 }
 
-export default function ConnectorProperties({ connectorIndex }) {
+export default function ConnectorProperties({ connectorIndex }: { connectorIndex: number }) {
   const { actions, dispatch } = useEditor()
   const diagram = useDiagram()
 
@@ -32,12 +46,11 @@ export default function ConnectorProperties({ connectorIndex }) {
 
   const currentStyle = diagram.connectorStyles[connector.style]
 
-  const handleUpdate = (field, value) => {
+  const handleUpdate = (field: string, value: unknown) => {
     actions.updateConnector(connectorIndex, { [field]: value })
   }
 
-  // Update the connector style (affects all connectors using this style)
-  const handleStyleUpdate = (field, value) => {
+  const handleStyleUpdate = (field: string, value: unknown) => {
     dispatch({
       type: 'connectorStyle/update',
       styleName: connector.style,
@@ -45,168 +58,67 @@ export default function ConnectorProperties({ connectorIndex }) {
     })
   }
 
-  const styleOptions = Object.keys(diagram.connectorStyles).map(key => ({
+  const styleOptions = Object.keys(diagram.connectorStyles).map((key) => ({
     value: key,
     label: `${key} (${diagram.connectorStyles[key].label || key})`,
   }))
 
-  const anchorOptions = ANCHOR_POSITIONS.map(pos => ({
-    value: pos,
-    label: pos,
-  }))
-
-  const nodeOptions = Object.keys(diagram.nodes).map(id => ({
+  const anchorOptions = ANCHOR_POSITIONS.map((pos) => ({ value: pos, label: pos }))
+  const nodeOptions = Object.keys(diagram.nodes).map((id) => ({
     value: id,
     label: diagram.nodeData[id]?.name || id,
   }))
 
   return (
-    <div className="space-y-4">
-      <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">
-        Connector Properties
-      </h3>
+    <InspSection>
+      <InspTitle>Connector</InspTitle>
+
+      <SelectField label="Style" value={connector.style} onChange={(v) => handleUpdate('style', v)} options={styleOptions} />
+
+      <InspGrid2>
+        <SelectField label="From" value={connector.from} onChange={(v) => handleUpdate('from', v)} options={nodeOptions} />
+        <SelectField label="From anchor" value={connector.fromAnchor} onChange={(v) => handleUpdate('fromAnchor', v)} options={anchorOptions} />
+        <SelectField label="To" value={connector.to} onChange={(v) => handleUpdate('to', v)} options={nodeOptions} />
+        <SelectField label="To anchor" value={connector.toAnchor} onChange={(v) => handleUpdate('toAnchor', v)} options={anchorOptions} />
+      </InspGrid2>
 
       <SelectField
-        label="Style"
-        value={connector.style}
-        onChange={(v) => handleUpdate('style', v)}
-        options={styleOptions}
+        label="Path style"
+        value={connector.curve || 'auto'}
+        onChange={(v) => handleUpdate('curve', v === 'auto' ? undefined : v)}
+        options={[
+          { value: 'auto', label: 'Auto' },
+          { value: 'natural', label: 'Natural curve' },
+        ]}
       />
 
-      <div className="grid grid-cols-2 gap-3">
-        <SelectField
-          label="From Node"
-          value={connector.from}
-          onChange={(v) => handleUpdate('from', v)}
-          options={nodeOptions}
+      {connector.curve === 'natural' && (
+        <InspRange
+          label="Curve tension"
+          value={connector.curveDepth ?? 50}
+          min={20}
+          max={100}
+          suffix="%"
+          onChange={(v) => handleUpdate('curveDepth', v)}
         />
-        <SelectField
-          label="From Anchor"
-          value={connector.fromAnchor}
-          onChange={(v) => handleUpdate('fromAnchor', v)}
-          options={anchorOptions}
-        />
-      </div>
+      )}
 
-      <div className="grid grid-cols-2 gap-3">
-        <SelectField
-          label="To Node"
-          value={connector.to}
-          onChange={(v) => handleUpdate('to', v)}
-          options={nodeOptions}
-        />
-        <SelectField
-          label="To Anchor"
-          value={connector.toAnchor}
-          onChange={(v) => handleUpdate('toAnchor', v)}
-          options={anchorOptions}
-        />
-      </div>
+      <InspDivider />
+      <InspSubsectionTitle>Style options</InspSubsectionTitle>
 
-      {/* Curve options */}
-      <div className="space-y-2">
-        <SelectField
-          label="Path Style"
-          value={connector.curve || 'auto'}
-          onChange={(v) => handleUpdate('curve', v === 'auto' ? undefined : v)}
-          options={[
-            { value: 'auto', label: 'Auto (based on anchors)' },
-            { value: 'natural', label: 'Natural Curve' },
-          ]}
-        />
+      <InspCheckbox label="Show arrow" checked={currentStyle?.showArrow !== false} onChange={(v) => handleStyleUpdate('showArrow', v)} />
+      <InspCheckbox label="Show endpoint dots" checked={currentStyle?.showEndpoints !== false} onChange={(v) => handleStyleUpdate('showEndpoints', v)} />
+      <InspCheckbox label="Dashed line" checked={currentStyle?.dashed === true} onChange={(v) => handleStyleUpdate('dashed', v)} />
+      <InspCheckbox label="Bidirectional" checked={currentStyle?.bidirectional === true} onChange={(v) => handleStyleUpdate('bidirectional', v)} />
+      {currentStyle?.dashed && (
+        <InspCheckbox label="Animated motion" checked={currentStyle?.animated !== false} onChange={(v) => handleStyleUpdate('animated', v)} />
+      )}
 
-        {/* Curve tension slider - controls how pronounced the curve is */}
-        {connector.curve === 'natural' && (
-          <div>
-            <label className="block text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-1">
-              Curve Tension: {connector.curveDepth ?? 50}%
-            </label>
-            <input
-              type="range"
-              min="20"
-              max="100"
-              value={connector.curveDepth ?? 50}
-              onChange={(e) => handleUpdate('curveDepth', parseInt(e.target.value))}
-              className="w-full"
-            />
-          </div>
-        )}
-      </div>
-
-      {/* Style-level options */}
-      <div className="pt-3 border-t border-zinc-200 dark:border-zinc-700 space-y-2">
-        <div className="text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-2">
-          Style Options
-        </div>
-
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={currentStyle?.showArrow !== false}
-            onChange={(e) => handleStyleUpdate('showArrow', e.target.checked)}
-            className="rounded border-zinc-300 dark:border-zinc-600"
-          />
-          <span className="text-sm text-zinc-600 dark:text-zinc-400">
-            Show arrow
-          </span>
-        </label>
-
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={currentStyle?.showEndpoints !== false}
-            onChange={(e) => handleStyleUpdate('showEndpoints', e.target.checked)}
-            className="rounded border-zinc-300 dark:border-zinc-600"
-          />
-          <span className="text-sm text-zinc-600 dark:text-zinc-400">
-            Show endpoint dots
-          </span>
-        </label>
-
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={currentStyle?.dashed === true}
-            onChange={(e) => handleStyleUpdate('dashed', e.target.checked)}
-            className="rounded border-zinc-300 dark:border-zinc-600"
-          />
-          <span className="text-sm text-zinc-600 dark:text-zinc-400">
-            Dashed line
-          </span>
-        </label>
-
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={currentStyle?.bidirectional === true}
-            onChange={(e) => handleStyleUpdate('bidirectional', e.target.checked)}
-            className="rounded border-zinc-300 dark:border-zinc-600"
-          />
-          <span className="text-sm text-zinc-600 dark:text-zinc-400">
-            Bidirectional (arrows at both ends)
-          </span>
-        </label>
-
-        {currentStyle?.dashed && (
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={currentStyle?.animated !== false}
-              onChange={(e) => handleStyleUpdate('animated', e.target.checked)}
-              className="rounded border-zinc-300 dark:border-zinc-600"
-            />
-            <span className="text-sm text-zinc-600 dark:text-zinc-400">
-              Animated motion
-            </span>
-          </label>
-        )}
-      </div>
-
-      <div className="pt-2 border-t border-zinc-200 dark:border-zinc-700">
-        <div className="text-xs text-zinc-400">
-          Index: {connectorIndex} | Style: {connector.style}
-        </div>
-      </div>
-    </div>
+      <InspDivider />
+      <InspMeta>
+        <div>Index: {connectorIndex}</div>
+        <div>Style: {connector.style}</div>
+      </InspMeta>
+    </InspSection>
   )
 }

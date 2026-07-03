@@ -1,139 +1,88 @@
 import { useState } from 'react'
-import { Plus, Trash2, ChevronDown, ChevronRight } from 'lucide-react'
+import { Plus, Trash2 } from 'lucide-react'
 import { useEditor, useDiagram } from '../editor/EditorProvider'
-import { COLOR_OPTIONS } from '../../utils/constants'
+import { COLOR_OPTIONS, NODE_COLOR_HEX } from '../../utils/constants'
+import {
+  InspSection,
+  InspTitle,
+  InspHint,
+  InspField,
+  InspLabel,
+  InspInput,
+  InspCheckbox,
+  InspDivider,
+  InspAccordion,
+  InspRange,
+} from '../editor/inspector-ui'
 import GridSettings from './GridSettings'
 
-const colorSwatches = {
-  violet: 'bg-violet-500',
-  emerald: 'bg-emerald-500',
-  blue: 'bg-blue-500',
-  amber: 'bg-amber-500',
-  zinc: 'bg-zinc-500',
-  sky: 'bg-sky-500',
-}
-
-function StyleEditor({ styleName, style, onUpdate, onDelete, connectorsUsingStyle }) {
+function StyleEditor({
+  styleName,
+  style,
+  onUpdate,
+  onDelete,
+  connectorsUsingStyle,
+}: {
+  styleName: string
+  style: any
+  onUpdate: (updates: Record<string, unknown>) => void
+  onDelete: () => void
+  connectorsUsingStyle: number
+}) {
   const [expanded, setExpanded] = useState(false)
 
   return (
-    <div className="border border-zinc-200 dark:border-zinc-700 rounded-lg overflow-hidden">
-      {/* Header */}
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
-      >
-        {expanded ? (
-          <ChevronDown className="w-4 h-4 text-zinc-400" />
-        ) : (
-          <ChevronRight className="w-4 h-4 text-zinc-400" />
-        )}
-        <div className={`w-3 h-3 rounded-full ${colorSwatches[style.color]}`} />
-        <span className="text-sm font-medium text-zinc-900 dark:text-white flex-1">
-          {styleName}
-        </span>
-        <span className="text-xs text-zinc-400">
-          {connectorsUsingStyle} connection{connectorsUsingStyle !== 1 ? 's' : ''}
-        </span>
-      </button>
+    <InspAccordion
+      title={styleName}
+      meta={`${connectorsUsingStyle} conn.`}
+      expanded={expanded}
+      onToggle={() => setExpanded(!expanded)}
+      leading={<span className="arc-insp-dot" style={{ backgroundColor: NODE_COLOR_HEX[style.color] || '#6b757a' }} />}
+    >
+      <InspField>
+        <InspLabel>Label</InspLabel>
+        <InspInput
+          type="text"
+          value={style.label || ''}
+          onChange={(e) => onUpdate({ label: e.target.value })}
+          placeholder="Optional label"
+        />
+      </InspField>
 
-      {/* Expanded editor */}
-      {expanded && (
-        <div className="px-3 pb-3 pt-1 space-y-3 border-t border-zinc-200 dark:border-zinc-700">
-          {/* Label */}
-          <div>
-            <label className="block text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-1">
-              Label
-            </label>
-            <input
-              type="text"
-              value={style.label || ''}
-              onChange={(e) => onUpdate({ label: e.target.value })}
-              placeholder="Optional label"
-              className="w-full px-2 py-1.5 text-sm rounded border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800"
-            />
-          </div>
-
-          {/* Color */}
-          <div>
-            <label className="block text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-1">
-              Color
-            </label>
-            <div className="flex gap-1.5">
-              {COLOR_OPTIONS.map(color => (
-                <button
-                  key={color}
-                  onClick={() => onUpdate({ color })}
-                  className={`
-                    w-6 h-6 rounded-full ${colorSwatches[color]}
-                    ${style.color === color ? 'ring-2 ring-offset-2 ring-blue-500 dark:ring-offset-zinc-900' : ''}
-                  `}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Stroke Width */}
-          <div>
-            <label className="block text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-1">
-              Stroke Width: {style.strokeWidth || 2}
-            </label>
-            <input
-              type="range"
-              min="1"
-              max="6"
-              value={style.strokeWidth || 2}
-              onChange={(e) => onUpdate({ strokeWidth: parseInt(e.target.value) })}
-              className="w-full"
-            />
-          </div>
-
-          {/* Checkboxes */}
-          <div className="space-y-2">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={style.dashed === true}
-                onChange={(e) => onUpdate({ dashed: e.target.checked })}
-                className="rounded border-zinc-300 dark:border-zinc-600"
-              />
-              <span className="text-sm text-zinc-600 dark:text-zinc-400">Dashed</span>
-            </label>
-
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={style.showArrow !== false}
-                onChange={(e) => onUpdate({ showArrow: e.target.checked })}
-                className="rounded border-zinc-300 dark:border-zinc-600"
-              />
-              <span className="text-sm text-zinc-600 dark:text-zinc-400">Show arrow</span>
-            </label>
-
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={style.showEndpoints !== false}
-                onChange={(e) => onUpdate({ showEndpoints: e.target.checked })}
-                className="rounded border-zinc-300 dark:border-zinc-600"
-              />
-              <span className="text-sm text-zinc-600 dark:text-zinc-400">Show endpoint dots</span>
-            </label>
-          </div>
-
-          {/* Delete button */}
-          {connectorsUsingStyle === 0 && (
+      <InspField>
+        <InspLabel>Color</InspLabel>
+        <div className="arc-insp-swatch-row">
+          {COLOR_OPTIONS.map((color) => (
             <button
-              onClick={onDelete}
-              className="flex items-center gap-1.5 text-xs text-red-600 dark:text-red-400 hover:text-red-700"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              Delete style
-            </button>
-          )}
+              key={color}
+              type="button"
+              className={`arc-insp-swatch${style.color === color ? ' is-selected' : ''}`}
+              style={{ backgroundColor: NODE_COLOR_HEX[color] }}
+              onClick={() => onUpdate({ color })}
+            />
+          ))}
         </div>
+      </InspField>
+
+      <InspRange
+        label="Stroke width"
+        value={style.strokeWidth || 2}
+        min={1}
+        max={6}
+        onChange={(v) => onUpdate({ strokeWidth: v })}
+      />
+
+      <InspCheckbox label="Dashed" checked={style.dashed === true} onChange={(v) => onUpdate({ dashed: v })} />
+      <InspCheckbox label="Show arrow" checked={style.showArrow !== false} onChange={(v) => onUpdate({ showArrow: v })} />
+      <InspCheckbox label="Show endpoint dots" checked={style.showEndpoints !== false} onChange={(v) => onUpdate({ showEndpoints: v })} />
+
+      {connectorsUsingStyle === 0 && (
+        <button type="button" className="arc-insp-link" onClick={onDelete} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Trash2 size={12} />
+          Delete style
+        </button>
       )}
-    </div>
+    </InspAccordion>
   )
 }
 
@@ -143,18 +92,13 @@ export default function ConnectorStylesPanel() {
   const [newStyleName, setNewStyleName] = useState('')
   const [showConnectors, setShowConnectors] = useState(true)
 
-  // Count how many connectors use each style
-  const styleUsage = {}
+  const styleUsage: Record<string, number> = {}
   for (const styleName of Object.keys(diagram.connectorStyles)) {
-    styleUsage[styleName] = diagram.connectors.filter(c => c.style === styleName).length
+    styleUsage[styleName] = diagram.connectors.filter((c) => c.style === styleName).length
   }
 
-  const handleUpdateStyle = (styleName, updates) => {
-    dispatch({
-      type: 'connectorStyle/update',
-      styleName,
-      updates,
-    })
+  const handleUpdateStyle = (styleName: string, updates: Record<string, unknown>) => {
+    dispatch({ type: 'connectorStyle/update', styleName, updates })
   }
 
   const handleAddStyle = () => {
@@ -177,25 +121,16 @@ export default function ConnectorStylesPanel() {
     setNewStyleName('')
   }
 
-  const handleDeleteStyle = (styleName) => {
-    dispatch({
-      type: 'connectorStyle/delete',
-      styleName,
-    })
+  const handleDeleteStyle = (styleName: string) => {
+    dispatch({ type: 'connectorStyle/delete', styleName })
   }
 
   return (
-    <div className="space-y-4">
-      <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">
-        Connector Styles
-      </h3>
+    <InspSection>
+      <InspTitle>Connector styles</InspTitle>
+      <InspHint>Reusable styles for diagram connections. Expand a style to edit it.</InspHint>
 
-      <p className="text-xs text-zinc-500 dark:text-zinc-400">
-        Define reusable styles for connectors. Click a style to edit it.
-      </p>
-
-      {/* Style list */}
-      <div className="space-y-2">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {Object.entries(diagram.connectorStyles).map(([name, style]) => (
           <StyleEditor
             key={name}
@@ -208,73 +143,60 @@ export default function ConnectorStylesPanel() {
         ))}
       </div>
 
-      {/* Add new style */}
-      <div className="pt-3 border-t border-zinc-200 dark:border-zinc-700">
-        <label className="block text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-1">
-          Add New Style
-        </label>
-        <div className="flex gap-2">
-          <input
+      <InspField>
+        <InspLabel>Add style</InspLabel>
+        <div className="arc-insp-add-row">
+          <InspInput
             type="text"
             value={newStyleName}
             onChange={(e) => setNewStyleName(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleAddStyle()}
-            placeholder="Style name..."
-            className="flex-1 px-2 py-1.5 text-sm rounded border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800"
+            placeholder="Style name…"
           />
-          <button
-            onClick={handleAddStyle}
-            disabled={!newStyleName.trim()}
-            className="px-3 py-1.5 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <Plus className="w-4 h-4" />
+          <button type="button" className="arc-insp-add-btn" onClick={handleAddStyle} disabled={!newStyleName.trim()}>
+            <Plus size={16} />
           </button>
         </div>
-      </div>
+      </InspField>
 
-      {/* Connector list */}
-      <div className="pt-4 mt-4 border-t border-zinc-200 dark:border-zinc-700">
-        <button
-          onClick={() => setShowConnectors(!showConnectors)}
-          className="flex items-center gap-2 text-sm font-semibold text-zinc-900 dark:text-white mb-2"
-        >
-          {showConnectors ? (
-            <ChevronDown className="w-4 h-4" />
-          ) : (
-            <ChevronRight className="w-4 h-4" />
-          )}
-          Connections ({diagram.connectors.length})
-        </button>
+      <InspDivider />
 
-        {showConnectors && (
-          <div className="space-y-1">
-            {diagram.connectors.map((connector, index) => {
-              const fromNode = diagram.nodeData[connector.from]?.name || connector.from
-              const toNode = diagram.nodeData[connector.to]?.name || connector.to
-              const style = diagram.connectorStyles[connector.style]
+      <button
+        type="button"
+        className="arc-insp-subsection-toggle"
+        onClick={() => setShowConnectors(!showConnectors)}
+      >
+        <span className="arc-insp-accordion-chevron" aria-hidden="true">{showConnectors ? '▾' : '▸'}</span>
+        <span className="arc-insp-accordion-title">Connections ({diagram.connectors.length})</span>
+      </button>
 
-              return (
-                <button
-                  key={index}
-                  onClick={() => actions.selectConnector(index)}
-                  className="w-full flex items-center gap-2 px-2 py-1.5 text-left text-xs rounded hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                >
-                  <div className={`w-2 h-2 rounded-full ${colorSwatches[style?.color] || 'bg-zinc-400'}`} />
-                  <span className="text-zinc-600 dark:text-zinc-400 truncate">
-                    {fromNode} → {toNode}
-                  </span>
-                  <span className="text-zinc-400 dark:text-zinc-500 ml-auto">
-                    {connector.style}
-                  </span>
-                </button>
-              )
-            })}
-          </div>
-        )}
-      </div>
+      {showConnectors && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {diagram.connectors.map((connector, index) => {
+            const fromNode = diagram.nodeData[connector.from]?.name || connector.from
+            const toNode = diagram.nodeData[connector.to]?.name || connector.to
+            const style = diagram.connectorStyles[connector.style]
 
-      {/* Grid settings */}
+            return (
+              <button
+                key={index}
+                type="button"
+                className="arc-insp-list-item"
+                onClick={() => actions.selectConnector(index)}
+              >
+                <span
+                  className="arc-insp-dot"
+                  style={{ backgroundColor: NODE_COLOR_HEX[style?.color] || '#6b757a' }}
+                />
+                <span className="arc-insp-list-item-label">{fromNode} → {toNode}</span>
+                <span className="arc-insp-list-item-meta">{connector.style}</span>
+              </button>
+            )
+          })}
+        </div>
+      )}
+
       <GridSettings />
-    </div>
+    </InspSection>
   )
 }

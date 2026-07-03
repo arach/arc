@@ -20,27 +20,21 @@ interface ToolButtonProps {
 function ToolButton({ icon: Icon, label, onClick, active = false, disabled = false }: ToolButtonProps) {
   return (
     <button
+      type="button"
       onClick={onClick}
       disabled={disabled}
       title={label}
       aria-label={label}
       aria-pressed={active}
-      className={`
-        p-2 rounded-lg transition-all
-        ${active
-          ? 'bg-blue-500 text-white shadow-sm'
-          : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700'
-        }
-        ${disabled ? 'opacity-30 cursor-not-allowed' : ''}
-      `}
+      className={`arc-editor-tool-btn${active ? ' is-active' : ''}`}
     >
-      <Icon className="w-4 h-4" strokeWidth={2} />
+      <Icon className="w-4 h-4" strokeWidth={1.75} />
     </button>
   )
 }
 
 function Divider() {
-  return <div className="w-px h-6 bg-zinc-200 dark:bg-zinc-600 mx-0.5" />
+  return <div className="arc-editor-tool-divider" />
 }
 
 export default function FloatingToolbar() {
@@ -158,19 +152,18 @@ export default function FloatingToolbar() {
       onPointerLeave={handleDragEnd}
     >
       <div
-        className={`flex items-center gap-0.5 px-2 py-1.5 bg-white dark:bg-zinc-800 rounded-xl shadow-lg border border-zinc-200 dark:border-zinc-700 ${isDragging ? 'cursor-grabbing' : ''}`}
+        className={`arc-editor-toolbar${isDragging ? ' is-dragging' : ''}`}
         role="toolbar"
         aria-label="Diagram editing tools"
       >
-        {/* Drag handle */}
         <div
-          className="p-1.5 cursor-grab hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg mr-0.5 touch-none"
+          className="arc-editor-drag-handle"
           onPointerDown={handleDragStart}
           role="button"
           aria-label="Drag to reposition toolbar"
           tabIndex={0}
         >
-          <GripVertical className="w-4 h-4 text-zinc-400" strokeWidth={2} />
+          <GripVertical className="w-4 h-4" strokeWidth={1.75} />
         </div>
 
         <Divider />

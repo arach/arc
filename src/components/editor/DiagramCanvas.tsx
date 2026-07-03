@@ -857,16 +857,14 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
 
       {/* Mode indicator */}
       {modeLabel && (
-        <div className={`absolute top-2 left-2 px-2 py-1 rounded text-white text-xs font-medium ${
-          editor.mode === 'pan' ? 'bg-zinc-600' : 'bg-blue-500'
-        }`}>
+        <div className={`arc-editor-mode-badge${editor.mode === 'pan' ? ' is-pan' : ''}`}>
           {modeLabel}
         </div>
       )}
 
       {/* Pending connector indicator */}
       {editor.pendingConnector && (
-        <div className="absolute top-2 right-2 px-2 py-1 rounded bg-amber-500 text-white text-xs font-medium">
+        <div className="arc-editor-mode-badge is-pending">
           Select target anchor
         </div>
       )}

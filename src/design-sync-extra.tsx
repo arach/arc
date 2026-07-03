@@ -33,7 +33,7 @@ export function LandingPage() {
  * card viewport with no host state, router, or required props.
  */
 export function DiagramStudio() {
-  return <DiagramEditorImpl isDark={false} onToggleTheme={() => {}} />
+  return <DiagramEditorImpl colorMode="light" />
 }
 
 // Design-language diagram versions — the canonical Arc architecture diagram

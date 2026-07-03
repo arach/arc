@@ -4,7 +4,7 @@
  */
 import React, { useState, useEffect } from 'react'
 import { isoToScreen, isoBox } from '../utils/isometric'
-import type { DiagramConfig, PlayerOptions } from './types'
+import type { DiagramConfig, DiagramNode, PlayerOptions } from './types'
 
 // Typography
 const MONO_FONT = '"JetBrains Mono", "Fira Code", "SF Mono", Consolas, monospace'
@@ -49,16 +49,16 @@ function interpolateColor(darkColor: string, lightColor: string, intensity: numb
 }
 
 // Isometric text on top face
-function IsoText({ x, y, z, children, fontSize = 8, color = '#1e293b' }: {
-  x: number; y: number; z: number; children: string; fontSize?: number; color?: string
+function IsoText({ x, y, z, children, fontSize = 8, color = '#1e293b', shadow }: {
+  x: number; y: number; z: number; children: string; fontSize?: number; color?: string; shadow?: string
 }) {
   const pos = isoToScreen(x, y, z)
   return (
-    <g transform={`translate(${pos.screenX}, ${pos.screenY})`}>
+    <g transform={`translate(${pos.screenX}, ${pos.screenY})`} filter={shadow}>
       <g transform="matrix(0.866, -0.5, 0.866, 0.5, 0, 0)">
         <text x={0} y={0} textAnchor="middle" fill={color} fontSize={fontSize}
-          fontWeight={500} fontFamily={MONO_FONT}
-          style={{ textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+          fontWeight={600} fontFamily={MONO_FONT}
+          style={{ textTransform: 'uppercase', letterSpacing: '0.06em' }}>
           {children}
         </text>
       </g>
@@ -101,10 +101,14 @@ export interface ArcDiagramProps {
   options?: PlayerOptions
   className?: string
   style?: React.CSSProperties
+  /** Fired when a node box is clicked (drill-in). */
+  onNodeClick?: (node: DiagramNode, meta: { tier: number; index: number }) => void
+  /** Fired when a layer floor is clicked (solo). */
+  onLayerClick?: (tier: number) => void
 }
 
-export default function ArcDiagram({ config, options = {}, className, style }: ArcDiagramProps) {
-  const { interactive = true, animate = true, showLabels = true } = options
+export default function ArcDiagram({ config, options = {}, className, style, onNodeClick, onLayerClick }: ArcDiagramProps) {
+  const { interactive = true, animate = true, showLabels = true, expandOnHover = true } = options
   const { theme, canvas, origin, tiers, floorSize, nodes, cornerRadius = 0 } = config
 
   const colors = theme === 'dark' ? DARK_COLORS : LIGHT_COLORS
@@ -130,6 +134,9 @@ export default function ArcDiagram({ config, options = {}, className, style }: A
 
   // Hover state
   const [hoveredTier, setHoveredTier] = useState<number | null>(null)
+  // Click-driven state: soloed layer + selected node (drill-in / focus)
+  const [soloTier, setSoloTier] = useState<number | null>(null)
+  const [selected, setSelected] = useState<{ tier: number; index: number } | null>(null)
 
   // Sort nodes back-to-front (painter's algorithm)
   const sortedNodes = [...nodes].sort((a, b) => {
@@ -143,7 +150,8 @@ export default function ArcDiagram({ config, options = {}, className, style }: A
 
   return (
     <div className={className} style={{ display: 'inline-block', ...style }}>
-      <svg width={canvas.width} height={canvas.height} style={{ backgroundColor: bgColor }}>
+      <svg width={canvas.width} height={canvas.height} style={{ backgroundColor: bgColor }}
+        onClick={() => { if (interactive) { setSelected(null); setSoloTier(null) } }}>
         <defs>
           <pattern id={`grid-${config.id}`} width="24" height="24" patternUnits="userSpaceOnUse">
             <circle cx="12" cy="12" r="0.5" fill={theme === 'dark' ? '#1e293b' : '#e2e8f0'} />
@@ -152,32 +160,71 @@ export default function ArcDiagram({ config, options = {}, className, style }: A
             <feDropShadow dx="0" dy="4" stdDeviation="8"
               floodColor={theme === 'dark' ? '#60a5fa' : '#3b82f6'} floodOpacity="0.3" />
           </filter>
+          {/* Ambient depth behind the scene */}
+          <radialGradient id={`bg-${config.id}`} cx="48%" cy="34%" r="82%">
+            <stop offset="0%" stopColor={theme === 'dark' ? '#16203a' : '#ffffff'} />
+            <stop offset="55%" stopColor={theme === 'dark' ? '#0e1526' : '#f2f5f9'} />
+            <stop offset="100%" stopColor={theme === 'dark' ? '#080d18' : '#e7ecf2'} />
+          </radialGradient>
+          {/* Soft contact shadow for grounding boxes */}
+          <filter id={`contact-${config.id}`} x="-60%" y="-60%" width="220%" height="220%">
+            <feGaussianBlur stdDeviation="5" />
+          </filter>
+          {/* Material: top-face sheen (light from above-back) + side-face falloff */}
+          <linearGradient id={`sheen-${config.id}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#ffffff" stopOpacity="0.18" />
+            <stop offset="55%" stopColor="#ffffff" stopOpacity="0.04" />
+            <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
+          </linearGradient>
+          <linearGradient id={`shade-${config.id}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#000000" stopOpacity="0" />
+            <stop offset="100%" stopColor="#000000" stopOpacity="0.24" />
+          </linearGradient>
+          {/* Soft legibility shadow for labels (replaces the hard outline) */}
+          <filter id={`label-${config.id}`} x="-40%" y="-40%" width="180%" height="180%">
+            <feDropShadow dx="0" dy="0.5" stdDeviation="0.7" floodColor="#000000" floodOpacity="0.7" />
+          </filter>
         </defs>
 
+        <rect width="100%" height="100%" fill={`url(#bg-${config.id})`} />
         <rect width="100%" height="100%" fill={`url(#grid-${config.id})`} opacity="0.5" />
 
         <g transform={`translate(${origin.x}, ${origin.y})`}>
           {tiers.map((tier, tierIndex) => {
             const tierNodes = sortedNodes.filter(n => n.tier === tierIndex)
             const hasEntered = animatedTiers.has(tierIndex)
-            const isHovered = interactive && hoveredTier === tierIndex
+
+            // A layer is "active" (lifted out) when soloed, or hovered while nothing is soloed/selected.
+            const isActive = interactive && (soloTier === tierIndex || (soloTier === null && selected === null && hoveredTier === tierIndex))
+            const anyFocus = interactive && (soloTier !== null || hoveredTier !== null || selected !== null)
+            const holdsSelected = selected?.tier === tierIndex
+            const dimmed = anyFocus && !isActive && !holdsSelected
 
             const entranceOffset = hasEntered ? 0 : 60
             const entranceOpacity = hasEntered ? 1 : 0
-            const hoverScale = isHovered ? 1.02 : 1
-            const dimmed = interactive && hoveredTier !== null && !isHovered
+            const lift = isActive && expandOnHover ? { x: 10, y: -34 } : { x: 0, y: 0 } // expand-out on hover/solo
+            const scale = isActive ? 1.03 : 1
 
             const floorCenter = isoToScreen(floorSize.width / 2, floorSize.depth / 2, tier.elevation)
+            const off = tier.offset || { x: 0, y: 0 } // projected per-layer offset (staggered layers)
 
             return (
               <g key={tierIndex}
+                data-tier={tierIndex}
                 onMouseEnter={() => interactive && setHoveredTier(tierIndex)}
                 onMouseLeave={() => interactive && setHoveredTier(null)}
+                onClick={(e) => {
+                  if (!interactive) return
+                  e.stopPropagation()
+                  setSelected(null)
+                  setSoloTier(prev => (prev === tierIndex ? null : tierIndex))
+                  onLayerClick?.(tierIndex)
+                }}
                 style={{
-                  transform: `translate(${floorCenter.screenX}px, ${floorCenter.screenY + entranceOffset}px) scale(${hoverScale}) translate(${-floorCenter.screenX}px, ${-floorCenter.screenY}px)`,
+                  transform: `translate(${off.x + lift.x}px, ${off.y + lift.y}px) translate(${floorCenter.screenX}px, ${floorCenter.screenY + entranceOffset}px) scale(${scale}) translate(${-floorCenter.screenX}px, ${-floorCenter.screenY}px)`,
                   transition: 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s ease-out',
-                  opacity: entranceOpacity * (dimmed ? 0.5 : 1),
-                  filter: isHovered ? `url(#glow-${config.id})` : 'none',
+                  opacity: entranceOpacity * (dimmed ? 0.35 : 1),
+                  filter: isActive ? `url(#glow-${config.id})` : 'none',
                   cursor: interactive ? 'pointer' : 'default',
                 }}>
 
@@ -196,9 +243,25 @@ export default function ArcDiagram({ config, options = {}, className, style }: A
                   const pos = isoToScreen(node.x, node.y, nodeElevation)
                   const box = isoBox(node.width, node.depth, node.height, pos.screenX, pos.screenY, cornerRadius)
                   const nodeColors = colors[node.color] || colors.slate
+                  const isSelected = selected?.tier === tierIndex && selected?.index === i
+                  const nodeDim = interactive && selected !== null && !isSelected
+                  const sp = isoToScreen(node.x - 3, node.y - 3, tier.elevation)
+                  const shadowTop = isoBox(node.width + 6, node.depth + 6, 0, sp.screenX, sp.screenY, cornerRadius).top
 
                   return (
-                    <g key={i} opacity={node.opacity ?? 1}>
+                    <g key={i}
+                      data-node={`${tierIndex}-${i}`}
+                      opacity={(node.opacity ?? 1) * (nodeDim ? 0.3 : 1)}
+                      onClick={interactive ? (e) => {
+                        e.stopPropagation()
+                        setSoloTier(null)
+                        setSelected(prev => (prev && prev.tier === tierIndex && prev.index === i ? null : { tier: tierIndex, index: i }))
+                        onNodeClick?.(node, { tier: tierIndex, index: i })
+                        if (node.link) { try { window.open(node.link, '_blank') } catch { /* noop */ } }
+                      } : undefined}
+                      style={{ cursor: interactive ? 'pointer' : 'default', transition: 'opacity 0.3s ease-out' }}>
+                      {/* Soft contact shadow grounding the box on its floor */}
+                      <path d={shadowTop} fill="#000000" opacity={0.3} filter={`url(#contact-${config.id})`} />
                       {/* Corners and faces */}
                       {box.cornerBackRight?.map((seg: { path: string; intensity: number }, idx: number) => (
                         <path key={`cbr-${idx}`} d={seg.path}
@@ -209,7 +272,9 @@ export default function ArcDiagram({ config, options = {}, className, style }: A
                           fill={interpolateColor(nodeColors.side, nodeColors.front, seg.intensity)} />
                       ))}
                       <path d={box.left} fill={nodeColors.side} />
+                      <path d={box.left} fill={`url(#shade-${config.id})`} />
                       <path d={box.right} fill={nodeColors.front} />
+                      <path d={box.right} fill={`url(#shade-${config.id})`} />
                       {box.cornerFrontRight?.map((seg: { path: string; intensity: number }, idx: number) => (
                         <path key={`cfr-${idx}`} d={seg.path}
                           fill={interpolateColor(nodeColors.front, nodeColors.side, seg.intensity)} />
@@ -219,14 +284,16 @@ export default function ArcDiagram({ config, options = {}, className, style }: A
                           fill={interpolateColor(nodeColors.front, nodeColors.side, seg.intensity)} />
                       ))}
                       <path d={box.top} fill={nodeColors.top} />
-                      <path d={box.top} fill="none" stroke="rgba(255,255,255,0.15)"
-                        strokeWidth="0.5" strokeLinejoin="round" />
+                      <path d={box.top} fill={`url(#sheen-${config.id})`} />
+                      <path d={box.top} fill="none" stroke={isSelected ? '#ffffff' : 'rgba(255,255,255,0.28)'}
+                        strokeWidth={isSelected ? 1.4 : 0.75} strokeLinejoin="round" />
 
                       {/* Label */}
                       {showLabels && node.label && (
                         <IsoText x={node.x + node.width / 2} y={node.y + node.depth / 2}
                           z={nodeElevation + node.height + 2}
-                          fontSize={node.width > 70 ? 8 : 7} color={textColor}>
+                          fontSize={node.width > 70 ? 9 : 8} color={textColor}
+                          shadow={`url(#label-${config.id})`}>
                           {node.label}
                         </IsoText>
                       )}

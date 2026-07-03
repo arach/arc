@@ -42,10 +42,7 @@ export default function AnchorPoints({
                 cx={pos.x}
                 cy={pos.y}
                 r={isPending ? 7 : 5}
-                className={`
-                  ${isPending ? 'fill-blue-500' : 'fill-blue-400 hover:fill-blue-500'}
-                  transition-all duration-150
-                `}
+                className={`arc-editor-anchor${isPending ? ' is-pending' : ''}`}
                 style={{ pointerEvents: 'none' }}
               />
               {/* Inner dot */}
@@ -53,7 +50,7 @@ export default function AnchorPoints({
                 cx={pos.x}
                 cy={pos.y}
                 r={2}
-                className="fill-white"
+                className="arc-editor-anchor-inner"
                 style={{ pointerEvents: 'none' }}
               />
             </g>

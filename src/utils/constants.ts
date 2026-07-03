@@ -109,5 +109,14 @@ export const ANCHOR_POSITIONS: AnchorPosition[] = ['top', 'right', 'bottom', 'le
 // Available color options
 export const COLOR_OPTIONS: ColorKey[] = ['violet', 'emerald', 'blue', 'amber', 'zinc', 'sky']
 
+export const NODE_COLOR_HEX: Record<ColorKey, string> = {
+  violet: '#7c6bcf',
+  emerald: '#1f7a65',
+  blue: '#2e5fa5',
+  amber: '#c4922a',
+  zinc: '#6b757a',
+  sky: '#3d8fd1',
+}
+
 // Available size options (ordered smallest to largest)
 export const SIZE_OPTIONS: NodeSizeKey[] = ['xs', 's', 'm', 'l']

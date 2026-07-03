@@ -1,31 +1,16 @@
+import { COLOR_OPTIONS, NODE_COLOR_HEX } from '../../utils/constants'
 
-import { COLOR_OPTIONS } from '../../utils/constants'
-
-const colorClasses = {
-  violet: 'bg-violet-500',
-  emerald: 'bg-emerald-500',
-  blue: 'bg-blue-500',
-  amber: 'bg-amber-500',
-  zinc: 'bg-zinc-500',
-  sky: 'bg-sky-500',
-}
-
-export default function ColorPicker({ value, onChange }) {
+export default function ColorPicker({ value, onChange }: { value: string; onChange: (color: string) => void }) {
   return (
-    <div className="flex items-center gap-2">
-      {COLOR_OPTIONS.map(color => (
+    <div className="arc-insp-swatch-row">
+      {COLOR_OPTIONS.map((color) => (
         <button
           key={color}
+          type="button"
           onClick={() => onChange(color)}
           title={color}
-          className={`
-            w-7 h-7 rounded-full transition-all
-            ${colorClasses[color]}
-            ${value === color
-              ? 'ring-2 ring-offset-2 ring-blue-500 dark:ring-offset-zinc-900 scale-110'
-              : 'hover:scale-110'
-            }
-          `}
+          className={`arc-insp-swatch${value === color ? ' is-selected' : ''}`}
+          style={{ backgroundColor: NODE_COLOR_HEX[color] }}
         />
       ))}
     </div>

@@ -6,6 +6,7 @@ import ArcDocs from './components/docs/ArcDocs'
 import ArcDiagram from './components/ArcDiagram'
 import IsometricDemo from './components/IsometricDemo'
 import IsometricExamples from './components/IsometricExamples'
+import IsometricLayersDemo from './components/IsometricLayersDemo'
 import architectureDiagram from './components/diagrams/architecture.diagram'
 import type { ThemeId } from './utils/themes'
 import { GoogleAnalytics } from './components/GoogleAnalytics'
@@ -110,7 +111,7 @@ function resolveEditorSession(urlSessionId?: string) {
     const id = hashPayload.sourceId
       ? deriveSessionId(hashPayload.sourceId)
       : generateSessionId()
-    const mode = hashPayload.mode || 'dark'
+    const mode = hashPayload.mode || 'light'
 
     // Persist immediately so refresh works
     saveDiagramSession(id, {
@@ -148,7 +149,6 @@ function EditorPage() {
 
   // Resolve session synchronously on first render
   const [resolved] = useState(() => resolveEditorSession(urlSessionId))
-  const [isDark, setIsDark] = useState(resolved.colorMode === 'dark')
 
   // Redirect to clean session URL if needed (hash import or fresh editor)
   useEffect(() => {
@@ -158,24 +158,8 @@ function EditorPage() {
     }
   }, [resolved.needsRedirect, resolved.sessionId])
 
-  useEffect(() => {
-    if (isDark) {
-      document.documentElement.classList.add('dark')
-    } else {
-      document.documentElement.classList.remove('dark')
-    }
-  }, [isDark])
-
-  useEffect(() => {
-    return () => {
-      document.documentElement.classList.remove('dark')
-    }
-  }, [])
-
   return (
     <DiagramEditor
-      isDark={isDark}
-      onToggleTheme={() => setIsDark(!isDark)}
       initialData={resolved.initialData}
       themeId={resolved.themeId}
       colorMode={resolved.colorMode}
@@ -382,6 +366,7 @@ function App() {
         <Route path="/docs/:page" element={<DocsWrapper />} />
         <Route path="/iso-demo" element={<IsometricDemo />} />
         <Route path="/iso-examples" element={<IsometricExamples />} />
+        <Route path="/iso-interactive" element={<IsometricLayersDemo />} />
         <Route path="/inspiration" element={<InspirationPage />} />
       </Routes>
     </BrowserRouter>

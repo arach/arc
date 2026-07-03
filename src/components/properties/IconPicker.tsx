@@ -1,56 +1,46 @@
 import { useState } from 'react'
-import { DIAGRAM_ICONS, getIconComponent } from '../../utils/iconRegistry'
 import { Search } from 'lucide-react'
+import { DIAGRAM_ICONS, getIconComponent } from '../../utils/iconRegistry'
 
-export default function IconPicker({ value, onChange }) {
+export default function IconPicker({ value, onChange }: { value: string; onChange: (icon: string) => void }) {
   const [search, setSearch] = useState('')
 
   const filteredIcons = search
-    ? DIAGRAM_ICONS.filter(name => name.toLowerCase().includes(search.toLowerCase()))
+    ? DIAGRAM_ICONS.filter((name) => name.toLowerCase().includes(search.toLowerCase()))
     : DIAGRAM_ICONS
 
   return (
-    <div className="space-y-2">
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div className="arc-insp-search">
+        <Search />
         <input
           type="text"
-          placeholder="Search icons..."
+          className="arc-insp-input"
+          placeholder="Search icons…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-8 pr-3 py-1.5 text-sm rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800"
         />
       </div>
 
-      {/* Icon grid */}
-      <div className="grid grid-cols-6 gap-1 max-h-40 overflow-y-auto p-1 bg-zinc-50 dark:bg-zinc-800/50 rounded-lg">
-        {filteredIcons.map(iconName => {
+      <div className="arc-insp-icon-grid">
+        {filteredIcons.map((iconName) => {
           const Icon = getIconComponent(iconName)
           const isSelected = value === iconName
           return (
             <button
               key={iconName}
+              type="button"
               onClick={() => onChange(iconName)}
               title={iconName}
-              className={`
-                p-2 rounded-lg transition-colors
-                ${isSelected
-                  ? 'bg-blue-500 text-white'
-                  : 'hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-400'
-                }
-              `}
+              className={`arc-insp-icon-btn${isSelected ? ' is-selected' : ''}`}
             >
-              <Icon className="w-5 h-5 mx-auto" />
+              <Icon size={18} strokeWidth={1.75} />
             </button>
           )
         })}
       </div>
 
-      {/* Current selection */}
-      <div className="text-xs text-zinc-500 dark:text-zinc-400 text-center">
-        Selected: {value}
-      </div>
+      <div className="arc-insp-meta">Selected: {value}</div>
     </div>
   )
 }

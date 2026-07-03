@@ -67,3 +67,5 @@ ds-bundle/
 .design-sync/node_modules
 .design-sync/arc-ds.css
 .design-sync/arc-ds.tw.css
+# OpenScout local state
+.openscout/project.json

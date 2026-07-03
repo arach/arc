@@ -28,7 +28,40 @@
     <!-- JetBrains Mono for code -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+    <!-- HudsonKit theme bootstrap — sets data-hudson-theme before first paint. -->
+    <script>
+      !(function (k, t, p) {
+        try {
+          var d = document.documentElement,
+            q = new URLSearchParams(location.search),
+            s = JSON.parse(localStorage.getItem(k) || "{}"),
+            x = q.get("theme") || s.theme || t,
+            y = q.get("template") || s.template || p,
+            m =
+              "system" === x &&
+              window.matchMedia("(prefers-color-scheme: dark)").matches
+                ? "dark"
+                : "system" === x
+                  ? "light"
+                  : x;
+          d.dataset.hudsonTheme = m;
+          d.dataset.hudsonTemplate = y;
+        } catch (e) {
+          var d = document.documentElement,
+            m =
+              "system" === t &&
+              window.matchMedia("(prefers-color-scheme: dark)").matches
+                ? "dark"
+                : "system" === t
+                  ? "light"
+                  : t;
+          d.dataset.hudsonTheme = m;
+          d.dataset.hudsonTemplate = p;
+        }
+      })("hudson.theme", "light", "hudson");
+    </script>
 
     <!-- Handle GitHub Pages SPA redirect -->
     <script type="text/javascript">

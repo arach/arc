@@ -69,8 +69,18 @@ export function renderToString(config: DiagramConfig): string {
     <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse">
       <circle cx="12" cy="12" r="0.5" fill="${theme === 'dark' ? '#1e293b' : '#e2e8f0'}"/>
     </pattern>
+    <radialGradient id="bg" cx="48%" cy="34%" r="82%">
+      <stop offset="0%" stop-color="${theme === 'dark' ? '#16203a' : '#ffffff'}"/>
+      <stop offset="55%" stop-color="${theme === 'dark' ? '#0e1526' : '#f2f5f9'}"/>
+      <stop offset="100%" stop-color="${theme === 'dark' ? '#080d18' : '#e7ecf2'}"/>
+    </radialGradient>
+    <filter id="contact" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="5"/></filter>
+    <linearGradient id="sheen" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ffffff" stop-opacity="0.18"/><stop offset="55%" stop-color="#ffffff" stop-opacity="0.04"/><stop offset="100%" stop-color="#ffffff" stop-opacity="0"/></linearGradient>
+    <linearGradient id="shade" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#000000" stop-opacity="0"/><stop offset="100%" stop-color="#000000" stop-opacity="0.24"/></linearGradient>
+    <filter id="labelshadow" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy="0.5" stdDeviation="0.7" flood-color="#000000" flood-opacity="0.7"/></filter>
   </defs>`
 
+  svg += `<rect width="100%" height="100%" fill="url(#bg)"/>`
   svg += `<rect width="100%" height="100%" fill="url(#grid)" opacity="0.5"/>`
   svg += `<g transform="translate(${origin.x},${origin.y})">`
 
@@ -78,6 +88,10 @@ export function renderToString(config: DiagramConfig): string {
   for (let tierIndex = 0; tierIndex < tiers.length; tierIndex++) {
     const tier = tiers[tierIndex]
     const tierNodes = sortedNodes.filter(n => n.tier === tierIndex)
+
+    // Projected per-layer offset (staggered layers): translate the whole tier in the picture plane.
+    const off = tier.offset || { x: 0, y: 0 }
+    svg += `<g transform="translate(${off.x},${off.y})">`
 
     // Floor
     const floorThickness = tierIndex === 0 ? 8 : 2
@@ -108,6 +122,11 @@ export function renderToString(config: DiagramConfig): string {
 
       svg += `<g opacity="${opacity}">`
 
+      // Contact shadow grounding the box on its floor
+      const sp = isoToScreen(node.x - 3, node.y - 3, tier.elevation)
+      const shadowTop = isoBox(node.width + 6, node.depth + 6, 0, sp.screenX, sp.screenY, cornerRadius).top
+      svg += `<path d="${shadowTop}" fill="#000000" opacity="0.3" filter="url(#contact)"/>`
+
       // Corners
       if (box.cornerBackRight) {
         for (const seg of box.cornerBackRight) {
@@ -122,7 +141,9 @@ export function renderToString(config: DiagramConfig): string {
 
       // Faces
       svg += `<path d="${box.left}" fill="${nodeColors.side}"/>`
+      svg += `<path d="${box.left}" fill="url(#shade)"/>`
       svg += `<path d="${box.right}" fill="${nodeColors.front}"/>`
+      svg += `<path d="${box.right}" fill="url(#shade)"/>`
 
       if (box.cornerFrontRight) {
         for (const seg of box.cornerFrontRight) {
@@ -136,15 +157,16 @@ export function renderToString(config: DiagramConfig): string {
       }
 
       svg += `<path d="${box.top}" fill="${nodeColors.top}"/>`
-      svg += `<path d="${box.top}" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="0.5" stroke-linejoin="round"/>`
+      svg += `<path d="${box.top}" fill="url(#sheen)"/>`
+      svg += `<path d="${box.top}" fill="none" stroke="rgba(255,255,255,0.28)" stroke-width="0.75" stroke-linejoin="round"/>`
 
       // Label
       if (node.label) {
         const labelPos = isoToScreen(node.x + node.width / 2, node.y + node.depth / 2, nodeElevation + node.height + 2)
-        const fontSize = node.width > 70 ? 8 : 7
-        svg += `<g transform="translate(${labelPos.screenX},${labelPos.screenY})">`
+        const fontSize = node.width > 70 ? 9 : 8
+        svg += `<g transform="translate(${labelPos.screenX},${labelPos.screenY})" filter="url(#labelshadow)">`
         svg += `<g transform="matrix(0.866,-0.5,0.866,0.5,0,0)">`
-        svg += `<text x="0" y="0" text-anchor="middle" fill="${textColor}" font-size="${fontSize}" font-weight="500" font-family="${MONO_FONT}" style="text-transform:uppercase;letter-spacing:0.08em">${node.label}</text>`
+        svg += `<text x="0" y="0" text-anchor="middle" fill="${textColor}" font-size="${fontSize}" font-weight="600" font-family='${MONO_FONT}' style="text-transform:uppercase;letter-spacing:0.06em">${node.label}</text>`
         svg += `</g></g>`
       }
 
@@ -153,7 +175,9 @@ export function renderToString(config: DiagramConfig): string {
 
     // Tier label
     const tierLabelPos = isoToScreen(-25, floorSize.depth / 2, tier.elevation + 15)
-    svg += `<text x="${tierLabelPos.screenX - 35}" y="${tierLabelPos.screenY}" fill="${labelColor}" font-size="9" font-weight="500" font-family="${MONO_FONT}" opacity="0.6" style="letter-spacing:0.05em">${tier.name}</text>`
+    svg += `<text x="${tierLabelPos.screenX - 35}" y="${tierLabelPos.screenY}" fill="${labelColor}" font-size="9" font-weight="500" font-family='${MONO_FONT}' opacity="0.6" style="letter-spacing:0.05em">${tier.name}</text>`
+
+    svg += `</g>` // end per-layer offset group
   }
 
   svg += `</g></svg>`
