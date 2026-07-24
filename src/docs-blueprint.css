@@ -54,11 +54,14 @@
 /* ---- Hardcoded base.css rules the variables don't reach (class names are
        Dewey-only, so these never leak outside the docs) ---- */
 
-/* Cool header + blue brand dot */
+/* Cool header + Arc route mark */
 .dw-header { background: rgba(251, 252, 253, 0.9); }
 .dw-header-brand-dot {
-  background: #2e5fa5;
-  box-shadow: 0 0 0 4px #eaf0f8;
+  width: 26px;
+  height: 26px;
+  border-radius: 0;
+  background: url('/arc-mark.svg') center / contain no-repeat;
+  box-shadow: none;
 }
 
 /* Blueprint grid over the cool page field */

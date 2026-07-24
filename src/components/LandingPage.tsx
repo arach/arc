@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { ArcDiagram, type ArcDiagramData } from '@arach/arc'
 import { useMeta } from '../hooks/useMeta'
+import ArcMark from './ArcMark'
 import SequenceEngineShowcase from './SequenceEngineShowcase'
 import '../landing-technical.css'
 
@@ -54,7 +55,7 @@ type LandingPageProps = { onLaunchEditor: () => void }
 
 export default function LandingPage({ onLaunchEditor }: LandingPageProps) {
   useMeta({
-    title: 'Arc | Architecture diagrams that live in your codebase',
+    title: 'Arc | Diagrams as code',
     description: 'Arc renders architecture diagrams from a typed, diffable config — shipping the picture of your system in code, in docs, and in the repo.',
     image: '/og-landing.png',
     url: '/',
@@ -65,9 +66,14 @@ export default function LandingPage({ onLaunchEditor }: LandingPageProps) {
       <div className="tl-shell">
         {/* TOP BAR */}
         <header className="tl-header">
-          <div className="tl-brand">
-            <span className="tl-brand-dot" aria-hidden="true" />
-            <span className="tl-brand-name">Arc</span>
+          <div className="tl-brand-cluster">
+            <Link className="tl-brand" to="/" aria-label="Arc home">
+              <ArcMark className="tl-brand-mark" />
+              <span className="tl-brand-lockup">
+                <span className="tl-brand-name">Arc</span>
+                <span className="tl-brand-descriptor">diagrams as code</span>
+              </span>
+            </Link>
             <span className="tl-brand-ver">v0.4.1</span>
           </div>
           <nav className="tl-nav">
@@ -82,7 +88,7 @@ export default function LandingPage({ onLaunchEditor }: LandingPageProps) {
         {/* HERO */}
         <section className="tl-hero">
           <div>
-            <div className="tl-eyebrow">// ARCHITECTURE-AS-DATA</div>
+            <div className="tl-eyebrow">// DIAGRAMS-AS-CODE</div>
             <h1 className="tl-h1">Diagrams that live where your system does.</h1>
             <p className="tl-lead">
               Arc renders architecture diagrams from a typed, diffable config — so the picture of your
@@ -228,7 +234,7 @@ export default function LandingPage({ onLaunchEditor }: LandingPageProps) {
 
         {/* FOOTER */}
         <footer className="tl-footer">
-          <span>Arc — architecture that stays up to date.</span>
+          <span className="tl-footer-brand"><ArcMark />Arc — diagrams as code.</span>
           <span>Designed for Git-friendly, declarative diagrams · v0.4.1</span>
         </footer>
       </div>

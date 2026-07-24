@@ -1520,8 +1520,8 @@ export default function ArcDocs({ pageId }: ArcDocsProps) {
           <DocsIndex
             tree={pageTree}
             projectName="Arc Documentation"
-            tagline="Everything you need to create beautiful architecture diagrams"
-            description="Arc is a visual diagram editor that outputs clean, declarative configs. Design systems once, export everywhere—docs, decks, and code."
+            tagline="The reference for diagrams as code"
+            description="Arc turns typed, diffable configs into diagrams you can render, review, and ship across docs, decks, and codebases."
             basePath="/docs"
             heroIcon={Book}
             layout="columns"
