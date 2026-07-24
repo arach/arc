@@ -1,18 +1,19 @@
-# @arach/arc
+# @arach/arc-viewer
 
-Declarative architecture diagram renderer for React.
+Native React renderers for diagrams as code, including typed architecture
+diagrams and interactive Mermaid sequences.
 
 ## Installation
 
 ```bash
-pnpm add @arach/arc
+npm install @arach/arc-viewer
 ```
 
 ## Usage
 
 ```tsx
-import { ArcDiagram } from '@arach/arc'
-import type { ArcDiagramData } from '@arach/arc'
+import { ArcDiagram } from '@arach/arc-viewer'
+import type { ArcDiagramData } from '@arach/arc-viewer'
 
 const diagram: ArcDiagramData = {
   id: 'MY.DIAGRAM.001',
@@ -46,6 +47,26 @@ function App() {
       interactive={true}
     />
   )
+}
+```
+
+## Mermaid Sequences
+
+Arc parses canonical Mermaid source into a typed document and renders it with a
+native player. The source remains reviewable while Arc owns the theme,
+interaction, and playback controls.
+
+```tsx
+import { ArcMermaidPlayer } from '@arach/arc-viewer'
+
+const source = `sequenceDiagram
+  participant App
+  participant API
+  App->>API: Load architecture
+  API-->>App: Typed diagram`
+
+export function Sequence() {
+  return <ArcMermaidPlayer source={source} mode="light" />
 }
 ```
 
