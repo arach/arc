@@ -1,12 +1,12 @@
 {
   "name": "@arach/arc",
-  "version": "0.4.3",
+  "version": "0.4.4",
   "type": "module",
   "packageManager": "bun@1.3.11",
   "workspaces": [
     "packages/*"
   ],
-  "description": "Visual diagram editor for creating architecture diagrams",
+  "description": "Diagrams as code for React — design, render, and export typed architecture diagrams",
   "author": "Arach Tchoupani",
   "license": "MIT",
   "repository": {
@@ -17,6 +17,7 @@
     "diagram",
     "editor",
     "architecture",
+    "diagrams-as-code",
     "visualization",
     "react",
     "isometric"

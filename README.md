@@ -1,19 +1,20 @@
 <div align="center">
 
+<img src="https://raw.githubusercontent.com/arach/arc/master/public/arc-mark.svg" alt="Arc" width="52" height="52" />
+
 # Arc
 
-### Design architecture diagrams visually. Ship them as code.
+### Diagrams as code.
 
-Arc is a React component **and** a visual editor for building clean, themeable
-architecture diagrams — then exporting them as **TypeScript, JSON, SVG, PNG, or
-crisp ASCII**. Design in the canvas, drop the component in your app, or render
-straight to text for a README. Same diagram, everywhere.
+Arc turns typed, diffable config into clean, themeable architecture diagrams.
+Design in the visual editor, render with React, or export as **TypeScript, JSON,
+SVG, PNG, or crisp ASCII**. The diagram lives with the system it describes.
 
 [![npm version](https://img.shields.io/npm/v/@arach/arc.svg?color=6d5efc&label=%40arach%2Farc)](https://www.npmjs.com/package/@arach/arc)
 [![license](https://img.shields.io/npm/l/@arach/arc.svg?color=41b883)](./LICENSE)
 [![types](https://img.shields.io/npm/types/@arach/arc.svg?color=3b82f6)](./lib/index.d.ts)
 
-![A microservices architecture rendered by Arc's ArcDiagram component in the Engineering theme](public/hero.png)
+![A microservices architecture rendered by Arc's ArcDiagram component in the Engineering theme](https://raw.githubusercontent.com/arach/arc/master/public/hero.png)
 
 <sub>Not a screenshot of a drawing tool — that's the config in <a href="#example-output">Example Output</a>, rendered by <code>&lt;ArcDiagram /&gt;</code> in the Engineering theme.</sub>
 
@@ -78,7 +79,7 @@ git clone https://github.com/arach/arc && cd arc
 bun install && bun dev      # → http://localhost:5188/editor
 ```
 
-![The Arc Studio — a drag-and-drop editor for architecture diagrams](public/studio.png)
+![The Arc Studio — a drag-and-drop editor for architecture diagrams](https://raw.githubusercontent.com/arach/arc/master/public/studio.png)
 
 Design on the canvas, then **Export** to TypeScript, JSON, SVG, PNG, or a
 shareable link — and drop the result straight into `<ArcDiagram />`.
@@ -94,6 +95,30 @@ shareable link — and drop the result straight into `<ArcDiagram />`.
 - **Groups & Images** - Visual grouping, background images
 - **Templates** - Quick-start layouts
 
+## Native Mermaid Sequences
+
+`@arach/arc-viewer` turns canonical Mermaid `sequenceDiagram` source into a
+typed Arc document and a native, interactive React player—without embedding the
+generic Mermaid runtime.
+
+```bash
+npm install @arach/arc-viewer
+```
+
+```tsx
+import { ArcMermaidPlayer } from '@arach/arc-viewer'
+
+const source = `sequenceDiagram
+  participant App
+  participant API
+  App->>API: Load architecture
+  API-->>App: Typed diagram`
+
+export function Sequence() {
+  return <ArcMermaidPlayer source={source} mode="light" />
+}
+```
+
 ## Themes
 
 One diagram, several drafting grammars. The nodes and palette stay the same —
@@ -101,15 +126,15 @@ what changes is the grid system, edge treatment, type, and geometry. Here's
 Arc's own architecture rendered three ways:
 
 <div align="center">
-  <img src="public/theme-engineering.png" alt="Arc's architecture in the Engineering theme" width="840" />
+  <img src="https://raw.githubusercontent.com/arach/arc/master/public/theme-engineering.png" alt="Arc's architecture in the Engineering theme" width="840" />
   <br/>
   <sub><strong>Engineering</strong> — graph grid, drawing-sheet border, title block, uppercase mono</sub>
   <br/><br/>
-  <img src="public/theme-workbench.png" alt="Arc's architecture in the Workbench theme" width="840" />
+  <img src="https://raw.githubusercontent.com/arach/arc/master/public/theme-workbench.png" alt="Arc's architecture in the Workbench theme" width="840" />
   <br/>
   <sub><strong>Workbench</strong> — dot grid, hairline frame, soft corners</sub>
   <br/><br/>
-  <img src="public/theme-tactical.png" alt="Arc's architecture in the Tactical theme" width="840" />
+  <img src="https://raw.githubusercontent.com/arach/arc/master/public/theme-tactical.png" alt="Arc's architecture in the Tactical theme" width="840" />
   <br/>
   <sub><strong>Tactical</strong> — crosshair grid, corner brackets, hard edges</sub>
 </div>

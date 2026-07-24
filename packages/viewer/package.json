@@ -1,7 +1,7 @@
 {
   "name": "@arach/arc-viewer",
-  "version": "0.1.0",
-  "description": "Lightweight viewer for Arc architecture diagrams",
+  "version": "0.4.4",
+  "description": "Native React renderers for diagrams as code, including interactive Mermaid sequences",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -42,7 +42,9 @@
     "architecture",
     "viewer",
     "svg",
-    "declarative"
+    "declarative",
+    "mermaid",
+    "sequence-diagram"
   ],
   "author": "arach",
   "license": "MIT",
