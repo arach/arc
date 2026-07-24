@@ -1,0 +1,30 @@
+sequenceDiagram
+    actor Operator
+    participant Menu as Scout Menu
+    participant Broker as Local Broker
+    participant Scoutbot
+    participant Agent as Project Agent
+    participant Tools as Repo / Harness Tools
+
+    Note over Operator,Broker: Local control plane — no model charge
+    Note over Scoutbot,Tools: Model inference — plan allowance or API tokens
+    Note over Scoutbot,Agent: Scout prompt, tools, AGENTS.md, skill, and reply context loaded before the turn
+
+    Operator->>Menu: Type message
+    Menu->>Broker: POST /api/send
+    Broker->>Broker: Record message and routing state
+    Broker-->>Menu: SSE message.posted
+    Broker->>Scoutbot: Wake concierge if targeted
+
+    alt Direct concierge answer
+        Scoutbot->>Broker: messages_send
+        Broker-->>Menu: SSE message.posted
+    else Work needs a repo owner
+        Scoutbot->>Agent: ask with project and harness
+        Agent->>Tools: Read, edit, or run as granted
+        Tools-->>Agent: Results
+        Agent->>Broker: Progress and final reply
+        Broker-->>Menu: SSE message.posted
+    end
+
+    Menu-->>Operator: Append reply

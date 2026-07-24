@@ -32,3 +32,6 @@ export type {
 // Auto-layout
 export { autoLayout, createAutoLayout } from './autoLayout'
 export type { LayoutOptions, AutoDiagramInput } from './autoLayout'
+
+// Native Mermaid documents and family renderers
+export * from './mermaid/index'

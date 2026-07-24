@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { ArcDiagram, type ArcDiagramData } from '@arach/arc'
 import { useMeta } from '../hooks/useMeta'
+import SequenceEngineShowcase from './SequenceEngineShowcase'
 import '../landing-technical.css'
 
 // The pipeline diagram rendered in section 02 — the real ArcDiagram component.
@@ -72,6 +73,7 @@ export default function LandingPage({ onLaunchEditor }: LandingPageProps) {
           <nav className="tl-nav">
             <a href="#why">WHY ARC</a>
             <a href="#pipeline">ARCHITECTURE</a>
+            <a href="#sequence">SEQUENCE</a>
             <Link to="/docs">DOCS</Link>
             <a className="tl-nav-accent" href="https://github.com/arach/arc" target="_blank" rel="noopener noreferrer">GITHUB ↗</a>
           </nav>
@@ -168,9 +170,25 @@ export default function LandingPage({ onLaunchEditor }: LandingPageProps) {
           </div>
         </section>
 
+        {/* NATIVE MERMAID SEQUENCE */}
+        <section id="sequence" className="tl-section tl-sequence-section">
+          <div className="tl-sequence-head">
+            <div>
+              <div className="tl-tag">// 03 — NATIVE MERMAID</div>
+              <h2 className="tl-h2">Interaction, rendered in sequence.</h2>
+              <p className="tl-section-p">
+                Keep Mermaid as the reviewable source while Arc owns the typed interaction model,
+                theme, renderer, and playback controls.
+              </p>
+            </div>
+            <div className="tl-pipeline-id">MERMAID.SEQUENCE.001<br />source → model → player</div>
+          </div>
+          <SequenceEngineShowcase showSource />
+        </section>
+
         {/* DOCS */}
         <section id="docs" className="tl-section">
-          <div className="tl-tag">// 03 — DOCUMENTATION</div>
+          <div className="tl-tag">// 04 — DOCUMENTATION</div>
           <h2 className="tl-h2" style={{ marginBottom: 28 }}>Start reading.</h2>
           <div className="tl-doc-grid">
             {docs.map((d) => (
@@ -187,7 +205,7 @@ export default function LandingPage({ onLaunchEditor }: LandingPageProps) {
         <section className="tl-cta">
           <div className="tl-cta-card">
             <div>
-              <div className="tl-eyebrow" style={{ marginBottom: 16 }}>// 04 — GET STARTED</div>
+              <div className="tl-eyebrow" style={{ marginBottom: 16 }}>// 05 — GET STARTED</div>
               <h2 className="tl-h2" style={{ fontSize: 34, marginBottom: 14 }}>Ready to share the system story?</h2>
               <p className="tl-section-p" style={{ maxWidth: '34em', marginBottom: 28 }}>
                 Open the editor, design a diagram, and export it to the docs. Arc keeps diagrams living

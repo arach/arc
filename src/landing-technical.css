@@ -182,6 +182,17 @@
 }
 .tl-diagram-mount { width: 100%; height: 380px; }
 
+/* native Mermaid sequence */
+.tl-sequence-section { padding-top: 76px; }
+.tl-sequence-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 40px;
+  margin-bottom: 24px;
+}
+.tl-sequence-head .tl-section-p { margin: 16px 0 0; max-width: 42em; }
+
 /* docs */
 .tl-doc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
 .tl-doc {
@@ -226,6 +237,7 @@
   .tl-specs { border-left: none; border-top: 1px solid var(--tl-line); padding-left: 0; padding-top: 20px; }
   .tl-doc-grid { grid-template-columns: 1fr 1fr; }
   .tl-nav { display: none; }
+  .tl-sequence-head { align-items: flex-start; flex-direction: column; gap: 18px; }
 }
 @media (max-width: 560px) {
   .tl-h1 { font-size: 36px; }
