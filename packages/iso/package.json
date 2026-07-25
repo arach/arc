@@ -1,6 +1,6 @@
 {
   "name": "@arach/arc-iso",
-  "version": "0.4.4",
+  "version": "0.4.5",
   "type": "module",
   "description": "Isometric diagrams as code for React and the browser",
   "author": "Arach Tchoupani",

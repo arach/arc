@@ -1,6 +1,6 @@
 {
   "name": "@arach/arc-viewer",
-  "version": "0.4.4",
+  "version": "0.4.5",
   "description": "Native React renderers for diagrams as code, including interactive Mermaid sequences",
   "type": "module",
   "main": "./dist/index.cjs",

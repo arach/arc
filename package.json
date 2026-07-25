@@ -1,6 +1,6 @@
 {
   "name": "@arach/arc",
-  "version": "0.4.4",
+  "version": "0.4.5",
   "type": "module",
   "packageManager": "bun@1.3.11",
   "workspaces": [
@@ -26,9 +26,9 @@
     "arc-ascii": "./bin/arc-ascii.mjs"
   },
   "files": [
-    "lib/arc.es.js",
-    "lib/arc.umd.js",
-    "lib/index.d.ts",
+    "lib/*.js",
+    "lib/*.d.ts",
+    "lib/*.css",
     "bin/arc-ascii.mjs"
   ],
   "main": "./lib/arc.umd.js",
@@ -51,7 +51,7 @@
     "typecheck": "tsc --noEmit",
     "preview": "vite preview",
     "generate-og": "node scripts/generate-og.js",
-    "check:dist": "attw --pack . --ignore-rules cjs-resolves-to-esm unexpected-module-syntax && publint",
+    "check:dist": "attw --pack . --ignore-rules cjs-resolves-to-esm unexpected-module-syntax && publint && node scripts/check-packlist.mjs",
     "prepublishOnly": "bun run build:lib && bun run check:dist"
   },
   "peerDependencies": {

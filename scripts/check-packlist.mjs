@@ -1,0 +1,48 @@
+import { execFileSync } from 'node:child_process'
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
+
+const root = process.cwd()
+const pack = JSON.parse(
+  execFileSync('npm', ['pack', '--dry-run', '--ignore-scripts', '--json'], {
+    cwd: root,
+    encoding: 'utf8',
+  }),
+)[0]
+const packedFiles = new Set(pack.files.map(({ path: file }) => file))
+const packageJson = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8'))
+
+const entrypoints = [packageJson.main, packageJson.module, packageJson.types]
+  .filter(Boolean)
+  .map((file) => file.replace(/^\.\//, ''))
+
+for (const target of Object.values(packageJson.exports ?? {})) {
+  if (typeof target === 'string') entrypoints.push(target.replace(/^\.\//, ''))
+  else if (target && typeof target === 'object') {
+    for (const file of Object.values(target)) {
+      if (typeof file === 'string') entrypoints.push(file.replace(/^\.\//, ''))
+    }
+  }
+}
+
+const missing = new Set(entrypoints.filter((file) => !packedFiles.has(file)))
+const relativeSpecifier = /(?:from\s*|import\s*\(|require\s*\()\s*['"](\.{1,2}\/[^'"]+)['"]/g
+
+for (const file of packedFiles) {
+  if (!/\.[cm]?js$/.test(file)) continue
+
+  const source = readFileSync(path.join(root, file), 'utf8')
+  for (const match of source.matchAll(relativeSpecifier)) {
+    const referenced = path.posix.normalize(path.posix.join(path.posix.dirname(file), match[1]))
+    const candidates = [referenced, `${referenced}.js`, `${referenced}.mjs`, `${referenced}.cjs`]
+    if (!candidates.some((candidate) => packedFiles.has(candidate))) missing.add(referenced)
+  }
+}
+
+if (missing.size > 0) {
+  console.error('Package tarball is missing referenced files:')
+  for (const file of [...missing].sort()) console.error(`- ${file}`)
+  process.exit(1)
+}
+
+console.log(`Packlist verified: ${packedFiles.size} files, all entrypoints and relative imports included.`)
