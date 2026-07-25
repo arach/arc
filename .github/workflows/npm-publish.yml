@@ -110,7 +110,7 @@ jobs:
           npm version ${{ inputs.version }} --no-git-tag-version --allow-same-version
           if [ "${{ inputs.dry_run }}" = "true" ]; then
             echo "DRY RUN: Would publish @arach/arc-viewer"
-            npm publish --dry-run --access public
+            npm pack --dry-run --ignore-scripts
           else
             npm publish --provenance --access public
           fi
@@ -124,7 +124,7 @@ jobs:
           npm version ${{ inputs.version }} --no-git-tag-version --allow-same-version
           if [ "${{ inputs.dry_run }}" = "true" ]; then
             echo "DRY RUN: Would publish @arach/arc-iso"
-            npm publish --dry-run --access public
+            npm pack --dry-run --ignore-scripts
           else
             npm publish --provenance --access public
           fi
