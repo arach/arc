@@ -30,6 +30,12 @@ export {
   type FocusConnectorRef,
   type FocusStep,
   type FocusTarget,
+  type GroupShape,
+  type LayoutAlignment,
+  type GroupLayoutDirection,
+  type NodeLayoutHint,
+  type GroupLayoutHint,
+  type LayoutHints,
   type ThemeId,
   resolveFocusState,
 } from './components/ArcDiagram'
