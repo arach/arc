@@ -119,6 +119,20 @@ export function Sequence() {
 }
 ```
 
+Existing Mermaid flowcharts and state diagrams can also be projected into
+`ArcDiagramData`:
+
+```ts
+import { importMermaid } from '@arach/arc-viewer'
+
+const { diagram, warnings, unsupported } = importMermaid(source)
+```
+
+This compatibility adapter is intentionally lossy. Use the native Mermaid APIs
+above when sequence semantics must remain intact. See
+[Mermaid architecture projection](./docs/mermaid-import.md) for the supported
+grammar and diagnostic contract.
+
 ## Themes
 
 One diagram, several drafting grammars. The nodes and palette stay the same —
