@@ -190,6 +190,10 @@ export default function LandingPage({ onLaunchEditor }: LandingPageProps) {
             <div className="tl-pipeline-id">MERMAID.SEQUENCE.001<br />source → model → player</div>
           </div>
           <SequenceEngineShowcase showSource />
+          <div className="tl-sequence-links">
+            <Link to="/blog/native-mermaid-sequences">Read the build note →</Link>
+            <Link to="/docs/mermaid-sequences">Open the implementation guide →</Link>
+          </div>
         </section>
 
         {/* DOCS */}
