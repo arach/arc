@@ -1,20 +1,12 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import dts from 'vite-plugin-dts'
 import { resolve } from 'path'
 import { fileURLToPath } from 'url'
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
 
 export default defineConfig({
-  plugins: [
-    react(),
-    dts({
-      include: ['src/index.ts', 'src/types/**/*.ts', 'src/iso/types.ts', 'src/utils/asciiRenderer.ts'],
-      outDir: 'lib',
-      rollupTypes: true,
-    }),
-  ],
+  plugins: [react()],
   build: {
     lib: {
       entry: resolve(__dirname, 'src/index.ts'),
@@ -26,6 +18,7 @@ export default defineConfig({
       // Externalize React - users provide their own
       external: ['react', 'react-dom', 'react/jsx-runtime'],
       output: {
+        exports: 'named',
         globals: {
           react: 'React',
           'react-dom': 'ReactDOM',
@@ -42,5 +35,6 @@ export default defineConfig({
     emptyOutDir: true,
     minify: 'esbuild',
     cssCodeSplit: false,
+    copyPublicDir: false,
   },
 })

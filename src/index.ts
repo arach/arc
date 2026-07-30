@@ -16,6 +16,7 @@ export { EditorProvider, useEditor, useDiagram, useEditorState, useViewMode, use
 // =============================================================================
 
 // 2D Flow Diagram Player (layout, nodes, nodeData, connectors format)
+export { default } from './components/ArcDiagram'
 export {
   default as ArcDiagram,
   type ArcDiagramProps,
@@ -42,7 +43,10 @@ export {
 } from './components/ArcDiagram'
 
 // Theme utilities
-export { THEMES, getTheme, getThemeList, type Theme, type ColorPalette } from './utils/themes'
+export { THEMES, getTheme, getThemeList, getThemeSourcePath, THEME_SOURCE_PATH, type Theme, type ColorPalette, type ThemeListItem } from './utils/themes'
+
+// Template utilities
+export { TEMPLATES, DEFAULT_TEMPLATE, getTemplate, getTemplateList, getTemplateSourcePath, TEMPLATE_SOURCE_PATH, type DiagramTemplate, type TemplateId, type TemplateListItem } from './utils/templates'
 
 // 3D Isometric Diagram Player (tiers, floorSize, nodes format)
 export { default as ArcDiagramIsometric } from './iso/ArcDiagram'
@@ -86,4 +90,6 @@ export type { ViewMode, EmbedConfig, NodePosition, ConnectorStyle, DiagramMeta }
 // =============================================================================
 export { generateSessionId, deriveSessionId, saveDiagramSession, loadDiagramSession, listDiagramSessions, deleteDiagramSession } from './utils/sessionStorage'
 export type { DiagramSession } from './utils/sessionStorage'
+export { registerDiagramReference, getDiagramReference, listDiagramReferences } from './utils/diagramRegistry'
+export type { DiagramReferenceEntry, DiagramReferenceSource } from './utils/diagramRegistry'
 export type { DiagramConfig, DiagramNode, TierConfig } from './iso/types'

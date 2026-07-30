@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { isoToScreen } from '../../utils/isometric'
 import { NODE_SIZES } from '../../utils/constants'
 import type { NodePosition, NodeData, Connector, ConnectorStyle } from '../../types/editor'

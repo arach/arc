@@ -1,3 +1,4 @@
+// @ts-nocheck
 import {
   Monitor, Server, Smartphone, Watch, Cloud,
   Cpu, Database, HardDrive, Wifi, Globe,

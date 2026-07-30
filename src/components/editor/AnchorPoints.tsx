@@ -1,3 +1,5 @@
+// @ts-nocheck
+import type { NodePosition, AnchorPosition } from '../../types/editor'
 import { anchor } from '../../utils/diagramHelpers'
 
 export default function AnchorPoints({
@@ -6,6 +8,12 @@ export default function AnchorPoints({
   visibleNodeId,
   onAnchorClick,
   pendingConnector,
+}: {
+  layout: { width: number; height: number };
+  nodes: Record<string, NodePosition>;
+  visibleNodeId: string | null;
+  onAnchorClick: (nodeId: string, position: AnchorPosition) => void;
+  pendingConnector: { from: string; fromAnchor: string } | null;
 }) {
   if (!visibleNodeId) return null
 

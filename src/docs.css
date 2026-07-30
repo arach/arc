@@ -1,0 +1,64 @@
+/**
+ * Arc docs — shared refinement layer over @arach/dewey (warm preset).
+ *
+ * Imported AFTER dewey's warm.css + base.css in ArcDocs.tsx so these token
+ * overrides win. This keeps the docs surface coherent with the landing page
+ * (src/landing.css) and build-note pages (src/blog.css): the same refined
+ * terracotta, stronger muted-text/border contrast, quieter primary shadows,
+ * and a legible dark mode. It only remaps Dewey's --color-dw-* variables —
+ * no content, structure, or component behavior is touched.
+ */
+
+/* Light — align with Arc landing/blog tokens, lift contrast */
+:root {
+  --color-dw-foreground: #0d1215;
+  --color-dw-muted-foreground: #566065;
+
+  --color-dw-primary: #e26e40;
+  --color-dw-primary-foreground: #ffffff;
+  --color-dw-primary-gradient: #e26e40;
+  --color-dw-primary-shadow: 0 1px 2px rgba(16, 23, 32, 0.12);
+  --color-dw-primary-glow: 0 0 0 3px rgba(226, 110, 64, 0.28);
+
+  --color-dw-accent: rgba(226, 110, 64, 0.1);
+  --color-dw-accent-foreground: #b04c29;
+
+  --color-dw-border: rgba(16, 21, 24, 0.14);
+  --color-dw-border-subtle: rgba(16, 21, 24, 0.09);
+  --color-dw-ring: #e26e40;
+
+  --color-dw-code-border: rgba(16, 21, 24, 0.14);
+
+  --color-dw-sidebar-active: #e26e40;
+  --color-dw-sidebar-active-bg: rgba(226, 110, 64, 0.1);
+
+  --color-dw-hero-icon-bg: rgba(226, 110, 64, 0.12);
+  --color-dw-hero-icon-border: rgba(226, 110, 64, 0.22);
+}
+
+/* Dark — coherent palette + readable muted text and defined borders */
+.dark {
+  --color-dw-foreground: #e8ebee;
+  --color-dw-muted-foreground: #9aa3ab;
+
+  --color-dw-primary: #e88a5f;
+  --color-dw-primary-foreground: #1c120a;
+  --color-dw-primary-gradient: #e88a5f;
+  --color-dw-primary-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --color-dw-primary-glow: 0 0 0 3px rgba(232, 138, 95, 0.3);
+
+  --color-dw-accent: rgba(232, 138, 95, 0.16);
+  --color-dw-accent-foreground: #e88a5f;
+
+  --color-dw-border: rgba(255, 255, 255, 0.09);
+  --color-dw-border-subtle: rgba(255, 255, 255, 0.05);
+  --color-dw-ring: #e88a5f;
+
+  --color-dw-code-border: rgba(255, 255, 255, 0.09);
+
+  --color-dw-sidebar-active: #e88a5f;
+  --color-dw-sidebar-active-bg: rgba(232, 138, 95, 0.16);
+
+  --color-dw-hero-icon-bg: rgba(232, 138, 95, 0.16);
+  --color-dw-hero-icon-border: rgba(232, 138, 95, 0.26);
+}

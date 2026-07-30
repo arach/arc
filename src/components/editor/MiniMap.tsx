@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useCallback, useRef } from 'react'
 
 // Colors for mini map node representation

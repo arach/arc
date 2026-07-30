@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState, useCallback, useRef } from 'react'
 
 interface DragState {

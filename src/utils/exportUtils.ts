@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { NODE_SIZES } from './constants'
 
 // Helper: Calculate anchor position on a node

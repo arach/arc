@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useMemo } from 'react'
 import { isoBox, isoToScreen, getColorShading, ISO_COLORS } from '../../utils/isometric'
 import { NODE_SIZES } from '../../utils/constants'

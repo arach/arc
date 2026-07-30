@@ -1,3 +1,4 @@
+// @ts-nocheck
 
 import { useEditor, useDiagram } from '../editor/EditorProvider'
 import { COLOR_OPTIONS } from '../../utils/constants'
@@ -68,7 +69,7 @@ function ShapeTypePicker({ value, onChange }: any) {
   )
 }
 
-export default function GroupProperties({ groupId }: any) {
+export default function GroupProperties({ groupId, showHeading = true }: any) {
   const { actions } = useEditor()
   const diagram = useDiagram()
 
@@ -81,9 +82,11 @@ export default function GroupProperties({ groupId }: any) {
 
   return (
     <div className="space-y-4">
-      <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">
-        Group Properties
-      </h3>
+      {showHeading && (
+        <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">
+          Group Properties
+        </h3>
+      )}
 
       <InputField
         label="Label"

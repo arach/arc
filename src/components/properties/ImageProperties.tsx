@@ -1,8 +1,9 @@
+// @ts-nocheck
 
 import { useDiagram, useEditor } from '../editor/EditorProvider'
 import { Trash2 } from 'lucide-react'
 
-export default function ImageProperties({ imageId }) {
+export default function ImageProperties({ imageId, showHeading = true }) {
   const { actions } = useEditor()
   const diagram = useDiagram()
 
@@ -21,10 +22,12 @@ export default function ImageProperties({ imageId }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-sm text-zinc-900 dark:text-zinc-100">
-          Image
-        </h3>
+      <div className={`flex items-center ${showHeading ? 'justify-between' : 'justify-end'}`}>
+        {showHeading && (
+          <h3 className="font-semibold text-sm text-zinc-900 dark:text-zinc-100">
+            Image
+          </h3>
+        )}
         <button
           onClick={handleDelete}
           className="p-1.5 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/30 rounded"

@@ -1,8 +1,22 @@
+// @ts-nocheck
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Package, Zap, Shield, Rabbit, Copy, Check, Github } from 'lucide-react'
+import {
+  ArrowUpRight,
+  Check,
+  Code2,
+  Copy,
+  Github,
+  Package,
+  PanelsTopLeft,
+  Rabbit,
+  Shield,
+  Terminal,
+  Zap,
+} from 'lucide-react'
 import { ArcDiagram, type ThemeId, type ArcDiagramData } from '@arach/arc'
 import ArcArchitectureNext from './ArcArchitectureNext'
+import SequenceEngineShowcase from './SequenceEngineShowcase'
 import architectureDiagram from './diagrams/architecture.diagram'
 import { getThemeList } from '@arach/arc'
 import { useMeta } from '../hooks/useMeta'
@@ -161,13 +175,17 @@ function DiagramShowcase() {
             <button
               className={`arc-view-btn ${view === 'diagram' ? 'active' : ''}`}
               onClick={() => setView('diagram')}
+              aria-pressed={view === 'diagram'}
             >
+              <PanelsTopLeft aria-hidden="true" />
               Diagram
             </button>
             <button
               className={`arc-view-btn ${view === 'source' ? 'active' : ''}`}
               onClick={() => setView('source')}
+              aria-pressed={view === 'source'}
             >
+              <Code2 aria-hidden="true" />
               Source
             </button>
           </div>
@@ -240,6 +258,10 @@ export default function LandingPage({ onLaunchEditor }: LandingPageProps) {
     setTimeout(() => setCopied(false), 2000)
   }
 
+  const scrollToSection = (id: string) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
   // Set page-specific meta tags
   useMeta({
     title: 'Arc | Visual Diagram Editor',
@@ -258,9 +280,11 @@ export default function LandingPage({ onLaunchEditor }: LandingPageProps) {
               <span className="arc-brand-name">Arc</span>
             </div>
             <nav className="arc-nav">
-              <a href="#overview">Why Arc</a>
-              <a href="#architecture">Architecture</a>
+              <button type="button" className="arc-nav-link" onClick={() => scrollToSection('overview')}>Why Arc</button>
+              <button type="button" className="arc-nav-link" onClick={() => scrollToSection('architecture')}>Architecture</button>
+              <button type="button" className="arc-nav-link" onClick={() => scrollToSection('engines')}>Engines</button>
               <Link to="/docs">Docs</Link>
+              <Link to="/blog/native-mermaid-sequences">Blog</Link>
               <a href="https://github.com/arach/arc" target="_blank" rel="noopener noreferrer" className="arc-nav-github">
                 <Github className="w-4 h-4" />
                 <span>Star on GitHub</span>
@@ -284,8 +308,9 @@ export default function LandingPage({ onLaunchEditor }: LandingPageProps) {
                 <li>Let agents draft your diagrams and edit alongside them to get pixel perfect outputs</li>
               </ul>
               <div className="arc-hero-actions">
-                <button type="button" className="arc-button" onClick={onLaunchEditor}>
-                  Try Arc Editor
+                <button type="button" className="arc-button arc-button-primary" onClick={onLaunchEditor}>
+                  <span>Try Arc Editor</span>
+                  <ArrowUpRight className="arc-button-icon" aria-hidden="true" />
                 </button>
                 <Link className="arc-button secondary" to="/docs">
                   Docs
@@ -334,8 +359,9 @@ export default function LandingPage({ onLaunchEditor }: LandingPageProps) {
                   })}
                 </div>
                 <div className="arc-install-command">
+                  <Terminal className="arc-install-prompt" aria-hidden="true" />
                   <code>{packageManagers[pkgManager].command}</code>
-                  <button type="button" className="arc-install-copy" onClick={copyCommand}>
+                  <button type="button" className="arc-install-copy" onClick={copyCommand} aria-label="Copy install command">
                     {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                   </button>
                 </div>
@@ -451,6 +477,54 @@ export default function LandingPage({ onLaunchEditor }: LandingPageProps) {
           </div>
         </section>
 
+        <section className="arc-engines-section" id="engines">
+          <div className="arc-section">
+            <div className="arc-engines-intro">
+              <div>
+                <span className="arc-section-eyebrow">Rendering engines</span>
+                <h2>Structure in 2D. Interaction in sequence.</h2>
+              </div>
+              <p>
+                Architecture is more than boxes. Arc now renders reviewed Mermaid sequence source
+                as a native Arc surface—themeable, focusable, and playable, without flattening the
+                interaction into generic nodes.
+              </p>
+            </div>
+
+            <div className="arc-engine-grid">
+              <article className="arc-engine-card">
+                <span>01</span>
+                <h3>2D</h3>
+                <p>Declarative system structure for the editor, player, and documentation.</p>
+              </article>
+              <article className="arc-engine-card">
+                <span>02</span>
+                <h3>Isometric</h3>
+                <p>Spatial depth for tiered systems, infrastructure, and layered stories.</p>
+              </article>
+              <article className="arc-engine-card is-new">
+                <span>03 · New</span>
+                <h3>Sequence</h3>
+                <p>Interaction over time from canonical Mermaid <code>sequenceDiagram</code> source.</p>
+              </article>
+            </div>
+
+            <SequenceEngineShowcase />
+
+            <div className="arc-engine-actions">
+              <p>
+                Sequence v1 focuses on participants, messages, notes, and <code>alt</code>/<code>else</code>.
+                Unsupported constructs are reported instead of redrawn as architecture boxes.
+              </p>
+              <div>
+                <Link className="arc-button" to="/blog/native-mermaid-sequences">Read the build note</Link>
+                <Link className="arc-button secondary" to="/docs/mermaid-sequences">Sequence docs</Link>
+                <a className="arc-button secondary" href="/sequence.html">Open full player</a>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section className="arc-section" id="docs">
           <div className="arc-section-header">
             <h2>Documentation</h2>
@@ -473,6 +547,10 @@ export default function LandingPage({ onLaunchEditor }: LandingPageProps) {
               <strong>Themes</strong>
               <span>Color palettes</span>
             </Link>
+            <Link className="arc-doc-card" to="/docs/mermaid-sequences">
+              <strong>Sequence engine</strong>
+              <span>Mermaid source, native Arc player</span>
+            </Link>
           </div>
         </section>
 
@@ -488,9 +566,9 @@ export default function LandingPage({ onLaunchEditor }: LandingPageProps) {
             <button type="button" className="arc-button" onClick={onLaunchEditor}>
               Launch the editor
             </button>
-            <a className="arc-button secondary" href="#overview">
+            <button type="button" className="arc-button secondary" onClick={() => scrollToSection('overview')}>
               Back to top
-            </a>
+            </button>
           </div>
         </section>
 

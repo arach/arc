@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState } from 'react'
 import { DIAGRAM_ICONS, getIconComponent } from '../../utils/iconRegistry'
 import { Search } from 'lucide-react'

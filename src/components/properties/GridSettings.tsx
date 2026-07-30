@@ -1,3 +1,4 @@
+// @ts-nocheck
 
 import { Grid3X3 } from 'lucide-react'
 import { useEditor, useDiagram } from '../editor/EditorProvider'

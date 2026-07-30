@@ -2,8 +2,9 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { visualizer } from 'rollup-plugin-visualizer'
+import { Buffer } from 'node:buffer'
 import { resolve } from 'path'
-import { existsSync, readFileSync, statSync } from 'fs'
+import { existsSync, readFileSync, statSync, writeFileSync } from 'fs'
 import captureMiddleware from './plugins/captureMiddleware.js'
 
 const __dirname = new URL('.', import.meta.url).pathname
@@ -32,10 +33,11 @@ export default defineConfig(({ mode }) => {
       {
         name: 'arc-dev-file-loader',
         configureServer(server) {
-          server.middlewares.use('/__arc/dev/file', (req, res, next) => {
+          server.middlewares.use('/__arc/dev/file', (req, res) => {
             try {
               const url = new URL(req.url || '', 'http://127.0.0.1')
               const filePath = url.searchParams.get('path')
+              const format = url.searchParams.get('format')
               if (!filePath) {
                 res.statusCode = 400
                 res.setHeader('Content-Type', 'application/json')
@@ -43,18 +45,65 @@ export default defineConfig(({ mode }) => {
                 return
               }
 
-              const stats = statSync(filePath)
-              if (!stats.isFile()) {
-                res.statusCode = 400
-                res.setHeader('Content-Type', 'application/json')
-                res.end(JSON.stringify({ error: 'Path is not a file' }))
+              if (req.method === 'GET') {
+                const stats = statSync(filePath)
+                if (!stats.isFile()) {
+                  res.statusCode = 400
+                  res.setHeader('Content-Type', 'application/json')
+                  res.end(JSON.stringify({ error: 'Path is not a file' }))
+                  return
+                }
+
+                const content = readFileSync(filePath, 'utf8')
+                res.statusCode = 200
+                res.setHeader(
+                  'Content-Type',
+                  format === 'text'
+                    ? 'text/plain; charset=utf-8'
+                    : 'application/json; charset=utf-8'
+                )
+                res.end(content)
                 return
               }
 
-              const content = readFileSync(filePath, 'utf8')
-              res.statusCode = 200
-              res.setHeader('Content-Type', 'application/json; charset=utf-8')
-              res.end(content)
+              if (req.method === 'POST') {
+                const chunks = []
+                req.on('data', (chunk) => chunks.push(chunk))
+                req.on('end', () => {
+                  try {
+                    const raw = Buffer.concat(chunks).toString('utf8')
+                    const contentType = req.headers['content-type'] || ''
+
+                    if (format === 'text' || contentType.includes('text/plain')) {
+                      writeFileSync(filePath, raw, 'utf8')
+                    } else {
+                      const parsed = JSON.parse(raw)
+                      writeFileSync(filePath, `${JSON.stringify(parsed, null, 2)}\n`, 'utf8')
+                    }
+                    res.statusCode = 200
+                    res.setHeader('Content-Type', 'application/json')
+                    res.end(JSON.stringify({ ok: true }))
+                  } catch (error) {
+                    res.statusCode = 400
+                    res.setHeader('Content-Type', 'application/json')
+                    res.end(JSON.stringify({
+                      error: error instanceof Error ? error.message : 'Failed to write file',
+                    }))
+                  }
+                })
+                req.on('error', (error) => {
+                  res.statusCode = 500
+                  res.setHeader('Content-Type', 'application/json')
+                  res.end(JSON.stringify({
+                    error: error instanceof Error ? error.message : 'Failed to read request body',
+                  }))
+                })
+                return
+              }
+
+              res.statusCode = 405
+              res.setHeader('Content-Type', 'application/json')
+              res.end(JSON.stringify({ error: 'Method not allowed' }))
             } catch (error) {
               res.statusCode = 404
               res.setHeader('Content-Type', 'application/json')

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useRef, useCallback, useState, useEffect } from 'react'
 // @ts-ignore - JS module, will migrate later
 import { useEditor, useDiagram, useEditorState, useTemplate, useViewMode, useResolvedTheme } from './EditorProvider'

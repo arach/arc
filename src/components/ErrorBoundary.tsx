@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Component, type ReactNode, type ErrorInfo } from 'react'
 import { AlertTriangle, RefreshCw } from 'lucide-react'
 

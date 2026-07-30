@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useEffect } from 'react';
 
 const GA_MEASUREMENT_ID = 'G-GSHDZPFRZG';

@@ -134,10 +134,13 @@ export interface EditorState {
 }
 
 export interface DiagramMeta {
+  diagramId?: string | null
   themeId?: string | null
   colorMode?: 'light' | 'dark'
   viewport?: { width: number; height: number }
   sourceUrl?: string  // e.g. 'operate/control-plane' — where this diagram came from
+  file?: string
+  src?: string
 }
 
 export interface MetaState {

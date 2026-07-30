@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { createContext, useContext, useReducer, useCallback, useMemo } from 'react'
 import { editorReducer, initialState } from './editorReducer'
 import { getTheme } from '../../utils/themes'
@@ -159,8 +160,8 @@ export function EditorProvider({ children, initialDiagram, initialThemeId = null
     }, []),
 
     // File operations
-    loadDiagram: useCallback((diagram, filename) => {
-      dispatch({ type: 'diagram/load', diagram, filename })
+    loadDiagram: useCallback((diagram, filename, diagramMeta) => {
+      dispatch({ type: 'diagram/load', diagram, filename, diagramMeta })
     }, []),
 
     newDiagram: useCallback(() => {

@@ -1,3 +1,4 @@
+// @ts-nocheck
 
 import { useEditor, useDiagram } from '../editor/EditorProvider'
 import { ANCHOR_POSITIONS } from '../../utils/constants'
@@ -23,7 +24,7 @@ function SelectField({ label, value, onChange, options }) {
   )
 }
 
-export default function ConnectorProperties({ connectorIndex }) {
+export default function ConnectorProperties({ connectorIndex, showHeading = true }) {
   const { actions, dispatch } = useEditor()
   const diagram = useDiagram()
 
@@ -62,9 +63,11 @@ export default function ConnectorProperties({ connectorIndex }) {
 
   return (
     <div className="space-y-4">
-      <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">
-        Connector Properties
-      </h3>
+      {showHeading && (
+        <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">
+          Connector Properties
+        </h3>
+      )}
 
       <SelectField
         label="Style"

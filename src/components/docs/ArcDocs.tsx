@@ -527,6 +527,8 @@ const docsDiagrams: Record<string, ArcDiagramData> = {
 // Import Dewey CSS from npm package
 import '@arach/dewey/css/colors/warm.css'
 import '@arach/dewey/css/base.css'
+// Arc refinement layer — must come after Dewey so token overrides win
+import '../../docs.css'
 
 // Import human-readable markdown files
 import overviewMd from '../../../docs/overview.md?raw'
@@ -535,6 +537,8 @@ import apiMd from '../../../docs/api.md?raw'
 import examplesMd from '../../../docs/examples.md?raw'
 import architectureMd from '../../../docs/architecture.md?raw'
 import agentsMd from '../../../docs/AGENTS.md?raw'
+import mermaidSequencesMd from '../../../docs/mermaid-sequences.md?raw'
+import SequenceEngineShowcase from '../SequenceEngineShowcase'
 
 // Import agent-optimized markdown files
 import overviewAgentMd from '../../../docs/agent/overview.agent.md?raw'
@@ -573,6 +577,7 @@ const pageTree: PageNode[] = [
     children: [
       { type: 'page', id: 'diagram-format', name: 'Diagram Format', icon: 'FileCode', description: 'Data structure & schema' },
       { type: 'page', id: 'architecture', name: 'Architecture', icon: 'Boxes', description: 'Templates & themes' },
+      { type: 'page', id: 'mermaid-sequences', name: 'Sequence Engine', icon: 'Play', description: 'Native Mermaid sequences' },
     ],
   },
   {
@@ -620,6 +625,12 @@ interface PageData {
 }
 
 const pages: Record<string, PageData> = {
+  'mermaid-sequences': {
+    content: stripFrontmatter(mermaidSequencesMd),
+    title: 'Mermaid sequence engine',
+    description: 'Keep Mermaid sequence source canonical, then render and play it as a native Arc surface.',
+    badge: 'Rendering engines',
+  },
   overview: {
     content: stripFrontmatter(overviewMd),
     agentContent: stripFrontmatter(overviewAgentMd),
@@ -1396,6 +1407,12 @@ function DocPage({ pageId }: { pageId: string }) {
           )}
 
           {/* Hero diagram - prominent example for each page */}
+          {pageId === 'mermaid-sequences' && (
+            <div className="mb-10 not-prose">
+              <SequenceEngineShowcase showSource compact />
+            </div>
+          )}
+
           {docsDiagrams[pageId] && (
             <div className="mb-10 not-prose">
               {(pageId === 'diagram-format' || pageId === 'architecture') ? (

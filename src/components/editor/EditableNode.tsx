@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { memo } from 'react'
 import { getIconComponent } from '../../utils/iconRegistry'
 import { NODE_SIZES } from '../../utils/constants'

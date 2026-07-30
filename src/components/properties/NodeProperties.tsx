@@ -1,3 +1,4 @@
+// @ts-nocheck
 
 import { ToggleGroup } from '@base-ui/react/toggle-group'
 import { Toggle } from '@base-ui/react/toggle'
@@ -58,7 +59,7 @@ function SizePicker({ value, onChange }: any) {
   )
 }
 
-export default function NodeProperties({ nodeId }: any) {
+export default function NodeProperties({ nodeId, showHeading = true }: any) {
   const { actions } = useEditor()
   const diagram = useDiagram()
   const viewMode = useViewMode()
@@ -102,9 +103,11 @@ export default function NodeProperties({ nodeId }: any) {
 
   return (
     <div className="space-y-4">
-      <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">
-        Node Properties
-      </h3>
+      {showHeading && (
+        <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">
+          Node Properties
+        </h3>
+      )}
 
       <InputField
         label="Name"

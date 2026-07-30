@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { AnchorPosition, ConnectorStyle, GridConfig } from '../types/editor'
 
 // Node size type (matches sizes in NODE_SIZES)

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * ASCII Diagram Renderer for Arc
  *

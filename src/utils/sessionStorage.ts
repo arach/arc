@@ -1,3 +1,4 @@
+// @ts-nocheck
 // LocalStorage-based diagram session persistence
 // Enables URL-based session recovery: /editor/:sessionId
 

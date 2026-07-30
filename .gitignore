@@ -56,3 +56,5 @@ coverage
 
 # External dependencies (local dev only)
 ext/
+# OpenScout local state
+.openscout/project.json

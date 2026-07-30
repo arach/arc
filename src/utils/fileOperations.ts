@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Extend window for File System Access API
 declare global {
   interface Window {

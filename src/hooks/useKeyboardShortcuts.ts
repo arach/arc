@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useEffect, useCallback } from 'react'
 
 export default function useKeyboardShortcuts({

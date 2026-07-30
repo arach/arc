@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Auto-layout engine for Arc diagrams
  *

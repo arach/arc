@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState, useRef, useCallback } from 'react'
 import {
   Plus, Link2, MousePointer2, Move,

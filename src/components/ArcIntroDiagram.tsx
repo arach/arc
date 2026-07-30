@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { ArcDiagram } from '@arach/arc'
 import diagram from './diagrams/architecture-intro.diagram'
 

@@ -7,7 +7,9 @@ import ArcDiagram from './components/ArcDiagram'
 import IsometricDemo from './components/IsometricDemo'
 import IsometricExamples from './components/IsometricExamples'
 import { GoogleAnalytics } from './components/GoogleAnalytics'
+import NativeMermaidSequencesPost from './components/blog/NativeMermaidSequencesPost'
 import { generateSessionId, deriveSessionId, saveDiagramSession, loadDiagramSession } from './utils/sessionStorage'
+import { registerDiagramReference } from './utils/diagramRegistry'
 import './landing.css'
 
 interface HashPayload {
@@ -26,7 +28,7 @@ interface EditorImportRequest {
   themeId: string | null
   colorMode: 'light' | 'dark'
   viewport?: { width: number; height: number } | null
-  sourceId?: string | null
+  requestedId?: string | null
 }
 
 interface ResolvedEditorSession {
@@ -58,6 +60,9 @@ function buildImportedDiagramPayload(rawDiagram: any, overrides: Partial<HashPay
   const theme = overrides.theme ?? rawDiagram._theme
   const mode = overrides.mode ?? rawDiagram._mode
   const sourceId = overrides.sourceId ?? rawDiagram.id
+  if (sourceId) {
+    sanitized.id = sourceId
+  }
 
   // Canvas is slightly larger than content to give room for the viewport frame
   const diagramLayout = sanitized.layout || { width: 800, height: 400 }
@@ -136,8 +141,8 @@ function parseEditorImportRequest(urlSessionId?: string): EditorImportRequest | 
 
   const kind = file ? 'file' : 'src'
   const value = file || src || ''
-  const sourceId = search.get('id') || value
-  const sessionId = urlSessionId || deriveSessionId(sourceId)
+  const requestedId = search.get('id')
+  const sessionId = urlSessionId || (requestedId ? deriveSessionId(requestedId) : generateSessionId())
   const mode = (search.get('mode') as 'light' | 'dark' | null) || 'dark'
 
   return {
@@ -147,8 +152,16 @@ function parseEditorImportRequest(urlSessionId?: string): EditorImportRequest | 
     themeId: search.get('theme'),
     colorMode: mode,
     viewport: parseViewport(search),
-    sourceId,
+    requestedId,
   }
+}
+
+function resolveDiagramId(rawDiagram: any, requestedId?: string | null) {
+  const diagramId = requestedId || rawDiagram?.id
+  if (typeof diagramId !== 'string' || diagramId.trim().length === 0) {
+    throw new Error('Reference-backed editor flows require a unique diagram id. Add `id` to the diagram or pass `?id=`.')
+  }
+  return diagramId.trim()
 }
 
 async function loadImportRequest(importRequest: EditorImportRequest) {
@@ -179,6 +192,7 @@ function resolveEditorSession(urlSessionId?: string): ResolvedEditorSession {
       themeId: hashPayload.theme || null,
       colorMode: mode,
       diagramMeta: {
+        diagramId: hashPayload.sourceId,
         themeId: hashPayload.theme,
         colorMode: mode,
         viewport: hashPayload.viewport,
@@ -186,7 +200,13 @@ function resolveEditorSession(urlSessionId?: string): ResolvedEditorSession {
       },
     })
 
-    const diagramMeta = { themeId: hashPayload.theme, colorMode: mode, viewport: hashPayload.viewport, sourceId: hashPayload.sourceId }
+    const diagramMeta = {
+      diagramId: hashPayload.sourceId,
+      themeId: hashPayload.theme,
+      colorMode: mode,
+      viewport: hashPayload.viewport,
+      sourceId: hashPayload.sourceId,
+    }
     return {
       sessionId: id,
       initialData: hashPayload.diagram,
@@ -213,7 +233,8 @@ function resolveEditorSession(urlSessionId?: string): ResolvedEditorSession {
         themeId: importRequest.themeId,
         colorMode: importRequest.colorMode,
         viewport: importRequest.viewport,
-        sourceId: importRequest.sourceId,
+        sourceId: importRequest.requestedId,
+        diagramId: importRequest.requestedId,
         [importRequest.kind]: importRequest.value,
       },
       needsRedirect: false,
@@ -270,23 +291,30 @@ function EditorPage() {
     ;(async () => {
       try {
         const imported = await loadImportRequest(editorState.importRequest!)
+        const diagramId = resolveDiagramId(imported, editorState.importRequest?.requestedId)
+        registerDiagramReference(diagramId, {
+          kind: editorState.importRequest!.kind,
+          value: editorState.importRequest!.value,
+        })
         const payload = buildImportedDiagramPayload(imported, {
           viewport: editorState.importRequest?.viewport || undefined,
           theme: editorState.importRequest?.themeId || undefined,
           mode: editorState.importRequest?.colorMode,
-          sourceId: editorState.importRequest?.sourceId || undefined,
+          sourceId: diagramId,
         })
+        const sessionId = deriveSessionId(diagramId)
         const mode = payload.mode || 'dark'
         const themeId = payload.theme || null
         const diagramMeta = {
+          diagramId,
           themeId,
           colorMode: mode,
           viewport: payload.viewport,
-          sourceId: payload.sourceId,
+          sourceId: diagramId,
           [editorState.importRequest!.kind]: editorState.importRequest!.value,
         }
 
-        saveDiagramSession(editorState.sessionId, {
+        saveDiagramSession(sessionId, {
           diagram: payload.diagram,
           originalDiagram: payload.originalDiagram,
           themeId,
@@ -296,7 +324,7 @@ function EditorPage() {
 
         if (cancelled) return
         setEditorState({
-          sessionId: editorState.sessionId,
+          sessionId,
           initialData: payload.diagram,
           originalDiagram: payload.originalDiagram,
           themeId,
@@ -501,9 +529,9 @@ function DocsWrapper() {
   return <ArcDocs pageId={page || 'index'} />
 }
 
-function App() {
+export function ArcRoutes() {
   return (
-    <BrowserRouter>
+    <>
       <GoogleAnalytics />
       <Routes>
         <Route path="/" element={<LandingPageWrapper />} />
@@ -512,9 +540,18 @@ function App() {
         <Route path="/player/*" element={<PlayerPage />} />
         <Route path="/docs" element={<DocsWrapper />} />
         <Route path="/docs/:page" element={<DocsWrapper />} />
+        <Route path="/blog/native-mermaid-sequences" element={<NativeMermaidSequencesPost />} />
         <Route path="/iso-demo" element={<IsometricDemo />} />
         <Route path="/iso-examples" element={<IsometricExamples />} />
       </Routes>
+    </>
+  )
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <ArcRoutes />
     </BrowserRouter>
   )
 }

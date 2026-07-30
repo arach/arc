@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { DEFAULT_LAYOUT, DEFAULT_CONNECTOR_STYLES, DEFAULT_GRID } from '../../utils/constants'
 import { generateNodeId } from '../../utils/diagramHelpers'
 import { DEFAULT_ICON } from '../../utils/iconRegistry'

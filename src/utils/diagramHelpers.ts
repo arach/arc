@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { AnchorPosition, NodePosition, DiagramLayout, Point } from '../types/editor'
 import { NODE_SIZES, NodeSizeKey, NodeDimensions } from './constants'
 

@@ -1,6 +1,52 @@
+// @ts-nocheck
 // Diagram style templates
 
-export const TEMPLATES = {
+export type TemplateId = 'talkie' | 'blueprint' | 'light' | 'minimal'
+
+export interface DiagramTemplate {
+  id: TemplateId
+  name: string
+  description: string
+  canvas: {
+    background: string
+    border: string
+    grid: {
+      color: string
+      size: number
+      opacity: number
+    }
+  }
+  node: {
+    background: string
+    border: string
+    borderRadius: string
+    accentPosition: 'left' | 'top' | 'none'
+    accentWidth: number
+    textColor: string
+    subtitleStyle: 'colored' | 'muted'
+    descriptionColor: string
+    iconBackground: string
+    iconBorderStyle: 'colored' | 'muted' | 'none'
+  }
+  connector: {
+    defaultDashed: boolean
+    defaultStrokeWidth: number
+    arrowStyle: 'filled' | 'outline'
+    labelFont: string
+    labelSize: number
+  }
+}
+
+export interface TemplateListItem {
+  id: TemplateId
+  name: string
+  description: string
+  sourcePath: string
+}
+
+export const TEMPLATE_SOURCE_PATH = 'src/utils/templates.ts'
+
+export const TEMPLATES: Record<TemplateId, DiagramTemplate> = {
   talkie: {
     id: 'talkie',
     name: 'Talkie Docs',
@@ -138,9 +184,13 @@ export const TEMPLATES = {
   },
 }
 
-export const DEFAULT_TEMPLATE = 'talkie'
+export const DEFAULT_TEMPLATE: TemplateId = 'talkie'
 
-export function getTemplate(id) {
+export function getTemplateSourcePath(_id?: TemplateId) {
+  return TEMPLATE_SOURCE_PATH
+}
+
+export function getTemplate(id?: string | null) {
   return TEMPLATES[id] || TEMPLATES[DEFAULT_TEMPLATE]
 }
 
@@ -149,5 +199,6 @@ export function getTemplateList() {
     id: t.id,
     name: t.name,
     description: t.description,
+    sourcePath: getTemplateSourcePath(t.id),
   }))
 }

@@ -130,6 +130,7 @@ export interface ExportZone {
 
 // Full diagram format (internal Arc state)
 export interface ArcDiagram {
+  id?: string
   layout: DiagramLayout
   grid: GridConfig
   layoutHints?: LayoutHints
@@ -145,6 +146,7 @@ export interface ArcDiagram {
 
 // Clean export format (for consumers)
 export interface ArcDiagramData {
+  id?: string
   layout: DiagramLayout
   layoutHints?: LayoutHints
   nodes: Record<string, NodePosition>
@@ -158,6 +160,7 @@ export interface ArcDiagramData {
 // Convert full diagram to clean export format
 export function toExportFormat(diagram: ArcDiagram): ArcDiagramData {
   return {
+    id: diagram.id,
     layout: diagram.layout,
     layoutHints: diagram.layoutHints,
     nodes: diagram.nodes,

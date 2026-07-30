@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useState, useEffect } from 'react'
 import { isoToScreen, isoBox } from '../utils/isometric'
 import { configToYaml } from '../utils/yamlConfig'

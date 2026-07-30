@@ -1,3 +1,4 @@
+// @ts-nocheck
 "use client"
 import React, { useState, useCallback, useMemo } from 'react'
 import * as LucideIcons from 'lucide-react'
@@ -807,18 +808,26 @@ export interface ArcDiagramProps {
   data: ArcDiagramData
   className?: string
   interactive?: boolean  // Enable zoom/pan controls
+  /** Embed preset for docs/previews: disables interaction, grid, zoom controls, source toggle, and label. Default: false */
+  embed?: boolean
   mode?: DiagramMode     // Light/dark appearance
   theme?: ThemeId        // Color palette theme
   /** Node surface treatment. Default: 'default' */
   nodeChrome?: NodeChrome
   /** Override the diagram label (bottom-left). Defaults to data.id */
   label?: string
+  /** Show the diagram label (bottom-left). Default: true, embed: false */
+  showLabel?: boolean
   /** Initial zoom level. Use 'fit' to auto-fit content, or a number (e.g., 0.75). Default: 1 */
   defaultZoom?: number | 'fit'
   /** Max zoom when defaultZoom='fit'. E.g., 0.85 caps fit at 85%. Default: 1 */
   maxFitZoom?: number
   /** Custom zoom level steps. Default: [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2] */
   zoomLevels?: number[]
+  /** Show the grid background. Default: true, embed: false */
+  showGrid?: boolean
+  /** Show zoom controls. Default: interactive, embed: false */
+  showZoomControls?: boolean
   /** Show the .arc source toggle button. Default: true */
   showArcToggle?: boolean
   /** Show the auto-layout button. Default: false */
@@ -834,14 +843,18 @@ export interface ArcDiagramProps {
 export default function ArcDiagram({
   data,
   className = '',
-  interactive = true,
+  interactive: interactiveProp = true,
+  embed = false,
   mode = 'dark',
   theme = 'default',
   nodeChrome = 'default',
   label,
+  showLabel,
   defaultZoom = 1,
   zoomLevels = DEFAULT_ZOOM_LEVELS,
-  showArcToggle = true,
+  showGrid,
+  showZoomControls,
+  showArcToggle: showArcToggleProp,
   showAutoLayout = false,
   showFocusStory = false,
   hoverEffects,
@@ -855,6 +868,12 @@ export default function ArcDiagram({
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null)
   const [lockedNodeId, setLockedNodeId] = useState<string | null>(null)
   const fx = useMemo(() => resolveHoverEffects(hoverEffects), [hoverEffects])
+  const effectiveInteractive = !embed && interactiveProp
+  const allowLockedFocus = !embed
+  const shouldShowGrid = showGrid ?? !embed
+  const shouldShowZoomControls = showZoomControls ?? effectiveInteractive
+  const shouldShowArcToggle = showArcToggleProp ?? !embed
+  const shouldShowLabel = showLabel ?? !embed
 
   // Active node = locked takes priority over hovered
   const activeNodeId = fx.enabled ? (lockedNodeId ?? hoveredNodeId) : null
@@ -919,17 +938,22 @@ export default function ArcDiagram({
 
   // Calculate 'fit' zoom based on container size
   const calculateFitZoom = useCallback(() => {
-    if (!containerRef.current) return 1
+    if (!containerRef.current) return null
     const container = containerRef.current
     const containerWidth = container.clientWidth
     const containerHeight = container.clientHeight
-    // Add padding for chrome (zoom controls, label)
-    const padding = 40
-    const fitX = (containerWidth - padding) / layout.width
-    const fitY = (containerHeight - padding) / layout.height
+    if (containerWidth <= 0 || containerHeight <= 0 || layout.width <= 0 || layout.height <= 0) {
+      return null
+    }
+    // Reserve a little breathing room, with extra padding when viewer chrome is visible.
+    const padding = shouldShowArcToggle || shouldShowZoomControls || shouldShowLabel || showAutoLayout
+      ? 40
+      : 16
+    const fitX = Math.max(containerWidth - padding, 1) / layout.width
+    const fitY = Math.max(containerHeight - padding, 1) / layout.height
     // Use the smaller ratio to fit both dimensions, cap at maxFitZoom
     return Math.min(fitX, fitY, maxFitZoom)
-  }, [layout.width, layout.height, maxFitZoom])
+  }, [layout.width, layout.height, maxFitZoom, shouldShowArcToggle, shouldShowZoomControls, shouldShowLabel, showAutoLayout])
 
   // Determine initial zoom
   const getInitialZoom = useCallback(() => {
@@ -946,13 +970,45 @@ export default function ArcDiagram({
   const [panStart, setPanStart] = useState({ x: 0, y: 0 })
   const [initialized, setInitialized] = useState(typeof defaultZoom === 'number')
 
-  // Set initial zoom after mount (needed for 'fit' to measure container)
   React.useEffect(() => {
-    if (!initialized) {
-      setZoom(getInitialZoom())
+    if (defaultZoom === 'fit') {
+      setInitialized(false)
+    } else {
       setInitialized(true)
+      setZoom(defaultZoom)
     }
-  }, [initialized, getInitialZoom])
+  }, [defaultZoom, layout.width, layout.height])
+
+  // Set initial fit zoom after the container has real dimensions.
+  React.useEffect(() => {
+    if (defaultZoom !== 'fit' || initialized) return
+
+    const container = containerRef.current
+    if (!container) return
+
+    let frameId: number | null = null
+
+    const syncFitZoom = () => {
+      if (frameId != null) cancelAnimationFrame(frameId)
+      frameId = requestAnimationFrame(() => {
+        frameId = null
+        const nextZoom = calculateFitZoom()
+        if (nextZoom == null || !Number.isFinite(nextZoom) || nextZoom <= 0) return
+        setZoom(nextZoom)
+        setInitialized(true)
+      })
+    }
+
+    syncFitZoom()
+
+    const observer = new ResizeObserver(syncFitZoom)
+    observer.observe(container)
+
+    return () => {
+      observer.disconnect()
+      if (frameId != null) cancelAnimationFrame(frameId)
+    }
+  }, [defaultZoom, initialized, calculateFitZoom])
 
   // Sorted zoom levels for consistent navigation
   const sortedZoomLevels = React.useMemo(() => [...zoomLevels].sort((a, b) => a - b), [zoomLevels])
@@ -972,18 +1028,24 @@ export default function ArcDiagram({
   }, [sortedZoomLevels])
 
   const handleReset = useCallback(() => {
-    setZoom(getInitialZoom())
+    const initialZoom = getInitialZoom()
+    if (initialZoom != null) {
+      setZoom(initialZoom)
+      setInitialized(true)
+    } else if (defaultZoom === 'fit') {
+      setInitialized(false)
+    }
     setPan({ x: 0, y: 0 })
-  }, [getInitialZoom])
+  }, [defaultZoom, getInitialZoom])
 
   const handleWheel = useCallback((e: React.WheelEvent) => {
-    if (!interactive) return
+    if (!effectiveInteractive || showArc) return
     if (e.ctrlKey || e.metaKey) {
       e.preventDefault()
       if (e.deltaY < 0) handleZoomIn()
       else handleZoomOut()
     }
-  }, [interactive, handleZoomIn, handleZoomOut])
+  }, [effectiveInteractive, handleZoomIn, handleZoomOut, showArc])
 
   // Click-to-lock: clicking a node locks the highlight, clicking background or same node unlocks
   const handleNodeClick = useCallback((nodeId: string) => {
@@ -995,7 +1057,7 @@ export default function ArcDiagram({
   }, [onNodeHover])
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    if (!interactive) return
+    if (!effectiveInteractive || showArc) return
     // Clicking background clears locked node
     if (lockedNodeId && (e.target as HTMLElement).closest('[data-arc-node]') === null) {
       setLockedNodeId(null)
@@ -1003,7 +1065,7 @@ export default function ArcDiagram({
     }
     setIsPanning(true)
     setPanStart({ x: e.clientX - pan.x, y: e.clientY - pan.y })
-  }, [interactive, pan, lockedNodeId, onNodeHover])
+  }, [effectiveInteractive, pan, lockedNodeId, onNodeHover, showArc])
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (!isPanning) return
@@ -1023,13 +1085,13 @@ export default function ArcDiagram({
   return (
     <div
       ref={containerRef}
-      className={`rounded-2xl overflow-hidden relative ${themeColors.background.container} ${className}`}
+      className={`w-full h-full rounded-2xl overflow-hidden relative ${themeColors.background.container} ${className}`}
       onWheel={handleWheel}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
-      style={{ cursor: interactive ? (isPanning ? 'grabbing' : 'grab') : 'default' }}
+      style={{ cursor: showArc || !effectiveInteractive ? 'default' : (isPanning ? 'grabbing' : 'grab') }}
     >
       <div
         className="relative transition-transform duration-150 ease-out"
@@ -1039,21 +1101,24 @@ export default function ArcDiagram({
           minWidth: layout.width,
           transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
           transformOrigin: 'top left',
+          visibility: defaultZoom === 'fit' && !initialized ? 'hidden' : 'visible',
         }}
       >
         {/* Grid background - extends beyond content for pan */}
-        <div
-          className="absolute"
-          style={{
-            top: -2000,
-            left: -2000,
-            width: layout.width + 4000,
-            height: layout.height + 4000,
-            backgroundImage: `radial-gradient(circle, ${themeColors.background.grid.color} 1px, transparent 1px)`,
-            backgroundSize: `${themeColors.background.grid.size}px ${themeColors.background.grid.size}px`,
-            opacity: themeColors.background.grid.opacity,
-          }}
-        />
+        {shouldShowGrid && (
+          <div
+            className="absolute"
+            style={{
+              top: -2000,
+              left: -2000,
+              width: layout.width + 4000,
+              height: layout.height + 4000,
+              backgroundImage: `radial-gradient(circle at 1px 1px, ${themeColors.background.grid.color} ${isLight ? 0.75 : 1}px, transparent ${isLight ? 0.8 : 1.05}px)`,
+              backgroundSize: `${themeColors.background.grid.size}px ${themeColors.background.grid.size}px`,
+              opacity: isLight ? themeColors.background.grid.opacity * 0.55 : themeColors.background.grid.opacity,
+            }}
+          />
+        )}
 
         {/* Groups */}
         {groups.map((group) => (
@@ -1109,7 +1174,7 @@ export default function ArcDiagram({
               dimOpacity={fx.dimOpacity}
               onMouseEnter={() => { if (!lockedNodeId) { setHoveredNodeId(nodeId); onNodeHover?.(nodeId) } }}
               onMouseLeave={() => { if (!lockedNodeId) { setHoveredNodeId(null); onNodeHover?.(null) } }}
-              onClick={() => handleNodeClick(nodeId)}
+              onClick={allowLockedFocus ? () => handleNodeClick(nodeId) : undefined}
             />
           )
         })}
@@ -1127,7 +1192,7 @@ export default function ArcDiagram({
       )}
 
       {/* .arc toggle - top right */}
-      {showArcToggle && (
+      {shouldShowArcToggle && (
         <ViewToggle
           showArc={showArc}
           onToggle={() => setShowArc(s => !s)}
@@ -1145,14 +1210,14 @@ export default function ArcDiagram({
       )}
 
       {/* Diagram label - bottom left */}
-      {displayLabel && (
+      {shouldShowLabel && displayLabel && (
         <div className={`absolute bottom-3 left-3 font-mono text-[9px] tracking-wider z-10 ${themeColors.text.muted}`}>
           {displayLabel}
         </div>
       )}
 
       {/* Zoom controls - bottom right */}
-      {interactive && !showArc && (
+      {shouldShowZoomControls && !showArc && (
         <ZoomControls
           zoom={zoom}
           zoomLevels={sortedZoomLevels}

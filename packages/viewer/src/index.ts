@@ -37,3 +37,6 @@ export type { LayoutOptions, AutoDiagramInput } from './autoLayout'
 // Mermaid import
 export { importMermaid } from './mermaid'
 export type { MermaidImportResult, MermaidImportOptions } from './mermaid'
+
+// Native Mermaid documents and family renderers
+export * from './mermaid/index'
