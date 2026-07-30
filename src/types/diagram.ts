@@ -66,6 +66,26 @@ export interface GroupShape {
   dashed?: boolean
 }
 
+export interface FocusConnectorRef {
+  from: string
+  to: string
+}
+
+export interface FocusStep {
+  icon: string
+  label: string
+}
+
+/** A declarative highlight story activated by hovering or selecting a node. */
+export interface FocusTarget {
+  /** `append` includes direct neighbors; `replace` uses only the explicit story. */
+  mode?: 'append' | 'replace'
+  nodes?: string[]
+  connectors?: FocusConnectorRef[]
+  caption?: string
+  steps?: FocusStep[]
+}
+
 export interface DiagramImage {
   id: string
   src: string
@@ -93,6 +113,7 @@ export interface ArcDiagram {
   connectors: Connector[]
   connectorStyles: Record<string, ConnectorStyle>
   groups?: GroupShape[]
+  focusTargets?: Record<string, FocusTarget>
   images?: DiagramImage[]
   exportZone?: ExportZone | null
 }
@@ -104,6 +125,7 @@ export interface ArcDiagramData {
   nodeData: Record<string, NodeData>
   connectors: Connector[]
   connectorStyles: Record<string, ConnectorStyle>
+  focusTargets?: Record<string, FocusTarget>
 }
 
 // Convert full diagram to clean export format
@@ -114,6 +136,7 @@ export function toExportFormat(diagram: ArcDiagram): ArcDiagramData {
     nodeData: diagram.nodeData,
     connectors: diagram.connectors,
     connectorStyles: diagram.connectorStyles,
+    focusTargets: diagram.focusTargets,
   }
 }
 
