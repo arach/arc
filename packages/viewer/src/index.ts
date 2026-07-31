@@ -33,5 +33,9 @@ export type {
 export { autoLayout, createAutoLayout } from './autoLayout'
 export type { LayoutOptions, AutoDiagramInput } from './autoLayout'
 
+// Mermaid architecture projection compatibility adapter
+export { importMermaid } from './importMermaid'
+export type { MermaidImportOptions, MermaidImportResult } from './importMermaid'
+
 // Native Mermaid documents and family renderers
 export * from './mermaid/index'
