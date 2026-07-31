@@ -27,7 +27,11 @@ export {
   type DiagramColor,
   type DiagramMode,
   type DiagramLayout,
+  type FocusConnectorRef,
+  type FocusStep,
+  type FocusTarget,
   type ThemeId,
+  resolveFocusState,
 } from './components/ArcDiagram'
 
 // Theme utilities

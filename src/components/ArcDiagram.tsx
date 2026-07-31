@@ -51,6 +51,24 @@ export interface DiagramLayout {
   height: number
 }
 
+export interface FocusConnectorRef {
+  from: string
+  to: string
+}
+
+export interface FocusStep {
+  icon: string
+  label: string
+}
+
+export interface FocusTarget {
+  mode?: 'append' | 'replace'
+  nodes?: string[]
+  connectors?: FocusConnectorRef[]
+  caption?: string
+  steps?: FocusStep[]
+}
+
 export interface ArcDiagramData {
   id?: string
   layout: DiagramLayout
@@ -58,6 +76,7 @@ export interface ArcDiagramData {
   nodeData: Record<string, NodeData>
   connectors: Connector[]
   connectorStyles: Record<string, ConnectorStyle>
+  focusTargets?: Record<string, FocusTarget>
 }
 
 // ============================================
@@ -100,6 +119,127 @@ function resolveHoverEffects(input?: boolean | HoverEffectsConfig): ResolvedHove
     glow: cfg.glow ?? true,
     highlightEdges: cfg.highlightEdges ?? true,
   }
+}
+
+export function resolveFocusState(
+  activeNodeId: string | null,
+  connectors: Connector[],
+  focusTargets?: Record<string, FocusTarget>,
+) {
+  const nodeIds = new Set<string>()
+  const connectorIndexes = new Set<number>()
+
+  if (!activeNodeId) return { nodeIds, connectorIndexes }
+
+  nodeIds.add(activeNodeId)
+  const target = focusTargets?.[activeNodeId]
+
+  if (target?.mode !== 'replace') {
+    connectors.forEach((connector, index) => {
+      if (connector.from !== activeNodeId && connector.to !== activeNodeId) return
+      connectorIndexes.add(index)
+      if (target) {
+        nodeIds.add(connector.from)
+        nodeIds.add(connector.to)
+      }
+    })
+  }
+
+  for (const nodeId of target?.nodes || []) nodeIds.add(nodeId)
+
+  for (const ref of target?.connectors || []) {
+    connectors.forEach((connector, index) => {
+      if (connector.from !== ref.from || connector.to !== ref.to) return
+      connectorIndexes.add(index)
+      nodeIds.add(connector.from)
+      nodeIds.add(connector.to)
+    })
+  }
+
+  return { nodeIds, connectorIndexes }
+}
+
+function FocusStory({
+  target,
+  mode,
+  inset,
+  monoFamily,
+}: {
+  target: FocusTarget
+  mode: DiagramMode
+  inset: number
+  monoFamily?: string
+}) {
+  if (!target.caption && !target.steps?.length) return null
+
+  const isLight = mode === 'light'
+
+  return (
+    <div
+      data-arc-focus-story
+      role="status"
+      aria-live="polite"
+      className="absolute z-20 pointer-events-none"
+      style={{
+        top: inset,
+        left: inset + 58,
+        right: inset + 58,
+        maxWidth: 620,
+        marginInline: 'auto',
+        padding: '9px 11px',
+        border: `1px solid ${isLight ? 'rgba(24,24,27,0.14)' : 'rgba(244,244,245,0.14)'}`,
+        borderRadius: 6,
+        background: isLight ? 'rgba(255,255,255,0.9)' : 'rgba(9,9,11,0.88)',
+        boxShadow: isLight ? '0 8px 24px rgba(24,24,27,0.08)' : '0 8px 24px rgba(0,0,0,0.24)',
+        backdropFilter: 'blur(10px)',
+      }}
+    >
+      {target.caption && (
+        <div
+          className={isLight ? 'text-zinc-700' : 'text-zinc-300'}
+          style={{ fontSize: 11.5, lineHeight: 1.45 }}
+        >
+          {target.caption}
+        </div>
+      )}
+      {!!target.steps?.length && (
+        <div
+          className="flex items-stretch overflow-hidden"
+          style={{
+            marginTop: target.caption ? 8 : 0,
+            borderTop: `1px solid ${isLight ? 'rgba(24,24,27,0.1)' : 'rgba(244,244,245,0.1)'}`,
+            fontFamily: monoFamily || 'ui-monospace, monospace',
+          }}
+        >
+          {target.steps.map((step, index) => {
+            const Icon = (LucideIcons as unknown as Record<string, LucideIcon>)[step.icon] || LucideIcons.Box
+            return (
+              <div
+                key={`${step.icon}-${step.label}-${index}`}
+                className={isLight ? 'text-zinc-600' : 'text-zinc-400'}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  minWidth: 0,
+                  flex: '1 1 0',
+                  padding: '7px 10px 0',
+                  borderLeft: index ? `1px solid ${isLight ? 'rgba(24,24,27,0.1)' : 'rgba(244,244,245,0.1)'}` : undefined,
+                  fontSize: 9,
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                }}
+              >
+                <span style={{ opacity: 0.55 }}>{String(index + 1).padStart(2, '0')}</span>
+                <Icon aria-hidden="true" style={{ width: 12, height: 12, flex: '0 0 auto' }} strokeWidth={1.6} />
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{step.label}</span>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
 }
 
 // ============================================
@@ -569,6 +709,7 @@ function generateSource(data: ArcDiagramData): string {
     nodeData: data.nodeData,
     connectors: data.connectors,
     connectorStyles: data.connectorStyles,
+    ...(data.focusTargets ? { focusTargets: data.focusTargets } : {}),
   }
   const json = JSON.stringify(clean, null, 2)
     .replace(/"([^"]+)":/g, '$1:')
@@ -908,6 +1049,8 @@ interface ArcDiagramProps {
   showControls?: boolean
   /** Show a minimap overview (bottom-left). Default: false */
   showMinimap?: boolean
+  /** Show the active focus target's caption and steps. Default: false */
+  showFocusStory?: boolean
   /** Override the edge/frame treatment (else the theme's brand.frame). */
   frame?: BrandSpec['frame']
   /** Control hover behavior. true = all effects (default), false = none, object = granular control */
@@ -932,6 +1075,7 @@ export default function ArcDiagram({
   showAutoLayout = false,
   showControls,
   showMinimap = false,
+  showFocusStory = false,
   frame,
   hoverEffects,
   onNodeHover,
@@ -958,6 +1102,12 @@ export default function ArcDiagram({
   )
 
   const { id, layout, nodes, nodeData, connectors, connectorStyles } = activeData
+  const focusTargets = activeData.focusTargets
+  const activeFocusTarget = activeNodeId ? focusTargets?.[activeNodeId] : undefined
+  const focusState = useMemo(
+    () => resolveFocusState(activeNodeId, connectors, focusTargets),
+    [activeNodeId, connectors, focusTargets],
+  )
 
   // Resolve theme colors based on mode
   const themeData = getTheme(theme)
@@ -1170,7 +1320,7 @@ export default function ArcDiagram({
           viewBox={`0 0 ${layout.width} ${layout.height}`}
         >
           {connectors.map((conn, i) => {
-            const isConnected = activeNodeId != null && (conn.from === activeNodeId || conn.to === activeNodeId)
+            const isConnected = activeNodeId != null && focusState.connectorIndexes.has(i)
             return (
               <ConnectorPath
                 key={i}
@@ -1193,6 +1343,7 @@ export default function ArcDiagram({
           const nd = nodeData[nodeId]
           if (!nd) return null
           const isActive = activeNodeId === nodeId
+          const isInFocus = focusState.nodeIds.has(nodeId)
           return (
             <Node
               key={nodeId}
@@ -1202,7 +1353,7 @@ export default function ArcDiagram({
               themeColors={themeColors}
               brand={brand}
               hovered={isActive}
-              dimmed={fx.dim && activeNodeId != null && !isActive}
+              dimmed={fx.dim && activeNodeId != null && !isInFocus}
               lift={fx.lift}
               glow={fx.glow}
               dimOpacity={fx.dimOpacity}
@@ -1241,6 +1392,15 @@ export default function ArcDiagram({
       {/* .arc source overlay */}
       {showArc && (
         <ArcSourceView source={sourceCode} mode={mode} />
+      )}
+
+      {!showArc && showFocusStory && activeFocusTarget && (
+        <FocusStory
+          target={activeFocusTarget}
+          mode={mode}
+          inset={chromeInset}
+          monoFamily={brand?.monoFamily}
+        />
       )}
 
       {/* .arc toggle - top right */}
