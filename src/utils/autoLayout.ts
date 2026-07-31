@@ -263,6 +263,7 @@ function resolveGroupLayout(group: GroupShape, hint?: GroupLayoutHint) {
   return {
     ...resolved,
     padding,
+    labelOffset,
     layerGap: Math.max(0, resolved.layerGap),
     itemGap: Math.max(0, resolved.itemGap),
     inner: {
@@ -308,18 +309,33 @@ function layoutGroupNodes(
 
   const layerIds = [...layers.keys()].sort((a, b) => a - b)
   const orderedLayers = layerIds.map(layer => orderLayer(layers.get(layer) || [], nodeHints))
-  const layout = resolveGroupLayout(group, groupHint)
   const nextNodes: Record<string, NodePosition> = {}
 
-  if (layout.direction === 'horizontal') {
+  const initialLayout = resolveGroupLayout(group, groupHint)
+
+  if (initialLayout.direction === 'horizontal') {
     const columns = orderedLayers.map(ids => ({
       ids,
       width: Math.max(...ids.map(id => getNodeSize(data.nodes[id]).width)),
       height: ids.reduce(
-        (sum, id, index) => sum + getNodeSize(data.nodes[id]).height + (index ? layout.itemGap : 0),
+        (sum, id, index) => sum + getNodeSize(data.nodes[id]).height + (index ? initialLayout.itemGap : 0),
         0,
       ),
     }))
+    const contentWidth = columns.reduce(
+      (sum, column, index) => sum + column.width + (index ? initialLayout.layerGap : 0),
+      0,
+    )
+    const contentHeight = Math.max(...columns.map(column => column.height))
+    const nextGroup = {
+      ...group,
+      width: Math.max(group.width, contentWidth + initialLayout.padding * 2),
+      height: Math.max(
+        group.height,
+        contentHeight + initialLayout.padding * 2 + initialLayout.labelOffset,
+      ),
+    }
+    const layout = resolveGroupLayout(nextGroup, groupHint)
     const placement = mainAxisPlacement(
       layout.justify,
       layout.inner.x,
@@ -341,15 +357,30 @@ function layoutGroupNodes(
       }
       x += column.width + placement.gap
     }
+    return { nodes: nextNodes, group: nextGroup }
   } else {
     const rows = orderedLayers.map(ids => ({
       ids,
       width: ids.reduce(
-        (sum, id, index) => sum + getNodeSize(data.nodes[id]).width + (index ? layout.itemGap : 0),
+        (sum, id, index) => sum + getNodeSize(data.nodes[id]).width + (index ? initialLayout.itemGap : 0),
         0,
       ),
       height: Math.max(...ids.map(id => getNodeSize(data.nodes[id]).height)),
     }))
+    const contentWidth = Math.max(...rows.map(row => row.width))
+    const contentHeight = rows.reduce(
+      (sum, row, index) => sum + row.height + (index ? initialLayout.layerGap : 0),
+      0,
+    )
+    const nextGroup = {
+      ...group,
+      width: Math.max(group.width, contentWidth + initialLayout.padding * 2),
+      height: Math.max(
+        group.height,
+        contentHeight + initialLayout.padding * 2 + initialLayout.labelOffset,
+      ),
+    }
+    const layout = resolveGroupLayout(nextGroup, groupHint)
     const placement = mainAxisPlacement(
       layout.justify,
       layout.inner.y,
@@ -371,9 +402,8 @@ function layoutGroupNodes(
       }
       y += row.height + placement.gap
     }
+    return { nodes: nextNodes, group: nextGroup }
   }
-
-  return nextNodes
 }
 
 function autoLayoutGroups(data: ArcDiagramData): ArcDiagramData | null {
@@ -391,13 +421,25 @@ function autoLayoutGroups(data: ArcDiagramData): ArcDiagramData | null {
   if (![...members.values()].some(ids => ids.length > 0)) return null
 
   let nodes = { ...data.nodes }
+  const nextGroups: GroupShape[] = []
   for (const group of groups) {
     const memberIds = members.get(group.id) || []
-    if (memberIds.length === 0) continue
+    if (memberIds.length === 0) {
+      nextGroups.push(group)
+      continue
+    }
+    const result = layoutGroupNodes(
+      { ...data, nodes },
+      group,
+      memberIds,
+      nodeHints,
+      groupHints[group.id],
+    )
     nodes = {
       ...nodes,
-      ...layoutGroupNodes({ ...data, nodes }, group, memberIds, nodeHints, groupHints[group.id]),
+      ...result.nodes,
     }
+    nextGroups.push(result.group)
   }
 
   const connectors = data.connectors.map(connector => {
@@ -407,7 +449,25 @@ function autoLayoutGroups(data: ArcDiagramData): ArcDiagramData | null {
     return { ...connector, ...inferAnchors(fromNode, toNode) }
   })
 
-  return { ...data, nodes, connectors }
+  let maxX = data.layout.width
+  let maxY = data.layout.height
+  for (const node of Object.values(nodes)) {
+    const size = getNodeSize(node)
+    maxX = Math.max(maxX, node.x + size.width + DEFAULTS.padding)
+    maxY = Math.max(maxY, node.y + size.height + DEFAULTS.padding)
+  }
+  for (const group of nextGroups) {
+    maxX = Math.max(maxX, group.x + group.width + DEFAULTS.padding)
+    maxY = Math.max(maxY, group.y + group.height + DEFAULTS.padding)
+  }
+
+  return {
+    ...data,
+    layout: { width: maxX, height: maxY },
+    nodes,
+    connectors,
+    groups: nextGroups,
+  }
 }
 
 /**
@@ -423,6 +483,14 @@ export function autoLayout(
 ): ArcDiagramData {
   const grouped = autoLayoutGroups(data)
   if (grouped) return grouped
+
+  return autoLayoutNodes(data, options)
+}
+
+function autoLayoutNodes(
+  data: ArcDiagramData,
+  options: LayoutOptions = {},
+): ArcDiagramData {
 
   const opts = { ...DEFAULTS, ...options }
   const nodeIds = Object.keys(data.nodes)
@@ -592,5 +660,6 @@ export function createAutoLayout(input: AutoDiagramInput): ArcDiagramData {
     ...(input.groups ? { groups: input.groups } : {}),
   }
 
-  return autoLayout(data, input.layout)
+  const globallyLaidOut = autoLayoutNodes(data, input.layout)
+  return autoLayoutGroups(globallyLaidOut) ?? globallyLaidOut
 }

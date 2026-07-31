@@ -48,6 +48,6 @@ const diagram = {
 const arranged = autoLayout(diagram)
 ```
 
-`horizontal` places layers from left to right. `vertical` places layers from top to bottom. `order` controls nodes that share a layer. Nodes without a valid group membership keep their explicit coordinates.
+`horizontal` places layers from left to right. `vertical` places layers from top to bottom. `order` controls nodes that share a layer. With `autoLayout`, nodes without a valid group membership keep their explicit coordinates. With `createAutoLayout`, Arc first places every node on the global canvas and then applies group-local layout, so ungrouped nodes also receive useful generated positions.
 
-Group frames have fixed dimensions. Choose a frame large enough for its nodes, padding, and gaps. Arc does not silently resize architecture boundaries because those coordinates may be part of a larger drawing.
+Group frames keep their declared origin and minimum dimensions. If a frame is too small for its nodes, padding, and gaps, Arc expands its width or height to keep every member inside the boundary and grows the diagram canvas to match.

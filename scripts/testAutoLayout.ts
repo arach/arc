@@ -89,6 +89,46 @@ describe('declarative group layout', () => {
 
     expect(result.groups).toEqual(groupedDiagram.groups)
     expect(result.layoutHints).toEqual(groupedDiagram.layoutHints)
+    expect(result.nodes.external).not.toMatchObject({ x: 0, y: 0 })
+    expect(new Set(Object.values(result.nodes).map(node => `${node.x},${node.y}`)).size).toBe(3)
+  })
+
+  test('expands undersized groups so every member remains inside the frame', () => {
+    const result = autoLayout({
+      ...groupedDiagram,
+      layout: { width: 260, height: 180 },
+      groups: [{
+        ...groupedDiagram.groups![0],
+        x: 10,
+        y: 10,
+        width: 180,
+        height: 100,
+      }],
+      layoutHints: {
+        nodes: {
+          api: { group: 'runtime', layer: 0 },
+          worker: { group: 'runtime', layer: 1 },
+          external: { group: 'runtime', layer: 2 },
+        },
+        groups: {
+          runtime: { direction: 'horizontal', padding: 20, layerGap: 28 },
+        },
+      },
+    })
+
+    const group = result.groups![0]
+    expect(group.width).toBeGreaterThan(180)
+    expect(group.height).toBeGreaterThanOrEqual(100)
+    for (const node of Object.values(result.nodes)) {
+      const width = node.size === 's' ? 110 : 160
+      const height = node.size === 's' ? 48 : 75
+      expect(node.x).toBeGreaterThanOrEqual(group.x)
+      expect(node.y).toBeGreaterThanOrEqual(group.y)
+      expect(node.x + width).toBeLessThanOrEqual(group.x + group.width)
+      expect(node.y + height).toBeLessThanOrEqual(group.y + group.height)
+    }
+    expect(result.layout.width).toBeGreaterThanOrEqual(group.x + group.width)
+    expect(result.layout.height).toBeGreaterThanOrEqual(group.y + group.height)
   })
 
   test('renders group boundaries in the public player', () => {
