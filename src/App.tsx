@@ -7,6 +7,7 @@ import ArcDiagram from './components/ArcDiagram'
 import IsometricDemo from './components/IsometricDemo'
 import IsometricExamples from './components/IsometricExamples'
 import IsometricLayersDemo from './components/IsometricLayersDemo'
+import NativeMermaidSequencesPost from './components/blog/NativeMermaidSequencesPost'
 import architectureDiagram from './components/diagrams/architecture.diagram'
 import type { ThemeId } from './utils/themes'
 import { GoogleAnalytics } from './components/GoogleAnalytics'
@@ -365,6 +366,7 @@ function App() {
         <Route path="/player/*" element={<PlayerPage />} />
         <Route path="/docs" element={<DocsWrapper />} />
         <Route path="/docs/:page" element={<DocsWrapper />} />
+        <Route path="/blog/native-mermaid-sequences" element={<NativeMermaidSequencesPost />} />
         <Route path="/iso-demo" element={<IsometricDemo />} />
         <Route path="/iso-examples" element={<IsometricExamples />} />
         <Route path="/iso-interactive" element={<IsometricLayersDemo />} />

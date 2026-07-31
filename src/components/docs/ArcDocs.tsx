@@ -539,6 +539,7 @@ import architectureMd from '../../../docs/architecture.md?raw'
 import agentsMd from '../../../docs/AGENTS.md?raw'
 import themesMd from '../../../docs/themes.md?raw'
 import exportsMd from '../../../docs/exports.md?raw'
+import mermaidSequencesMd from '../../../docs/mermaid-sequences.md?raw'
 
 // Import agent-optimized markdown files
 import overviewAgentMd from '../../../docs/agent/overview.agent.md?raw'
@@ -577,6 +578,13 @@ const pageTree: PageNode[] = [
     children: [
       { type: 'page', id: 'diagram-format', name: 'Diagram Format', icon: 'FileCode', description: 'Data structure & schema' },
       { type: 'page', id: 'architecture', name: 'Architecture', icon: 'Boxes', description: 'Templates & themes' },
+    ],
+  },
+  {
+    type: 'folder',
+    name: 'Rendering Engines',
+    children: [
+      { type: 'page', id: 'mermaid-sequences', name: 'Mermaid Sequences', icon: 'GitBranch', description: 'Native sequence renderer & player' },
     ],
   },
   {
@@ -631,6 +639,12 @@ interface PageData {
 }
 
 const pages: Record<string, PageData> = {
+  'mermaid-sequences': {
+    content: stripFrontmatter(mermaidSequencesMd),
+    title: 'Native Mermaid Sequences',
+    description: 'Parse canonical Mermaid sequence source into a typed Arc document and interactive player.',
+    badge: 'Rendering Engines',
+  },
   overview: {
     content: stripFrontmatter(overviewMd),
     agentContent: stripFrontmatter(overviewAgentMd),
