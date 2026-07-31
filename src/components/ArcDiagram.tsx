@@ -69,14 +69,51 @@ export interface FocusTarget {
   steps?: FocusStep[]
 }
 
+export interface GroupShape {
+  id: string
+  x: number
+  y: number
+  width: number
+  height: number
+  type: 'rect' | 'circle'
+  color: DiagramColor
+  label?: string
+  dashed?: boolean
+}
+
+export type LayoutAlignment = 'start' | 'center' | 'end'
+export type GroupLayoutDirection = 'horizontal' | 'vertical'
+
+export interface NodeLayoutHint {
+  group?: string
+  layer?: number
+  order?: number
+}
+
+export interface GroupLayoutHint {
+  direction?: GroupLayoutDirection
+  padding?: number
+  layerGap?: number
+  itemGap?: number
+  align?: LayoutAlignment
+  justify?: LayoutAlignment | 'space-between'
+}
+
+export interface LayoutHints {
+  nodes?: Record<string, NodeLayoutHint>
+  groups?: Record<string, GroupLayoutHint>
+}
+
 export interface ArcDiagramData {
   id?: string
   layout: DiagramLayout
+  layoutHints?: LayoutHints
   nodes: Record<string, NodePosition>
   nodeData: Record<string, NodeData>
   connectors: Connector[]
   connectorStyles: Record<string, ConnectorStyle>
   focusTargets?: Record<string, FocusTarget>
+  groups?: GroupShape[]
 }
 
 // ============================================
@@ -239,6 +276,62 @@ function FocusStory({
         </div>
       )}
     </div>
+  )
+}
+
+function DiagramGroups({ groups, themeColors }: {
+  groups: GroupShape[]
+  themeColors: Theme['light'] | Theme['dark']
+}) {
+  return (
+    <svg className="absolute inset-0 w-full h-full pointer-events-none" aria-hidden="true">
+      {groups.map(group => {
+        const color = themeColors.palette[group.color] || themeColors.palette.zinc
+        const common = {
+          fill: color.stroke,
+          fillOpacity: 0.06,
+          stroke: color.stroke,
+          strokeOpacity: 0.55,
+          strokeWidth: 1.5,
+          strokeDasharray: group.dashed ? '8 4' : undefined,
+        }
+
+        return (
+          <g key={group.id}>
+            {group.type === 'circle' ? (
+              <ellipse
+                cx={group.x + group.width / 2}
+                cy={group.y + group.height / 2}
+                rx={group.width / 2}
+                ry={group.height / 2}
+                {...common}
+              />
+            ) : (
+              <rect
+                x={group.x}
+                y={group.y}
+                width={group.width}
+                height={group.height}
+                rx={8}
+                {...common}
+              />
+            )}
+            {group.label && (
+              <text
+                x={group.x + 12}
+                y={group.y + 19}
+                fill={color.stroke}
+                fontSize={11}
+                fontWeight={600}
+                letterSpacing="0.06em"
+              >
+                {group.label}
+              </text>
+            )}
+          </g>
+        )
+      })}
+    </svg>
   )
 }
 
@@ -1097,11 +1190,11 @@ export default function ArcDiagram({
 
   // Apply auto-layout if toggled
   const activeData = useMemo(
-    () => useAutoLayout ? autoLayout(data as any) as unknown as ArcDiagramData : data,
+    () => useAutoLayout ? autoLayout(data) : data,
     [data, useAutoLayout],
   )
 
-  const { id, layout, nodes, nodeData, connectors, connectorStyles } = activeData
+  const { id, layout, nodes, nodeData, connectors, connectorStyles, groups = [] } = activeData
   const focusTargets = activeData.focusTargets
   const activeFocusTarget = activeNodeId ? focusTargets?.[activeNodeId] : undefined
   const focusState = useMemo(
@@ -1313,6 +1406,9 @@ export default function ArcDiagram({
             {brand?.gridType === 'crosshair' && <rect width="100%" height="100%" fill={`url(#${gridId}-major)`} />}
           </svg>
         )}
+
+        {/* Group boundaries sit behind connectors and nodes. */}
+        <DiagramGroups groups={groups} themeColors={themeColors} />
 
         {/* Connectors */}
         <svg
