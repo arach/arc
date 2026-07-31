@@ -42,6 +42,41 @@ describe('Mermaid architecture projection', () => {
     ])
   })
 
+  test('imports compact edges without requiring whitespace around arrows', () => {
+    const result = importMermaid(`flowchart LR
+      A[App]-->B[API]`)
+
+    expect(result.warnings).toEqual([])
+    expect(result.unsupported).toEqual([])
+    expect(Object.keys(result.diagram.nodes)).toEqual(['A', 'B'])
+    expect(result.diagram.nodeData.A.name).toBe('App')
+    expect(result.diagram.nodeData.B.name).toBe('API')
+    expect(result.diagram.connectors).toHaveLength(1)
+    expect(result.diagram.connectors[0]).toMatchObject({ from: 'A', to: 'B' })
+  })
+
+  test('expands chained edges into one connector per hop', () => {
+    const result = importMermaid(`flowchart LR
+      A --> B --> C`)
+
+    expect(result.warnings).toEqual([])
+    expect(Object.keys(result.diagram.nodes)).toEqual(['A', 'B', 'C'])
+    expect(result.diagram.connectors).toHaveLength(2)
+    expect(result.diagram.connectors[0]).toMatchObject({ from: 'A', to: 'B' })
+    expect(result.diagram.connectors[1]).toMatchObject({ from: 'B', to: 'C' })
+  })
+
+  test('preserves labels from decision and hexagon node shapes', () => {
+    const result = importMermaid(`flowchart LR
+      A{Is valid?} --> B{{Decision service}} --> C[Done]`)
+
+    expect(result.warnings).toEqual([])
+    expect(result.diagram.nodeData.A.name).toBe('Is valid?')
+    expect(result.diagram.nodeData.B.name).toBe('Decision service')
+    expect(result.diagram.nodeData.C.name).toBe('Done')
+    expect(result.diagram.connectors).toHaveLength(2)
+  })
+
   test('imports state transitions with stable start and end nodes', () => {
     const result = importMermaid(`stateDiagram-v2
       [*] --> Ready: boot

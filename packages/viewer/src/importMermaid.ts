@@ -164,23 +164,44 @@ function createIdRegistry(warnings: string[], reserved: string[] = []) {
   }
 }
 
-/** Extract label from Mermaid node definitions like ID["Label"] or ID("Label") or ID[Label] */
+function unwrapNodeShape(raw: string): string {
+  let value = raw.trim()
+  let changed = true
+
+  while (changed && value.length >= 2) {
+    changed = false
+    const first = value[0]
+    const last = value[value.length - 1]
+    const matchingPair = (first === '[' && last === ']')
+      || (first === '(' && last === ')')
+      || (first === '{' && last === '}')
+      || (first === '"' && last === '"')
+      || (first === "'" && last === "'")
+
+    if (matchingPair) {
+      value = value.slice(1, -1).trim()
+      changed = true
+    }
+  }
+
+  return value
+}
+
+/** Extract a stable ID and display label from a Mermaid flowchart node token. */
 function extractLabel(raw: string): { id: string; label: string } {
-  // Match ID["Label"], ID['Label'], ID("Label"), ID('Label')
-  const quoted = raw.match(/^([a-zA-Z0-9_-]+)\s*[\[("]+\s*"?'?([^"'\])]+)'?"?\s*[\])"]+$/)
-  if (quoted) return { id: quoted[1], label: quoted[2].trim() }
+  const trimmed = raw.trim()
+  const idMatch = trimmed.match(/^([a-zA-Z0-9_]+(?:-[a-zA-Z0-9_]+)*)/)
+  if (!idMatch) return { id: trimmed, label: trimmed }
 
-  // Match ID[Label] or ID(Label) without quotes
-  const bracketed = raw.match(/^([a-zA-Z0-9_-]+)\s*[\[(]([^\])]+)[\])]$/)
-  if (bracketed) return { id: bracketed[1], label: bracketed[2].trim() }
-
-  // Plain ID
-  const plain = raw.trim()
-  return { id: plain, label: plain }
+  const id = idMatch[1]
+  const shape = trimmed.slice(idMatch[0].length).trim()
+  const label = shape ? unwrapNodeShape(shape) : id
+  return { id, label: label || id }
 }
 
 function isExplicitNodeDefinition(raw: string): boolean {
-  return /^[a-zA-Z0-9_-]+\s*[\[(].*[\])]$/.test(raw.trim())
+  const token = readFlowchartNode(raw, 0)
+  return Boolean(token?.hasShape && raw.slice(token.end).trim().length === 0)
 }
 
 function splitNodeLabel(label: string): Pick<NodeData, 'name' | 'subtitle' | 'description'> {
@@ -207,6 +228,165 @@ interface ParsedEdge {
   to: string
   label?: string
   dashed: boolean
+}
+
+interface FlowchartNodeToken {
+  raw: string
+  end: number
+  hasShape: boolean
+}
+
+interface FlowchartEdgeToken {
+  end: number
+  label?: string
+  dashed: boolean
+}
+
+interface FlowchartStatement {
+  nodes: FlowchartNodeToken[]
+  edges: FlowchartEdgeToken[]
+}
+
+const FLOWCHART_SHAPE_CLOSE: Record<string, string> = {
+  '[': ']',
+  '(': ')',
+  '{': '}',
+}
+
+function readFlowchartNode(line: string, start: number): FlowchartNodeToken | null {
+  let cursor = start
+  while (/\s/.test(line[cursor] || '')) cursor++
+
+  const idMatch = line.slice(cursor).match(/^([a-zA-Z0-9_]+(?:-[a-zA-Z0-9_]+)*)/)
+  if (!idMatch) return null
+
+  const tokenStart = cursor
+  cursor += idMatch[0].length
+  const idEnd = cursor
+  while (/\s/.test(line[cursor] || '')) cursor++
+
+  const opener = line[cursor]
+  if (!(opener in FLOWCHART_SHAPE_CLOSE)) {
+    return { raw: line.slice(tokenStart, idEnd), end: idEnd, hasShape: false }
+  }
+
+  const stack: string[] = []
+  let quote: string | null = null
+  let escaped = false
+
+  for (; cursor < line.length; cursor++) {
+    const char = line[cursor]
+
+    if (quote) {
+      if (escaped) {
+        escaped = false
+      } else if (char === '\\') {
+        escaped = true
+      } else if (char === quote) {
+        quote = null
+      }
+      continue
+    }
+
+    if (char === '"' || char === "'") {
+      quote = char
+      continue
+    }
+
+    if (char in FLOWCHART_SHAPE_CLOSE) {
+      stack.push(FLOWCHART_SHAPE_CLOSE[char])
+      continue
+    }
+
+    if (stack.length > 0 && char === stack[stack.length - 1]) {
+      stack.pop()
+      if (stack.length === 0) {
+        cursor++
+        return {
+          raw: line.slice(tokenStart, cursor).trim(),
+          end: cursor,
+          hasShape: true,
+        }
+      }
+    }
+  }
+
+  return null
+}
+
+function readFlowchartEdge(line: string, start: number): FlowchartEdgeToken | null {
+  const source = line.slice(start)
+  const leadingWhitespace = source.match(/^\s*/)?.[0].length ?? 0
+  const rest = source.slice(leadingWhitespace)
+
+  const solidPipe = rest.match(/^--?>\|([^|]*)\|/)
+  if (solidPipe) {
+    return {
+      end: start + leadingWhitespace + solidPipe[0].length,
+      label: solidPipe[1].trim() || undefined,
+      dashed: false,
+    }
+  }
+
+  const dottedLabel = rest.match(/^-\.\s*(.+?)\s*\.->/)
+  if (dottedLabel) {
+    return {
+      end: start + leadingWhitespace + dottedLabel[0].length,
+      label: dottedLabel[1].trim() || undefined,
+      dashed: true,
+    }
+  }
+
+  const dotted = rest.match(/^-\.->/)
+  if (dotted) {
+    return {
+      end: start + leadingWhitespace + dotted[0].length,
+      dashed: true,
+    }
+  }
+
+  const solidLabel = rest.match(/^--\s+(.+?)\s+-->/)
+  if (solidLabel) {
+    return {
+      end: start + leadingWhitespace + solidLabel[0].length,
+      label: solidLabel[1].trim() || undefined,
+      dashed: false,
+    }
+  }
+
+  const solid = rest.match(/^--?>/)
+  if (solid) {
+    return {
+      end: start + leadingWhitespace + solid[0].length,
+      dashed: false,
+    }
+  }
+
+  return null
+}
+
+function parseFlowchartStatement(line: string): FlowchartStatement | null {
+  const firstNode = readFlowchartNode(line, 0)
+  if (!firstNode) return null
+
+  const nodes = [firstNode]
+  const edges: FlowchartEdgeToken[] = []
+  let cursor = firstNode.end
+
+  while (true) {
+    const edge = readFlowchartEdge(line, cursor)
+    if (!edge) break
+
+    const node = readFlowchartNode(line, edge.end)
+    if (!node) return null
+
+    edges.push(edge)
+    nodes.push(node)
+    cursor = node.end
+  }
+
+  if (line.slice(cursor).trim().length > 0) return null
+  return { nodes, edges }
 }
 
 function parseFlowchart(
@@ -249,61 +429,30 @@ function parseFlowchart(
       continue
     }
 
-    // Parse edges: A -->|label| B, A --> B, A -.text.-> B, A -. text .-> B
-    // Can have node definitions inline: A["Foo"] --> B["Bar"]
-    const edgePatterns = [
-      // Dotted with label: A -. text .-> B or A -.text.-> B
-      /^(.+?)\s+-\.+\s*(.*?)\s*\.+->\s*(.+)$/,
-      // Solid with label: A -->|text| B or A -- text --> B
-      /^(.+?)\s+-->?\|([^|]*)\|\s*(.+)$/,
-      /^(.+?)\s+--\s+([^-]+?)\s+-->\s*(.+)$/,
-      // Plain solid: A --> B
-      /^(.+?)\s+-->\s*(.+)$/,
-      // Plain dotted: A -.-> B
-      /^(.+?)\s+-\.+->\s*(.+)$/,
-    ]
+    const statement = parseFlowchartStatement(line)
+    let matched = Boolean(statement)
 
-    let matched = false
-    for (const pattern of edgePatterns) {
-      const m = line.match(pattern)
-      if (!m) continue
-      matched = true
+    if (statement && statement.edges.length > 0) {
+      const parsedNodes = statement.nodes.map((token) => extractLabel(token.raw))
+      const nodeIds = parsedNodes.map((node) => idFor(node.id))
 
-      let fromRaw: string, toRaw: string, edgeLabel: string | undefined
-      const isDashed = pattern.source.includes('-\\.')
-
-      if (m.length === 4) {
-        fromRaw = m[1].trim()
-        edgeLabel = m[2].trim() || undefined
-        toRaw = m[3].trim()
-      } else {
-        fromRaw = m[1].trim()
-        toRaw = m[2].trim()
-      }
-
-      const from = extractLabel(fromRaw)
-      const to = extractLabel(toRaw)
-      const fromId = idFor(from.id)
-      const toId = idFor(to.id)
-      if (from.label !== from.id) nodeLabels.set(fromId, from.label)
-      if (to.label !== to.id) nodeLabels.set(toId, to.label)
-
-      edges.push({
-        from: fromId,
-        to: toId,
-        label: edgeLabel,
-        dashed: isDashed,
+      parsedNodes.forEach((node, index) => {
+        if (node.label !== node.id) nodeLabels.set(nodeIds[index], node.label)
       })
-      break
-    }
 
-    if (!matched) {
-      // Might be a standalone node definition: ID["Label"]
-      const nodeDef = extractLabel(line)
-      if (nodeDef.id && isExplicitNodeDefinition(line)) {
-        nodeLabels.set(idFor(nodeDef.id), nodeDef.label)
-        matched = true
-      }
+      statement.edges.forEach((edge, index) => {
+        edges.push({
+          from: nodeIds[index],
+          to: nodeIds[index + 1],
+          label: edge.label,
+          dashed: edge.dashed,
+        })
+      })
+    } else if (statement && isExplicitNodeDefinition(line)) {
+      const nodeDef = extractLabel(statement.nodes[0].raw)
+      nodeLabels.set(idFor(nodeDef.id), nodeDef.label)
+    } else if (statement) {
+      matched = false
     }
 
     if (!matched && line.length > 0) {
