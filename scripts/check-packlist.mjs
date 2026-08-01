@@ -11,6 +11,18 @@ const pack = JSON.parse(
 )[0]
 const packedFiles = new Set(pack.files.map(({ path: file }) => file))
 const packageJson = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8'))
+const productionDependencies = Object.keys(packageJson.dependencies ?? {})
+
+if (productionDependencies.length > 0) {
+  console.error('The bundled root package must not install production dependencies:')
+  for (const dependency of productionDependencies.sort()) console.error(`- ${dependency}`)
+  process.exit(1)
+}
+
+if (packageJson.publishConfig?.provenance !== true) {
+  console.error('package.json must enable publishConfig.provenance for release attestations.')
+  process.exit(1)
+}
 
 const entrypoints = [packageJson.main, packageJson.module, packageJson.types]
   .filter(Boolean)
@@ -45,4 +57,6 @@ if (missing.size > 0) {
   process.exit(1)
 }
 
-console.log(`Packlist verified: ${packedFiles.size} files, all entrypoints and relative imports included.`)
+console.log(
+  `Packlist verified: ${packedFiles.size} files, no production dependencies, provenance enabled, and all entrypoints and relative imports included.`,
+)

@@ -29,7 +29,8 @@ npm install @arach/arc
 # or:  bun add @arach/arc  ·  pnpm add @arach/arc  ·  yarn add @arach/arc
 ```
 
-`react`, `react-dom`, and `lucide-react` are peer dependencies.
+`react` and `react-dom` are peer dependencies. Arc bundles its icon renderer and
+has no production dependencies of its own.
 
 ## Quick Start
 
