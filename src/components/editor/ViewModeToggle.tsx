@@ -6,7 +6,8 @@ import type { ViewMode } from '../../types/editor'
 interface ViewModeToggleProps {
   viewMode: ViewMode
   onViewModeChange: (mode: ViewMode) => void
-  /** Isometric render style — the style button only shows in isometric view. */
+  /** Isometric render style. The button always holds its slot so the control
+   *  keeps one shape; in 2D it is inert rather than absent. */
   isoStyle?: IsoStyleId
   onIsoStyleChange?: (style: IsoStyleId) => void
 }
@@ -40,12 +41,17 @@ export default function ViewModeToggle({
         <Box size={13} strokeWidth={1.75} />
       </button>
 
-      {viewMode === 'isometric' && onIsoStyleChange && (
+      {onIsoStyleChange && (
         <button
           type="button"
+          disabled={viewMode !== 'isometric'}
           onClick={() => onIsoStyleChange(nextIsoStyle(isoStyle))}
-          className={`arc-canvas-btn${current.technical ? ' is-active' : ''}`}
-          title={`Iso style: ${current.name} — click for ${next.name}`}
+          className={`arc-canvas-btn${viewMode === 'isometric' && current.technical ? ' is-active' : ''}`}
+          title={
+            viewMode === 'isometric'
+              ? `Iso style: ${current.name} — click for ${next.name}`
+              : `Iso style: ${current.name} — available in isometric view`
+          }
         >
           <Ruler size={13} strokeWidth={1.75} />
         </button>

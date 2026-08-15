@@ -1565,7 +1565,14 @@ body,
   color: var(--arc-faint);
 }
 
-/* CodeMirror fills the pane; Hudson's editor brings its own highlighting. */
+/* CodeMirror fills the pane.
+   Hudson's CodeEditor picks a light or dark theme from the shell's resolved
+   theme and brings its own syntax highlighting — good defaults, but its surface
+   colors are injected into <head> at runtime, so they land after this
+   stylesheet and win on a specificity tie. Hence !important: the editor should
+   sit on the pane's own skinned surface and borrow the chrome accent, in either
+   mode and under every chrome theme. Token colors stay Hudson's. */
+
 .arc-markup-source {
   display: flex;
   flex-direction: column;
@@ -1578,25 +1585,50 @@ body,
 
 .arc-markup-source .cm-editor {
   height: 100%;
-  background: transparent;
-  font-family: var(--arc-font-mono);
-  font-size: var(--arc-text-xs);
+  background: transparent !important;
+  color: var(--arc-ink) !important;
 }
 
 .arc-markup-source .cm-scroller {
-  font-family: var(--arc-font-mono);
-  line-height: 1.6;
+  font-family: var(--arc-font-mono) !important;
+  font-size: var(--arc-text-xs) !important;
+  line-height: 1.65 !important;
 }
 
 .arc-markup-source .cm-gutters {
-  border-right: 1px solid var(--arc-line);
-  background: transparent;
-  color: var(--arc-faint);
+  background: transparent !important;
+  color: var(--arc-faint) !important;
+  border-right: 1px solid var(--arc-line) !important;
 }
 
-.arc-markup-source .cm-activeLine,
+.arc-markup-source .cm-activeLine {
+  background: var(--arc-acc-soft) !important;
+}
+
 .arc-markup-source .cm-activeLineGutter {
-  background: var(--arc-acc-soft);
+  background: var(--arc-acc-soft) !important;
+  color: var(--arc-acc) !important;
+}
+
+.arc-markup-source .cm-content {
+  caret-color: var(--arc-acc) !important;
+}
+
+.arc-markup-source .cm-cursor,
+.arc-markup-source .cm-dropCursor {
+  border-left-color: var(--arc-acc) !important;
+}
+
+.arc-markup-source .cm-selectionBackground,
+.arc-markup-source .cm-focused .cm-selectionBackground,
+.arc-markup-source .cm-content ::selection {
+  background: color-mix(in srgb, var(--arc-acc) 20%, transparent) !important;
+}
+
+.arc-markup-source .cm-foldPlaceholder {
+  background: var(--arc-acc-soft) !important;
+  border-color: var(--arc-line-2) !important;
+  color: var(--arc-muted) !important;
 }
 
 .arc-markup-foot.is-error {

@@ -156,6 +156,14 @@ Diagram content is deliberately outside this system: the player's own chrome
 (zoom controls, legend, title block) keeps fixed sizes so an embedded or
 exported diagram doesn't change with a viewer's UI density.
 
+### Editor Canvas Surface
+
+`DiagramCanvas` takes `surface`: `'theme'` (default) paints the diagram theme's
+container, which is right for embeds where the frame is part of the artifact;
+`'chrome'` paints `--arc-canvas` instead. The editor passes `'chrome'`, so the
+infinite workspace follows the shell skin rather than fighting it — the diagram
+theme still colors the nodes and connectors.
+
 ### Chrome Themes
 
 The *skin* of the shell — nav, rail, inspector, canvas backdrop, accents, glow —
@@ -200,6 +208,13 @@ any panes, and `.arc-shell-main`.
 `components/chrome/MarkupPanel.tsx` splits the surface: source on the left,
 rendering on the right, toggled from the rail's braces button. The editor
 remembers the toggle in `localStorage` (`arc-editor-markup`).
+
+CodeMirror's own surface colors are bound to the chrome tokens with
+`!important` — Hudson picks a light or dark editor theme from the shell's
+resolved theme, but injects it into `<head>` at runtime, so it lands after
+`editor-shell.css` and wins on a specificity tie. Overriding background, gutter,
+caret, selection and active-line keeps the editor sitting on the pane's own
+skinned surface under every chrome theme; syntax token colors stay Hudson's.
 
 The pane is resizable by dragging its right edge (double-click the handle to
 reset); the width persists under `arc-markup-width`, clamped to 280px and 68% of

@@ -53,12 +53,16 @@ interface DiagramCanvasProps {
   onViewportChange?: (bounds: { x: number; y: number; width: number; height: number }) => void
   embedConfig?: EmbedConfig
   zoomConfig?: ZoomConfig
+  /** Workspace backdrop: 'theme' paints the diagram theme's container (embeds,
+   *  where the frame is part of the artifact), 'chrome' paints the app canvas
+   *  so the editor's infinite surface matches the shell skin. */
+  surface?: 'theme' | 'chrome'
   /** Override canvas background with an Arc theme. */
   themeOverride?: string
   isDark?: boolean
 }
 
-export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfig, themeOverride, isDark }: DiagramCanvasProps) {
+export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfig, surface = 'theme', themeOverride, isDark }: DiagramCanvasProps) {
   const { actions } = useEditor()
   const diagram = useDiagram()
   const editor = useEditorState()
@@ -674,11 +678,15 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
         ref={containerRef}
         className={`
           w-full h-full overflow-hidden
-          ${themeColors ? '' : (themeOverride ? '' : template.canvas.background)}
-          ${themeColors ? themeColors.background.container : (themeOverride ? getTheme(themeOverride as any)?.[isDark ? 'dark' : 'light']?.background?.container || '' : '')}
+          ${surface === 'chrome' ? '' : themeColors ? '' : (themeOverride ? '' : template.canvas.background)}
+          ${surface === 'chrome' ? '' : themeColors ? themeColors.background.container : (themeOverride ? getTheme(themeOverride as any)?.[isDark ? 'dark' : 'light']?.background?.container || '' : '')}
           ${getCursorClass()}
         `}
-        style={{ touchAction: 'none' }}
+        style={{
+          touchAction: 'none',
+          // The workspace is chrome, not artifact: let the shell skin show.
+          ...(surface === 'chrome' ? { background: 'var(--arc-canvas)' } : {}),
+        }}
         onDrop={handleDrop}
         onDragOver={handleDragOver}
       >
