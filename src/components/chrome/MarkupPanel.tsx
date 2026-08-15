@@ -18,18 +18,38 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Check, Copy, X } from 'lucide-react'
 import { CodeEditor } from 'hudsonkit/controls'
+import { validateDiagramShape } from '../../utils/diagramValidation'
 
 export type MarkupFormat = 'ts' | 'json'
 
 const WIDTH_KEY = 'arc-markup-width'
+const DEFAULT_WIDTH = 460
 const MIN_WIDTH = 280
 /** Leave the drawing at least a third of the surface. */
 const MAX_FRACTION = 0.68
+/** Keyboard nudge for the resize handle. */
+const RESIZE_STEP = 24
+
+function maxWidth(): number {
+  if (typeof window === 'undefined') return DEFAULT_WIDTH
+  return Math.max(MIN_WIDTH, Math.round(window.innerWidth * MAX_FRACTION))
+}
+
+const clampWidth = (px: number) => Math.min(Math.max(px, MIN_WIDTH), maxWidth())
 
 function loadWidth(): number {
-  if (typeof window === 'undefined') return 460
-  const stored = Number(window.localStorage.getItem(WIDTH_KEY))
-  return Number.isFinite(stored) && stored >= MIN_WIDTH ? stored : 460
+  if (typeof window === 'undefined') return DEFAULT_WIDTH
+  try {
+    const stored = Number(window.localStorage.getItem(WIDTH_KEY))
+    return Number.isFinite(stored) && stored >= MIN_WIDTH ? clampWidth(stored) : DEFAULT_WIDTH
+  } catch {
+    // Storage can throw outright in private mode — fall back to the default.
+    return DEFAULT_WIDTH
+  }
+}
+
+function storeWidth(px: number) {
+  try { window.localStorage.setItem(WIDTH_KEY, String(px)) } catch { /* private mode */ }
 }
 
 /** TypeScript module — what you paste into a repo. */
@@ -38,17 +58,6 @@ export function toTsSource(data: unknown, name = 'diagram'): string {
     .replace(/"([^"]+)":/g, '$1:')
     .replace(/"/g, "'")
   return `import type { ArcDiagramData } from '@arach/arc'\n\nconst ${name}: ArcDiagramData = ${json}\n\nexport default ${name}\n`
-}
-
-/** A parsed payload has to look like a diagram before it is applied. */
-function validateDiagram(value: unknown): string | null {
-  if (!value || typeof value !== 'object') return 'Expected an object'
-  const d = value as Record<string, unknown>
-  if (!d.layout || typeof d.layout !== 'object') return 'Missing `layout`'
-  if (!d.nodes || typeof d.nodes !== 'object') return 'Missing `nodes`'
-  if (!d.nodeData || typeof d.nodeData !== 'object') return 'Missing `nodeData`'
-  if (d.connectors != null && !Array.isArray(d.connectors)) return '`connectors` must be an array'
-  return null
 }
 
 type Status =
@@ -72,6 +81,10 @@ export default function MarkupPanel({ title, data, onApply, onClose }: MarkupPan
   // Text the user is editing; null means "follow the diagram".
   const [draft, setDraft] = useState<string | null>(null)
   const applyTimer = useRef<number | null>(null)
+  const copyTimer = useRef<number | null>(null)
+  // The source our own apply is expected to produce. An edit echoing back must
+  // not replace the text under the cursor; a change from the canvas must.
+  const echo = useRef<string | null>(null)
   const [width, setWidth] = useState(loadWidth)
   const drag = useRef<{ startX: number; startWidth: number } | null>(null)
 
@@ -82,24 +95,42 @@ export default function MarkupPanel({ title, data, onApply, onClose }: MarkupPan
   const editable = format === 'json' && !!onApply
   const source = draft ?? rendered
 
-  // A diagram change from the canvas wins over a stale draft.
   useEffect(() => {
+    if (echo.current !== null && echo.current === rendered) {
+      echo.current = null
+      return
+    }
+    echo.current = null
     setDraft(null)
     setStatus({ kind: 'clean' })
   }, [rendered])
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return
+      // Escape inside the code editor steps out of it; the pane closes on the
+      // next press, once focus has left.
+      const el = e.target as HTMLElement | null
+      if (el?.closest?.('.cm-editor')) return
+      onClose()
+    }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
   }, [onClose])
 
-  useEffect(() => () => { if (applyTimer.current) window.clearTimeout(applyTimer.current) }, [])
+  useEffect(() => () => {
+    if (applyTimer.current) window.clearTimeout(applyTimer.current)
+    if (copyTimer.current) window.clearTimeout(copyTimer.current)
+  }, [])
 
   // --- resize ---
 
-  const clampWidth = (px: number) =>
-    Math.min(Math.max(px, MIN_WIDTH), Math.round(window.innerWidth * MAX_FRACTION))
+  // A narrowed window must not leave the pane covering the drawing.
+  useEffect(() => {
+    const onResize = () => setWidth(w => (w > maxWidth() ? maxWidth() : w))
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
 
   const onResizeStart = useCallback((e: React.PointerEvent) => {
     e.preventDefault()
@@ -116,16 +147,37 @@ export default function MarkupPanel({ title, data, onApply, onClose }: MarkupPan
     if (!drag.current) return
     drag.current = null
     ;(e.target as HTMLElement).releasePointerCapture?.(e.pointerId)
-    try { window.localStorage.setItem(WIDTH_KEY, String(width)) } catch { /* private mode */ }
+    storeWidth(width)
   }, [width])
 
   // Double-click the handle to snap back to a readable default.
   const onResizeReset = useCallback(() => {
-    setWidth(460)
-    try { window.localStorage.setItem(WIDTH_KEY, '460') } catch { /* private mode */ }
+    setWidth(DEFAULT_WIDTH)
+    storeWidth(DEFAULT_WIDTH)
+  }, [])
+
+  // The handle is focusable, so the split is reachable without a pointer.
+  const onResizeKey = useCallback((e: React.KeyboardEvent) => {
+    const delta = e.key === 'ArrowLeft' ? -RESIZE_STEP : e.key === 'ArrowRight' ? RESIZE_STEP : 0
+    if (!delta) return
+    e.preventDefault()
+    setWidth(w => {
+      const next = clampWidth(w + delta)
+      storeWidth(next)
+      return next
+    })
   }, [])
 
   const handleChange = (next: string) => {
+    // CodeMirror re-emits the document whenever `code` changes from outside —
+    // a canvas edit, File → New. That is not the user typing, and treating it
+    // as one applied the document back to itself: a history entry and a dirty
+    // flag for every move of a node.
+    if (next === rendered) {
+      if (applyTimer.current) window.clearTimeout(applyTimer.current)
+      setDraft(null)
+      return
+    }
     setDraft(next)
     if (!editable) return
     if (applyTimer.current) window.clearTimeout(applyTimer.current)
@@ -138,20 +190,36 @@ export default function MarkupPanel({ title, data, onApply, onClose }: MarkupPan
         setStatus({ kind: 'error', message: (err as Error).message.replace(/^JSON\.parse: /, '') })
         return
       }
-      const problem = validateDiagram(parsed)
+      const problem = validateDiagramShape(parsed)
       if (problem) {
         setStatus({ kind: 'error', message: problem })
         return
       }
+      echo.current = JSON.stringify(parsed, null, 2)
       onApply?.(parsed as Record<string, unknown>)
       setStatus({ kind: 'applied' })
     }, 400)
   }
 
+  const pickFormat = (next: MarkupFormat) => {
+    if (next === format) return
+    // Drop a pending apply — it belongs to text that is about to be replaced.
+    if (applyTimer.current) window.clearTimeout(applyTimer.current)
+    setDraft(null)
+    setStatus({ kind: 'clean' })
+    setFormat(next)
+  }
+
   const copy = async () => {
-    await navigator.clipboard.writeText(source)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 1600)
+    try {
+      await navigator.clipboard.writeText(source)
+      setCopied(true)
+      if (copyTimer.current) window.clearTimeout(copyTimer.current)
+      copyTimer.current = window.setTimeout(() => setCopied(false), 1600)
+    } catch {
+      // Denied permission, or a page served over plain http.
+      setStatus({ kind: 'error', message: 'Clipboard unavailable — select the text and copy' })
+    }
   }
 
   const lines = source.split('\n').length
@@ -165,24 +233,32 @@ export default function MarkupPanel({ title, data, onApply, onClose }: MarkupPan
   return (
     <aside className="arc-markup-pane" style={{ width }} aria-label="Diagram markup">
       <div className="arc-markup-head">
-        <span className="arc-markup-title">{title}</span>
-        <div className="arc-markup-formats">
+        <span className="arc-markup-title" title={title}>{title}</span>
+        <div className="arc-markup-formats" role="group" aria-label="Markup format">
           <button
             type="button"
             className={`arc-settings-segment${format === 'json' ? ' is-active' : ''}`}
-            onClick={() => setFormat('json')}
+            aria-pressed={format === 'json'}
+            onClick={() => pickFormat('json')}
           >
             .json
           </button>
           <button
             type="button"
             className={`arc-settings-segment${format === 'ts' ? ' is-active' : ''}`}
-            onClick={() => setFormat('ts')}
+            aria-pressed={format === 'ts'}
+            onClick={() => pickFormat('ts')}
           >
             .ts
           </button>
         </div>
-        <button type="button" className="arc-editor-btn" onClick={copy} title="Copy markup" aria-label="Copy markup">
+        <button
+          type="button"
+          className="arc-editor-btn"
+          onClick={copy}
+          title={copied ? 'Copied' : 'Copy markup'}
+          aria-label="Copy markup"
+        >
           {copied ? <Check /> : <Copy />}
         </button>
         <button type="button" className="arc-editor-btn" onClick={onClose} title="Close" aria-label="Close markup">
@@ -202,18 +278,29 @@ export default function MarkupPanel({ title, data, onApply, onClose }: MarkupPan
         />
       </div>
 
-      <div className={`arc-markup-foot${status.kind === 'error' ? ' is-error' : ''}`}>{footer}</div>
+      <div
+        className={`arc-markup-foot${status.kind === 'error' ? ' is-error' : ''}`}
+        role="status"
+        aria-live="polite"
+      >
+        {footer}
+      </div>
 
       <div
         className="arc-markup-resizer"
         role="separator"
+        tabIndex={0}
         aria-orientation="vertical"
         aria-label="Resize markup pane"
+        aria-valuenow={width}
+        aria-valuemin={MIN_WIDTH}
+        aria-valuemax={maxWidth()}
         onPointerDown={onResizeStart}
         onPointerMove={onResizeMove}
         onPointerUp={onResizeEnd}
         onPointerCancel={onResizeEnd}
         onDoubleClick={onResizeReset}
+        onKeyDown={onResizeKey}
       />
     </aside>
   )
