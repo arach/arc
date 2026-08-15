@@ -1,3 +1,5 @@
+import { validateDiagramShape } from './diagramValidation'
+
 // Extend window for File System Access API
 declare global {
   interface Window {
@@ -46,56 +48,73 @@ export async function saveDiagram(diagram: any, suggestedName = 'diagram.json') 
   return suggestedName
 }
 
+/**
+ * Outcome of an open. `null` means the user cancelled — the one case with
+ * nothing to say. Anything else either loaded or has a reason it didn't, so a
+ * caller can never mistake a failure for an empty diagram.
+ */
+export type LoadResult =
+  | { diagram: any; filename: string; error?: undefined }
+  | { error: string; diagram?: undefined; filename?: undefined }
+
+function readDiagramFile(file: File): Promise<LoadResult> {
+  return file.text().then(text => {
+    let diagram: unknown
+    try {
+      diagram = JSON.parse(text)
+    } catch (parseErr) {
+      console.error('Invalid JSON in diagram file:', parseErr)
+      return { error: `${file.name} is not valid JSON.` }
+    }
+    const problem = validateDiagramShape(diagram)
+    if (problem) {
+      return { error: `${file.name} is not an Arc diagram — ${problem}.` }
+    }
+    return { diagram, filename: file.name }
+  })
+}
+
 // Load diagram from file
-export async function loadDiagram() {
-  try {
-    // Try modern File System Access API
-    if ('showOpenFilePicker' in window) {
+export async function loadDiagram(): Promise<LoadResult | null> {
+  if ('showOpenFilePicker' in window) {
+    try {
       const [handle] = await window.showOpenFilePicker({
         types: [{
           description: 'Arc Diagram',
           accept: { 'application/json': ['.json'] }
         }]
       })
-
-      const file = await handle.getFile()
-      const text = await file.text()
-
-      try {
-        const diagram = JSON.parse(text)
-        return { diagram, filename: handle.name }
-      } catch (parseErr) {
-        console.error('Invalid JSON in diagram file:', parseErr)
-        return { error: 'Invalid JSON in diagram file. Please check the file format.' }
-      }
+      return await readDiagramFile(await handle.getFile())
+    } catch (err) {
+      // Cancelling is not a failure; anything else is worth reporting rather
+      // than silently falling through to a second file dialog.
+      if ((err as Error).name === 'AbortError') return null
+      console.error('Load failed:', err)
+      return { error: (err as Error).message || 'Could not read that file.' }
     }
-  } catch (err) {
-    if ((err as Error).name === 'AbortError') return null // User cancelled
-    console.error('Load failed:', err)
   }
 
   // Fallback: file input
-  return new Promise((resolve) => {
+  return new Promise<LoadResult | null>((resolve) => {
     const input = document.createElement('input')
     input.type = 'file'
-    input.accept = '.json'
+    input.accept = '.json,application/json'
+    input.style.display = 'none'
+    document.body.appendChild(input)
 
-    input.onchange = async (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0]
-      if (!file) {
-        resolve(null)
-        return
-      }
-
-      try {
-        const text = await file.text()
-        const diagram = JSON.parse(text)
-        resolve({ diagram, filename: file.name })
-      } catch (err) {
-        console.error('Parse error:', err)
-        resolve(null)
-      }
+    const done = (result: LoadResult | null) => {
+      input.remove()
+      resolve(result)
     }
+
+    input.onchange = () => {
+      const file = input.files?.[0]
+      if (!file) return done(null)
+      void readDiagramFile(file).then(done)
+    }
+    // Firefox and Safari fire `cancel` on dismiss; without it the promise —
+    // and the caller awaiting it — would hang for the life of the page.
+    input.oncancel = () => done(null)
 
     input.click()
   })

@@ -127,14 +127,22 @@ export function useArcEditorStatus(): { label: string; color: StatusColor } {
   const diagram = useDiagram()
   const meta = useMeta()
   const editor = useEditorState()
+  const { notice } = useArcEditor()
   const nodeCount = Object.keys(diagram.nodes || {}).length
 
+  // A file that failed to open outranks the node count for a few seconds.
+  if (notice) {
+    return { label: notice.message, color: notice.tone }
+  }
+
+  const nodes = `${nodeCount} ${nodeCount === 1 ? 'node' : 'nodes'}`
+
   if (meta.isDirty) {
-    return { label: `${nodeCount} nodes · edited`, color: 'neutral' }
+    return { label: `${nodes} · edited`, color: 'neutral' }
   }
 
   const modeLabel = MODE_LABELS[editor.mode] || editor.mode
-  return { label: `${nodeCount} nodes · ${modeLabel.toLowerCase()}`, color: 'neutral' }
+  return { label: `${nodes} · ${modeLabel.toLowerCase()}`, color: 'neutral' }
 }
 
 export function useArcEditorStatusRight() {

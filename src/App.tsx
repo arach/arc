@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { BrowserRouter, Routes, Route, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import DiagramEditor from './components/editor/DiagramEditor'
 import LandingPage from './components/LandingPage'
 import ArcDocs from './components/docs/ArcDocs'
@@ -11,6 +11,7 @@ import NativeMermaidSequencesPost from './components/blog/NativeMermaidSequences
 import architectureDiagram from './components/diagrams/architecture.diagram'
 import type { ThemeId } from './utils/themes'
 import { GoogleAnalytics } from './components/GoogleAnalytics'
+import { useMeta } from './hooks/useMeta'
 import { generateSessionId, deriveSessionId, saveDiagramSession, loadDiagramSession } from './utils/sessionStorage'
 import './landing.css'
 
@@ -188,6 +189,49 @@ function EditorPage() {
   )
 }
 
+/**
+ * Shared dead-end screen: a wrong URL, or a player asked for a diagram this
+ * browser has never seen. Both need somewhere to go next, not just a message.
+ */
+function Dead({ title, detail, actions }: { title: string; detail: string; actions: { to: string; label: string }[] }) {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-zinc-950 px-6 text-center">
+      <div className="max-w-md">
+        <div className="mx-auto mb-5 h-2 w-2 rounded-sm bg-sky-500 shadow-[0_0_14px_2px_rgba(56,189,248,0.45)]" />
+        <h1 className="mb-2 text-base font-semibold text-zinc-100">{title}</h1>
+        <p className="mb-6 text-sm leading-relaxed text-zinc-400">{detail}</p>
+        <div className="flex items-center justify-center gap-2">
+          {actions.map(a => (
+            <Link
+              key={a.to}
+              to={a.to}
+              className="rounded border border-zinc-700 px-3 py-1.5 text-xs uppercase tracking-wider text-zinc-300 transition-colors hover:border-sky-600 hover:text-sky-400"
+            >
+              {a.label}
+            </Link>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function NotFoundPage() {
+  useEffect(() => { document.documentElement.classList.remove('dark') }, [])
+  useMeta({ title: 'Arc | Page not found', description: 'That URL is not routed.' })
+  return (
+    <Dead
+      title="No such page"
+      detail={`Nothing is routed at ${window.location.pathname}. It may have moved, or the link may be stale.`}
+      actions={[
+        { to: '/', label: 'Home' },
+        { to: '/editor', label: 'Editor' },
+        { to: '/docs', label: 'Docs' },
+      ]}
+    />
+  )
+}
+
 /** Parse URL query params for theme/mode/viewport overrides */
 function useUrlOverrides() {
   const [searchParams] = useSearchParams()
@@ -221,7 +265,7 @@ function PlayerPage() {
     if (loaded) {
       setSession(loaded)
     } else {
-      setError(`Diagram "${diagramPath}" not found. Edit it first to create a local session.`)
+      setError(`No session named "${diagramPath}" in this browser. Sessions are stored locally, so a diagram has to be opened in the editor here before the player can render it.`)
     }
   }, [diagramPath])
 
@@ -258,18 +302,21 @@ function PlayerPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-white">
-        <div className="text-center">
-          <p className="text-zinc-400 text-sm">{error}</p>
-        </div>
-      </div>
+      <Dead
+        title="Diagram not found"
+        detail={error}
+        actions={[
+          { to: '/editor', label: 'New diagram' },
+          { to: '/showcase', label: 'Showcase' },
+        ]}
+      />
     )
   }
 
   if (!session) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-zinc-950">
-        <div className="text-zinc-500">Loading...</div>
+        <div className="text-sm text-zinc-500">Loading…</div>
       </div>
     )
   }
@@ -389,6 +436,7 @@ function App() {
         <Route path="/iso-examples" element={<IsometricExamples />} />
         <Route path="/showcase" element={<PlayerShowcase />} />
         <Route path="/inspiration" element={<InspirationPage />} />
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>
   )

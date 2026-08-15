@@ -14,12 +14,19 @@ const MarkupPanel = lazy(() => import('../../components/chrome/MarkupPanel'))
 export default function ShowcaseContent() {
   const s = useShowcase()
   const [copied, setCopied] = useState(false)
+  const [copyFailed, setCopyFailed] = useState(false)
   const [showMarkup, setShowMarkup] = useState(false)
 
   const copy = async () => {
-    await navigator.clipboard.writeText(s.snippet)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 1600)
+    try {
+      await navigator.clipboard.writeText(s.snippet)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1600)
+    } catch {
+      // Denied permission, or a page served over plain http.
+      setCopyFailed(true)
+      setTimeout(() => setCopyFailed(false), 2400)
+    }
   }
 
   // Zoom is resolved once per mount, so remount when an input to it changes.
@@ -86,9 +93,14 @@ export default function ShowcaseContent() {
 
       <div className="arc-showcase-snippet">
         <pre>{s.snippet}</pre>
-        <button type="button" className="arc-editor-btn-ghost arc-showcase-copy" onClick={copy}>
+        <button
+          type="button"
+          className="arc-editor-btn-ghost arc-showcase-copy"
+          onClick={copy}
+          title={copyFailed ? 'Clipboard unavailable — select the text and copy' : 'Copy the JSX'}
+        >
           {copied ? <Check /> : <Copy />}
-          {copied ? 'Copied' : 'Copy'}
+          {copyFailed ? 'Blocked' : copied ? 'Copied' : 'Copy'}
         </button>
         </div>
       </div>

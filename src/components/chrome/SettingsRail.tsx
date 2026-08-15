@@ -11,24 +11,41 @@ import SettingsPanel from './SettingsPanel'
 import { useChromeTheme } from '../../hooks/useChromeTheme'
 import { useUiScale } from '../../hooks/useUiScale'
 import { getChromeThemeMeta } from '../../utils/chromeThemes'
+import { lastSessionId } from '../../utils/sessionStorage'
 
-const SURFACES = [
-  { to: '/editor', label: 'Editor', icon: PenLine },
-  { to: '/showcase', label: 'Player', icon: SlidersHorizontal },
-]
+interface SettingsRailProps {
+  children?: ReactNode
+  /**
+   * Where the Editor button goes. Bare /editor mints a new session, so a
+   * surface that already has one passes it here rather than throwing the
+   * open diagram away on a click.
+   */
+  editorTo?: string
+}
 
-export default function SettingsRail({ children }: { children?: ReactNode }) {
+export default function SettingsRail({ children, editorTo }: SettingsRailProps) {
   const [open, setOpen] = useState(false)
   // Mounting these applies the persisted skin + scale on every surface.
   const [chrome] = useChromeTheme()
   const [scale] = useUiScale()
   const meta = getChromeThemeMeta(chrome)
+  // Resolved once per mount: coming back from another surface should land on
+  // the diagram that was open, not a blank canvas.
+  const [resumeTo] = useState(() => {
+    const id = lastSessionId()
+    return id ? `/editor/${id}` : '/editor'
+  })
+
+  const surfaces = [
+    { to: editorTo ?? resumeTo, match: '/editor', label: 'Editor', icon: PenLine },
+    { to: '/showcase', match: '/showcase', label: 'Player', icon: SlidersHorizontal },
+  ]
 
   return (
     <div className="arc-rail">
-      {SURFACES.map(({ to, label, icon: Icon }) => (
+      {surfaces.map(({ to, match, label, icon: Icon }) => (
         <NavLink
-          key={to}
+          key={match}
           to={to}
           className={({ isActive }) => `arc-rail-btn${isActive ? ' is-active' : ''}`}
           title={label}
@@ -46,10 +63,11 @@ export default function SettingsRail({ children }: { children?: ReactNode }) {
 
       <button
         type="button"
-        className="arc-rail-btn"
+        className={`arc-rail-btn${open ? ' is-active' : ''}`}
         title={`Text scale — ${Math.round(scale.type * 100)}%`}
         aria-label="Text scale"
-        onClick={() => setOpen(true)}
+        aria-expanded={open}
+        onClick={() => setOpen(o => !o)}
       >
         <Type strokeWidth={1.75} />
       </button>
