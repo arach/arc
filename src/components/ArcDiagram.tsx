@@ -3,6 +3,14 @@ import React, { useState, useCallback, useMemo } from 'react'
 import * as LucideIcons from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { getTheme, resolveNodeRadius, type ThemeId, type Theme, type BrandSpec } from '../utils/themes'
+import {
+  resolveNodeDecor,
+  resolveNodeShape,
+  shapeClipPath,
+  shapeCut,
+  shapeOutlinePath,
+  type NodeDecor,
+} from '../utils/nodeShape'
 import { autoLayout } from '../utils/autoLayout'
 
 // ============================================
@@ -370,6 +378,61 @@ interface NodeProps {
   onClick?: () => void
 }
 
+/** Ornament layer drawn inside the node shell. Never intercepts pointers. */
+function NodeDecoration({ decor, stroke, cut }: { decor: NodeDecor; stroke: string; cut: number }) {
+  if (decor === 'none' || decor === 'rule') return null
+
+  const common: React.CSSProperties = { position: 'absolute', pointerEvents: 'none' }
+
+  if (decor === 'bar-left') {
+    return <span style={{ ...common, left: 0, top: 0, bottom: 0, width: 2, background: stroke }} />
+  }
+  if (decor === 'bar-top') {
+    return <span style={{ ...common, left: 0, right: 0, top: 0, height: 2, background: stroke }} />
+  }
+  if (decor === 'dot') {
+    return (
+      <span
+        style={{
+          ...common,
+          top: 6,
+          right: 6,
+          width: 4,
+          height: 4,
+          borderRadius: '50%',
+          background: stroke,
+          boxShadow: `0 0 6px -1px ${stroke}`,
+        }}
+      />
+    )
+  }
+  if (decor === 'ticks') {
+    // Corner registration marks, inset past any chamfer so they read as ticks
+    const arm = 6
+    const i = Math.max(3, cut - 2)
+    const tick = (x: 'left' | 'right', y: 'top' | 'bottom') => (
+      <span key={`${x}${y}`} style={{ ...common, [x]: i, [y]: i, width: arm, height: arm } as React.CSSProperties}>
+        <span style={{ position: 'absolute', [y]: 0, left: 0, right: 0, height: 1, background: stroke, opacity: 0.75 } as React.CSSProperties} />
+        <span style={{ position: 'absolute', [x]: 0, top: 0, bottom: 0, width: 1, background: stroke, opacity: 0.75 } as React.CSSProperties} />
+      </span>
+    )
+    return <>{tick('left', 'top')}{tick('right', 'top')}{tick('left', 'bottom')}{tick('right', 'bottom')}</>
+  }
+  // stripe — hatched corner flag, bottom-right so it never lands in a notch
+  return (
+    <span style={{ ...common, bottom: 0, right: 0, width: 26, height: 26, overflow: 'hidden' }}>
+      <svg width={26} height={26} aria-hidden="true">
+        <defs>
+          <pattern id={`arc-stripe-${stroke.replace('#', '')}`} width={4} height={4} patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+            <line x1={0} y1={0} x2={0} y2={4} stroke={stroke} strokeWidth={1} opacity={0.55} />
+          </pattern>
+        </defs>
+        <path d="M 26 0 L 26 26 L 0 26 Z" fill={`url(#arc-stripe-${stroke.replace('#', '')})`} />
+      </svg>
+    </span>
+  )
+}
+
 export function Node({ node, data, mode, themeColors, brand, hovered, dimmed, lift = true, glow = true, dimOpacity = 0.45, onMouseEnter, onMouseLeave, onClick }: NodeProps) {
   const size = NODE_SIZES[node.size]
   const color = themeColors.palette[data.color] || themeColors.palette.zinc
@@ -380,43 +443,23 @@ export function Node({ node, data, mode, themeColors, brand, hovered, dimmed, li
   const isLight = mode === 'light'
   const nodeRadius = resolveNodeRadius(brand)
   const shellOpacity = brand?.nodeOpacity ?? 1
-  const accentBar = brand?.accentBar ?? 'none'
 
-  return (
-    <div
-      className={`
-        absolute border ${color.border} ${color.bg}
-        ${!nodeRadius ? 'rounded-xl' : ''}
-        ${isLarge ? 'px-5 py-3' : isSmall ? 'px-3 py-2' : 'px-4 py-2.5'}
-        ${isLight && !brand?.nodeGlass ? 'bg-white/80 shadow-sm' : ''}
-        ${brand?.nodeGlass ? 'backdrop-blur-md' : isLight ? '' : 'backdrop-blur-sm'}
-        transition-all duration-200 ease-out
-      `}
-      style={{
-        left: node.x,
-        top: node.y,
-        width: size.width,
-        borderRadius: nodeRadius,
-        borderWidth: brand?.nodeBorderWidth || '1px',
-        borderLeftWidth: accentBar === 'left' ? '2px' : brand?.nodeBorderWidth || '1px',
-        borderTopWidth: accentBar === 'top' ? '1px' : undefined,
-        borderLeftColor: accentBar === 'left' ? color.stroke : undefined,
-        borderTopColor: accentBar === 'top' ? color.stroke : undefined,
-        fontFamily: brand?.fontFamily,
-        transform: hovered && lift ? 'translateY(-2px)' : 'none',
-        boxShadow: hovered && glow
-          ? `0 0 20px -6px ${color.stroke}55, 0 8px 24px -8px ${color.stroke}33, inset 0 1px 0 rgba(255,255,255,${isLight ? 0.35 : 0.06})`
-          : `inset 0 1px 0 rgba(255,255,255,${isLight ? 0.25 : 0.04})`,
-        opacity: dimmed ? dimOpacity : shellOpacity,
-        zIndex: hovered ? 10 : undefined,
-        cursor: onClick ? 'pointer' : undefined,
-      }}
-      data-arc-node
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
-      onClick={onClick}
-    >
-      <div className="flex items-center gap-3">
+  const shape = resolveNodeShape(brand?.nodeShape, nodeRadius)
+  const decor = resolveNodeDecor(brand?.nodeDecor, brand?.accentBar)
+  const cut = shapeCut(node.size)
+  const clipPath = shapeClipPath(shape, cut)
+  const borderWidth = brand?.nodeBorderWidth || '1px'
+
+  const glowShadow = `0 0 20px -6px ${color.stroke}55, 0 8px 24px -8px ${color.stroke}33`
+  const innerHighlight = `inset 0 1px 0 rgba(255,255,255,${isLight ? (hovered ? 0.35 : 0.25) : hovered ? 0.06 : 0.04})`
+
+  const body = (
+    <>
+      <NodeDecoration decor={decor} stroke={color.stroke} cut={clipPath ? cut : 0} />
+      <div
+        className="flex items-center gap-3"
+        style={decor === 'rule' ? { borderBottom: `1px solid ${color.stroke}33`, paddingBottom: 6, marginBottom: 5 } : undefined}
+      >
         <div className={`
           flex-shrink-0
           ${isLarge ? 'w-9 h-9' : isSmall ? 'w-6 h-6' : 'w-7 h-7'}
@@ -465,6 +508,87 @@ export function Node({ node, data, mode, themeColors, brand, hovered, dimmed, li
           {data.description}
         </div>
       )}
+    </>
+  )
+
+  const pad = isLarge ? 'px-5 py-3' : isSmall ? 'px-3 py-2' : 'px-4 py-2.5'
+  const surface = `${color.bg} ${isLight && !brand?.nodeGlass ? 'bg-white/80' : ''} ${
+    brand?.nodeGlass ? 'backdrop-blur-md' : isLight ? '' : 'backdrop-blur-sm'
+  }`
+
+  const placement: React.CSSProperties = {
+    left: node.x,
+    top: node.y,
+    width: size.width,
+    fontFamily: brand?.fontFamily,
+    transform: hovered && lift ? 'translateY(-2px)' : 'none',
+    opacity: dimmed ? dimOpacity : shellOpacity,
+    zIndex: hovered ? 10 : undefined,
+    cursor: onClick ? 'pointer' : undefined,
+  }
+
+  const handlers = { onMouseEnter, onMouseLeave, onClick }
+
+  // Cut silhouettes clip their own border and box-shadow: the edge is stroked
+  // as an SVG overlay, and the glow becomes a drop-shadow, which follows the
+  // clip path. The shell takes the nominal height so the outline matches the
+  // geometry connectors already anchor to.
+  if (clipPath) {
+    const outline = shapeOutlinePath(shape, size.width, size.height, cut)
+    return (
+      <div
+        className="absolute transition-all duration-200 ease-out"
+        style={{
+          ...placement,
+          height: size.height,
+          filter: hovered && glow ? `drop-shadow(0 4px 12px ${color.stroke}55)` : undefined,
+        }}
+        data-arc-node
+        {...handlers}
+      >
+        <div
+          className={`relative h-full ${surface} ${pad}`}
+          style={{ clipPath, boxShadow: innerHighlight }}
+        >
+          {body}
+        </div>
+        <svg
+          className="absolute inset-0 pointer-events-none"
+          width={size.width}
+          height={size.height}
+          aria-hidden="true"
+        >
+          <path
+            d={outline}
+            fill="none"
+            stroke={color.stroke}
+            strokeOpacity={hovered ? 0.95 : isLight ? 0.6 : 0.5}
+            strokeWidth={parseFloat(borderWidth) || 1}
+          />
+        </svg>
+      </div>
+    )
+  }
+
+  return (
+    <div
+      className={`
+        absolute border ${color.border} ${surface}
+        ${!nodeRadius ? 'rounded-xl' : ''}
+        ${isLight && !brand?.nodeGlass ? 'shadow-sm' : ''}
+        ${pad}
+        transition-all duration-200 ease-out
+      `}
+      style={{
+        ...placement,
+        borderRadius: nodeRadius,
+        borderWidth,
+        boxShadow: hovered && glow ? `${glowShadow}, ${innerHighlight}` : innerHighlight,
+      }}
+      data-arc-node
+      {...handlers}
+    >
+      {body}
     </div>
   )
 }
@@ -752,10 +876,17 @@ interface MiniMapProps {
   inset?: number
 }
 
+const MINIMAP_WIDTH = 132
+
+/** Rendered minimap height, so neighbouring chrome can stack clear of it. */
+export function minimapHeight(layout: { width: number; height: number }): number {
+  return Math.max(56, Math.min(120, Math.round((layout.height / layout.width) * MINIMAP_WIDTH)))
+}
+
 function MiniMap({ nodes, nodeData, layout, themeColors, brand, mode, inset = 12 }: MiniMapProps) {
   const isLight = mode === 'light'
-  const W = 132
-  const H = Math.max(56, Math.min(120, Math.round((layout.height / layout.width) * W)))
+  const W = MINIMAP_WIDTH
+  const H = minimapHeight(layout)
   const sx = W / layout.width
   const sy = H / layout.height
   const square = brand?.nodeRadius === '0px'
@@ -786,6 +917,106 @@ function MiniMap({ nodes, nodeData, layout, themeColors, brand, mode, inset = 12
           )
         })}
       </svg>
+    </div>
+  )
+}
+
+// ============================================
+// Legend
+// ============================================
+
+interface LegendProps {
+  /** Only styles actually used by a connector are listed. */
+  styles: Record<string, ConnectorStyle>
+  connectors: Connector[]
+  groups: GroupShape[]
+  themeColors: Theme['light'] | Theme['dark']
+  brand?: BrandSpec
+  mode: DiagramMode
+  left: number
+  bottom: number
+}
+
+/**
+ * A key for the diagram's edge types (and group boundaries, when labelled).
+ * Read-only chrome: it never intercepts pointer events.
+ */
+function DiagramLegend({ styles, connectors, groups, themeColors, brand, mode, left, bottom }: LegendProps) {
+  const isLight = mode === 'light'
+  const mono = brand?.monoFamily || "'JetBrains Mono', ui-monospace, monospace"
+
+  // Only keys that appear in the drawing, in first-use order.
+  const used: string[] = []
+  for (const c of connectors) if (styles[c.style] && !used.includes(c.style)) used.push(c.style)
+
+  const rows = used.map(key => ({ key, style: styles[key] }))
+  const groupRows = groups.filter(g => !!g.label)
+
+  if (!rows.length && !groupRows.length) return null
+
+  const stroke = (color: DiagramColor) =>
+    themeColors.palette[color]?.stroke || themeColors.palette.zinc.stroke
+
+  return (
+    <div
+      data-arc-legend
+      className="absolute z-10 backdrop-blur-sm pointer-events-none"
+      style={{
+        left,
+        bottom,
+        padding: '7px 9px',
+        border: `1px solid ${isLight ? 'rgba(24,24,27,0.14)' : 'rgba(244,244,245,0.14)'}`,
+        borderRadius: brand?.nodeRadius ?? 6,
+        background: isLight ? 'rgba(255,255,255,0.9)' : 'rgba(9,9,11,0.88)',
+        boxShadow: isLight ? '0 8px 24px rgba(24,24,27,0.08)' : '0 8px 24px rgba(0,0,0,0.24)',
+        fontFamily: mono,
+      }}
+    >
+      <div
+        className={`text-[8.5px] tracking-[0.18em] ${themeColors.text.muted}`}
+        style={{ marginBottom: 5 }}
+      >
+        KEY
+      </div>
+      <div className="flex flex-col" style={{ gap: 4 }}>
+        {rows.map(({ key, style }) => (
+          <div key={key} className="flex items-center" style={{ gap: 7 }}>
+            <svg width={20} height={7} aria-hidden="true">
+              <line
+                x1={0}
+                y1={3.5}
+                x2={20}
+                y2={3.5}
+                stroke={stroke(style.color)}
+                strokeWidth={Math.max(1.5, Math.min(3, style.strokeWidth))}
+                strokeDasharray={style.dashed ? '3 2.5' : undefined}
+                strokeLinecap="round"
+              />
+            </svg>
+            <span className={`text-[9.5px] ${themeColors.text.secondary}`}>
+              {style.label || key}
+            </span>
+          </div>
+        ))}
+        {groupRows.map(g => (
+          <div key={g.id} className="flex items-center" style={{ gap: 7 }}>
+            <svg width={20} height={9} aria-hidden="true">
+              <rect
+                x={0.75}
+                y={0.75}
+                width={18.5}
+                height={7.5}
+                rx={g.type === 'circle' ? 3.75 : 1.5}
+                fill="none"
+                stroke={stroke(g.color)}
+                strokeWidth={1.25}
+                strokeDasharray={g.dashed === false ? undefined : '3 2.5'}
+              />
+            </svg>
+            <span className={`text-[9.5px] ${themeColors.text.secondary}`}>{g.label}</span>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
@@ -1142,6 +1373,8 @@ interface ArcDiagramProps {
   showControls?: boolean
   /** Show a minimap overview (bottom-left). Default: false */
   showMinimap?: boolean
+  /** Show a key for the connector styles and labelled groups (bottom-left). Default: false */
+  showLegend?: boolean
   /** Show the active focus target's caption and steps. Default: false */
   showFocusStory?: boolean
   /** Override the edge/frame treatment (else the theme's brand.frame). */
@@ -1168,6 +1401,7 @@ export default function ArcDiagram({
   showAutoLayout = false,
   showControls,
   showMinimap = false,
+  showLegend = false,
   showFocusStory = false,
   frame,
   hoverEffects,
@@ -1527,6 +1761,20 @@ export default function ArcDiagram({
         >
           {displayLabel}
         </div>
+      )}
+
+      {/* Key - bottom left, stacked above the minimap when both are shown */}
+      {showLegend && !showArc && (
+        <DiagramLegend
+          styles={connectorStyles}
+          connectors={connectors}
+          groups={groups}
+          themeColors={themeColors}
+          brand={brand}
+          mode={mode}
+          left={chromeInset}
+          bottom={chromeInset + (showMinimap ? minimapHeight(layout) + 8 : 0)}
+        />
       )}
 
       {/* Minimap - bottom left */}

@@ -46,8 +46,11 @@ export interface BrandSpec {
   frame?: 'hairline' | 'inset' | 'brackets' | 'ticks' | 'cropmarks' | 'corners' | 'sheet' | 'reticle' | 'none'
   /** Render an engineering-drawing title block in the bottom-right corner. */
   titleBlock?: boolean
-  /** Node silhouette when nodeRadius is not set explicitly. */
-  nodeShape?: 'rounded' | 'square' | 'chamfer' | 'pill'
+  /** Node silhouette. 'chamfer' cuts all four corners, 'notch' cuts the top-right;
+   *  both are drawn with clip-path, not rounding. See utils/nodeShape.ts. */
+  nodeShape?: 'rounded' | 'square' | 'chamfer' | 'notch' | 'pill'
+  /** Ornament on the node shell — supersedes accentBar, which still works. */
+  nodeDecor?: 'none' | 'bar-left' | 'bar-top' | 'ticks' | 'rule' | 'dot' | 'stripe'
   /** Overall node opacity (0–1). */
   nodeOpacity?: number
   /** Frosted glass backdrop on nodes. */
@@ -63,7 +66,9 @@ export function resolveNodeRadius(brand?: BrandSpec): string | undefined {
   if (brand?.nodeRadius != null) return brand.nodeRadius
   switch (brand?.nodeShape) {
     case 'square': return '0px'
-    case 'chamfer': return '2px'
+    // Cut silhouettes are clipped, not rounded — any radius would fight the cut.
+    case 'chamfer':
+    case 'notch': return '0px'
     case 'pill': return '9999px'
     default: return undefined
   }
@@ -167,6 +172,9 @@ const warmTheme: Theme = {
     },
     text: { primary: 'text-stone-100', secondary: 'text-stone-400', muted: 'text-stone-600' },
   },
+  brand: {
+    nodeDecor: 'bar-left',
+  },
 }
 
 // Cool theme - crisp, modern blues
@@ -208,6 +216,9 @@ const coolTheme: Theme = {
     },
     text: { primary: 'text-slate-100', secondary: 'text-slate-400', muted: 'text-slate-600' },
   },
+  brand: {
+    nodeDecor: 'dot',
+  },
 }
 
 // Mono theme - grayscale elegance
@@ -248,6 +259,10 @@ const monoTheme: Theme = {
       grid: { color: 'rgba(161, 161, 170, 0.06)', opacity: 0.1, size: 20 },
     },
     text: { primary: 'text-zinc-100', secondary: 'text-zinc-400', muted: 'text-zinc-600' },
+  },
+  brand: {
+    nodeShape: 'square',
+    nodeDecor: 'rule',
   },
 }
 
@@ -298,7 +313,8 @@ const engineeringTheme: Theme = {
   brand: {
     fontFamily: "system-ui, -apple-system, sans-serif",
     monoFamily: "'JetBrains Mono', ui-monospace, monospace",
-    nodeRadius: '0px',
+    nodeShape: 'square',
+    nodeDecor: 'ticks',
     nodeBorderWidth: '1px',
     upperLabels: true,
     arrowhead: 'chevron',
@@ -343,6 +359,7 @@ const workbenchTheme: Theme = {
     monoFamily: "'JetBrains Mono', ui-monospace, monospace",
     fontImport: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap',
     nodeRadius: '3px',
+    nodeDecor: 'rule',
     nodeBorderWidth: '1px',
     upperLabels: false,
     arrowhead: 'triangle',
@@ -385,7 +402,8 @@ const tacticalTheme: Theme = {
     fontFamily: "'Chakra Petch', system-ui, sans-serif",
     monoFamily: "'JetBrains Mono', ui-monospace, monospace",
     fontImport: 'https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap',
-    nodeRadius: '0px',
+    nodeShape: 'notch',
+    nodeDecor: 'stripe',
     nodeBorderWidth: '1px',
     upperLabels: true,
     arrowhead: 'chevron',
@@ -437,10 +455,10 @@ const commandTheme: Theme = {
     fontFamily: "'Space Grotesk', system-ui, sans-serif",
     monoFamily: "'JetBrains Mono', ui-monospace, monospace",
     nodeShape: 'chamfer',
+    nodeDecor: 'dot',
     nodeBorderWidth: '1px',
     nodeOpacity: 0.88,
     nodeGlass: true,
-    accentBar: 'left',
     upperLabels: false,
     arrowhead: 'chevron',
     gridType: 'crosshair',

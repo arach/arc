@@ -11,12 +11,36 @@ order: 3
 ```tsx
 interface ArcDiagramProps {
   data: ArcDiagramData     // Diagram configuration
-  mode?: 'light' | 'dark'  // Color mode (default: 'light')
+  mode?: 'light' | 'dark'  // Color mode (default: 'dark')
   theme?: ThemeId          // Theme preset (default: 'default')
   interactive?: boolean    // Enable zoom/pan (default: true)
   className?: string       // Additional CSS classes
+
+  // Zoom
+  defaultZoom?: number | 'fit'  // Initial zoom, or 'fit' to size to the container
+  maxFitZoom?: number           // Cap applied when defaultZoom='fit' (default: 1)
+  zoomLevels?: number[]         // Zoom steps for the +/- controls
+
+  // Chrome
+  showControls?: boolean   // Zoom controls (default: follows `interactive`)
+  showLegend?: boolean     // Key for connector styles + labelled groups (default: false)
+  showMinimap?: boolean    // Minimap overview, bottom-left (default: false)
+  showArcToggle?: boolean  // .arc source toggle (default: true)
+  showFocusStory?: boolean // Caption + steps for the active focusTarget (default: false)
+  showAutoLayout?: boolean // Auto-layout button (default: false)
+  label?: string           // Overrides data.id; pass '' to hide
+  labelPosition?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
+  frame?: BrandSpec['frame']    // Override the theme's edge treatment
+  titleBlock?: TitleBlockInfo   // Override title-block fields (themes that opt in)
+
+  // Interaction
+  hoverEffects?: boolean | HoverEffectsConfig  // true = all effects (default)
+  onNodeHover?: (nodeId: string | null) => void
 }
 ```
+
+Every one of these is live at [`/showcase`](/showcase), which emits the matching
+JSX for whatever combination you dial in.
 
 ## ArcDiagramData Schema
 
