@@ -6,7 +6,7 @@ import ArcDocs from './components/docs/ArcDocs'
 import ArcDiagram from './components/ArcDiagram'
 import IsometricDemo from './components/IsometricDemo'
 import IsometricExamples from './components/IsometricExamples'
-import IsometricLayersDemo from './components/IsometricLayersDemo'
+import PlayerShowcase from './components/PlayerShowcase'
 import NativeMermaidSequencesPost from './components/blog/NativeMermaidSequencesPost'
 import architectureDiagram from './components/diagrams/architecture.diagram'
 import type { ThemeId } from './utils/themes'
@@ -21,6 +21,8 @@ interface HashPayload {
   theme?: string
   mode?: 'light' | 'dark'
   sourceId?: string // diagram ID from source (e.g. "OPERATE.CONTROL.001")
+  isoStyle?: string // 'solid' | 'blueprint' | 'cyanotype'
+  viewMode?: string // '2d' | 'isometric'
 }
 
 function parseHashData(): HashPayload | null {
@@ -31,9 +33,14 @@ function parseHashData(): HashPayload | null {
     const json = atob(encoded)
     const d = JSON.parse(json)
 
-    const viewport = d._viewport
-    const theme = d._theme
-    const mode = d._mode
+    // Diagram files carry display choices under _meta; the embed handoff sends
+    // them as underscore keys. Accept either, with the explicit key winning.
+    const fileMeta = d._meta || {}
+    const viewport = d._viewport ?? fileMeta.viewport
+    const theme = d._theme ?? fileMeta.themeId
+    const mode = d._mode ?? fileMeta.colorMode
+    const isoStyle = d._isoStyle ?? fileMeta.isoStyle
+    const viewMode = d._viewMode ?? fileMeta.viewMode
     const sourceId = d.id // diagram ID from the source site
 
     // Canvas is slightly larger than content to give room for the viewport frame
@@ -97,6 +104,8 @@ function parseHashData(): HashPayload | null {
       theme,
       mode,
       sourceId,
+      isoStyle,
+      viewMode,
     }
   } catch (e) {
     console.warn('Failed to load diagram from URL hash:', e)
@@ -125,10 +134,19 @@ function resolveEditorSession(urlSessionId?: string) {
         colorMode: mode,
         viewport: hashPayload.viewport,
         sourceId: hashPayload.sourceId,
+        isoStyle: hashPayload.isoStyle,
+        viewMode: hashPayload.viewMode,
       },
     })
 
-    const diagramMeta = { themeId: hashPayload.theme, colorMode: mode, viewport: hashPayload.viewport, sourceId: hashPayload.sourceId }
+    const diagramMeta = {
+      themeId: hashPayload.theme,
+      colorMode: mode,
+      viewport: hashPayload.viewport,
+      sourceId: hashPayload.sourceId,
+      isoStyle: hashPayload.isoStyle,
+      viewMode: hashPayload.viewMode,
+    }
     return { sessionId: id, initialData: hashPayload.diagram, originalDiagram: hashPayload.originalDiagram, themeId: hashPayload.theme || null, colorMode: mode, diagramMeta, needsRedirect: true }
   }
 
@@ -369,7 +387,7 @@ function App() {
         <Route path="/blog/native-mermaid-sequences" element={<NativeMermaidSequencesPost />} />
         <Route path="/iso-demo" element={<IsometricDemo />} />
         <Route path="/iso-examples" element={<IsometricExamples />} />
-        <Route path="/iso-interactive" element={<IsometricLayersDemo />} />
+        <Route path="/showcase" element={<PlayerShowcase />} />
         <Route path="/inspiration" element={<InspirationPage />} />
       </Routes>
     </BrowserRouter>
