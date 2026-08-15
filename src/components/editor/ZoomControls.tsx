@@ -91,7 +91,7 @@ export default function ZoomControls({
         disabled={zoom <= minZoom}
         title="Zoom out"
       >
-        <ZoomOut size={15} strokeWidth={1.75} />
+        <ZoomOut size={13} strokeWidth={1.75} />
       </button>
 
       {isEditing ? (
@@ -126,7 +126,7 @@ export default function ZoomControls({
         disabled={zoom >= maxZoom}
         title="Zoom in"
       >
-        <ZoomIn size={15} strokeWidth={1.75} />
+        <ZoomIn size={13} strokeWidth={1.75} />
       </button>
 
       <div className="arc-canvas-divider" />
@@ -137,7 +137,7 @@ export default function ZoomControls({
         onClick={onFitToView}
         title="Fit to view"
       >
-        <Maximize2 size={15} strokeWidth={1.75} />
+        <Maximize2 size={13} strokeWidth={1.75} />
       </button>
     </div>
   )

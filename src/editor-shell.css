@@ -22,17 +22,17 @@
   --arc-surface: #f6f8fb;
   --arc-surface-muted: #eef2f7;
   --arc-radius: 3px;
-  --arc-font-body: 'Space Grotesk', 'Segoe UI', system-ui, sans-serif;
-  --arc-font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
-  --arc-text-ui: 13px;
-  --arc-text-sm: 12px;
-  --arc-text-xs: 11px;
-  --arc-text-2xs: 10px;
+  --arc-rail-w: calc(30px * var(--arc-ui-scale));
+  /* Type ramp, spacing and control sizes come from src/ui-scale.css, which is
+     driven by --arc-ui-scale / --arc-type-scale. */
+  --arc-font-body: var(--arc-font-ui);
+  --arc-font-mono: var(--arc-font-code);
 
   height: 100%;
   min-height: 0;
   font-family: var(--arc-font-body);
   font-size: var(--arc-text-ui);
+  font-feature-settings: var(--arc-font-features);
   color: var(--arc-ink);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -158,8 +158,8 @@ body,
 .arc-editor-root [data-frame-panel="navigation"] button[aria-label="Arc"]::before {
   content: '';
   display: block;
-  width: 8px;
-  height: 8px;
+  width: calc(7px * var(--arc-ui-scale));
+  height: calc(7px * var(--arc-ui-scale));
   border-radius: 1px;
   background: var(--arc-acc);
   box-shadow: 0 0 8px var(--arc-glow), 0 0 0 1px var(--arc-edge);
@@ -167,13 +167,13 @@ body,
 }
 
 .arc-editor-root [data-frame-panel="navigation"] button[aria-label="Arc"] {
-  gap: 10px;
+  gap: var(--arc-space-4);
 }
 
 .arc-editor-root [data-frame-panel="navigation"] button[aria-label="Arc"] span {
   font-family: var(--arc-font-body);
   font-weight: 700;
-  font-size: 17px;
+  font-size: var(--arc-text-lg);
   letter-spacing: -0.01em;
   text-transform: none;
   color: var(--arc-ink);
@@ -192,7 +192,7 @@ body,
   color: var(--arc-acc);
   border: 1px solid var(--arc-line-2);
   border-radius: 2px;
-  padding: 2px 6px;
+  padding: var(--arc-space-1) var(--arc-space-3);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   line-height: 1.3;
@@ -289,9 +289,9 @@ body,
 /* ---- Canvas overlays (mode + pending badges) ---- */
 .arc-editor-mode-badge {
   position: absolute;
-  top: 12px;
-  left: 12px;
-  padding: 5px 10px;
+  top: var(--arc-space-5);
+  left: var(--arc-space-5);
+  padding: var(--arc-ctl-pad-y) var(--arc-ctl-pad-x);
   border-radius: var(--arc-radius);
   border: 1px solid var(--arc-edge);
   background: color-mix(in srgb, var(--arc-acc) 88%, #000);
@@ -312,7 +312,7 @@ body,
 
 .arc-editor-mode-badge.is-pending {
   left: auto;
-  right: 12px;
+  right: var(--arc-space-5);
   background: #b8802a;
 }
 
@@ -342,15 +342,15 @@ body,
 .arc-editor-actions {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--arc-space-1);
 }
 
 .arc-editor-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
+  width: var(--arc-ctl-h);
+  height: var(--arc-ctl-h);
   border: 1px solid transparent;
   border-radius: var(--arc-radius);
   background: transparent;
@@ -374,9 +374,9 @@ body,
 .arc-editor-btn-primary {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  height: 30px;
-  padding: 0 14px;
+  gap: var(--arc-space-3);
+  height: var(--arc-ctl-h);
+  padding: 0 var(--arc-space-5);
   border: 1px solid var(--arc-edge);
   border-radius: var(--arc-radius);
   background: color-mix(in srgb, var(--arc-acc) 90%, #000);
@@ -399,8 +399,8 @@ body,
 .arc-editor-btn-ghost {
   display: inline-flex;
   align-items: center;
-  height: 30px;
-  padding: 0 10px;
+  height: var(--arc-ctl-h);
+  padding: 0 var(--arc-ctl-pad-x);
   border: 1px solid var(--arc-line-2);
   border-radius: var(--arc-radius);
   background: color-mix(in srgb, var(--arc-surface-muted) 50%, transparent);
@@ -422,9 +422,9 @@ body,
 
 .arc-editor-divider {
   width: 1px;
-  height: 16px;
+  height: var(--arc-rule);
   background: linear-gradient(180deg, transparent, var(--arc-edge), transparent);
-  margin: 0 6px;
+  margin: 0 var(--arc-space-3);
   flex-shrink: 0;
   opacity: 0.7;
 }
@@ -432,7 +432,7 @@ body,
 .arc-editor-nav-center {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--arc-space-4);
   font-family: var(--arc-font-body);
   font-size: var(--arc-text-sm);
   color: var(--arc-muted);
@@ -444,7 +444,7 @@ body,
   font-size: var(--arc-text-xs);
   color: var(--arc-ink);
   letter-spacing: 0.04em;
-  max-width: 280px;
+  max-width: calc(260px * var(--arc-ui-scale));
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -464,7 +464,7 @@ body,
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--arc-acc);
-  padding: 2px 8px;
+  padding: var(--arc-space-1) var(--arc-space-4);
   border: 1px solid var(--arc-line-2);
   border-radius: 2px;
   background: var(--arc-acc-soft);
@@ -479,13 +479,13 @@ body,
   position: absolute;
   right: 0;
   top: 100%;
-  margin-top: 4px;
-  min-width: 200px;
+  margin-top: var(--arc-space-2);
+  min-width: calc(190px * var(--arc-ui-scale));
   background: var(--arc-surface);
   border: 1px solid var(--arc-line-2);
-  border-radius: 6px;
+  border-radius: var(--arc-radius);
   box-shadow: 0 1px 0 rgba(16, 21, 24, 0.04), 0 18px 40px -28px rgba(16, 21, 24, 0.30);
-  padding: 4px 0;
+  padding: var(--arc-space-2) 0;
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.15s ease, visibility 0.15s ease;
@@ -499,7 +499,7 @@ body,
 }
 
 .arc-editor-menu-label {
-  padding: 8px 12px 4px;
+  padding: var(--arc-space-4) var(--arc-space-5) var(--arc-space-2);
   font-family: var(--arc-font-mono);
   font-size: var(--arc-text-2xs);
   letter-spacing: 0.12em;
@@ -510,7 +510,7 @@ body,
 .arc-editor-menu-item {
   display: block;
   width: 100%;
-  padding: 8px 12px;
+  padding: var(--arc-space-3) var(--arc-space-5);
   border: none;
   background: transparent;
   text-align: left;
@@ -547,8 +547,8 @@ body,
 .arc-editor-toolbar {
   display: flex;
   align-items: center;
-  gap: 2px;
-  padding: 5px 7px;
+  gap: 1px;
+  padding: var(--arc-space-1) var(--arc-space-2);
   background: color-mix(in srgb, var(--arc-surface) 92%, transparent);
   border: 1px solid var(--arc-line-2);
   border-radius: var(--arc-radius);
@@ -564,7 +564,7 @@ body,
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 7px;
+  padding: var(--arc-space-3);
   border: 1px solid transparent;
   border-radius: var(--arc-radius);
   background: transparent;
@@ -592,15 +592,15 @@ body,
 
 .arc-editor-tool-divider {
   width: 1px;
-  height: 22px;
+  height: var(--arc-rule);
   background: var(--arc-line);
-  margin: 0 2px;
+  margin: 0 var(--arc-space-1);
 }
 
 .arc-editor-drag-handle {
-  padding: 6px;
-  margin-right: 2px;
-  border-radius: 4px;
+  padding: var(--arc-space-3);
+  margin-right: var(--arc-space-1);
+  border-radius: var(--arc-radius);
   cursor: grab;
   color: var(--arc-faint);
   touch-action: none;
@@ -615,8 +615,8 @@ body,
 .arc-canvas-controls {
   display: flex;
   align-items: center;
-  gap: 2px;
-  padding: 4px;
+  gap: 1px;
+  padding: var(--arc-space-1);
   background: color-mix(in srgb, var(--arc-surface) 92%, transparent);
   border: 1px solid var(--arc-line-2);
   border-radius: var(--arc-radius);
@@ -628,9 +628,9 @@ body,
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 6px;
+  padding: var(--arc-space-3);
   border: none;
-  border-radius: 4px;
+  border-radius: var(--arc-radius);
   background: transparent;
   color: var(--arc-ink-2);
   cursor: pointer;
@@ -655,10 +655,10 @@ body,
 }
 
 .arc-canvas-controls .arc-canvas-zoom {
-  min-width: 44px;
-  padding: 4px 6px;
+  min-width: calc(34px * var(--arc-ui-scale));
+  padding: var(--arc-space-1) var(--arc-space-2);
   border: none;
-  border-radius: 4px;
+  border-radius: var(--arc-radius);
   background: transparent;
   font-family: var(--arc-font-mono);
   font-size: var(--arc-text-xs);
@@ -679,8 +679,8 @@ body,
 }
 
 .arc-canvas-controls .arc-canvas-zoom-input {
-  width: 44px;
-  padding: 4px 14px 4px 4px;
+  width: calc(40px * var(--arc-ui-scale));
+  padding: var(--arc-space-2) var(--arc-space-6) var(--arc-space-2) var(--arc-space-2);
   border: 1px solid var(--arc-line-2);
   border-radius: 4px;
   background: var(--arc-surface-muted);
@@ -709,9 +709,9 @@ body,
 
 .arc-canvas-controls .arc-canvas-divider {
   width: 1px;
-  height: 16px;
+  height: var(--arc-rule);
   background: var(--arc-line);
-  margin: 0 2px;
+  margin: 0 var(--arc-space-1);
 }
 
 /* --------------------------------------------------------------------------
@@ -725,8 +725,8 @@ body,
 .arc-insp {
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  padding: 10px 0 16px;
+  gap: var(--arc-space-6);
+  padding: var(--arc-space-4) 0 var(--arc-space-6);
   font-family: var(--arc-font-body);
   font-size: var(--arc-text-ui);
   color: var(--arc-ink);
@@ -735,8 +735,8 @@ body,
 .arc-insp-section {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 0 12px;
+  gap: var(--arc-space-4);
+  padding: 0 var(--arc-space-5);
 }
 
 .arc-insp-title {
@@ -750,7 +750,7 @@ body,
 }
 
 .arc-insp-hint {
-  margin: -4px 0 0;
+  margin: calc(-1 * var(--arc-space-2)) 0 0;
   font-size: var(--arc-text-sm);
   line-height: 1.5;
   color: var(--arc-muted);
@@ -765,7 +765,7 @@ body,
 
 .arc-insp-label {
   display: block;
-  margin-bottom: 6px;
+  margin-bottom: var(--arc-space-2);
   font-family: var(--arc-font-body);
   font-size: var(--arc-text-sm);
   font-weight: 500;
@@ -783,9 +783,9 @@ body,
 .arc-insp-select,
 .arc-insp-textarea {
   width: 100%;
-  padding: 7px 10px;
+  padding: var(--arc-ctl-pad-y) var(--arc-ctl-pad-x);
   border: 1px solid var(--arc-line-2);
-  border-radius: 4px;
+  border-radius: var(--arc-radius);
   background: var(--arc-surface-muted);
   font-family: var(--arc-font-body);
   font-size: var(--arc-text-sm);
@@ -823,12 +823,12 @@ body,
 .arc-insp-divider {
   height: 1px;
   background: var(--arc-line);
-  margin: 4px 0;
+  margin: var(--arc-space-2) 0;
 }
 
 .arc-insp-badge {
-  padding: 6px 10px;
-  border-radius: 4px;
+  padding: var(--arc-ctl-pad-y) var(--arc-ctl-pad-x);
+  border-radius: var(--arc-radius);
   background: var(--arc-acc-soft);
   font-family: var(--arc-font-mono);
   font-size: var(--arc-text-xs);
@@ -854,7 +854,7 @@ body,
 .arc-insp-check {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--arc-space-4);
   cursor: pointer;
   font-size: var(--arc-text-sm);
   color: var(--arc-ink-2);
@@ -864,14 +864,14 @@ body,
 .arc-insp-grid-2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  gap: var(--arc-space-3);
 }
 
 .arc-insp-segmented {
   display: flex;
   gap: 0;
   padding: 0;
-  border-radius: 4px;
+  border-radius: var(--arc-radius);
   background: var(--arc-surface-muted);
   border: 1px solid var(--arc-line);
   overflow: hidden;
@@ -879,7 +879,7 @@ body,
 
 .arc-insp-segment {
   flex: 1;
-  padding: 8px 10px;
+  padding: var(--arc-ctl-pad-y) var(--arc-ctl-pad-x);
   border: none;
   border-radius: 0;
   background: transparent;
@@ -907,12 +907,12 @@ body,
 .arc-insp-swatch-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--arc-space-3);
 }
 
 .arc-insp-swatch {
-  width: 26px;
-  height: 26px;
+  width: var(--arc-swatch);
+  height: var(--arc-swatch);
   border: 2px solid transparent;
   border-radius: 50%;
   cursor: pointer;
@@ -933,12 +933,12 @@ body,
 .arc-insp-icon-grid {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
-  gap: 4px;
-  max-height: 160px;
+  gap: var(--arc-space-1);
+  max-height: calc(150px * var(--arc-ui-scale));
   overflow-y: auto;
-  padding: 6px;
+  padding: var(--arc-space-2);
   border: 1px solid var(--arc-line);
-  border-radius: 5px;
+  border-radius: var(--arc-radius);
   background: var(--arc-surface-muted);
 }
 
@@ -946,9 +946,9 @@ body,
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 8px 4px;
+  padding: var(--arc-space-3) var(--arc-space-1);
   border: none;
-  border-radius: 4px;
+  border-radius: var(--arc-radius);
   background: transparent;
   color: var(--arc-ink-2);
   cursor: pointer;
@@ -980,21 +980,21 @@ body,
 
 .arc-insp-search svg {
   position: absolute;
-  left: 9px;
+  left: var(--arc-space-4);
   top: 50%;
   transform: translateY(-50%);
-  width: 14px;
-  height: 14px;
+  width: var(--arc-icon-sm);
+  height: var(--arc-icon-sm);
   color: var(--arc-faint);
   pointer-events: none;
 }
 
 .arc-insp-search .arc-insp-input {
-  padding-left: 30px;
+  padding-left: calc(var(--arc-icon-sm) + var(--arc-space-4) * 2);
 }
 
 .arc-insp-accordion {
-  margin: 0 -12px;
+  margin: 0 calc(-1 * var(--arc-space-5));
   border: none;
   border-top: 1px solid var(--arc-line);
   border-bottom: 1px solid var(--arc-line);
@@ -1017,9 +1017,9 @@ body,
 .arc-insp-accordion-trigger {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--arc-space-4);
   width: 100%;
-  padding: 11px 12px;
+  padding: var(--arc-space-4) var(--arc-space-5);
   border: none;
   background: transparent;
   text-align: left;
@@ -1035,7 +1035,7 @@ body,
   font-family: var(--arc-font-mono);
   font-size: var(--arc-text-xs);
   color: var(--arc-faint);
-  width: 10px;
+  width: calc(9px * var(--arc-ui-scale));
   flex-shrink: 0;
 }
 
@@ -1055,21 +1055,21 @@ body,
 }
 
 .arc-insp-accordion-body {
-  padding: 12px;
+  padding: var(--arc-space-5);
   border-top: 1px solid var(--arc-line);
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--arc-space-4);
 }
 
 .arc-insp-list-item {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--arc-space-4);
   width: 100%;
-  padding: 8px 10px;
+  padding: var(--arc-ctl-pad-y) var(--arc-ctl-pad-x);
   border: none;
-  border-radius: 5px;
+  border-radius: var(--arc-radius);
   background: transparent;
   text-align: left;
   cursor: pointer;
@@ -1096,29 +1096,29 @@ body,
 }
 
 .arc-insp-dot {
-  width: 8px;
-  height: 8px;
+  width: calc(7px * var(--arc-ui-scale));
+  height: calc(7px * var(--arc-ui-scale));
   border-radius: 50%;
   flex-shrink: 0;
 }
 
 .arc-insp-preview {
   border: 1px solid var(--arc-line-2);
-  border-radius: 5px;
-  padding: 8px;
+  border-radius: var(--arc-radius);
+  padding: var(--arc-space-3);
   background: var(--arc-surface-muted);
 }
 
 .arc-insp-preview img {
   display: block;
   width: 100%;
-  max-height: 128px;
+  max-height: calc(120px * var(--arc-ui-scale));
   object-fit: contain;
 }
 
 .arc-insp-add-row {
   display: flex;
-  gap: 8px;
+  gap: var(--arc-space-3);
 }
 
 .arc-insp-add-row .arc-insp-input {
@@ -1129,8 +1129,8 @@ body,
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
+  width: var(--arc-ctl-h-lg);
+  height: var(--arc-ctl-h-lg);
   border: 1px solid var(--arc-edge);
   border-radius: var(--arc-radius);
   background: color-mix(in srgb, var(--arc-acc) 88%, #000);
@@ -1162,16 +1162,16 @@ body,
 .arc-insp-subsection-toggle {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--arc-space-4);
   width: 100%;
-  padding: 8px 4px;
+  padding: var(--arc-space-3) var(--arc-space-1);
   border: none;
   background: transparent;
   text-align: left;
   cursor: pointer;
   color: var(--arc-ink);
   transition: color 0.15s ease, background 0.15s ease;
-  border-radius: 5px;
+  border-radius: var(--arc-radius);
 }
 
 .arc-insp-subsection-toggle:hover {
@@ -1185,4 +1185,294 @@ body,
 
 .arc-insp-subsection-toggle:hover .arc-insp-accordion-chevron {
   color: var(--arc-acc);
+}
+/* --------------------------------------------------------------------------
+   Icon sizing — one dial for every glyph in the chrome.
+
+   Lucide icons carry their size as an attribute, so these rules (unlayered,
+   and more specific than a Tailwind width utility) are what actually make
+   icons follow --arc-ui-scale. Set the size prop for the SVG's stroke
+   geometry; this decides what the user sees.
+   -------------------------------------------------------------------------- */
+
+.arc-editor-btn svg,
+.arc-editor-tool-btn svg,
+.arc-editor-drag-handle svg,
+.arc-canvas-controls .arc-canvas-btn svg,
+.arc-insp-icon-btn svg,
+.arc-insp-add-btn svg {
+  width: var(--arc-icon);
+  height: var(--arc-icon);
+}
+
+.arc-editor-btn-primary svg,
+.arc-editor-btn-ghost svg,
+.arc-insp-list-item svg,
+.arc-insp-accordion-trigger svg,
+.arc-insp-subsection-toggle svg {
+  width: var(--arc-icon-sm);
+  height: var(--arc-icon-sm);
+}
+
+/* --------------------------------------------------------------------------
+   Player showcase (/showcase) — the stage sits on the app canvas, with the
+   generated JSX docked beneath it. Everything else on the page is the shared
+   editor chrome.
+   -------------------------------------------------------------------------- */
+
+.arc-showcase-root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--arc-canvas);
+}
+
+.arc-showcase-stage-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* min-w-max so an oversized stage scrolls instead of being clipped by centering */
+.arc-showcase-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: max-content;
+  min-height: 100%;
+  padding: calc(var(--arc-space-6) * 1.6);
+}
+
+.arc-showcase-snippet {
+  position: relative;
+  flex-shrink: 0;
+  border-top: 1px solid var(--arc-line-2);
+  background: color-mix(in srgb, var(--arc-surface) 92%, transparent);
+}
+
+.arc-showcase-snippet pre {
+  margin: 0;
+  padding: var(--arc-space-4) var(--arc-space-5);
+  max-height: calc(var(--arc-ctl-h) * 7);
+  overflow: auto;
+  font-family: var(--arc-font-mono);
+  font-size: var(--arc-text-xs);
+  line-height: 1.65;
+  color: var(--arc-ink-2);
+}
+
+.arc-showcase-copy {
+  position: absolute;
+  top: var(--arc-space-3);
+  right: var(--arc-space-4);
+  gap: var(--arc-space-2);
+}
+
+/* Template picker swatches */
+.arc-showcase-theme {
+  gap: var(--arc-space-3);
+}
+
+.arc-showcase-theme.is-active {
+  background: var(--arc-acc-soft);
+}
+
+.arc-showcase-swatch {
+  display: flex;
+  gap: 1px;
+  flex-shrink: 0;
+}
+
+.arc-showcase-swatch span {
+  width: calc(var(--arc-icon) * 0.3);
+  height: var(--arc-icon);
+  border-radius: 1px;
+}
+
+/* A disabled range row still reads as a row, just muted */
+.arc-insp-field.is-disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.arc-insp-list-item.is-active .arc-insp-list-item-label {
+  color: var(--arc-acc);
+}
+
+/* --------------------------------------------------------------------------
+   Left rail + settings
+
+   Hudson's left panel ("manifest") is forced down to a thin strip: it holds
+   quick chrome affordances, with appearance settings anchored at the bottom.
+   The popover is fixed-position so the panel's overflow can't clip it.
+   -------------------------------------------------------------------------- */
+
+.arc-shell-row {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+}
+
+.arc-shell-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  min-height: 0;
+}
+
+.arc-rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--arc-space-1);
+  flex-shrink: 0;
+  width: var(--arc-rail-w);
+  height: 100%;
+  padding: var(--arc-space-3) 0 var(--arc-space-4);
+  border-right: 1px solid var(--arc-line-2);
+  background: var(--arc-surface);
+  box-shadow: inset -1px 0 12px -8px var(--arc-glow);
+  z-index: 20;
+}
+
+.arc-rail-spacer {
+  flex: 1 1 auto;
+}
+
+.arc-rail-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--arc-ctl-h);
+  height: var(--arc-ctl-h);
+  border: 1px solid transparent;
+  border-radius: var(--arc-radius);
+  background: transparent;
+  color: var(--arc-muted);
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+.arc-rail-btn svg {
+  width: var(--arc-icon);
+  height: var(--arc-icon);
+}
+
+.arc-rail-btn:hover {
+  color: var(--arc-acc);
+  background: var(--arc-acc-soft);
+}
+
+.arc-rail-btn.is-active {
+  color: var(--arc-acc);
+  background: var(--arc-acc-soft);
+  border-color: var(--arc-line-2);
+  box-shadow: 0 0 10px -4px var(--arc-glow);
+}
+
+.arc-settings-pop {
+  position: fixed;
+  left: calc(var(--arc-rail-w) + var(--arc-space-3));
+  bottom: calc(var(--arc-ctl-h) + var(--arc-space-5));
+  z-index: 80;
+  width: calc(214px * var(--arc-ui-scale));
+  padding: var(--arc-space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--arc-space-5);
+  border: 1px solid var(--arc-line-2);
+  border-radius: var(--arc-radius);
+  background: var(--arc-surface);
+  color: var(--arc-ink);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--arc-glow) 40%, transparent),
+    0 20px 44px -26px rgba(0, 0, 0, 0.55);
+}
+
+.arc-settings-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--arc-space-2);
+}
+
+.arc-settings-title {
+  font-family: var(--arc-font-mono);
+  font-size: var(--arc-text-2xs);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--arc-faint);
+}
+
+.arc-settings-themes {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.arc-settings-theme {
+  display: flex;
+  align-items: center;
+  gap: var(--arc-space-3);
+  padding: var(--arc-ctl-pad-y) var(--arc-space-3);
+  border: 1px solid transparent;
+  border-radius: var(--arc-radius);
+  background: transparent;
+  color: var(--arc-muted);
+  cursor: pointer;
+  text-align: left;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.arc-settings-theme:hover {
+  background: var(--arc-acc-soft);
+  color: var(--arc-ink);
+}
+
+.arc-settings-theme.is-active {
+  background: var(--arc-acc-soft);
+  border-color: var(--arc-line-2);
+  color: var(--arc-ink);
+}
+
+.arc-settings-chip {
+  width: calc(var(--arc-icon) * 0.75);
+  height: calc(var(--arc-icon) * 0.75);
+  border-radius: 1px;
+  box-shadow: 0 0 0 1px var(--arc-line-2);
+  flex-shrink: 0;
+}
+
+.arc-settings-theme-name {
+  font-family: var(--arc-font-body);
+  font-size: var(--arc-text-sm);
+}
+
+.arc-settings-segmented {
+  display: flex;
+  border: 1px solid var(--arc-line);
+  border-radius: var(--arc-radius);
+  background: var(--arc-surface-muted);
+  overflow: hidden;
+}
+
+.arc-settings-segment {
+  flex: 1;
+  padding: var(--arc-ctl-pad-y) 0;
+  border: none;
+  background: transparent;
+  font-family: var(--arc-font-body);
+  font-size: var(--arc-text-sm);
+  color: var(--arc-muted);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.arc-settings-segment:hover {
+  color: var(--arc-ink);
+  background: color-mix(in srgb, var(--arc-acc-soft) 55%, transparent);
+}
+
+.arc-settings-segment.is-active {
+  background: color-mix(in srgb, var(--arc-acc) 88%, #000);
+  color: #fff;
 }
