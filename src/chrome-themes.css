@@ -1,0 +1,230 @@
+/* --------------------------------------------------------------------------
+   Chrome themes — the skin of the application shell.
+
+   Distinct from a *diagram* theme (src/utils/themes.ts), which colors the
+   drawing. These recolor the app around it: nav, inspector, canvas backdrop,
+   accents, glow.
+
+   Each skin overrides the token block that editor-shell.css establishes on
+   `.arc-editor-root`, keyed by a `data-arc-chrome` attribute on <html>. The
+   per-mode selectors mirror the base ones exactly and add the chrome
+   attribute, so a skin always outranks the base regardless of bundle order.
+
+   `console` is the base skin and needs no block here.
+   -------------------------------------------------------------------------- */
+
+/* ---------- Graphite — neutral, no chroma, minimal glow ---------- */
+
+[data-arc-chrome="graphite"] .arc-editor-root {
+  --arc-acc: #4d5a68;
+  --arc-acc-hover: #3a4652;
+  --arc-acc-soft: rgba(77, 90, 104, 0.10);
+  --arc-glow: rgba(77, 90, 104, 0.16);
+  --arc-edge: rgba(77, 90, 104, 0.32);
+  --arc-string: #5f7a70;
+  --arc-canvas: #e9ebee;
+  --arc-surface: #f7f8f9;
+  --arc-surface-muted: #eef0f2;
+  --arc-line: rgba(20, 24, 28, 0.09);
+  --arc-line-2: rgba(20, 24, 28, 0.15);
+}
+
+[data-arc-chrome="graphite"] .arc-editor-root [data-hudson-template="hudson"][data-hudson-theme="light"] {
+  --primary: 0.44 0.015 250;
+  --accent: 0.44 0.015 250;
+  --ring: 0.44 0.015 250;
+  --arc-acc: #4d5a68;
+  --arc-acc-hover: #3a4652;
+  --arc-acc-soft: rgba(77, 90, 104, 0.10);
+  --arc-glow: rgba(77, 90, 104, 0.14);
+  --arc-edge: rgba(77, 90, 104, 0.26);
+  --hud-canvas-dot-minor: rgba(20, 24, 28, 0.06);
+  --hud-canvas-dot-major: rgba(20, 24, 28, 0.12);
+}
+
+[data-arc-chrome="graphite"] .arc-editor-root [data-hudson-template="hudson"][data-hudson-theme="dark"] {
+  --primary: 0.74 0.015 250;
+  --accent: 0.74 0.015 250;
+  --ring: 0.74 0.015 250;
+  --arc-acc: #b6c2ce;
+  --arc-acc-hover: #d3dce5;
+  --arc-acc-soft: rgba(182, 194, 206, 0.09);
+  --arc-glow: rgba(182, 194, 206, 0.18);
+  --arc-edge: rgba(182, 194, 206, 0.30);
+  --arc-string: #8fb3a6;
+  --arc-canvas: #0b0d0f;
+  --arc-surface: #131619;
+  --arc-surface-muted: #1a1e22;
+  --arc-ink: #e7eaed;
+  --arc-ink-2: #b6bcc3;
+  --arc-muted: #7f878f;
+  --arc-faint: #5a6169;
+  --arc-line: rgba(182, 194, 206, 0.07);
+  --arc-line-2: rgba(182, 194, 206, 0.13);
+  --hud-canvas-dot-minor: rgba(182, 194, 206, 0.05);
+  --hud-canvas-dot-major: rgba(182, 194, 206, 0.10);
+}
+
+/* ---------- Amber — warm terminal ---------- */
+
+[data-arc-chrome="amber"] .arc-editor-root {
+  --arc-acc: #a86a12;
+  --arc-acc-hover: #8d570b;
+  --arc-acc-soft: rgba(168, 106, 18, 0.10);
+  --arc-glow: rgba(168, 106, 18, 0.24);
+  --arc-edge: rgba(168, 106, 18, 0.40);
+  --arc-string: #8a7126;
+  --arc-canvas: #efe9df;
+  --arc-surface: #faf6ef;
+  --arc-surface-muted: #f2ece1;
+  --arc-ink: #17120a;
+  --arc-ink-2: #3b3020;
+  --arc-muted: #6d6151;
+  --arc-faint: #928675;
+  --arc-line: rgba(28, 20, 8, 0.09);
+  --arc-line-2: rgba(28, 20, 8, 0.15);
+}
+
+[data-arc-chrome="amber"] .arc-editor-root [data-hudson-template="hudson"][data-hudson-theme="light"] {
+  --arc-acc: #a86a12;
+  --arc-acc-hover: #8d570b;
+  --arc-acc-soft: rgba(168, 106, 18, 0.10);
+  --arc-glow: rgba(168, 106, 18, 0.20);
+  --arc-edge: rgba(168, 106, 18, 0.34);
+  --primary: 0.58 0.12 70;
+  --accent: 0.58 0.12 70;
+  --ring: 0.58 0.12 70;
+  --hud-canvas-dot-minor: rgba(168, 106, 18, 0.07);
+  --hud-canvas-dot-major: rgba(168, 106, 18, 0.14);
+}
+
+[data-arc-chrome="amber"] .arc-editor-root [data-hudson-template="hudson"][data-hudson-theme="dark"] {
+  --primary: 0.82 0.14 78;
+  --accent: 0.82 0.14 78;
+  --ring: 0.82 0.14 78;
+  --arc-acc: #ffb534;
+  --arc-acc-hover: #ffc862;
+  --arc-acc-soft: rgba(255, 181, 52, 0.10);
+  --arc-glow: rgba(255, 181, 52, 0.28);
+  --arc-edge: rgba(255, 181, 52, 0.45);
+  --arc-string: #d8c07a;
+  --arc-canvas: #0b0803;
+  --arc-surface: #161007;
+  --arc-surface-muted: #1e170c;
+  --arc-ink: #f3ead9;
+  --arc-ink-2: #c7b899;
+  --arc-muted: #8d8067;
+  --arc-faint: #675c48;
+  --arc-line: rgba(255, 181, 52, 0.07);
+  --arc-line-2: rgba(255, 181, 52, 0.13);
+  --hud-canvas-dot-minor: rgba(255, 181, 52, 0.05);
+  --hud-canvas-dot-major: rgba(255, 181, 52, 0.10);
+}
+
+/* ---------- Viridian — phosphor green ---------- */
+
+[data-arc-chrome="viridian"] .arc-editor-root {
+  --arc-acc: #12795d;
+  --arc-acc-hover: #0d6249;
+  --arc-acc-soft: rgba(18, 121, 93, 0.10);
+  --arc-glow: rgba(18, 121, 93, 0.24);
+  --arc-edge: rgba(18, 121, 93, 0.38);
+  --arc-string: #2a8f7a;
+  --arc-canvas: #e6ecea;
+  --arc-surface: #f5f9f7;
+  --arc-surface-muted: #ecf2ef;
+  --arc-line: rgba(8, 24, 20, 0.09);
+  --arc-line-2: rgba(8, 24, 20, 0.15);
+}
+
+[data-arc-chrome="viridian"] .arc-editor-root [data-hudson-template="hudson"][data-hudson-theme="light"] {
+  --arc-acc: #12795d;
+  --arc-acc-hover: #0d6249;
+  --arc-acc-soft: rgba(18, 121, 93, 0.10);
+  --arc-glow: rgba(18, 121, 93, 0.20);
+  --arc-edge: rgba(18, 121, 93, 0.32);
+  --primary: 0.52 0.10 168;
+  --accent: 0.52 0.10 168;
+  --ring: 0.52 0.10 168;
+  --hud-canvas-dot-minor: rgba(18, 121, 93, 0.07);
+  --hud-canvas-dot-major: rgba(18, 121, 93, 0.13);
+}
+
+[data-arc-chrome="viridian"] .arc-editor-root [data-hudson-template="hudson"][data-hudson-theme="dark"] {
+  --primary: 0.80 0.13 168;
+  --accent: 0.80 0.13 168;
+  --ring: 0.80 0.13 168;
+  --arc-acc: #45e0a8;
+  --arc-acc-hover: #6cebbe;
+  --arc-acc-soft: rgba(69, 224, 168, 0.09);
+  --arc-glow: rgba(69, 224, 168, 0.26);
+  --arc-edge: rgba(69, 224, 168, 0.42);
+  --arc-string: #7fe8c8;
+  --arc-canvas: #04100c;
+  --arc-surface: #091712;
+  --arc-surface-muted: #0e1f19;
+  --arc-ink: #e2f4ec;
+  --arc-ink-2: #a9c9bd;
+  --arc-muted: #74928a;
+  --arc-faint: #52706a;
+  --arc-line: rgba(69, 224, 168, 0.07);
+  --arc-line-2: rgba(69, 224, 168, 0.13);
+  --hud-canvas-dot-minor: rgba(69, 224, 168, 0.05);
+  --hud-canvas-dot-major: rgba(69, 224, 168, 0.10);
+}
+
+/* ---------- Paper — warm neutral, drafting-table light ---------- */
+
+[data-arc-chrome="paper"] .arc-editor-root {
+  --arc-acc: #7a4a24;
+  --arc-acc-hover: #613718;
+  --arc-acc-soft: rgba(122, 74, 36, 0.09);
+  --arc-glow: rgba(122, 74, 36, 0.16);
+  --arc-edge: rgba(122, 74, 36, 0.30);
+  --arc-string: #6b6136;
+  --arc-canvas: #e3d8c0;
+  --arc-surface: #fbf6ea;
+  --arc-surface-muted: #f1e8d5;
+  --arc-ink: #1d160d;
+  --arc-ink-2: #453a2a;
+  --arc-muted: #756b5a;
+  --arc-faint: #9a9081;
+  --arc-line: rgba(30, 22, 12, 0.09);
+  --arc-line-2: rgba(30, 22, 12, 0.15);
+}
+
+[data-arc-chrome="paper"] .arc-editor-root [data-hudson-template="hudson"][data-hudson-theme="light"] {
+  --arc-acc: #7a4a24;
+  --arc-acc-hover: #613718;
+  --arc-acc-soft: rgba(122, 74, 36, 0.09);
+  --arc-glow: rgba(122, 74, 36, 0.14);
+  --arc-edge: rgba(122, 74, 36, 0.26);
+  --primary: 0.44 0.08 55;
+  --accent: 0.44 0.08 55;
+  --ring: 0.44 0.08 55;
+  --hud-canvas-dot-minor: rgba(30, 22, 12, 0.06);
+  --hud-canvas-dot-major: rgba(30, 22, 12, 0.12);
+}
+
+[data-arc-chrome="paper"] .arc-editor-root [data-hudson-template="hudson"][data-hudson-theme="dark"] {
+  --primary: 0.76 0.07 60;
+  --accent: 0.76 0.07 60;
+  --ring: 0.76 0.07 60;
+  --arc-acc: #d9b184;
+  --arc-acc-hover: #e8c8a4;
+  --arc-acc-soft: rgba(217, 177, 132, 0.09);
+  --arc-glow: rgba(217, 177, 132, 0.18);
+  --arc-edge: rgba(217, 177, 132, 0.32);
+  --arc-string: #c2b183;
+  --arc-canvas: #0d0b08;
+  --arc-surface: #17130e;
+  --arc-surface-muted: #1f1a13;
+  --arc-ink: #f0e9dd;
+  --arc-ink-2: #c3b8a5;
+  --arc-muted: #8b8172;
+  --arc-faint: #665d51;
+  --arc-line: rgba(217, 177, 132, 0.07);
+  --arc-line-2: rgba(217, 177, 132, 0.13);
+  --hud-canvas-dot-minor: rgba(217, 177, 132, 0.05);
+  --hud-canvas-dot-major: rgba(217, 177, 132, 0.10);
+}

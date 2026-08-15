@@ -28,7 +28,7 @@ function ToolButton({ icon: Icon, label, onClick, active = false, disabled = fal
       aria-pressed={active}
       className={`arc-editor-tool-btn${active ? ' is-active' : ''}`}
     >
-      <Icon className="w-4 h-4" strokeWidth={1.75} />
+      <Icon className="w-3.5 h-3.5" strokeWidth={1.75} />
     </button>
   )
 }

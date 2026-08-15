@@ -1,0 +1,190 @@
+/* --------------------------------------------------------------------------
+   Arc chrome scale — one place that sizes the application UI.
+
+   Two dials drive everything:
+
+     --arc-ui-scale    control heights, padding, gaps, icons, swatches
+     --arc-type-scale  the type ramp
+
+   Both default to 1, which IS the compact baseline (24px controls, 11px base
+   type) — not a shrunken variant of something larger. Set them anywhere to
+   rescale that subtree:
+
+     document.documentElement.style.setProperty('--arc-ui-scale', '0.9')
+     <div style={{ '--arc-ui-scale': 1.15 }}>…</div>
+
+   `src/utils/uiScale.ts` persists them; the Display menu in the editor nav and
+   the showcase header edits them. Diagram content is deliberately NOT scaled by
+   these — the drawing keeps its own geometry.
+   -------------------------------------------------------------------------- */
+
+:root {
+  --arc-ui-scale: 1;
+  --arc-type-scale: 1;
+
+  /* Type ramp */
+  --arc-text-lg: calc(15px * var(--arc-type-scale));
+  --arc-text-ui: calc(11px * var(--arc-type-scale));
+  --arc-text-sm: calc(10px * var(--arc-type-scale));
+  --arc-text-xs: calc(9px * var(--arc-type-scale));
+  --arc-text-2xs: calc(8px * var(--arc-type-scale));
+
+  /* Space ramp */
+  --arc-space-1: calc(2px * var(--arc-ui-scale));
+  --arc-space-2: calc(3px * var(--arc-ui-scale));
+  --arc-space-3: calc(5px * var(--arc-ui-scale));
+  --arc-space-4: calc(8px * var(--arc-ui-scale));
+  --arc-space-5: calc(11px * var(--arc-ui-scale));
+  --arc-space-6: calc(14px * var(--arc-ui-scale));
+
+  /* Controls */
+  --arc-ctl-h: calc(24px * var(--arc-ui-scale));
+  --arc-ctl-h-sm: calc(20px * var(--arc-ui-scale));
+  --arc-ctl-h-lg: calc(28px * var(--arc-ui-scale));
+  --arc-ctl-pad-x: calc(7px * var(--arc-ui-scale));
+  --arc-ctl-pad-y: calc(4px * var(--arc-ui-scale));
+  --arc-icon: calc(13px * var(--arc-ui-scale));
+  --arc-icon-sm: calc(11px * var(--arc-ui-scale));
+  --arc-swatch: calc(20px * var(--arc-ui-scale));
+  --arc-rule: calc(14px * var(--arc-ui-scale));
+
+  /* Chrome typefaces. Inter holds its shapes at 8–11px far better than a
+     display face; JetBrains Mono carries the technical readouts. */
+  --arc-font-ui: 'Inter', 'Inter var', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --arc-font-code: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  /* Small type needs a touch of tracking and lining figures to stay legible. */
+  --arc-font-features: 'tnum' 1, 'cv05' 1, 'ss03' 1, 'calt' 1;
+}
+
+/* --------------------------------------------------------------------------
+   Chrome primitives (.arc-ui-*)
+
+   For surfaces outside the editor shell — currently the Display menu. The
+   editor and the showcase are styled by editor-shell.css, which reads the same
+   ramps, so everything follows the dials with no extra wiring.
+   -------------------------------------------------------------------------- */
+
+.arc-ui-label {
+  font-family: var(--arc-font-ui);
+  font-size: var(--arc-text-xs);
+  font-feature-settings: var(--arc-font-features);
+  letter-spacing: 0.01em;
+}
+
+.arc-ui-value {
+  font-family: var(--arc-font-code);
+  font-size: var(--arc-text-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.arc-ui-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--arc-space-2);
+  min-height: var(--arc-ctl-h-sm);
+  padding: var(--arc-ctl-pad-y) var(--arc-ctl-pad-x);
+  font-family: var(--arc-font-ui);
+  font-size: var(--arc-text-xs);
+  font-feature-settings: var(--arc-font-features);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.arc-ui-btn svg,
+.arc-ui-icon {
+  width: var(--arc-icon-sm);
+  height: var(--arc-icon-sm);
+  flex-shrink: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Display menu — the dials themselves. Styled from the host shell's tokens
+   when they exist (the editor), with dark fallbacks everywhere else.
+   -------------------------------------------------------------------------- */
+
+.arc-scale-menu {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  z-index: 70;
+  margin-top: var(--arc-space-2);
+  width: calc(206px * var(--arc-ui-scale));
+  padding: var(--arc-space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--arc-space-4);
+  border: 1px solid var(--arc-line-2, rgba(255, 255, 255, 0.14));
+  border-radius: var(--arc-radius, 3px);
+  background: var(--arc-surface, #0b0d10);
+  color: var(--arc-ink, #d4d4d8);
+  box-shadow: 0 18px 40px -24px rgba(0, 0, 0, 0.6);
+}
+
+.arc-scale-menu-presets {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--arc-space-1);
+}
+
+.arc-scale-preset {
+  padding: var(--arc-ctl-pad-y) var(--arc-space-2);
+  border: 1px solid var(--arc-line-2, rgba(255, 255, 255, 0.12));
+  border-radius: var(--arc-radius, 3px);
+  background: transparent;
+  color: var(--arc-muted, #8b8b93);
+  font-family: var(--arc-font-code);
+  font-size: var(--arc-text-2xs);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.arc-scale-preset:hover {
+  color: var(--arc-acc, #fafafa);
+  border-color: var(--arc-edge, rgba(255, 255, 255, 0.3));
+}
+
+.arc-scale-preset.is-active {
+  color: var(--arc-acc, #18181b);
+  background: var(--arc-acc-soft, #e4e4e7);
+  border-color: var(--arc-edge, transparent);
+}
+
+.arc-scale-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--arc-space-1);
+}
+
+.arc-scale-row-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.arc-scale-row input[type='range'] {
+  width: 100%;
+  height: calc(3px * var(--arc-ui-scale));
+  accent-color: var(--arc-acc, #a1a1aa);
+  cursor: pointer;
+}
+
+.arc-scale-reset {
+  padding: var(--arc-ctl-pad-y) 0;
+  border: 1px solid var(--arc-line-2, rgba(255, 255, 255, 0.12));
+  border-radius: var(--arc-radius, 3px);
+  background: transparent;
+  color: var(--arc-muted, #8b8b93);
+  font-family: var(--arc-font-code);
+  font-size: var(--arc-text-2xs);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.arc-scale-reset:hover {
+  color: var(--arc-acc, #fafafa);
+  border-color: var(--arc-edge, rgba(255, 255, 255, 0.3));
+}

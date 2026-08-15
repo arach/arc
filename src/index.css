@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@import "./ui-scale.css";
+@import "./chrome-themes.css";
 
 /* Drive `dark:` utilities from the `.dark` class (set by the editor's theme
    toggle) instead of Tailwind v4's default `prefers-color-scheme`. Without this

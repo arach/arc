@@ -1,4 +1,5 @@
 import ErrorBoundary from '../../components/ErrorBoundary'
+import SettingsRail from '../../components/chrome/SettingsRail'
 import DiagramCanvas from '../../components/editor/DiagramCanvas'
 import FloatingToolbar from '../../components/editor/FloatingToolbar'
 import { useEditorState, useThemeId } from '../../components/editor/EditorProvider'
@@ -11,7 +12,9 @@ export default function ArcEditorContent() {
   const isDark = editor.colorMode === 'dark'
 
   return (
-    <div className="arc-editor-canvas">
+    <div className="arc-shell-row">
+      <SettingsRail />
+      <div className="arc-editor-canvas arc-shell-main">
       <ErrorBoundary>
         <DiagramCanvas
           onViewportChange={setViewportBounds}
@@ -21,6 +24,7 @@ export default function ArcEditorContent() {
         />
       </ErrorBoundary>
       <FloatingToolbar />
+      </div>
     </div>
   )
 }
