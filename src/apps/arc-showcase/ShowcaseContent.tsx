@@ -1,15 +1,20 @@
 // Hudson Content slot for /showcase: the player on the app canvas, with the
 // generated JSX docked underneath it.
 
-import { useState } from 'react'
-import { Check, Copy } from 'lucide-react'
+import { lazy, Suspense, useState } from 'react'
+import { Braces, Check, Copy } from 'lucide-react'
 import ArcDiagram from '../../components/ArcDiagram'
 import SettingsRail from '../../components/chrome/SettingsRail'
+
 import { useShowcase } from './ShowcaseContext'
+
+// CodeMirror is only worth downloading once the markup pane is opened.
+const MarkupPanel = lazy(() => import('../../components/chrome/MarkupPanel'))
 
 export default function ShowcaseContent() {
   const s = useShowcase()
   const [copied, setCopied] = useState(false)
+  const [showMarkup, setShowMarkup] = useState(false)
 
   const copy = async () => {
     await navigator.clipboard.writeText(s.snippet)
@@ -22,7 +27,27 @@ export default function ShowcaseContent() {
 
   return (
     <div className="arc-shell-row">
-      <SettingsRail />
+      <SettingsRail>
+        <button
+          type="button"
+          className={`arc-rail-btn${showMarkup ? ' is-active' : ''}`}
+          title="Diagram markup"
+          aria-label="Diagram markup"
+          onClick={() => setShowMarkup(v => !v)}
+        >
+          <Braces strokeWidth={1.75} />
+        </button>
+      </SettingsRail>
+
+      {showMarkup && (
+        <Suspense fallback={null}>
+          <MarkupPanel
+            title={s.doc.data.id || s.doc.name}
+            data={s.doc.data}
+            onClose={() => setShowMarkup(false)}
+          />
+        </Suspense>
+      )}
       <div className="arc-showcase-root arc-shell-main">
       <div className="arc-showcase-stage-scroll">
         {/* min-w-max keeps an oversized stage from being clipped by centering. */}

@@ -1,19 +1,82 @@
+import { lazy, Suspense, useEffect, useState } from 'react'
+import { Braces, Eye } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import ErrorBoundary from '../../components/ErrorBoundary'
 import SettingsRail from '../../components/chrome/SettingsRail'
+
 import DiagramCanvas from '../../components/editor/DiagramCanvas'
 import FloatingToolbar from '../../components/editor/FloatingToolbar'
-import { useEditorState, useThemeId } from '../../components/editor/EditorProvider'
-import { useArcEditorViewport } from './ArcEditorContext'
+import { useDiagram, useEditor, useEditorState, useThemeId } from '../../components/editor/EditorProvider'
+import { useArcEditor, useArcEditorViewport } from './ArcEditorContext'
+
+// CodeMirror is only worth downloading once the markup pane is opened.
+const MarkupPanel = lazy(() => import('../../components/chrome/MarkupPanel'))
 
 export default function ArcEditorContent() {
   const editor = useEditorState()
   const themeId = useThemeId()
+  const diagram = useDiagram()
+  const { actions } = useEditor()
+  const { sessionId } = useArcEditor()
   const { setViewportBounds } = useArcEditorViewport()
+  // Remembered, so a split-view habit survives a reload.
+  const [showMarkup, setShowMarkup] = useState(
+    () => typeof window !== 'undefined' && window.localStorage.getItem('arc-editor-markup') === '1',
+  )
+
+  useEffect(() => {
+    try { window.localStorage.setItem('arc-editor-markup', showMarkup ? '1' : '0') } catch { /* private mode */ }
+  }, [showMarkup])
   const isDark = editor.colorMode === 'dark'
+
+  // Clean export payload — the same shape the player and a saved file carry.
+  // Editor state is loosely typed here, so read the optional keys off a record.
+  const d = diagram as Record<string, unknown>
+  const markup = {
+    ...(d.id ? { id: d.id } : {}),
+    layout: d.layout,
+    nodes: d.nodes,
+    nodeData: d.nodeData,
+    connectors: d.connectors,
+    connectorStyles: d.connectorStyles,
+    ...(Array.isArray(d.groups) && d.groups.length ? { groups: d.groups } : {}),
+    ...(d.focusTargets ? { focusTargets: d.focusTargets } : {}),
+  }
 
   return (
     <div className="arc-shell-row">
-      <SettingsRail />
+      <SettingsRail>
+        <button
+          type="button"
+          className={`arc-rail-btn${showMarkup ? ' is-active' : ''}`}
+          title="Diagram markup"
+          aria-label="Diagram markup"
+          onClick={() => setShowMarkup(v => !v)}
+        >
+          <Braces strokeWidth={1.75} />
+        </button>
+        {sessionId && (
+          <Link
+            to={`/player/${sessionId}`}
+            className="arc-rail-btn"
+            title="Open the read-only viewer"
+            aria-label="Viewer"
+          >
+            <Eye strokeWidth={1.75} />
+          </Link>
+        )}
+      </SettingsRail>
+
+      {showMarkup && (
+        <Suspense fallback={null}>
+          <MarkupPanel
+            title={(d.id as string) || 'Untitled diagram'}
+            data={markup}
+            onApply={next => actions.replaceDiagram(next)}
+            onClose={() => setShowMarkup(false)}
+          />
+        </Suspense>
+      )}
       <div className="arc-editor-canvas arc-shell-main">
       <ErrorBoundary>
         <DiagramCanvas
