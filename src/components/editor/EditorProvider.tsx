@@ -169,6 +169,11 @@ export function EditorProvider({ children, initialDiagram, initialThemeId = DEFA
       dispatch({ type: 'diagram/load', diagram, filename })
     }, []),
 
+    /** Swap the drawing from edited markup, keeping meta, history and file. */
+    replaceDiagram: useCallback((diagram) => {
+      dispatch({ type: 'diagram/replace', diagram })
+    }, []),
+
     newDiagram: useCallback(() => {
       dispatch({ type: 'diagram/new' })
     }, []),

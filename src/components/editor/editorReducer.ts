@@ -634,6 +634,34 @@ export function editorReducer(state, action) {
     // FILE OPERATIONS
     // ============================================
 
+    // Markup edits replace the drawing but stay ordinary edits: history is
+    // preserved (so ⌘Z steps back through them), the open filename survives,
+    // and editor-only fields the markup does not carry are kept.
+    case 'diagram/replace': {
+      const next = action.diagram || {}
+      return {
+        ...saveToHistory(state),
+        diagram: {
+          ...state.diagram,
+          layout: next.layout ?? state.diagram.layout,
+          nodes: next.nodes ?? {},
+          nodeData: next.nodeData ?? {},
+          connectors: next.connectors ?? [],
+          connectorStyles: next.connectorStyles ?? state.diagram.connectorStyles,
+          groups: next.groups ?? [],
+          focusTargets: next.focusTargets,
+        },
+        editor: {
+          ...state.editor,
+          // A node that no longer exists cannot stay selected.
+          selectedNodeIds: (state.editor.selectedNodeIds || []).filter(
+            (id) => next.nodes && Object.prototype.hasOwnProperty.call(next.nodes, id),
+          ),
+          selectedConnectorIndex: null,
+        },
+      }
+    }
+
     case 'diagram/load':
       return {
         ...state,

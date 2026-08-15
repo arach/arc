@@ -281,9 +281,17 @@ body,
   opacity: 0.25;
 }
 
-.arc-editor-canvas > * {
+/* Canvas children stack above the backdrop. Floating chrome opts out with
+   data-arc-float, otherwise this rule beats its own `absolute` (unlayered CSS
+   outranks a Tailwind utility on a specificity tie) and the toolbar drops into
+   normal flow as a full-width bar. */
+.arc-editor-canvas > *:not([data-arc-float]) {
   position: relative;
   z-index: 1;
+}
+
+.arc-editor-canvas > [data-arc-float] {
+  z-index: 20;
 }
 
 /* ---- Canvas overlays (mode + pending badges) ---- */
@@ -1475,4 +1483,124 @@ body,
 .arc-settings-segment.is-active {
   background: color-mix(in srgb, var(--arc-acc) 88%, #000);
   color: #fff;
+}
+
+/* ---- Markup panel (rail → braces) ---- */
+
+.arc-rail-divider {
+  width: calc(var(--arc-rail-w) * 0.45);
+  height: 1px;
+  margin: var(--arc-space-2) 0;
+  background: var(--arc-line-2);
+  flex-shrink: 0;
+}
+
+.arc-markup-pane {
+  position: relative;
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  width: clamp(320px, 36%, 620px);
+  min-width: 0;
+  height: 100%;
+  border-right: 1px solid var(--arc-line-2);
+  background: color-mix(in srgb, var(--arc-surface) 97%, transparent);
+  box-shadow: inset -1px 0 14px -10px var(--arc-glow);
+}
+
+.arc-markup-head {
+  display: flex;
+  align-items: center;
+  gap: var(--arc-space-2);
+  padding: var(--arc-space-2) var(--arc-space-3);
+  border-bottom: 1px solid var(--arc-line);
+}
+
+.arc-markup-title {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--arc-font-mono);
+  font-size: var(--arc-text-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--arc-acc);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.arc-markup-formats {
+  display: flex;
+  border: 1px solid var(--arc-line);
+  border-radius: var(--arc-radius);
+  overflow: hidden;
+}
+
+.arc-markup-formats .arc-settings-segment {
+  padding: var(--arc-ctl-pad-y) var(--arc-space-3);
+  font-family: var(--arc-font-mono);
+  font-size: var(--arc-text-2xs);
+}
+
+.arc-markup-source {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 0;
+  padding: var(--arc-space-4);
+  overflow: auto;
+  font-family: var(--arc-font-mono);
+  font-size: var(--arc-text-xs);
+  line-height: 1.6;
+  color: var(--arc-ink-2);
+  white-space: pre;
+  tab-size: 2;
+}
+
+.arc-markup-foot {
+  padding: var(--arc-space-2) var(--arc-space-3);
+  border-top: 1px solid var(--arc-line);
+  font-family: var(--arc-font-mono);
+  font-size: var(--arc-text-2xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--arc-faint);
+}
+
+/* CodeMirror fills the pane; Hudson's editor brings its own highlighting. */
+.arc-markup-source {
+  display: flex;
+  flex-direction: column;
+}
+
+.arc-markup-source > * {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.arc-markup-source .cm-editor {
+  height: 100%;
+  background: transparent;
+  font-family: var(--arc-font-mono);
+  font-size: var(--arc-text-xs);
+}
+
+.arc-markup-source .cm-scroller {
+  font-family: var(--arc-font-mono);
+  line-height: 1.6;
+}
+
+.arc-markup-source .cm-gutters {
+  border-right: 1px solid var(--arc-line);
+  background: transparent;
+  color: var(--arc-faint);
+}
+
+.arc-markup-source .cm-activeLine,
+.arc-markup-source .cm-activeLineGutter {
+  background: var(--arc-acc-soft);
+}
+
+.arc-markup-foot.is-error {
+  color: #c4552f;
+  background: color-mix(in srgb, #c4552f 10%, transparent);
 }

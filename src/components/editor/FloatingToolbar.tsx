@@ -143,7 +143,8 @@ export default function FloatingToolbar() {
 
   return (
     <div
-      className="absolute top-4 left-1/2 z-20"
+      data-arc-float
+      className="absolute bottom-6 left-1/2 z-20"
       style={{
         transform: `translate(calc(-50% + ${position.x}px), ${position.y}px)`,
       }}

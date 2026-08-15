@@ -185,9 +185,50 @@ Two cascade rules matter when adding a skin:
 ### Settings Rail
 
 `components/chrome/SettingsRail.tsx` is a thin column (`--arc-rail-w`) rendered
-as the first child of each app's Content slot — `.arc-shell-row` holds the rail
-plus `.arc-shell-main`. Its bottom slot opens `SettingsPanel.tsx`: chrome skin,
-light/dark/auto (Hudson's `useTheme`), and the density dials.
+as the first child of each app's Content slot — `.arc-shell-row` holds the rail,
+any panes, and `.arc-shell-main`.
+
+- **Top:** surface navigation — Editor and Player, as `NavLink`s that mark the
+  active surface.
+- **Middle:** whatever the app passes as `children` (the editor adds markup and
+  a viewer link to its session; the showcase adds markup).
+- **Bottom:** `SettingsPanel.tsx` — chrome skin, light/dark/auto (Hudson's
+  `useTheme`), and the density dials.
+
+### Markup Pane
+
+`components/chrome/MarkupPanel.tsx` splits the surface: source on the left,
+rendering on the right, toggled from the rail's braces button. The editor
+remembers the toggle in `localStorage` (`arc-editor-markup`).
+
+The editor itself is Hudson's `CodeEditor` from `hudsonkit/controls` — CodeMirror
+6, which brings syntax highlighting and the gutter. Its CodeMirror packages are
+*optional peers* of hudsonkit and must all be installed or the component renders
+a "requires the optional CodeMirror peer dependencies" placeholder: it
+dynamically imports `state`, `view`, `language`, `commands` **and** all four
+`lang-*` grammars (`javascript`, `json`, `css`, `html`, `markdown`), so a missing
+grammar fails the whole load. It is lazily imported so CodeMirror only ships to
+consumers who open the pane (the ESM build splits it out; the UMD build can't).
+
+Two formats, deliberately different in kind:
+
+| Format | Behaviour |
+|--------|-----------|
+| `.json` | the document — editable, applied back to the canvas |
+| `.ts` | a generated module for pasting into a repo — read-only |
+
+Edits are debounced 400ms, parsed, shape-checked (`layout`, `nodes`, `nodeData`)
+and dispatched as `diagram/replace`. That action deliberately differs from
+`diagram/load`: it pushes history (so ⌘Z steps back through markup edits), keeps
+the open filename and `diagramMeta`, and prunes selection to nodes that still
+exist. Parse and validation failures surface in the pane footer and leave the
+diagram untouched.
+
+Note for anything else that floats over the canvas: `.arc-editor-canvas > *`
+forces `position: relative`, and unlayered CSS beats a Tailwind utility on a
+specificity tie, so an `absolute` child silently drops into normal flow (this is
+what stretched the floating toolbar into a full-width bar). Opt out with
+`data-arc-float`.
 
 It is deliberately *not* Hudson's LeftPanel slot: that panel comes with a header
 and a resizable default width, and forcing it down to a rail meant fighting the
