@@ -22,11 +22,12 @@ export default function ViewModeToggle({
   const next = getIsoStyle(nextIsoStyle(isoStyle))
 
   return (
-    <div className="arc-canvas-controls absolute bottom-3 right-44">
+    <div className="arc-canvas-controls" role="group" aria-label="View mode">
       <button
         type="button"
         onClick={() => onViewModeChange('2d')}
         className={`arc-canvas-btn${viewMode === '2d' ? ' is-active' : ''}`}
+        aria-pressed={viewMode === '2d'}
         title="2D view"
       >
         <Layers size={13} strokeWidth={1.75} />
@@ -36,6 +37,7 @@ export default function ViewModeToggle({
         type="button"
         onClick={() => onViewModeChange('isometric')}
         className={`arc-canvas-btn${viewMode === 'isometric' ? ' is-active' : ''}`}
+        aria-pressed={viewMode === 'isometric'}
         title="Isometric view"
       >
         <Box size={13} strokeWidth={1.75} />

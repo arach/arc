@@ -761,9 +761,16 @@ export function editorReducer(state, action) {
 
     case 'layout/expand': {
       // Lightweight layout expansion without history (for auto-expand during drag)
+      //
+      // Snapped to a 20px step: the viewport that drives this is measured from
+      // getBoundingClientRect()/zoom, so the raw numbers are fractional. They
+      // used to land in the saved document as `width: 944.7000122070312`, and
+      // every pixel of drift wrote another one.
+      const step = 20
+      const grow = (n) => Math.ceil(n / step) * step
       const currentLayout = state.diagram.layout
-      const newWidth = Math.max(currentLayout.width, action.width || currentLayout.width)
-      const newHeight = Math.max(currentLayout.height, action.height || currentLayout.height)
+      const newWidth = Math.max(currentLayout.width, grow(action.width || currentLayout.width))
+      const newHeight = Math.max(currentLayout.height, grow(action.height || currentLayout.height))
 
       // Only update if actually expanding
       if (newWidth === currentLayout.width && newHeight === currentLayout.height) {

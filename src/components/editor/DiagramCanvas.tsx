@@ -1,28 +1,16 @@
 import { useRef, useCallback, useState, useEffect } from 'react'
-// @ts-ignore - JS module, will migrate later
 import { useEditor, useDiagram, useEditorState, useTemplate, useViewMode, useIsoStyle, useMeta, useResolvedTheme, useResolvedBrand } from './EditorProvider'
-// @ts-ignore - JS module
 import { NODE_SIZES } from '../../utils/constants'
-// @ts-ignore - JS module
 import { getTemplate } from '../../utils/templates'
-// @ts-ignore - JS module
 import { screenToIsoFloor } from '../../utils/isometric'
 import { useCanvasTransform } from '../../hooks/useCanvasTransform'
-// @ts-ignore - JS module
 import EditableNode from './EditableNode'
-// @ts-ignore - JS module
 import ConnectorLayer from './ConnectorLayer'
-// @ts-ignore - JS module
 import AnchorPoints from './AnchorPoints'
-// @ts-ignore - JS module
 import GroupLayer from './GroupLayer'
-// @ts-ignore - JS module
 import ImageLayer from './ImageLayer'
-// @ts-ignore - JS module
 import MiniMap from './MiniMap'
-// @ts-ignore - JS module
 import ExportZoneLayer from './ExportZoneLayer'
-// @ts-ignore - JS module
 import InfiniteGrid from './InfiniteGrid'
 import ZoomControls from './ZoomControls'
 import ViewModeToggle from './ViewModeToggle'
@@ -173,7 +161,7 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
       if (editor.mode !== 'select' || isPanning) return
       if (!config.enableSelection && !config.enableDrag) return
 
-      e.target instanceof Element && (e.target as Element).setPointerCapture?.(e.pointerId)
+      if (e.target instanceof Element) e.target.setPointerCapture?.(e.pointerId)
       const canvasPoint = screenToCanvas({ x: e.clientX, y: e.clientY })
       const isShiftHeld = e.shiftKey
 
@@ -670,9 +658,13 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
   }
 
   const modeLabel = getModeLabel()
+  const isEmpty =
+    Object.keys(diagram.nodes || {}).length === 0 &&
+    (diagram.groups || []).length === 0 &&
+    (diagram.images || []).length === 0
 
   return (
-    <div className="relative w-full h-full">
+    <div className="arc-canvas-frame relative w-full h-full">
       {/* Transform container - handles wheel/pan events */}
       <div
         ref={containerRef}
@@ -912,6 +904,27 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
         </div>
       </div>
 
+      {/* Empty canvas — File → New leaves nothing to look at and no hint that
+          a node is one keystroke away. */}
+      {isEmpty && (
+        <div className="arc-canvas-empty">
+          <p className="arc-canvas-empty-title">Empty canvas</p>
+          <p className="arc-canvas-empty-hint">
+            Press <kbd>N</kbd> and click to place a node — or open the markup pane
+            and paste a diagram.
+          </p>
+          {config.enableSelection && (
+            <button
+              type="button"
+              className="arc-editor-btn-primary arc-canvas-empty-action"
+              onClick={() => actions.setMode('addNode')}
+            >
+              Add a node
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Mode indicator */}
       {modeLabel && (
         <div className={`arc-editor-mode-badge${editor.mode === 'pan' ? ' is-pan' : ''}`}>
@@ -924,6 +937,20 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
         <div className="arc-editor-mode-badge is-pending">
           Select target anchor
         </div>
+      )}
+
+      {/* Canvas dock — the control clusters share one bottom-right stack, so
+          neither has to guess how wide the other is at the current scale. */}
+      {(config.showZoomControls || config.enableViewModeToggle) && (
+      <div className="arc-canvas-dock">
+      {/* View mode toggle */}
+      {config.enableViewModeToggle && (
+        <ViewModeToggle
+          viewMode={viewMode as '2d' | 'isometric'}
+          onViewModeChange={actions.setViewMode}
+          isoStyle={isoStyle.id}
+          onIsoStyleChange={actions.setIsoStyle}
+        />
       )}
 
       {/* Zoom controls */}
@@ -943,15 +970,7 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
           }}
         />
       )}
-
-      {/* View mode toggle */}
-      {config.enableViewModeToggle && (
-        <ViewModeToggle
-          viewMode={viewMode as '2d' | 'isometric'}
-          onViewModeChange={actions.setViewMode}
-          isoStyle={isoStyle.id}
-          onIsoStyleChange={actions.setIsoStyle}
-        />
+      </div>
       )}
 
       {/* Mini map - hidden in isometric mode since coordinate systems don't align */}

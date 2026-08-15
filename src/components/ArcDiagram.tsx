@@ -960,10 +960,15 @@ function DiagramLegend({ styles, connectors, groups, themeColors, brand, mode, l
   return (
     <div
       data-arc-legend
-      className="absolute z-10 backdrop-blur-sm pointer-events-none"
+      className="absolute z-10 backdrop-blur-sm"
       style={{
         left,
         bottom,
+        // A key with many styles and named groups can outgrow a short frame.
+        // Scroll it rather than let the frame cut the last rows off — which
+        // reads as a rendering fault, not as "there is more".
+        maxHeight: `calc(100% - ${bottom + 8}px)`,
+        overflowY: 'auto',
         padding: '7px 9px',
         border: `1px solid ${isLight ? 'rgba(24,24,27,0.14)' : 'rgba(244,244,245,0.14)'}`,
         borderRadius: brand?.nodeRadius ?? 6,
