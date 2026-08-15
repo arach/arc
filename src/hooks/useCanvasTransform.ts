@@ -189,6 +189,37 @@ export function useCanvasTransform(options: UseCanvasTransformOptions = {}) {
     return roundedZoom  // Return for use in initial 'fit' calculation
   }, [findNearestZoomLevel])
 
+  /**
+   * Fit an arbitrary rect (which may start at a negative offset, as isometric
+   * content does) into the viewport, centred.
+   */
+  const fitToRect = useCallback(
+    (rectToFit: { minX: number; minY: number; maxX: number; maxY: number }, padding = 32) => {
+      if (!containerRef.current) return
+
+      const rect = containerRef.current.getBoundingClientRect()
+      const width = rectToFit.maxX - rectToFit.minX
+      const height = rectToFit.maxY - rectToFit.minY
+      if (width <= 0 || height <= 0) return
+
+      const scaleX = (rect.width - padding * 2) / width
+      const scaleY = (rect.height - padding * 2) / height
+      const roundedZoom = findNearestZoomLevel(Math.min(scaleX, scaleY, 1))
+
+      setState({
+        zoom: roundedZoom,
+        pan: {
+          x: rect.width / 2 - ((rectToFit.minX + rectToFit.maxX) / 2) * roundedZoom,
+          y: rect.height / 2 - ((rectToFit.minY + rectToFit.maxY) / 2) * roundedZoom,
+        },
+        isPanning: false,
+      })
+
+      return roundedZoom
+    },
+    [findNearestZoomLevel]
+  )
+
   const handleWheel = useCallback(
     (e: WheelEvent) => {
       e.preventDefault()
@@ -356,6 +387,7 @@ export function useCanvasTransform(options: UseCanvasTransformOptions = {}) {
     zoomOut,
     resetTransform,
     fitToView,
+    fitToRect,
     screenToCanvas,
     canvasToScreen,
     transformStyle,

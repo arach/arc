@@ -1,11 +1,13 @@
-import { useMemo } from 'react'
+import { useId, useMemo } from 'react'
 import { isoBox, isoToScreen, getColorShading, ISO_COLORS } from '../../utils/isometric'
-import { NODE_SIZES } from '../../utils/constants'
+import { isoNodeDims, isoWireBox, buildNodeIndex } from '../../utils/isoBlueprint'
+import type { WireBox } from '../../utils/isoBlueprint'
+import { getIsoStyle } from '../../utils/isoStyles'
+import type { IsoStyleSpec } from '../../utils/isoStyles'
+import TechnicalDefs from '../technical/TechnicalDefs'
+import { TechnicalBox, TechnicalCallout } from '../technical/TechnicalNode'
 import type { NodePosition, NodeData } from '../../types/editor'
 
-// Default isometric dimensions
-const DEFAULT_ISO_HEIGHT = 25
-const DEFAULT_ISO_DEPTH = 50
 const DEFAULT_CORNER_RADIUS = 6
 
 interface IsometricNodeLayerProps {
@@ -17,6 +19,8 @@ interface IsometricNodeLayerProps {
   // Canvas origin offset - where (0,0,0) appears on screen
   originX?: number
   originY?: number
+  /** Render style — 'solid' shades the faces, technical styles draw line art. */
+  isoStyle?: IsoStyleSpec
 }
 
 // Interpolate color based on intensity for corner shading
@@ -34,7 +38,10 @@ export default function IsometricNodeLayer({
   onNodePointerDown,
   originX = 400,
   originY = 500,
+  isoStyle = getIsoStyle('solid'),
 }: IsometricNodeLayerProps) {
+  const uid = useId().replace(/:/g, '')
+
   // Sort nodes by depth for painter's algorithm (back to front)
   // Nodes with higher (x + y) should be rendered first (they're further back)
   const sortedNodes = useMemo(() => {
@@ -47,29 +54,87 @@ export default function IsometricNodeLayer({
       })
   }, [nodes, nodeData])
 
+  const nodeIndex = useMemo(() => buildNodeIndex(nodes, nodeData), [nodes, nodeData])
+
+  const technical = isoStyle.technical
+
+  // Technical styles draw in two passes: every box first, then every callout,
+  // so a nearer component never paints over a neighbour's label.
+  const technicalItems = useMemo(() => {
+    if (!technical) return []
+    return sortedNodes.map(([nodeId, node]) => {
+      const dims = isoNodeDims(node)
+      const origin = isoToScreen(node.x, node.y, dims.elevation)
+      return {
+        nodeId,
+        data: nodeData[nodeId],
+        box: isoWireBox(
+          dims.width,
+          dims.depth,
+          dims.height,
+          originX + origin.screenX,
+          originY + origin.screenY
+        ) as WireBox,
+      }
+    })
+  }, [technical, sortedNodes, nodeData, originX, originY])
+
   return (
     <svg
       className="absolute inset-0 w-full h-full"
       style={{ overflow: 'visible' }}
     >
-      {sortedNodes.map(([nodeId, node]) => {
+      {technical && <TechnicalDefs uid={uid} style={isoStyle} />}
+
+      {technical &&
+        technicalItems.map(({ nodeId, data, box }) => (
+          <TechnicalBox
+            key={nodeId}
+            uid={uid}
+            style={isoStyle}
+            box={box}
+            color={data.color}
+            tag={nodeIndex[nodeId]}
+            selected={selectedNodeIds.includes(nodeId)}
+            onClick={() => onNodeClick?.(nodeId)}
+            onPointerDown={(e) => onNodePointerDown?.(e, nodeId)}
+          />
+        ))}
+
+      {technical &&
+        technicalItems.map(({ nodeId, data, box }) => (
+          <TechnicalCallout
+            key={`callout-${nodeId}`}
+            style={isoStyle}
+            box={box}
+            name={data.name}
+            subtitle={data.subtitle}
+            selected={selectedNodeIds.includes(nodeId)}
+          />
+        ))}
+
+      {!technical &&
+        sortedNodes.map(([nodeId, node]) => {
         const data = nodeData[nodeId]
         if (!data) return null
 
-        // Get dimensions
-        const size = NODE_SIZES[node.size as keyof typeof NODE_SIZES] || NODE_SIZES.m
-        const width2D = node.width || size.width
-
-        // Convert 2D width to isometric width (scale down for visual balance)
-        const isoWidth = width2D * 0.8
-        const isoDepth = node.isoDepth ?? DEFAULT_ISO_DEPTH
-        const isoHeight = node.isoHeight ?? DEFAULT_ISO_HEIGHT
-        const elevation = node.z ?? 0
+        const dims = isoNodeDims(node)
+        const isoWidth = dims.width
+        const isoDepth = dims.depth
+        const isoHeight = dims.height
+        const elevation = dims.elevation
 
         // Calculate screen position for this node's origin
         const nodeOrigin = isoToScreen(node.x, node.y, elevation)
         const screenX = originX + nodeOrigin.screenX
         const screenY = originY + nodeOrigin.screenY
+
+        const isSelected = selectedNodeIds.includes(nodeId)
+
+        const handlers = {
+          onClick: () => onNodeClick?.(nodeId),
+          onPointerDown: (e: React.PointerEvent) => onNodePointerDown?.(e, nodeId),
+        }
 
         // Generate the box paths
         const box = isoBox(isoWidth, isoDepth, isoHeight, screenX, screenY, DEFAULT_CORNER_RADIUS)
@@ -78,20 +143,13 @@ export default function IsometricNodeLayer({
         const colorDef = ISO_COLORS[data.color as keyof typeof ISO_COLORS] || ISO_COLORS.violet
         const shading = getColorShading(data.color)
 
-        const isSelected = selectedNodeIds.includes(nodeId)
-
         // Calculate label position (center of top face)
         const labelPos = isoToScreen(node.x + isoWidth / 2, node.y + isoDepth / 2, elevation + isoHeight)
         const labelX = originX + labelPos.screenX
         const labelY = originY + labelPos.screenY
 
         return (
-          <g
-            key={nodeId}
-            className="cursor-pointer"
-            onClick={() => onNodeClick?.(nodeId)}
-            onPointerDown={(e) => onNodePointerDown?.(e, nodeId)}
-          >
+          <g key={nodeId} className="cursor-pointer" {...handlers}>
             {/* Selection glow */}
             {isSelected && (
               <g filter="url(#selection-glow)">

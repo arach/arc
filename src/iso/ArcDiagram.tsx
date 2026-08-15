@@ -2,8 +2,14 @@
  * ArcDiagram - Lightweight isometric diagram renderer
  * Core isometric component, optimized for embedding.
  */
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useId, useMemo } from 'react'
 import { isoToScreen, isoBox } from '../utils/isometric'
+import { isoWireBox } from '../utils/isoWire'
+import { getIsoStyle } from '../utils/isoStyles'
+import TechnicalDefs from '../components/technical/TechnicalDefs'
+import TechnicalBackdrop from '../components/technical/TechnicalBackdrop'
+import TechnicalPlate from '../components/technical/TechnicalPlate'
+import { TechnicalBox, TechnicalCallout } from '../components/technical/TechnicalNode'
 import type { DiagramConfig, DiagramNode, PlayerOptions } from './types'
 
 // Typography
@@ -111,10 +117,31 @@ export default function ArcDiagram({ config, options = {}, className, style, onN
   const { interactive = true, animate = true, showLabels = true, expandOnHover = true } = options
   const { theme, canvas, origin, tiers, floorSize, nodes, cornerRadius = 0 } = config
 
+  // Technical styles ('blueprint', 'cyanotype') swap the shaded solids for
+  // line art on paper; 'solid' keeps the original renderer.
+  const techStyle = getIsoStyle(config.style)
+  const technical = techStyle.technical
+  const uid = useId().replace(/:/g, '')
+
   const colors = theme === 'dark' ? DARK_COLORS : LIGHT_COLORS
-  const bgColor = theme === 'dark' ? '#0f172a' : '#fafafa'
-  const textColor = theme === 'dark' ? '#e2e8f0' : '#1e293b'
-  const labelColor = theme === 'dark' ? '#64748b' : '#94a3b8'
+  const bgColor = technical ? techStyle.paper.to : theme === 'dark' ? '#0f172a' : '#fafafa'
+  const textColor = technical ? techStyle.ink.text : theme === 'dark' ? '#e2e8f0' : '#1e293b'
+  const labelColor = technical ? techStyle.ink.muted : theme === 'dark' ? '#64748b' : '#94a3b8'
+
+  // Component numbers for the index table and the on-box tags, in a stable
+  // bottom-tier-first reading order.
+  const componentNumbers = useMemo(() => {
+    const ordered = nodes
+      .map((node, i) => ({ node, i }))
+      .sort((a, b) => (a.node.tier - b.node.tier) || (a.node.y - b.node.y) || (a.node.x - b.node.x))
+    const map = new Map<number, number>()
+    ordered.forEach(({ i }, rank) => map.set(i, rank + 1))
+    return map
+  }, [nodes])
+
+  // The packaged renderer draws on a fixed canvas, so the plate frames the
+  // sheet itself rather than the drawing's extent.
+  const plate = { minX: 16, minY: 16, maxX: canvas.width - 16, maxY: canvas.height - 16 }
 
   // Entrance animation
   const [animatedTiers, setAnimatedTiers] = useState<Set<number>>(new Set())
@@ -186,8 +213,21 @@ export default function ArcDiagram({ config, options = {}, className, style, onN
           </filter>
         </defs>
 
-        <rect width="100%" height="100%" fill={`url(#bg-${config.id})`} />
-        <rect width="100%" height="100%" fill={`url(#grid-${config.id})`} opacity="0.5" />
+        {technical ? (
+          <>
+            <TechnicalDefs uid={uid} style={techStyle} />
+            <TechnicalBackdrop
+              style={techStyle}
+              rect={{ x: 0, y: 0, width: canvas.width, height: canvas.height }}
+              className=""
+            />
+          </>
+        ) : (
+          <>
+            <rect width="100%" height="100%" fill={`url(#bg-${config.id})`} />
+            <rect width="100%" height="100%" fill={`url(#grid-${config.id})`} opacity="0.5" />
+          </>
+        )}
 
         <g transform={`translate(${origin.x}, ${origin.y})`}>
           {tiers.map((tier, tierIndex) => {
@@ -229,16 +269,70 @@ export default function ArcDiagram({ config, options = {}, className, style, onN
                 }}>
 
                 {/* Floor */}
-                <FloorPlane
-                  width={floorSize.width} depth={floorSize.depth}
-                  elevation={tierIndex === 0 ? -2 : tier.elevation}
-                  color={tier.floorColor || (theme === 'dark' ? '#0f172a' : '#f8fafc')}
-                  opacity={tier.floorOpacity || (tierIndex === 0 ? 0.95 : 0.5)}
-                  borderColor={tier.borderColor} theme={theme} isGround={tierIndex === 0}
-                />
+                {technical ? (
+                  <TechnicalFloor
+                    width={floorSize.width}
+                    depth={floorSize.depth}
+                    elevation={tierIndex === 0 ? -2 : tier.elevation}
+                    ink={tierIndex === 0 ? techStyle.ink.line : techStyle.ink.hidden}
+                    isGround={tierIndex === 0}
+                  />
+                ) : (
+                  <FloorPlane
+                    width={floorSize.width} depth={floorSize.depth}
+                    elevation={tierIndex === 0 ? -2 : tier.elevation}
+                    color={tier.floorColor || (theme === 'dark' ? '#0f172a' : '#f8fafc')}
+                    opacity={tier.floorOpacity || (tierIndex === 0 ? 0.95 : 0.5)}
+                    borderColor={tier.borderColor} theme={theme} isGround={tierIndex === 0}
+                  />
+                )}
 
-                {/* Nodes */}
-                {tierNodes.map((node, i) => {
+                {/* Nodes — technical styles draw every box, then every callout */}
+                {technical && tierNodes.map((node, i) => {
+                  const nodeElevation = tier.elevation + 5
+                  const pos = isoToScreen(node.x, node.y, nodeElevation)
+                  const wire = isoWireBox(node.width, node.depth, node.height, pos.screenX, pos.screenY)
+                  const isSelected = selected?.tier === tierIndex && selected?.index === i
+                  const nodeDim = interactive && selected !== null && !isSelected
+                  return (
+                    <TechnicalBox
+                      key={`tech-${i}`}
+                      uid={uid}
+                      style={techStyle}
+                      box={wire}
+                      color={node.color}
+                      tag={componentNumbers.get(nodes.indexOf(node))}
+                      selected={isSelected}
+                      opacity={(node.opacity ?? 1) * (nodeDim ? 0.3 : 1)}
+                      onClick={interactive ? () => {
+                        setSoloTier(null)
+                        setSelected(prev => (prev && prev.tier === tierIndex && prev.index === i ? null : { tier: tierIndex, index: i }))
+                        onNodeClick?.(node, { tier: tierIndex, index: i })
+                        if (node.link) { try { window.open(node.link, '_blank') } catch { /* noop */ } }
+                      } : undefined}
+                    />
+                  )
+                })}
+
+                {technical && showLabels && tierNodes.map((node, i) => {
+                  const nodeElevation = tier.elevation + 5
+                  const pos = isoToScreen(node.x, node.y, nodeElevation)
+                  const wire = isoWireBox(node.width, node.depth, node.height, pos.screenX, pos.screenY)
+                  const isSelected = selected?.tier === tierIndex && selected?.index === i
+                  const nodeDim = interactive && selected !== null && !isSelected
+                  return (
+                    <TechnicalCallout
+                      key={`tech-label-${i}`}
+                      style={techStyle}
+                      box={wire}
+                      name={node.label}
+                      selected={isSelected}
+                      opacity={nodeDim ? 0.3 : 1}
+                    />
+                  )
+                })}
+
+                {!technical && tierNodes.map((node, i) => {
                   const nodeElevation = tier.elevation + 5
                   const pos = isoToScreen(node.x, node.y, nodeElevation)
                   const box = isoBox(node.width, node.depth, node.height, pos.screenX, pos.screenY, cornerRadius)
@@ -307,7 +401,8 @@ export default function ArcDiagram({ config, options = {}, className, style, onN
                     x={isoToScreen(-25, floorSize.depth / 2, tier.elevation + 15).screenX - 35}
                     y={isoToScreen(-25, floorSize.depth / 2, tier.elevation + 15).screenY}
                     fill={labelColor} fontSize={9} fontWeight={500} fontFamily={MONO_FONT}
-                    opacity={0.6} style={{ letterSpacing: '0.05em' }}>
+                    opacity={technical ? 0.9 : 0.6}
+                    style={{ letterSpacing: '0.05em', textTransform: technical ? 'uppercase' : 'none' }}>
                     {tier.name}
                   </text>
                 )}
@@ -315,7 +410,44 @@ export default function ArcDiagram({ config, options = {}, className, style, onN
             )
           })}
         </g>
+
+        {/* Drafting plate: frame, component index, title block */}
+        {technical && (
+          <TechnicalPlate
+            style={techStyle}
+            plate={plate}
+            rows={nodes
+              .map((node, i) => ({
+                n: componentNumbers.get(i) || i + 1,
+                name: node.label,
+                subtitle: tiers[node.tier]?.name,
+                color: node.color,
+              }))
+              .sort((a, b) => a.n - b.n)}
+            title={config.title}
+            tally={`${String(nodes.length).padStart(2, '0')} CMP / ${String(tiers.length).padStart(2, '0')} TIER`}
+            className=""
+          />
+        )}
       </svg>
     </div>
+  )
+}
+
+/** Floor plane as a drafting outline rather than a filled slab. */
+function TechnicalFloor({ width, depth, elevation, ink, isGround }: {
+  width: number; depth: number; elevation: number; ink: string; isGround?: boolean
+}) {
+  const pos = isoToScreen(0, 0, elevation)
+  const top = isoBox(width, depth, 0, pos.screenX, pos.screenY).top
+  return (
+    <path
+      d={top}
+      fill="none"
+      stroke={ink}
+      strokeWidth={isGround ? 1 : 0.7}
+      strokeDasharray={isGround ? undefined : '5 4'}
+      opacity={isGround ? 0.9 : 0.7}
+    />
   )
 }

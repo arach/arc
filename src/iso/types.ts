@@ -2,6 +2,10 @@
  * Arc Isometric Types
  */
 
+import type { IsoStyleId } from '../utils/isoStyles'
+
+export type { IsoStyleId }
+
 export interface TierConfig {
   name: string
   elevation: number
@@ -37,6 +41,8 @@ export interface DiagramConfig {
   title: string
   description?: string
   theme: 'dark' | 'light'
+  /** Render style: shaded solids, or a technical line-art plate. */
+  style?: IsoStyleId
   canvas: { width: number; height: number }
   origin: { x: number; y: number }
   cornerRadius?: number
