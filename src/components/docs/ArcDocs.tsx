@@ -174,10 +174,8 @@ function useDiagramCodeBlocks(containerRef: React.RefObject<HTMLDivElement | nul
   useEffect(() => {
     if (!containerRef.current) return
 
-    let timer: ReturnType<typeof setTimeout>
-
     // Small delay to ensure markdown is rendered
-    timer = setTimeout(() => {
+    const timer: ReturnType<typeof setTimeout> = setTimeout(() => {
       const found: DiagramCodeBlock[] = []
 
       // Find all code blocks (Dewey wraps them in .dw-code-block or just pre)

@@ -9,17 +9,17 @@ export default function InfiniteGrid({
   viewportBounds, // { x, y, width, height } - visible area in canvas coords
   zoom,
 }) {
-  if (!grid?.enabled) return null
+  const enabled = !!grid?.enabled
+  const { size = 24, color = '#71717a', opacity = 0.1, type = 'dots' } = grid || {}
 
-  const { size = 24, color = '#71717a', opacity = 0.1, type = 'dots' } = grid
-
-  // Calculate the scaled grid size based on zoom
+  // Scaled to the current zoom, and offset so the pattern stays pinned to the
+  // canvas origin rather than the viewport.
   const scaledSize = size * zoom
+  const offsetX = ((viewportBounds?.x || 0) % size) * zoom
+  const offsetY = ((viewportBounds?.y || 0) % size) * zoom
 
-  // Calculate background position offset to align grid with canvas coordinates
-  const offsetX = (viewportBounds.x % size) * zoom
-  const offsetY = (viewportBounds.y % size) * zoom
-
+  // Every hook runs on every render — toggling the grid off must not change
+  // the hook order, or React tears the component down mid-render.
   const style = useMemo(() => {
     const baseStyle: React.CSSProperties = {
       position: 'absolute',
@@ -44,6 +44,8 @@ export default function InfiniteGrid({
       }
     }
   }, [type, color, scaledSize, offsetX, offsetY, opacity])
+
+  if (!enabled) return null
 
   return <div className="infinite-grid" style={style} />
 }

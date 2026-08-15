@@ -109,7 +109,7 @@ function CropPreview({ diagram, cropBounds, onCropChange }: {
     const dy = mouse.y - dragStart.mouse.y
     const { bounds } = dragStart
 
-    let newBounds = { ...bounds }
+    const newBounds = { ...bounds }
 
     if (dragging === 'move') {
       newBounds.x = Math.max(0, Math.min(diagram.layout.width - bounds.width, bounds.x + dx))

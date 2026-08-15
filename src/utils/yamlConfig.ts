@@ -87,7 +87,7 @@ function parseTierLine(str: string): { name: string; elevation: number } | null 
 // Parse node shorthand: "SQL blue 25,25 120x90x34" or with escape hatch
 function parseNodeLine(line: string, tierIndex: number, colorAliases: Record<string, string>): DiagramNode | null {
   // Check for escape hatch: { ... } at end
-  let escapeHatch: Record<string, unknown> = {}
+  const escapeHatch: Record<string, unknown> = {}
   const escapeMatch = line.match(/\{([^}]+)\}\s*$/)
   if (escapeMatch) {
     // Parse escape hatch as key=value pairs
