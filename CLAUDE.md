@@ -23,6 +23,14 @@ bun run preview  # Preview production build
 bun run lint     # Run ESLint
 ```
 
+`lint` covers `.ts`/`.tsx` (via `typescript-eslint`) and ignores build output —
+it used to match only `**/*.{js,jsx}`, so it linted `dist-iso/` and `ds-bundle/`
+and reported 500+ "errors" in minified vendor code while never looking at the
+source. Rules that are advisory rather than correctness
+(`react-refresh/only-export-components`, `react-hooks/set-state-in-effect`,
+`static-components`, `refs`) are **warnings**, so a real error in a run still
+stands out; the reasoning for each is in `eslint.config.js`.
+
 ## Architecture
 
 ### Project Structure
@@ -164,6 +172,40 @@ container, which is right for embeds where the frame is part of the artifact;
 infinite workspace follows the shell skin rather than fighting it — the diagram
 theme still colors the nodes and connectors.
 
+### Canvas Overlays
+
+Four things float over the drawing, and they all have to share one edge:
+
+| Overlay | Home |
+|---------|------|
+| mode badge / pending-connector badge | top-left |
+| minimap (`.arc-canvas-minimap`) | bottom-left |
+| floating toolbar (`.arc-editor-toolbar-dock`) | bottom-centre, draggable |
+| zoom + view mode (`.arc-canvas-dock`) | bottom-right |
+
+Both control clusters live in **one** dock rather than each hard-coding an
+offset from the corner. The view toggle used to sit at a literal `right-44`,
+which is a collision waiting for a density change — every cluster's width
+follows `--arc-ui-scale`. All three bottom clusters now share `--arc-space-5`
+as their offset, so they sit on one baseline at any scale.
+
+`DiagramCanvas`'s root is a **size container** (`.arc-canvas-frame`,
+`container-type: inline-size`), which is what lets the overlays respond to the
+drawing area rather than the window — the markup pane can take two thirds of
+it. Under 680px the minimap hides and the dock moves to the free top-right
+corner; the toolbar alone is ~390px, and all three at the bottom of a split
+view simply overlap. The toolbar clamps itself back inside on drag and on
+window resize (arrow keys nudge the grip, double-click recentres) — dragged
+past an edge there was no way to get it back.
+
+The minimap is styled from the chrome tokens like everything else in the shell.
+It used to be raw `bg-white dark:bg-zinc-900`, which put a cold white box on the
+paper skin.
+
+An empty canvas (no nodes, groups or images) draws a hint instead of nothing —
+File → New used to leave a blank grid with no sign that a node was one keystroke
+away.
+
 ### Chrome Themes
 
 The *skin* of the shell — nav, rail, inspector, canvas backdrop, accents, glow —
@@ -236,12 +278,24 @@ Two formats, deliberately different in kind:
 | `.json` | the document — editable, applied back to the canvas |
 | `.ts` | a generated module for pasting into a repo — read-only |
 
-Edits are debounced 400ms, parsed, shape-checked (`layout`, `nodes`, `nodeData`)
-and dispatched as `diagram/replace`. That action deliberately differs from
+Edits are debounced 400ms, parsed, shape-checked (`validateDiagramShape`) and
+dispatched as `diagram/replace`. That action deliberately differs from
 `diagram/load`: it pushes history (so ⌘Z steps back through markup edits), keeps
 the open filename and `diagramMeta`, and prunes selection to nodes that still
 exist. Parse and validation failures surface in the pane footer and leave the
 diagram untouched.
+
+Two loops have to be broken for a live two-way pane to behave:
+
+- **CodeMirror re-emits the document** whenever `code` changes from outside — a
+  node dragged on the canvas, File → New. `handleChange` ignores a change equal
+  to the current `rendered`; treating it as an edit applied the document back to
+  itself, so every canvas move pushed a history entry and set the dirty flag.
+- **Our own apply comes back round** as new `data`, and the effect that follows
+  the diagram would replace the text under the cursor with the reformatted
+  version mid-keystroke. The panel remembers the source its apply should
+  produce (`echo`) and keeps the draft when that is what arrives; anything else
+  is a canvas edit and wins.
 
 Note for anything else that floats over the canvas: `.arc-editor-canvas > *`
 forces `position: relative`, and unlayered CSS beats a Tailwind utility on a
@@ -323,6 +377,24 @@ style: blueprint
 - **Undo/Redo** - History navigation
 - **Delete** - Remove selected item
 
+### Opening Files
+
+`loadDiagram()` returns `null` for a cancelled dialog and otherwise either
+`{ diagram, filename }` or `{ error }`, so a caller can never mistake a failure
+for an empty diagram — the old shape returned `{ error }` on bad JSON and the
+editor destructured `result.diagram` off it and threw. Every candidate is run
+through **`validateDiagramShape`** (`src/utils/diagramValidation.ts`), shared
+with the markup pane: the canvas reads `layout.width` and iterates `nodes`
+without guarding, so opening any unrelated `.json` used to take the whole view
+down. Both fallback paths matter too — the `<input type=file>` path resolves on
+`cancel`, or the promise (and the caller awaiting it) hangs for the life of the
+page.
+
+Outcomes land in the **status bar**: `ArcEditorSession.say(message, tone)` sets
+a transient notice that `useArcEditorStatus` shows ahead of the node count
+(errors linger 8s, successes 3s). File operations used to fail silently, which
+left the editor looking as though the click had not registered.
+
 ### Canvas
 - **Drag nodes** to reposition
 - **Click node** to select and edit properties
@@ -342,6 +414,16 @@ style: blueprint
 - `Cmd+Shift+Z` - Redo
 - `Cmd+S` - Save
 - `Cmd+N` - New diagram
+
+`useKeyboardShortcuts` stands down inside anything the user is typing in —
+`isTextEntry()` checks `isContentEditable`, the input tags, and
+`.cm-editor` / `[role="textbox"]` ancestry. A tag-name check alone was not
+enough: CodeMirror's editable surface is a contenteditable `<div>`, so the
+single-key mode shortcuts (`v` `h` `n` `c`) were swallowing those letters in the
+markup pane — `preventDefault` stops the insertion — and Delete was removing the
+selected node instead of a character. Two exceptions survive in a text field:
+`⌘S` still saves (otherwise the browser's "save page" dialog takes it), and
+Escape blurs, so a second press reaches the canvas.
 
 ### Zoom Controls
 - **Scroll wheel** - Pan the canvas
@@ -466,6 +548,12 @@ Diagrams are stored as JSON:
 | `/showcase` | Live harness for the player — every prop as a control |
 | `/capture/:sessionId` | PNG screenshot endpoint (Puppeteer middleware) |
 | `/docs` | Documentation |
+| `*` | Not found — an unrouted URL used to render a blank page |
+
+`/player/*` and the catch-all share one dead-end screen (`Dead` in `App.tsx`):
+a sentence saying what happened plus somewhere to go next. A player session
+lives only in the browser that made it, so "not found" there usually means
+"wrong browser", and the copy says so.
 
 ### Player showcase (`/showcase`)
 
@@ -498,9 +586,27 @@ style actually used (in first-use order, with the style's color, width, and
 dash) plus one row per labelled group. It stacks above the minimap when both
 are on. Off by default.
 
+A dense diagram in a short frame can want more rows than there is room for, so
+the key is capped at `calc(100% - bottom - 8px)` and scrolls. Losing the last
+rows to the frame's `overflow: hidden` reads as a rendering fault; a scrollbar
+reads as "there is more".
+
 ## Session Persistence
 
 Diagrams are auto-saved to `localStorage` keyed by session ID (`arc-session-{id}`). Utilities in `src/utils/sessionStorage.ts`.
+
+The write is debounced 1s, so it has to be **flushed** on the way out —
+`ArcEditorSession` keeps the writer in a ref and calls it from the mount
+effect's cleanup and from `pagehide`. Without that, clicking through to the
+player within a second of an edit dropped it. (The flush lives in a
+dependency-free effect on purpose: putting it in the debounce effect's own
+cleanup would fire on every keystroke and defeat the debounce.)
+
+Each write also records the session under `arc-last-session`, which is what the
+rail's Editor button resolves to. Bare `/editor` mints a *new* session, so
+without this, clicking Editor — from the showcase, or from the editor itself,
+where the link was active — quietly abandoned the open diagram. The editor
+passes its own `editorTo`; other surfaces fall back to the remembered one.
 
 **Edit button flow:** Embedded `ArcDiagram` → click Edit → `#data=<base64>` hash → editor parses, saves to localStorage, redirects to `/editor/{id}`.
 
