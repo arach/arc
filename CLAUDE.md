@@ -201,6 +201,10 @@ any panes, and `.arc-shell-main`.
 rendering on the right, toggled from the rail's braces button. The editor
 remembers the toggle in `localStorage` (`arc-editor-markup`).
 
+The pane is resizable by dragging its right edge (double-click the handle to
+reset); the width persists under `arc-markup-width`, clamped to 280px and 68% of
+the viewport so the drawing always keeps a third of the surface.
+
 The editor itself is Hudson's `CodeEditor` from `hudsonkit/controls` — CodeMirror
 6, which brings syntax highlighting and the gutter. Its CodeMirror packages are
 *optional peers* of hudsonkit and must all be installed or the component renders

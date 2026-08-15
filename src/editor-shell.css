@@ -1500,7 +1500,6 @@ body,
   flex: 0 0 auto;
   display: flex;
   flex-direction: column;
-  width: clamp(320px, 36%, 620px);
   min-width: 0;
   height: 100%;
   border-right: 1px solid var(--arc-line-2);
@@ -1603,4 +1602,24 @@ body,
 .arc-markup-foot.is-error {
   color: #c4552f;
   background: color-mix(in srgb, #c4552f 10%, transparent);
+}
+
+/* Drag handle between the markup pane and the drawing */
+.arc-markup-resizer {
+  position: absolute;
+  top: 0;
+  right: -3px;
+  width: 7px;
+  height: 100%;
+  z-index: 5;
+  cursor: col-resize;
+  touch-action: none;
+  background: transparent;
+  transition: background 0.15s ease;
+}
+
+.arc-markup-resizer:hover,
+.arc-markup-resizer:active {
+  background: linear-gradient(90deg, transparent 2px, var(--arc-acc) 2px, var(--arc-acc) 5px, transparent 5px);
+  opacity: 0.55;
 }

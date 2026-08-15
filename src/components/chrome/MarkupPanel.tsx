@@ -15,11 +15,22 @@
 //          parsing arbitrary TypeScript back into a diagram is a different
 //          problem to the one this pane solves
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Check, Copy, X } from 'lucide-react'
 import { CodeEditor } from 'hudsonkit/controls'
 
 export type MarkupFormat = 'ts' | 'json'
+
+const WIDTH_KEY = 'arc-markup-width'
+const MIN_WIDTH = 280
+/** Leave the drawing at least a third of the surface. */
+const MAX_FRACTION = 0.68
+
+function loadWidth(): number {
+  if (typeof window === 'undefined') return 460
+  const stored = Number(window.localStorage.getItem(WIDTH_KEY))
+  return Number.isFinite(stored) && stored >= MIN_WIDTH ? stored : 460
+}
 
 /** TypeScript module — what you paste into a repo. */
 export function toTsSource(data: unknown, name = 'diagram'): string {
@@ -61,6 +72,8 @@ export default function MarkupPanel({ title, data, onApply, onClose }: MarkupPan
   // Text the user is editing; null means "follow the diagram".
   const [draft, setDraft] = useState<string | null>(null)
   const applyTimer = useRef<number | null>(null)
+  const [width, setWidth] = useState(loadWidth)
+  const drag = useRef<{ startX: number; startWidth: number } | null>(null)
 
   const rendered = useMemo(
     () => (format === 'ts' ? toTsSource(data) : JSON.stringify(data, null, 2)),
@@ -82,6 +95,35 @@ export default function MarkupPanel({ title, data, onApply, onClose }: MarkupPan
   }, [onClose])
 
   useEffect(() => () => { if (applyTimer.current) window.clearTimeout(applyTimer.current) }, [])
+
+  // --- resize ---
+
+  const clampWidth = (px: number) =>
+    Math.min(Math.max(px, MIN_WIDTH), Math.round(window.innerWidth * MAX_FRACTION))
+
+  const onResizeStart = useCallback((e: React.PointerEvent) => {
+    e.preventDefault()
+    ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
+    drag.current = { startX: e.clientX, startWidth: width }
+  }, [width])
+
+  const onResizeMove = useCallback((e: React.PointerEvent) => {
+    if (!drag.current) return
+    setWidth(clampWidth(drag.current.startWidth + (e.clientX - drag.current.startX)))
+  }, [])
+
+  const onResizeEnd = useCallback((e: React.PointerEvent) => {
+    if (!drag.current) return
+    drag.current = null
+    ;(e.target as HTMLElement).releasePointerCapture?.(e.pointerId)
+    try { window.localStorage.setItem(WIDTH_KEY, String(width)) } catch { /* private mode */ }
+  }, [width])
+
+  // Double-click the handle to snap back to a readable default.
+  const onResizeReset = useCallback(() => {
+    setWidth(460)
+    try { window.localStorage.setItem(WIDTH_KEY, '460') } catch { /* private mode */ }
+  }, [])
 
   const handleChange = (next: string) => {
     setDraft(next)
@@ -121,7 +163,7 @@ export default function MarkupPanel({ title, data, onApply, onClose }: MarkupPan
         : `${lines} lines · ${format === 'ts' ? 'read-only export' : editable ? 'edit to update the diagram' : 'diagram JSON'}`
 
   return (
-    <aside className="arc-markup-pane" aria-label="Diagram markup">
+    <aside className="arc-markup-pane" style={{ width }} aria-label="Diagram markup">
       <div className="arc-markup-head">
         <span className="arc-markup-title">{title}</span>
         <div className="arc-markup-formats">
@@ -161,6 +203,18 @@ export default function MarkupPanel({ title, data, onApply, onClose }: MarkupPan
       </div>
 
       <div className={`arc-markup-foot${status.kind === 'error' ? ' is-error' : ''}`}>{footer}</div>
+
+      <div
+        className="arc-markup-resizer"
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Resize markup pane"
+        onPointerDown={onResizeStart}
+        onPointerMove={onResizeMove}
+        onPointerUp={onResizeEnd}
+        onPointerCancel={onResizeEnd}
+        onDoubleClick={onResizeReset}
+      />
     </aside>
   )
 }
