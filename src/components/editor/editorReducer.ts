@@ -33,6 +33,7 @@ export const initialState = {
     template: DEFAULT_TEMPLATE, // Current style template
     zoom: 1, // Zoom level (0.5 to 2)
     viewMode: '2d', // '2d' | 'isometric'
+    isoStyle: 'solid', // 'solid' | 'blueprint' | 'cyanotype' (isometric render style)
     themeId: 'command', // Arc diagram theme (command = HUD console default)
     colorMode: 'dark', // 'light' | 'dark'
   },
@@ -805,6 +806,24 @@ export function editorReducer(state, action) {
         editor: {
           ...state.editor,
           viewMode: action.viewMode,
+        },
+        meta: {
+          ...state.meta,
+          diagramMeta: { ...state.meta.diagramMeta, viewMode: action.viewMode },
+        },
+      }
+
+    case 'isoStyle/set':
+      return {
+        ...state,
+        editor: {
+          ...state.editor,
+          isoStyle: action.isoStyle,
+        },
+        meta: {
+          ...state.meta,
+          isDirty: true,
+          diagramMeta: { ...state.meta.diagramMeta, isoStyle: action.isoStyle },
         },
       }
 

@@ -33,6 +33,7 @@ interface DiagramConfig {
   title: string
   description: string
   theme: 'dark' | 'light'
+  style?: 'solid' | 'blueprint' | 'cyanotype'
   canvas: { width: number; height: number }
   origin: { x: number; y: number }
   cornerRadius?: number
@@ -299,6 +300,7 @@ export function parseYamlConfig(yamlStr: string): DiagramConfig {
 
   return {
     title: raw.title as string || 'Untitled',
+    style: (raw.style as DiagramConfig['style']) || undefined,
     description: raw.description as string || '',
     theme,
     canvas,
@@ -320,6 +322,7 @@ export function configToYaml(config: DiagramConfig): string {
   lines.push(`title: ${config.title}`)
   if (config.description) lines.push(`description: ${config.description}`)
   lines.push(`theme: ${config.theme}`)
+  if (config.style && config.style !== 'solid') lines.push(`style: ${config.style}`)
   lines.push(`canvas: ${config.canvas.width}x${config.canvas.height}`)
   lines.push(`floor: ${config.floorSize.width}x${config.floorSize.depth}`)
   if (config.cornerRadius) lines.push(`corner: ${config.cornerRadius}`)

@@ -1,6 +1,6 @@
 import { useRef, useCallback, useState, useEffect } from 'react'
 // @ts-ignore - JS module, will migrate later
-import { useEditor, useDiagram, useEditorState, useTemplate, useViewMode, useResolvedTheme, useResolvedBrand } from './EditorProvider'
+import { useEditor, useDiagram, useEditorState, useTemplate, useViewMode, useIsoStyle, useMeta, useResolvedTheme, useResolvedBrand } from './EditorProvider'
 // @ts-ignore - JS module
 import { NODE_SIZES } from '../../utils/constants'
 // @ts-ignore - JS module
@@ -29,11 +29,16 @@ import ViewModeToggle from './ViewModeToggle'
 import { getTheme } from '../../utils/themes'
 import IsometricNodeLayer from './IsometricNodeLayer'
 import IsometricConnectorLayer from './IsometricConnectorLayer'
+import TechnicalBackdrop from '../technical/TechnicalBackdrop'
+import TechnicalPlate from '../technical/TechnicalPlate'
+import { getIsoStyle } from '../../utils/isoStyles'
+import { isoContentBounds, isoPlateBounds, buildNodeIndex } from '../../utils/isoBlueprint'
 import type { EmbedConfig, ZoomConfig } from '../../types/editor'
 
 // Default embed configuration
 const DEFAULT_EMBED_CONFIG: Required<EmbedConfig> = {
   defaultViewMode: '2d',
+  defaultIsoStyle: 'solid',
   enableViewModeToggle: false,
   enableZoom: true,
   enablePan: true,
@@ -59,6 +64,9 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
   const editor = useEditorState()
   const templateId = useTemplate()
   const viewMode = useViewMode()
+  const isoStyleId = useIsoStyle()
+  const isoStyle = getIsoStyle(isoStyleId)
+  const meta = useMeta()
   const template = getTemplate(templateId)
   const themeColors = useResolvedTheme()
   const brand = useResolvedBrand()
@@ -79,6 +87,7 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
     zoomOut,
     resetTransform,
     fitToView,
+    fitToRect,
     setPan,
     screenToCanvas,
     transformStyle,
@@ -92,63 +101,68 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
   })
 
   const canvasRef = useRef<HTMLDivElement>(null)
-  const prevViewModeRef = useRef(viewMode)
+  const prevViewModeRef = useRef<string | null>(null)
+  const prevIsoStyleRef = useRef(isoStyleId)
 
-  // When switching to isometric mode, pan to where the content actually renders
+  // Embed-time view defaults, applied once. A diagram's own _meta wins: the
+  // provider has already seeded state from it before this runs.
+  const appliedEmbedDefaults = useRef(false)
   useEffect(() => {
-    if (prevViewModeRef.current !== viewMode) {
-      prevViewModeRef.current = viewMode
-
-      if (viewMode === 'isometric' && containerRef.current) {
-        // Calculate where isometric content will render
-        // Origin is at (layout.width/2, layout.height - 100)
-        const originX = diagram.layout.width / 2
-        const originY = diagram.layout.height - 100
-
-        // Find bounds of all nodes in isometric screen space
-        const nodeIds = Object.keys(diagram.nodes)
-        if (nodeIds.length > 0) {
-          let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
-
-          // Import isoToScreen calculation inline to find where content renders
-          const COS_30 = 0.866
-          const SIN_30 = 0.5
-
-          for (const nodeId of nodeIds) {
-            const node = diagram.nodes[nodeId]
-            if (!node) continue
-            const z = node.z || 0
-            const isoHeight = node.isoHeight || 25
-
-            // Calculate screen position for this node
-            const screenX = originX + (node.x - node.y) * COS_30
-            const screenY = originY - (node.x + node.y) * SIN_30 - z - isoHeight
-
-            minX = Math.min(minX, screenX - 50)
-            maxX = Math.max(maxX, screenX + 50)
-            minY = Math.min(minY, screenY - 20)
-            maxY = Math.max(maxY, screenY + 50)
-          }
-
-          // Calculate center of isometric content
-          const contentCenterX = (minX + maxX) / 2
-          const contentCenterY = (minY + maxY) / 2
-
-          // Get container size
-          const rect = containerRef.current.getBoundingClientRect()
-
-          // Pan so content is centered in the viewport
-          const panX = rect.width / 2 - contentCenterX
-          const panY = rect.height / 2 - contentCenterY
-
-          setPan({ x: panX, y: panY })
-        }
-      } else if (viewMode === '2d') {
-        // Reset to normal view when going back to 2D
-        resetTransform()
-      }
+    if (appliedEmbedDefaults.current) return
+    appliedEmbedDefaults.current = true
+    if (embedConfig?.defaultViewMode && embedConfig.defaultViewMode !== viewMode) {
+      actions.setViewMode(embedConfig.defaultViewMode)
     }
-  }, [viewMode, diagram.nodes, diagram.layout, containerRef, setPan, resetTransform])
+    if (embedConfig?.defaultIsoStyle && embedConfig.defaultIsoStyle !== isoStyleId) {
+      actions.setIsoStyle(embedConfig.defaultIsoStyle)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // What the isometric view should frame: the boxes themselves, or — for the
+  // technical styles — the whole plate, so the frame, component index, and
+  // title block sit inside the viewport too.
+  const isoOrigin = { x: diagram.layout.width / 2, y: diagram.layout.height - 100 }
+  const getIsoBounds = useCallback(() => {
+    if (isoStyle.technical) {
+      return isoPlateBounds(diagram.nodes, diagram.nodeData, isoOrigin.x, isoOrigin.y, diagram.layout)
+    }
+    const bounds = isoContentBounds(diagram.nodes, diagram.nodeData, isoOrigin.x, isoOrigin.y)
+    if (!bounds) return null
+    const pad = 60
+    return {
+      minX: bounds.minX - pad,
+      minY: bounds.minY - pad,
+      maxX: bounds.maxX + pad,
+      maxY: bounds.maxY + pad,
+    }
+  }, [isoStyle.technical, diagram.nodes, diagram.nodeData, diagram.layout, isoOrigin.x, isoOrigin.y])
+
+  // Centre the isometric view when entering it, or when the style change moves
+  // what counts as the drawing's extent.
+  useEffect(() => {
+    const isFirstRun = prevViewModeRef.current === null
+    const viewModeChanged = prevViewModeRef.current !== viewMode
+    const isoStyleChanged = prevIsoStyleRef.current !== isoStyleId
+    if (!viewModeChanged && !isoStyleChanged) return
+    prevViewModeRef.current = viewMode
+    prevIsoStyleRef.current = isoStyleId
+
+    if (viewMode === 'isometric' && containerRef.current) {
+      const bounds = getIsoBounds()
+      if (!bounds) return
+      const rect = containerRef.current.getBoundingClientRect()
+      // The canvas is transformed as translate(pan) scale(zoom), so a canvas
+      // point p lands at pan + p·zoom — the pan has to account for the zoom.
+      setPan({
+        x: rect.width / 2 - ((bounds.minX + bounds.maxX) / 2) * zoom,
+        y: rect.height / 2 - ((bounds.minY + bounds.maxY) / 2) * zoom,
+      })
+    } else if (viewMode === '2d' && viewModeChanged && !isFirstRun) {
+      // Reset to normal view when going back to 2D
+      resetTransform()
+    }
+  }, [viewMode, isoStyleId, zoom, getIsoBounds, containerRef, setPan, resetTransform])
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent, nodeId: string) => {
@@ -668,8 +682,14 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
         onDrop={handleDrop}
         onDragOver={handleDragOver}
       >
+        {/* Paper fills the whole canvas for the technical isometric styles;
+            its graph grid is pinned to the panned/zoomed drawing. */}
+        {viewMode === 'isometric' && isoStyle.technical && (
+          <TechnicalBackdrop style={isoStyle} pan={pan} zoom={zoom} />
+        )}
+
         {/* Infinite grid - fills entire viewport */}
-        {config.showGrid && (
+        {config.showGrid && !(viewMode === 'isometric' && isoStyle.technical) && (
           <InfiniteGrid
             grid={diagram.grid}
             viewportBounds={viewportBounds}
@@ -821,6 +841,30 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
               </>
             ) : (
               <>
+                {/* Drafting plate: frame, component index, title block */}
+                {isoStyle.technical && (
+                  <TechnicalPlate
+                    style={isoStyle}
+                    plate={isoPlateBounds(
+                      diagram.nodes,
+                      diagram.nodeData,
+                      isoOrigin.x,
+                      isoOrigin.y,
+                      diagram.layout
+                    )}
+                    rows={Object.entries(buildNodeIndex(diagram.nodes, diagram.nodeData))
+                      .sort(([, a], [, b]) => (a as number) - (b as number))
+                      .map(([nodeId, n]) => ({
+                        n: n as number,
+                        name: diagram.nodeData[nodeId]?.name || nodeId,
+                        subtitle: diagram.nodeData[nodeId]?.subtitle,
+                        color: diagram.nodeData[nodeId]?.color,
+                      }))}
+                    title={(meta.diagramMeta as { title?: string })?.title || meta.filename || undefined}
+                    tally={`${String(Object.keys(diagram.nodeData || {}).length).padStart(2, '0')} CMP / ${String(diagram.connectors.length).padStart(2, '0')} LNK`}
+                  />
+                )}
+
                 {/* Isometric Connectors */}
                 <IsometricConnectorLayer
                   nodes={diagram.nodes}
@@ -831,6 +875,7 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
                   onConnectorClick={handleConnectorClick}
                   originX={diagram.layout.width / 2}
                   originY={diagram.layout.height - 100}
+                  isoStyle={isoStyle}
                 />
 
                 {/* Isometric Nodes */}
@@ -842,6 +887,7 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
                   onNodePointerDown={handlePointerDown}
                   originX={diagram.layout.width / 2}
                   originY={diagram.layout.height - 100}
+                  isoStyle={isoStyle}
                 />
               </>
             )}
@@ -882,7 +928,11 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
           onZoomOut={() => zoomOut()}
           onZoomChange={(newZoom) => setZoom(newZoom)}
           onReset={resetTransform}
-          onFitToView={() => fitToView(diagram.layout)}
+          onFitToView={() => {
+            const bounds = viewMode === 'isometric' ? getIsoBounds() : null
+            if (bounds) fitToRect(bounds)
+            else fitToView(diagram.layout)
+          }}
         />
       )}
 
@@ -891,6 +941,8 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
         <ViewModeToggle
           viewMode={viewMode as '2d' | 'isometric'}
           onViewModeChange={actions.setViewMode}
+          isoStyle={isoStyle.id}
+          onIsoStyleChange={actions.setIsoStyle}
         />
       )}
 

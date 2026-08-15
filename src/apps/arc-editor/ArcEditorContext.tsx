@@ -136,6 +136,8 @@ function ArcEditorSession({
       actions.loadDiagram(diagramData, result.filename)
       if (diagramMeta.themeId) actions.setTheme(diagramMeta.themeId)
       if (diagramMeta.colorMode) actions.setColorMode(diagramMeta.colorMode)
+      if (diagramMeta.isoStyle) actions.setIsoStyle(diagramMeta.isoStyle)
+      if (diagramMeta.viewMode) actions.setViewMode(diagramMeta.viewMode)
       if (Object.keys(diagramMeta).length > 0) actions.setDiagramMeta(diagramMeta)
     }
   }, [meta.isDirty, actions])

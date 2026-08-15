@@ -26,7 +26,13 @@ export function EditorProvider({ children, initialDiagram, initialThemeId = DEFA
       const meta = initialDiagramMeta || { themeId: initialThemeId, colorMode: initialColorMode }
       return {
         ...base,
-        editor: { ...base.editor, themeId: initialThemeId, colorMode: initialColorMode },
+        editor: {
+          ...base.editor,
+          themeId: initialThemeId,
+          colorMode: initialColorMode,
+          isoStyle: meta.isoStyle || base.editor.isoStyle,
+          viewMode: meta.viewMode || base.editor.viewMode,
+        },
         meta: { ...base.meta, diagramMeta: meta },
       }
     })()
@@ -213,6 +219,10 @@ export function EditorProvider({ children, initialDiagram, initialThemeId = DEFA
       dispatch({ type: 'viewMode/set', viewMode })
     }, []),
 
+    setIsoStyle: useCallback((isoStyle: string) => {
+      dispatch({ type: 'isoStyle/set', isoStyle })
+    }, []),
+
     // Theme & color mode
     setTheme: useCallback((themeId: string | null) => {
       dispatch({ type: 'theme/set', themeId })
@@ -271,6 +281,11 @@ export function useTemplate() {
 export function useViewMode() {
   const { state } = useEditor()
   return state.editor.viewMode
+}
+
+export function useIsoStyle() {
+  const { state } = useEditor()
+  return state.editor.isoStyle
 }
 
 export function useThemeId() {

@@ -1,3 +1,5 @@
+import type { IsoStyleId } from '../utils/isoStyles'
+
 export interface Point {
   x: number
   y: number
@@ -29,10 +31,14 @@ export type EditorMode = 'select' | 'addNode' | 'addConnector' | 'addGroup' | 'p
 
 export type ViewMode = '2d' | 'isometric'
 
+// Isometric render style ('solid' shading vs technical line-art plates)
+export type { IsoStyleId }
+
 // Embed-time configuration for controlling canvas features
 export interface EmbedConfig {
   // View mode
   defaultViewMode?: ViewMode       // '2d' | 'isometric', defaults to '2d'
+  defaultIsoStyle?: IsoStyleId     // 'solid' | 'blueprint' | 'cyanotype', defaults to 'solid'
   enableViewModeToggle?: boolean   // Show toggle between 2D/ISO, defaults to false
 
   // Interaction controls
@@ -129,12 +135,15 @@ export interface EditorState {
   pan: Point
   isPanning: boolean
   viewMode: ViewMode  // '2d' | 'isometric'
+  isoStyle: IsoStyleId         // Isometric render style: 'solid' | 'blueprint' | 'cyanotype'
   themeId: string | null       // Arc theme override (null = use template defaults)
   colorMode: 'light' | 'dark'  // Light/dark appearance
 }
 
 export interface DiagramMeta {
   themeId?: string | null
+  isoStyle?: IsoStyleId
+  viewMode?: ViewMode
   colorMode?: 'light' | 'dark'
   viewport?: { width: number; height: number }
   sourceUrl?: string  // e.g. 'operate/control-plane' — where this diagram came from
