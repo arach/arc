@@ -440,12 +440,21 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
     }
   }, [containerRef])
 
-  // Initial size measurement
+  // Observe the element, not the window: the markup pane opening, closing or
+  // being dragged changes the drawing area without a window resize, and a stale
+  // size throws off the minimap viewport and every fit calculation.
   useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
     updateContainerSize()
-    window.addEventListener('resize', updateContainerSize)
-    return () => window.removeEventListener('resize', updateContainerSize)
-  }, [updateContainerSize])
+    if (typeof ResizeObserver === 'undefined') {
+      window.addEventListener('resize', updateContainerSize)
+      return () => window.removeEventListener('resize', updateContainerSize)
+    }
+    const observer = new ResizeObserver(updateContainerSize)
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [updateContainerSize, containerRef])
 
   const viewportBounds = {
     x: -pan.x / zoom,
@@ -658,13 +667,20 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
   }
 
   const modeLabel = getModeLabel()
+  // Below this the minimap, the toolbar and the controls all want the same
+  // edge. Measured rather than asked for with a CSS container query: making
+  // this element a container root stops the browser invalidating paint inside
+  // it when a chrome token changes, so the canvas kept the old skin until
+  // something forced a repaint.
+  const isNarrow = containerSize.width > 0 && containerSize.width < 680
+
   const isEmpty =
     Object.keys(diagram.nodes || {}).length === 0 &&
     (diagram.groups || []).length === 0 &&
     (diagram.images || []).length === 0
 
   return (
-    <div className="arc-canvas-frame relative w-full h-full">
+    <div className={`arc-canvas-frame relative w-full h-full${isNarrow ? ' is-narrow' : ''}`}>
       {/* Transform container - handles wheel/pan events */}
       <div
         ref={containerRef}

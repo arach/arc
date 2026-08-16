@@ -771,25 +771,24 @@ body,
   z-index: 15;
 }
 
-/* Sized-container root, so the overlays below can respond to the drawing area
-   rather than the window — the markup pane can take two thirds of it. */
-.arc-canvas-frame {
-  container-type: inline-size;
+/* Narrow drawing area — `.is-narrow` is set by DiagramCanvas from a measured
+   width, deliberately NOT by a CSS container query. `container-type` makes this
+   element a containment root, and the browser then misses paint invalidation
+   inside it when a chrome token changes on an ancestor: switching light/dark or
+   changing skin left the canvas and its controls painted in the old theme until
+   something else forced a repaint.
+
+   Below this width the minimap, the floating toolbar and the canvas controls
+   are all fighting for the same edge — the toolbar alone is ~390px. The minimap
+   is the one you can do without, and the controls take the free top-right
+   corner rather than sit under the toolbar. */
+.arc-canvas-frame.is-narrow .arc-canvas-minimap {
+  display: none;
 }
 
-/* Below this the minimap, the floating toolbar and the canvas controls are all
-   fighting for the same edge — the toolbar alone is ~390px. The minimap is the
-   one you can do without, and the controls move to the free top-right corner
-   rather than sit under the toolbar. */
-@container (max-width: 680px) {
-  .arc-canvas-minimap {
-    display: none;
-  }
-
-  .arc-canvas-dock {
-    top: var(--arc-space-5);
-    bottom: auto;
-  }
+.arc-canvas-frame.is-narrow .arc-canvas-dock {
+  top: var(--arc-space-5);
+  bottom: auto;
 }
 
 .arc-canvas-minimap {
@@ -1135,6 +1134,51 @@ body,
   box-shadow: none;
   outline: 2px solid var(--arc-acc-soft);
   outline-offset: 1px;
+}
+
+/* Node shape picker — silhouettes, not labels; the shape is the label. */
+.arc-insp-shape-row {
+  display: flex;
+  gap: var(--arc-space-2);
+}
+
+.arc-insp-shape {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--arc-ctl-h);
+  padding: 0;
+  border: 1px solid var(--arc-line);
+  border-radius: var(--arc-radius);
+  background: var(--arc-surface-muted);
+  color: var(--arc-muted);
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.arc-insp-shape svg {
+  width: calc(var(--arc-icon) * 1.5);
+  height: auto;
+}
+
+.arc-insp-shape:hover {
+  color: var(--arc-ink);
+  border-color: var(--arc-line-2);
+}
+
+/* What the theme is already drawing — present, but not a choice you made. */
+.arc-insp-shape.is-inherited {
+  color: var(--arc-ink-2);
+  border-style: dashed;
+  border-color: var(--arc-edge);
+}
+
+.arc-insp-shape.is-selected {
+  color: #fff;
+  background: color-mix(in srgb, var(--arc-acc) 88%, #000);
+  border-color: var(--arc-edge);
+  box-shadow: 0 0 10px -4px var(--arc-glow);
 }
 
 .arc-insp-icon-grid {
