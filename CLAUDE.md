@@ -117,6 +117,23 @@ Current assignment: engineering `square` + `ticks`, workbench `rule`,
 tactical `notch` + `stripe`, command `chamfer` + `dot`, mono `square` + `rule`,
 warm `bar-left`, cool `dot`, default plain.
 
+**Per-node override.** Shape is normally the theme's business — it is part of
+what makes `engineering` look unlike `command` — but one box sometimes needs to
+read differently from its neighbours, so `nodeData.shape` overrides it:
+
+```json
+{ "nodeData": { "queue": { "name": "Queue", "shape": "pill" } } }
+```
+
+The inspector offers it as five silhouettes (`ShapePicker`), with the theme's
+own shape marked as inherited rather than leaving the row blank, and a "Follow
+the theme" link once a node has been overridden. Clearing it *deletes* the key —
+`node/update` treats an update to `undefined` as a removal, so an override
+leaves no trace in the saved document.
+
+An override has to carry its radius with it (`radiusForShape`): a `pill` that
+kept a square theme's `0px` radius would still come out square.
+
 Three things to know before adding a cut shape:
 
 - A clipped element clips its **border** and its **box-shadow** too. Cut shapes
@@ -189,14 +206,22 @@ which is a collision waiting for a density change — every cluster's width
 follows `--arc-ui-scale`. All three bottom clusters now share `--arc-space-5`
 as their offset, so they sit on one baseline at any scale.
 
-`DiagramCanvas`'s root is a **size container** (`.arc-canvas-frame`,
-`container-type: inline-size`), which is what lets the overlays respond to the
-drawing area rather than the window — the markup pane can take two thirds of
-it. Under 680px the minimap hides and the dock moves to the free top-right
-corner; the toolbar alone is ~390px, and all three at the bottom of a split
-view simply overlap. The toolbar clamps itself back inside on drag and on
-window resize (arrow keys nudge the grip, double-click recentres) — dragged
-past an edge there was no way to get it back.
+The overlays respond to the **drawing area**, not the window — the markup pane
+can take two thirds of it. Under 680px the minimap hides and the dock moves to
+the free top-right corner; the toolbar alone is ~390px, and all three at the
+bottom of a split view simply overlap. The toolbar clamps itself back inside on
+drag and on window resize (arrow keys nudge the grip, double-click recentres) —
+dragged past an edge there was no way to get it back.
+
+**Do not make `.arc-canvas-frame` a CSS container to do this.** It is measured
+in JS instead (a `ResizeObserver` on the transform container sets `.is-narrow`),
+because `container-type` makes the element a containment root and the browser
+then misses paint invalidation inside it when a chrome token changes on an
+ancestor: switching light/dark or changing skin left the canvas and its controls
+painted in the old theme until a view change or a reload forced a repaint. The
+observer is worth having on its own — `containerSize` used to follow only
+`window.resize`, so opening the markup pane left the minimap viewport and every
+fit calculation working from a stale width.
 
 The minimap is styled from the chrome tokens like everything else in the shell.
 It used to be raw `bg-white dark:bg-zinc-900`, which put a cold white box on the
@@ -341,8 +366,22 @@ node/connector model.
 - Connectors become straight dotted runs with open chevron arrowheads
 - `DETAIL_SCALE` in `isoStyles.ts` is one dial for all annotation sizing
 
-**Choosing a style.** In the editor, the ruler button in the canvas controls
-cycles them (isometric view only). Declaratively:
+**Choosing a style.** The canvas controls offer three *destinations*, each one
+click from either of the others:
+
+| Button | Goes to |
+|--------|---------|
+| layers | 2D |
+| box | isometric, `solid` |
+| ruler | isometric, technical plate — clicking again swaps the ink |
+
+The ruler used to be a style cycler that only worked once you were already in
+the isometric view, so reaching a plate from 2D took two clicks through a button
+whose label gave no hint of that. `TECHNICAL_STYLE_ORDER` / `nextTechnicalStyle`
+are the cycle *within* that destination; `nextIsoStyle` (all three) is still
+exported for callers that want the old behaviour.
+
+Declaratively:
 
 ```json
 { "_meta": { "viewMode": "isometric", "isoStyle": "blueprint" } }
