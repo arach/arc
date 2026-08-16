@@ -130,6 +130,25 @@ export function nextIsoStyle(id: string | null | undefined): IsoStyleId {
 }
 
 /**
+ * The line-art plates, in the order the view toggle cycles them.
+ *
+ * The toggle treats "technical plate" as a destination of its own rather than a
+ * style you can only reach once you are already in the isometric view — so this
+ * is the cycle *within* that destination, not across all three styles.
+ */
+export const TECHNICAL_STYLE_ORDER: IsoStyleId[] = ISO_STYLE_ORDER.filter(id => ISO_STYLES[id].technical)
+
+/** The plate to show when arriving at the technical view from elsewhere. */
+export const DEFAULT_TECHNICAL_STYLE: IsoStyleId = TECHNICAL_STYLE_ORDER[0]
+
+/** Next plate ink. Anything non-technical enters at the default plate. */
+export function nextTechnicalStyle(id: string | null | undefined): IsoStyleId {
+  const i = TECHNICAL_STYLE_ORDER.indexOf(id as IsoStyleId)
+  if (i === -1) return DEFAULT_TECHNICAL_STYLE
+  return TECHNICAL_STYLE_ORDER[(i + 1) % TECHNICAL_STYLE_ORDER.length]
+}
+
+/**
  * Material key per logical color. Technical plates are monochrome, so a node's
  * color becomes a hatch signature instead of a hue — the way a printed manual
  * distinguishes materials.
