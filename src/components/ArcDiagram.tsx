@@ -4,8 +4,10 @@ import * as LucideIcons from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { getTheme, resolveNodeRadius, type ThemeId, type Theme, type BrandSpec } from '../utils/themes'
 import {
+  radiusForShape,
   resolveNodeDecor,
   resolveNodeShape,
+  type NodeShape,
   shapeClipPath,
   shapeCut,
   shapeOutlinePath,
@@ -33,6 +35,8 @@ export interface NodeData {
   subtitle?: string
   description?: string
   color: DiagramColor
+  /** Per-node silhouette. Omit to follow the theme's own node shape. */
+  shape?: NodeShape
 }
 
 export interface Connector {
@@ -441,10 +445,13 @@ export function Node({ node, data, mode, themeColors, brand, hovered, dimmed, li
   const isLarge = node.size === 'l'
   const isSmall = node.size === 's'
   const isLight = mode === 'light'
-  const nodeRadius = resolveNodeRadius(brand)
+  const themeRadius = resolveNodeRadius(brand)
   const shellOpacity = brand?.nodeOpacity ?? 1
 
-  const shape = resolveNodeShape(brand?.nodeShape, nodeRadius)
+  // A node can override the theme's silhouette; the radius has to follow it,
+  // or a pill in a square theme still comes out square.
+  const shape = resolveNodeShape(data.shape || brand?.nodeShape, themeRadius)
+  const nodeRadius = data.shape ? radiusForShape(shape, themeRadius) : themeRadius
   const decor = resolveNodeDecor(brand?.nodeDecor, brand?.accentBar)
   const cut = shapeCut(node.size)
   const clipPath = shapeClipPath(shape, cut)

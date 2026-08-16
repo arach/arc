@@ -162,13 +162,20 @@ export function editorReducer(state, action) {
     case 'node/update': {
       const { nodeId, updates } = action
       const stateWithHistory = saveToHistory(state)
+      // An update to `undefined` clears the field rather than recording it as
+      // present-but-empty — "follow the theme" has to leave no trace in the
+      // saved document, not a `"shape": undefined` that JSON quietly drops.
+      const next = { ...stateWithHistory.diagram.nodeData[nodeId], ...updates }
+      for (const key of Object.keys(updates)) {
+        if (updates[key] === undefined) delete next[key]
+      }
       return {
         ...stateWithHistory,
         diagram: {
           ...stateWithHistory.diagram,
           nodeData: {
             ...stateWithHistory.diagram.nodeData,
-            [nodeId]: { ...stateWithHistory.diagram.nodeData[nodeId], ...updates },
+            [nodeId]: next,
           },
         },
       }

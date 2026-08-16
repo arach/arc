@@ -87,6 +87,35 @@ export function shapeOutlinePath(shape: NodeShape, w: number, h: number, cut: nu
   }
 }
 
+/** Every silhouette, in the order the inspector offers them. */
+export const NODE_SHAPES: { id: NodeShape; label: string }[] = [
+  { id: 'rounded', label: 'Rounded' },
+  { id: 'square', label: 'Square' },
+  { id: 'pill', label: 'Pill' },
+  { id: 'chamfer', label: 'Chamfer' },
+  { id: 'notch', label: 'Notch' },
+]
+
+/**
+ * The corner radius a silhouette implies.
+ *
+ * A node that overrides its shape cannot keep the theme's radius — a `pill`
+ * inside a square theme would come out square. The theme's radius is only
+ * honoured for `rounded`, which is the one shape that has a radius to vary.
+ */
+export function radiusForShape(shape: NodeShape, themeRadius?: string): string | undefined {
+  switch (shape) {
+    case 'square':
+    case 'chamfer':
+    case 'notch':
+      return '0px'
+    case 'pill':
+      return '9999px'
+    default:
+      return themeRadius && themeRadius !== '0px' && themeRadius !== '9999px' ? themeRadius : '12px'
+  }
+}
+
 /** Resolve the silhouette from the brand spec, falling back to the radius. */
 export function resolveNodeShape(shape?: string, radius?: string): NodeShape {
   if (shape === 'square' || shape === 'chamfer' || shape === 'notch' || shape === 'pill' || shape === 'rounded') {

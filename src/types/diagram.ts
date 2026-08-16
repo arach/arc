@@ -1,6 +1,10 @@
 // Arc Diagram Types
 // Shared format for Arc editor and consumers (Talkie docs, etc.)
 
+import type { NodeShape } from '../utils/nodeShape'
+
+export type { NodeShape }
+
 export type NodeSize = 'xs' | 's' | 'm' | 'l'
 
 export type AnchorPosition =
@@ -23,6 +27,8 @@ export interface NodeData {
   subtitle?: string
   description?: string
   color: DiagramColor
+  /** Per-node silhouette. Omit to follow the theme's own node shape. */
+  shape?: NodeShape
 }
 
 export interface Connector {
