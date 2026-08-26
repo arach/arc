@@ -116,5 +116,4 @@ See `docs/prompts/`:
 
 ## MCP
 
-Available as `@arach/arc-mcp` (`packages/mcp/`). See `docs/agent/mcp.agent.md` for
-Cursor/Claude Desktop config and tool reference.
+Available via the `arc-mcp` bin on `@arach/arc`. See `docs/agent/mcp.agent.md`.

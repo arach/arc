@@ -1,3 +1,8 @@
+/**
+ * Arc MCP server — stdio tools for diagram authoring.
+ * Run locally: `bun scripts/mcp/server.ts` or `bun run mcp`
+ * Published bin: `bin/arc-mcp.mjs` (built via `bun run build:mcp`)
+ */
 import { readFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -8,15 +13,14 @@ import { z } from 'zod'
 import {
   autoLayout,
   createAutoLayout,
-  renderAscii,
-  validateDiagramShape,
-  isDiagramShape,
-  toTypeScriptSource,
-  type ArcDiagramData,
-  type ArcDiagram,
-} from './arc.js'
+} from '../../src/utils/autoLayout.ts'
+import { renderAscii } from '../../src/utils/asciiRenderer.ts'
+import { validateDiagramShape, isDiagramShape } from '../../src/utils/diagramValidation.ts'
+import { toTypeScriptSource } from '../../src/types/diagram.ts'
+import type { ArcDiagram, ArcDiagramData } from '../../src/types/diagram.ts'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
+const REPO_ROOT = join(__dirname, '..', '..')
 
 const diagramSchema = z.record(z.unknown())
 
@@ -40,15 +44,13 @@ function generateSessionId(): string {
 }
 
 async function readRepoFile(...segments: string[]): Promise<string> {
-  // dist/server.js → packages/mcp/dist; repo root is three levels up
-  const root = join(__dirname, '..', '..', '..')
-  return readFile(join(root, ...segments), 'utf8')
+  return readFile(join(REPO_ROOT, ...segments), 'utf8')
 }
 
 export function createArcMcpServer(): McpServer {
   const server = new McpServer({
     name: 'arc',
-    version: '0.1.0',
+    version: '0.5.0',
   })
 
   server.tool(
@@ -167,7 +169,7 @@ export function createArcMcpServer(): McpServer {
 
   server.tool(
     'editor_handoff',
-    'Build URLs to open a diagram in the Arc studio. Returns a hash-based editor URL and optional showcase link.',
+    'Build URLs to open a diagram in the Arc studio. Returns a hash-based editor URL and showcase link.',
     {
       diagram: diagramSchema.describe('Valid ArcDiagramData JSON'),
       sessionId: z.string().optional().describe('Session id (generated if omitted)'),
@@ -241,4 +243,11 @@ export async function runArcMcpServer(): Promise<void> {
   const server = createArcMcpServer()
   const transport = new StdioServerTransport()
   await server.connect(transport)
+}
+
+if (import.meta.main) {
+  runArcMcpServer().catch((err) => {
+    console.error('arc-mcp failed:', err)
+    process.exit(1)
+  })
 }

@@ -1,20 +1,22 @@
 # MCP Server — Agent Context
 
-## Status: Shipped (`@arach/arc-mcp`)
+## Status: Shipped (`arc-mcp` bin on `@arach/arc`)
 
-Arc includes a stdio MCP server at `packages/mcp/`. It exposes diagram tools
-agents can call without reading the whole repo.
+The MCP server is part of the main authoring package — same family as `arc-ascii`
+and the dev studio. It is **not** a separate npm package.
 
-## Install & Run
+## Run
 
 ```bash
-# from repo root
-cd packages/mcp && bun install && bun run build
-bun run start          # stdio MCP server
+# local dev (from repo)
+bun run mcp
 
-# or from root
-bun run build:mcp
+# published bin (after build:mcp)
+arc-mcp
+npx @arach/arc arc-mcp   # if invoked via package bin
 ```
+
+Build the bundled bin: `bun run build:mcp` → `bin/arc-mcp.mjs`
 
 ## Cursor / Claude Desktop Config
 
@@ -23,7 +25,7 @@ bun run build:mcp
   "mcpServers": {
     "arc": {
       "command": "node",
-      "args": ["/absolute/path/to/arc/packages/mcp/dist/index.js"],
+      "args": ["/absolute/path/to/arc/bin/arc-mcp.mjs"],
       "env": {
         "ARC_EDITOR_URL": "http://localhost:5188"
       }
@@ -32,28 +34,27 @@ bun run build:mcp
 }
 ```
 
-When published to npm:
+From a global install (after publish):
 
 ```json
 {
   "mcpServers": {
     "arc": {
-      "command": "npx",
-      "args": ["-y", "@arach/arc-mcp"]
+      "command": "arc-mcp"
     }
   }
 }
 ```
 
-## Tools
+## Tools (v0 — authoring coverage)
 
 | Tool | Description |
 |------|-------------|
-| `validate_diagram` | Check JSON against `ArcDiagramData`; returns `{ ok }` or `{ error }` |
-| `auto_layout` | Run Sugiyama layout on a full diagram or minimal `AutoDiagramInput` |
-| `render_ascii` | Unicode/ASCII box-drawing output (`charset`, `maxWidth` optional) |
-| `diagram_to_typescript` | Emit a typed TS module (`exportName` optional) |
-| `editor_handoff` | Build `#data=` editor URL + session id for the studio |
+| `validate_diagram` | Check JSON against `ArcDiagramData` |
+| `auto_layout` | Sugiyama layout (full diagram or minimal input) |
+| `render_ascii` | Unicode/ASCII box-drawing output |
+| `diagram_to_typescript` | Emit a typed TS module |
+| `editor_handoff` | Build `#data=` studio URL + session id |
 
 ## Resources
 
@@ -63,29 +64,33 @@ When published to npm:
 | `arc://skill/diagrams` | `skills/arc-diagrams/SKILL.md` |
 | `arc://docs/llm` | `docs/llm.txt` |
 
-## Environment
+## Not in MCP (yet)
 
-| Variable | Default | Purpose |
-|----------|---------|---------|
-| `ARC_EDITOR_URL` | `http://localhost:5188` | Base URL for `editor_handoff` |
+These stay CLI/studio/API paths for now:
 
-## Implementation Notes
+| Capability | Where |
+|------------|-------|
+| SVG / PNG export | Studio Export, `exportUtils` |
+| Dev PNG capture | `/capture/:sessionId` (dev server) |
+| Mermaid import | `@arach/arc-viewer` |
+| Read-only embed | `@arach/arc-viewer` (`<ArcDiagram />`) |
+| Isometric YAML | `@arach/arc-iso` |
 
-- Server code: `packages/mcp/src/server.ts`
-- Bundles server-side Arc utilities (`validateDiagramShape`, `autoLayout`, `renderAscii`, `toTypeScriptSource`) from `src/`
-- Does **not** require a browser; `editor_handoff` returns a URL to open manually
-- PNG capture via `/capture/:sessionId` remains a separate dev-server step (see `docs/agent/verification.agent.md`)
+v0 targets the **authoring loop**: validate → layout → preview as text → open in studio.
 
-## Also Available on `@arach/arc`
+## Implementation
 
-These functions are exported from the main package for programmatic use:
+- Source: `scripts/mcp/server.ts`
+- Bundle: `scripts/build-arc-mcp.mjs` → `bin/arc-mcp.mjs`
+- MCP SDK + zod are devDependencies, bundled into the bin (zero production deps on `@arach/arc`)
+
+## Programmatic API (same package)
 
 ```typescript
 import {
   validateDiagramShape,
   isDiagramShape,
   toTypeScriptSource,
-  toExportFormat,
   autoLayout,
   renderAscii,
 } from '@arach/arc'

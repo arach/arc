@@ -11,7 +11,7 @@
 - **Output**: JSON / TypeScript configs (not images) — diffable, versionable
 - **Stack**: React 19, Vite 7, TailwindCSS 4, Hudson shell (editor chrome)
 - **Package manager**: bun (`bun install`, `bun run dev`)
-- **MCP**: `@arach/arc-mcp` — see `docs/agent/mcp.agent.md` and `packages/mcp/README.md`
+- **MCP**: `arc-mcp` bin — see `docs/agent/mcp.agent.md`
 
 ## Which Package?
 
@@ -194,8 +194,9 @@ curl "http://localhost:5188/capture/my-session" > out.png
 
 ## MCP
 
-Shipped as `@arach/arc-mcp` (`packages/mcp/`). Tools: validate_diagram, auto_layout,
-render_ascii, diagram_to_typescript, editor_handoff. See docs/agent/mcp.agent.md.
+`arc-mcp` bin on `@arach/arc` (`bun run mcp` in dev, `bun run build:mcp` for publish).
+Tools: validate_diagram, auto_layout, render_ascii, diagram_to_typescript, editor_handoff.
+See docs/agent/mcp.agent.md for coverage gaps (SVG/PNG/Mermaid stay elsewhere).
 
 ## Critical Rules
 

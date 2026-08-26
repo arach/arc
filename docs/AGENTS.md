@@ -41,8 +41,7 @@ order: 6
 
 ## MCP Support
 
-**Shipped** as `@arach/arc-mcp` in `packages/mcp/`. See `docs/agent/mcp.agent.md` for
-tools, resources, and Cursor/Claude Desktop configuration.
+**Shipped** as the `arc-mcp` bin on `@arach/arc` (`scripts/mcp/server.ts`). See `docs/agent/mcp.agent.md`.
 
 ## Package Decision Tree
 

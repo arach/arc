@@ -41,6 +41,5 @@ bun install && bun run dev    # → http://localhost:5188/editor
 
 ## MCP
 
-Shipped: `@arach/arc-mcp` — `bun run build:mcp` then `packages/mcp/dist/index.js`.
-Tools: validate, auto_layout, render_ascii, diagram_to_typescript, editor_handoff.
+`arc-mcp` on `@arach/arc` — `bun run mcp` locally, `bun run build:mcp` for the published bin.
 See docs/agent/mcp.agent.md.
