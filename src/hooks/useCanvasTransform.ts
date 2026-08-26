@@ -8,6 +8,9 @@ interface UseCanvasTransformOptions {
   panModeActive?: boolean
   onTransformChange?: (transform: Transform) => void
   contentSize?: { width: number; height: number }  // Required for 'fit' calculation
+  /** When given, 'fit' frames this rect instead of the layout box — so the
+   *  viewport centres on the actual drawing, not the canvas it sits on. */
+  contentBounds?: { minX: number; minY: number; maxX: number; maxY: number } | null
   zoomLevels?: number[]      // Custom zoom level steps (overrides zoomStep)
   zoomStep?: number          // Zoom increment per step (default: 0.05 = 5%)
 }
@@ -25,6 +28,7 @@ export function useCanvasTransform(options: UseCanvasTransformOptions = {}) {
     panModeActive = false,
     onTransformChange,
     contentSize,
+    contentBounds,
     zoomLevels,
   } = options
 
@@ -321,28 +325,52 @@ export function useCanvasTransform(options: UseCanvasTransformOptions = {}) {
     onTransformChange?.({ zoom: state.zoom, pan: state.pan })
   }, [state.zoom, state.pan, onTransformChange])
 
-  // Handle initial 'fit' calculation on mount
+  // Handle initial 'fit' calculation on mount. When contentBounds is
+  // provided, frame the actual drawing extent (nodes/groups/images) rather
+  // than the layout box, so a small drawing on a large canvas opens centred.
   const hasFittedRef = useRef(false)
   useEffect(() => {
-    if (needsFitZoom && contentSize && containerRef.current && !hasFittedRef.current) {
-      hasFittedRef.current = true
+    if (!needsFitZoom || !containerRef.current || hasFittedRef.current) return
+    if (!contentBounds && !contentSize) return
+    hasFittedRef.current = true
 
-      const rect = containerRef.current.getBoundingClientRect()
-      const padding = 40
-      const scaleX = (rect.width - padding * 2) / contentSize.width
-      const scaleY = (rect.height - padding * 2) / contentSize.height
-      const rawZoom = Math.min(scaleX, scaleY, 1)  // Cap at 100%
+    const rect = containerRef.current.getBoundingClientRect()
+    const padding = 40
 
-      // Round to nearest zoom step
-      const fittedZoom = findNearestZoomLevel(rawZoom)
-      defaultZoomRef.current = fittedZoom  // Store for reset
-
-      const panX = (rect.width - contentSize.width * fittedZoom) / 2
-      const panY = (rect.height - contentSize.height * fittedZoom) / 2
-
-      setState({ zoom: fittedZoom, pan: { x: panX, y: panY }, isPanning: false })
+    if (contentBounds) {
+      const w = contentBounds.maxX - contentBounds.minX
+      const h = contentBounds.maxY - contentBounds.minY
+      if (w <= 0 || h <= 0) return
+      const fittedZoom = findNearestZoomLevel(Math.min(
+        (rect.width - padding * 2) / w,
+        (rect.height - padding * 2) / h,
+        1,
+      ))
+      defaultZoomRef.current = fittedZoom
+      setState({
+        zoom: fittedZoom,
+        pan: {
+          x: rect.width / 2 - ((contentBounds.minX + contentBounds.maxX) / 2) * fittedZoom,
+          y: rect.height / 2 - ((contentBounds.minY + contentBounds.maxY) / 2) * fittedZoom,
+        },
+        isPanning: false,
+      })
+      return
     }
-  }, [needsFitZoom, contentSize, findNearestZoomLevel])
+
+    const scaleX = (rect.width - padding * 2) / contentSize!.width
+    const scaleY = (rect.height - padding * 2) / contentSize!.height
+    const rawZoom = Math.min(scaleX, scaleY, 1)  // Cap at 100%
+
+    // Round to nearest zoom step
+    const fittedZoom = findNearestZoomLevel(rawZoom)
+    defaultZoomRef.current = fittedZoom  // Store for reset
+
+    const panX = (rect.width - contentSize!.width * fittedZoom) / 2
+    const panY = (rect.height - contentSize!.height * fittedZoom) / 2
+
+    setState({ zoom: fittedZoom, pan: { x: panX, y: panY }, isPanning: false })
+  }, [needsFitZoom, contentSize, contentBounds, findNearestZoomLevel])
 
   const screenToCanvas = useCallback(
     (screenPoint: Point): Point => {

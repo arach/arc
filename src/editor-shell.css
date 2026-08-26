@@ -28,6 +28,10 @@
   --arc-font-body: var(--arc-font-ui);
   --arc-font-mono: var(--arc-font-code);
 
+  /* Drafting-table backdrop tokens — dot pitches match the diagram grid (24) */
+  --arc-backdrop-dot-minor: var(--hud-canvas-dot-minor, rgba(43, 127, 212, 0.05));
+  --arc-backdrop-dot-major: var(--hud-canvas-dot-major, rgba(43, 127, 212, 0.11));
+
   height: 100%;
   min-height: 0;
   font-family: var(--arc-font-body);
@@ -250,35 +254,42 @@ body,
   background: var(--arc-canvas);
 }
 
+/* Drafting-table backdrop: a quiet paper dot grid instead of hard ruling
+   lines — the diagram's own 24px grid still pins to the drawing, and this
+   surface texture reads as paper under it in both light and dark chrome.
+   Minor dots every 24px, a heavier register dot every 120px. */
 .arc-editor-canvas::before {
   content: '';
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(var(--arc-line) 1px, transparent 1px),
-    linear-gradient(90deg, var(--arc-line) 1px, transparent 1px),
-    radial-gradient(circle 1px at 0 0, var(--arc-edge) 1px, transparent 1px);
-  background-size: 40px 40px, 40px 40px, 40px 40px;
+    radial-gradient(circle, var(--arc-backdrop-dot-major) 1.1px, transparent 1.3px),
+    radial-gradient(circle, var(--arc-backdrop-dot-minor) 0.9px, transparent 1.1px);
+  background-size: 120px 120px, 24px 24px;
   pointer-events: none;
   z-index: 0;
 }
 
+/* Desk-lamp vignette: a soft falloff toward the edges, like paper under a
+   pool of light. The colour is a plain alpha wash so it reads as shadow in
+   dark chrome and a gentle deepening in light, without muddy color-mix. */
 .arc-editor-canvas::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse 85% 70% at 50% 45%, transparent 40%, color-mix(in srgb, var(--arc-canvas) 55%, #000) 100%);
+  background: radial-gradient(ellipse 92% 78% at 50% 42%, transparent 30%, rgba(0, 0, 0, 0.16) 82%, rgba(0, 0, 0, 0.30) 100%);
   pointer-events: none;
   z-index: 0;
-  opacity: 0.45;
+  opacity: 0.55;
 }
 
 .arc-editor-root [data-hudson-theme="dark"] .arc-editor-canvas::after {
-  opacity: 0.85;
+  opacity: 1;
 }
 
 .arc-editor-root [data-hudson-theme="light"] .arc-editor-canvas::after {
-  opacity: 0.25;
+  background: radial-gradient(ellipse 92% 78% at 50% 42%, transparent 36%, rgba(20, 26, 34, 0.05) 82%, rgba(20, 26, 34, 0.10) 100%);
+  opacity: 1;
 }
 
 /* Canvas children stack above the backdrop. Floating chrome opts out with

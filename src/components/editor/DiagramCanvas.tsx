@@ -1,6 +1,7 @@
-import { useRef, useCallback, useState, useEffect } from 'react'
+import { useRef, useCallback, useState, useEffect, useMemo } from 'react'
 import { useEditor, useDiagram, useEditorState, useTemplate, useViewMode, useIsoStyle, useMeta, useResolvedTheme, useResolvedBrand } from './EditorProvider'
 import { NODE_SIZES } from '../../utils/constants'
+import { getContentBounds } from '../../utils/diagramHelpers'
 import { getTemplate } from '../../utils/templates'
 import { screenToIsoFloor } from '../../utils/isometric'
 import { useCanvasTransform } from '../../hooks/useCanvasTransform'
@@ -67,6 +68,13 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
   // Merge embed config with defaults
   const config = { ...DEFAULT_EMBED_CONFIG, ...embedConfig }
 
+  // The actual drawing extent — nodes, groups, images — for fitting the
+  // viewport on the drawing rather than the layout box it sits on.
+  const contentBounds = useMemo(
+    () => getContentBounds(diagram.nodes, diagram.groups, diagram.images),
+    [diagram.nodes, diagram.groups, diagram.images]
+  )
+
   const {
     containerRef,
     zoom,
@@ -88,6 +96,7 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
     initialPan: { x: 0, y: 0 },
     panModeActive: editor.mode === 'pan',
     contentSize: diagram.layout,
+    contentBounds,
     zoomLevels: zoomConfig?.zoomLevels,
     zoomStep: zoomConfig?.zoomStep,
   })
@@ -692,8 +701,9 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
         `}
         style={{
           touchAction: 'none',
-          // The workspace is chrome, not artifact: let the shell skin show.
-          ...(surface === 'chrome' ? { background: 'var(--arc-canvas)' } : {}),
+          // The workspace is chrome, not artifact: stay transparent so the
+          // shell's drafting-table backdrop (grid + vignette) shows through.
+          ...(surface === 'chrome' ? { background: 'transparent' } : {}),
         }}
         onDrop={handleDrop}
         onDragOver={handleDragOver}
@@ -980,7 +990,7 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
           onZoomChange={(newZoom) => setZoom(newZoom)}
           onReset={resetTransform}
           onFitToView={() => {
-            const bounds = viewMode === 'isometric' ? getIsoBounds() : null
+            const bounds = viewMode === 'isometric' ? getIsoBounds() : contentBounds
             if (bounds) fitToRect(bounds)
             else fitToView(diagram.layout)
           }}
