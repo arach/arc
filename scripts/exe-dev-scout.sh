@@ -60,6 +60,7 @@ $SUDO ln -sf /home/exedev/.bun/bin/pi /usr/local/bin/pi
 # Free-tier OpenRouter models (exe.dev edge). Paid ids bill the edge.
 ARC_AUTHOR_MODEL="${ARC_AUTHOR_MODEL:-nvidia/nemotron-3-ultra-550b-a55b:free}"
 ARC_HOST_MODEL="${ARC_HOST_MODEL:-minimax/minimax-m3:free}"
+ARC_FAST_MODEL="${ARC_FAST_MODEL:-z-ai/glm-5.3-flash}"
 CURSOR_AGENT_MODEL="${CURSOR_AGENT_MODEL:-composer-2.5}"
 # Optional: /home/exedev/.config/scout/cursor.env with CURSOR_API_KEY=cursor_...
 CURSOR_ENV_FILE="${CURSOR_ENV_FILE:-/home/exedev/.config/scout/cursor.env}"
@@ -80,6 +81,8 @@ free = [m for m in data if is_free(m)]
 # Prefer coding/agent-capable free models in the Pi catalog.
 prefer = (
     "nvidia/nemotron-3-ultra-550b-a55b:free",
+    "z-ai/glm-5.3-flash",
+    "z-ai/glm-5.3",
     "minimax/minimax-m3:free",
     "cohere/north-mini-code:free",
     "z-ai/glm-5.2:free",
@@ -87,28 +90,55 @@ prefer = (
     "openrouter/free",
 )
 by_id = {m["id"]: m for m in free}
+ids_all = {m["id"] for m in data}
+fast = os.environ.get("ARC_FAST_MODEL", "z-ai/glm-5.3-flash")
+if fast not in ids_all:
+    for alt in (fast.replace("-flash", ""), "z-ai/glm-5.3", "z-ai/glm-5.2:free"):
+        if alt in ids_all:
+            fast = alt
+            break
+open("/home/exedev/.config/scout/arc-models.env", "w").write(f"ARC_FAST_MODEL={fast}\n")
 ordered = [by_id[i] for i in prefer if i in by_id]
 ordered += [m for m in free if m["id"] not in prefer][:40 - len(ordered)]
 
 entries = [{
-    "id": m["id"], "name": m.get("name", m["id"]), "reasoning": ":reasoning" in m["id"] or "nemotron" in m["id"],
+    "id": m["id"], "name": m.get("name", m["id"]), "reasoning": ":reasoning" in m["id"] or "nemotron" in m["id"] or "glm" in m["id"],
     "input": ["text"], "contextWindow": m.get("context_length", 128000), "maxTokens": 8192,
     "cost": {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0},
 } for m in ordered]
+by_id_all = {m["id"]: m for m in data}
+for mid in (os.environ.get("ARC_AUTHOR_MODEL"), os.environ.get("ARC_HOST_MODEL"), fast):
+    if mid and mid not in {e["id"] for e in entries} and mid in by_id_all:
+        m = by_id_all[mid]
+        p = m.get("pricing") or {}
+        entries.append({
+            "id": m["id"], "name": m.get("name", m["id"]),
+            "reasoning": ":reasoning" in m["id"] or "nemotron" in m["id"] or "glm" in m["id"],
+            "input": ["text"], "contextWindow": m.get("context_length", 128000), "maxTokens": 8192,
+            "cost": {
+                "input": float(p.get("prompt", 0) or 0),
+                "output": float(p.get("completion", 0) or 0),
+                "cacheRead": float(p.get("input_cache_read", 0) or 0),
+                "cacheWrite": 0,
+            },
+        })
 cfg = {"providers": {"openrouter": {
     "baseUrl": "https://openrouter.int.exe.xyz/api/v1",
     "api": "openai-completions", "apiKey": "implicit", "authHeader": True,
     "models": entries}}}
 json.dump(cfg, open("/home/exedev/.omp/agent/models.json", "w"), indent=2)
-print(f"openrouter free models: {len(entries)} (author={os.environ.get('ARC_AUTHOR_MODEL')} host={os.environ.get('ARC_HOST_MODEL')})")
+print(f"openrouter free models: {len(entries)} (author={os.environ.get('ARC_AUTHOR_MODEL')} host={os.environ.get('ARC_HOST_MODEL')} fast={fast})")
 PY
-export ARC_AUTHOR_MODEL ARC_HOST_MODEL
+# shellcheck disable=SC1091
+[ -f /home/exedev/.config/scout/arc-models.env ] && . /home/exedev/.config/scout/arc-models.env
+export ARC_AUTHOR_MODEL ARC_HOST_MODEL ARC_FAST_MODEL
 curl -sf http://127.0.0.1:43110/health | head -3
 
 # Remote Pi agents — inference via exe.dev OpenRouter edge (free-tier models)
 cd /home/exedev/arc
 scout card retire arc-author 2>/dev/null || true
 scout card retire arc-host 2>/dev/null || true
+scout card retire arc-fast 2>/dev/null || true
 scout card retire arc-composer 2>/dev/null || true
 scout --json card create /home/exedev/arc \
   --name arc-author --display-name "Arc Author (Nemotron)" \
@@ -119,6 +149,11 @@ scout --json card create /home/exedev/arc \
   --name arc-host --display-name "Arc Host" \
   --harness pi --provider openrouter \
   --model "$ARC_HOST_MODEL" \
+  --permission-profile workspace_write --no-input >/dev/null
+scout --json card create /home/exedev/arc \
+  --name arc-fast --display-name "Arc Fast (GLM 5.3)" \
+  --harness pi --provider openrouter \
+  --model "$ARC_FAST_MODEL" \
   --permission-profile workspace_write --no-input >/dev/null
 
 # Cursor API / Composer — optional, metered; enable with cursor.env on the VM.
@@ -136,9 +171,9 @@ if [ -n "${CURSOR_API_KEY:-}" ]; then
     --name arc-composer --display-name "Arc Composer" \
     --harness cursor --model "$CURSOR_AGENT_MODEL" \
     --permission-profile workspace_write --no-input >/dev/null
-  echo "Remote agents: arc-author ($ARC_AUTHOR_MODEL), arc-host ($ARC_HOST_MODEL), arc-composer (cursor/$CURSOR_AGENT_MODEL)"
+  echo "Remote agents: arc-author ($ARC_AUTHOR_MODEL), arc-host ($ARC_HOST_MODEL), arc-fast ($ARC_FAST_MODEL), arc-composer (cursor/$CURSOR_AGENT_MODEL)"
 else
-  echo "Remote agents: arc-author ($ARC_AUTHOR_MODEL), arc-host ($ARC_HOST_MODEL)"
+  echo "Remote agents: arc-author ($ARC_AUTHOR_MODEL), arc-host ($ARC_HOST_MODEL), arc-fast ($ARC_FAST_MODEL)"
   echo "Composer: add CURSOR_API_KEY to $CURSOR_ENV_FILE and re-run this script"
 fi
 
