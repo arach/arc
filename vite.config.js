@@ -40,6 +40,12 @@ export default defineConfig(({ mode }) => {
       port: 5188,
       strictPort: true,
     },
+    preview: {
+      port: 5188,
+      strictPort: true,
+      host: true,
+      allowedHosts: ['arc-studio.exe.xyz', '.exe.xyz'],
+    },
     build: {
       rollupOptions: {
         input: {
