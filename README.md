@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://raw.githubusercontent.com/arach/arc/master/public/arc-mark.svg" alt="Arc" width="52" height="52" />
+<img src="https://raw.githubusercontent.com/arach/arc/main/public/arc-mark.svg" alt="Arc" width="52" height="52" />
 
 # Arc
 
@@ -14,7 +14,7 @@ SVG, PNG, or crisp ASCII**. The diagram lives with the system it describes.
 [![license](https://img.shields.io/npm/l/@arach/arc.svg?color=41b883)](./LICENSE)
 [![types](https://img.shields.io/npm/types/@arach/arc.svg?color=3b82f6)](./lib/index.d.ts)
 
-![A microservices architecture rendered by Arc's ArcDiagram component in the Engineering theme](https://raw.githubusercontent.com/arach/arc/master/public/hero.png)
+![A microservices architecture rendered by Arc's ArcDiagram component in the Engineering theme](https://raw.githubusercontent.com/arach/arc/main/public/hero.png)
 
 <sub>Not a screenshot of a drawing tool — that's the config in <a href="#example-output">Example Output</a>, rendered by <code>&lt;ArcDiagram /&gt;</code> in the Engineering theme.</sub>
 
@@ -80,7 +80,7 @@ git clone https://github.com/arach/arc && cd arc
 bun install && bun dev      # → http://localhost:5188/editor
 ```
 
-![The Arc Studio — a drag-and-drop editor for architecture diagrams](https://raw.githubusercontent.com/arach/arc/master/public/studio.png)
+![The Arc Studio — a drag-and-drop editor for architecture diagrams](https://raw.githubusercontent.com/arach/arc/main/public/studio.png)
 
 Design on the canvas, then **Export** to TypeScript, JSON, SVG, PNG, or a
 shareable link — and drop the result straight into `<ArcDiagram />`.
@@ -141,15 +141,15 @@ what changes is the grid system, edge treatment, type, and geometry. Here's
 Arc's own architecture rendered three ways:
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/arach/arc/master/public/theme-engineering.png" alt="Arc's architecture in the Engineering theme" width="840" />
+  <img src="https://raw.githubusercontent.com/arach/arc/main/public/theme-engineering.png" alt="Arc's architecture in the Engineering theme" width="840" />
   <br/>
   <sub><strong>Engineering</strong> — graph grid, drawing-sheet border, title block, uppercase mono</sub>
   <br/><br/>
-  <img src="https://raw.githubusercontent.com/arach/arc/master/public/theme-workbench.png" alt="Arc's architecture in the Workbench theme" width="840" />
+  <img src="https://raw.githubusercontent.com/arach/arc/main/public/theme-workbench.png" alt="Arc's architecture in the Workbench theme" width="840" />
   <br/>
   <sub><strong>Workbench</strong> — dot grid, hairline frame, soft corners</sub>
   <br/><br/>
-  <img src="https://raw.githubusercontent.com/arach/arc/master/public/theme-tactical.png" alt="Arc's architecture in the Tactical theme" width="840" />
+  <img src="https://raw.githubusercontent.com/arach/arc/main/public/theme-tactical.png" alt="Arc's architecture in the Tactical theme" width="840" />
   <br/>
   <sub><strong>Tactical</strong> — crosshair grid, corner brackets, hard edges</sub>
 </div>
