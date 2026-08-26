@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { ArcDiagram, type ArcDiagramData } from '@arach/arc'
+import { version } from '../../package.json'
 import { useMeta } from '../hooks/useMeta'
 import ArcMark from './ArcMark'
 import IsoPlateShowcase from './IsoPlateShowcase'
@@ -75,7 +76,7 @@ export default function LandingPage({ onLaunchEditor }: LandingPageProps) {
                 <span className="tl-brand-descriptor">diagrams as code</span>
               </span>
             </Link>
-            <span className="tl-brand-ver">v0.4.1</span>
+            <span className="tl-brand-ver">v{version}</span>
           </div>
           <nav className="tl-nav">
             <a href="#why">WHY ARC</a>
@@ -246,6 +247,7 @@ export default function LandingPage({ onLaunchEditor }: LandingPageProps) {
             </div>
             <div className="tl-specs">
               <div className="tl-specs-h">SPECS</div>
+              <div>version&nbsp;&nbsp;<b>v{version}</b></div>
               <div>install&nbsp;&nbsp;<b>npm i @arach/arc</b></div>
               <div>bundle&nbsp;&nbsp;<b>~28kb gz</b></div>
               <div>render&nbsp;&nbsp;<b>SSR · client</b></div>
@@ -257,7 +259,7 @@ export default function LandingPage({ onLaunchEditor }: LandingPageProps) {
         {/* FOOTER */}
         <footer className="tl-footer">
           <span className="tl-footer-brand"><ArcMark />Arc — diagrams as code.</span>
-          <span>Designed for Git-friendly, declarative diagrams · v0.4.1</span>
+          <span>Designed for Git-friendly, declarative diagrams · v{version}</span>
         </footer>
       </div>
     </div>
