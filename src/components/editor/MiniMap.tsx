@@ -57,15 +57,16 @@ export default function MiniMap({
   return (
     <div
       ref={mapRef}
-      className="absolute bottom-4 left-4 bg-white dark:bg-zinc-900 rounded-lg shadow-lg border border-zinc-200 dark:border-zinc-700 overflow-hidden cursor-pointer"
-      style={{ width: mapWidth + 8, height: mapHeight + 8, padding: 4 }}
+      className="arc-canvas-minimap"
+      style={{ width: mapWidth + 8, height: mapHeight + 8 }}
       onClick={handleClick}
+      role="presentation"
+      title="Click to pan the viewport"
     >
       <svg
         width={mapWidth}
         height={mapHeight}
         viewBox={`0 0 ${layout.width} ${layout.height}`}
-        className="bg-zinc-50 dark:bg-zinc-800 rounded"
       >
         {/* Groups */}
         {(diagram.groups || []).map((group) => (
@@ -149,7 +150,7 @@ export default function MiniMap({
           width={viewW / scale}
           height={viewH / scale}
           fill="none"
-          stroke="#3b82f6"
+          stroke="var(--arc-acc, #3b82f6)"
           strokeWidth={2 / scale}
           strokeDasharray={`${4 / scale} ${2 / scale}`}
         />

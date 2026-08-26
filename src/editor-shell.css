@@ -294,6 +294,80 @@ body,
   z-index: 20;
 }
 
+/* ---- Error fallback ----
+   Token-driven, with literals as fallbacks, so it reads correctly inside the
+   editor shell and still looks deliberate in an embed with no chrome loaded. */
+.arc-error-fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--arc-space-4, 8px);
+  height: 100%;
+  min-height: 220px;
+  padding: var(--arc-space-6, 14px);
+  text-align: center;
+  font-family: var(--arc-font-ui);
+  color: var(--arc-ink, #e8edf2);
+  background: var(--arc-canvas, #0b0f14);
+}
+
+.arc-error-icon {
+  width: calc(var(--arc-icon, 13px) * 1.8);
+  height: calc(var(--arc-icon, 13px) * 1.8);
+  color: #c98a2b;
+}
+
+.arc-error-title {
+  margin: 0;
+  font-size: var(--arc-text-lg, 15px);
+  font-weight: 600;
+}
+
+.arc-error-detail {
+  margin: 0;
+  max-width: 46ch;
+  font-family: var(--arc-font-code);
+  font-size: var(--arc-text-xs, 9px);
+  line-height: 1.6;
+  color: var(--arc-muted, #7d8a98);
+  overflow-wrap: anywhere;
+}
+
+.arc-error-actions {
+  display: flex;
+  gap: var(--arc-space-3, 5px);
+  margin-top: var(--arc-space-2, 3px);
+}
+
+.arc-error-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--arc-space-2, 3px);
+  height: var(--arc-ctl-h, 24px);
+  padding: 0 var(--arc-ctl-pad-x, 7px);
+  border: 1px solid var(--arc-line-2, rgba(255, 255, 255, 0.14));
+  border-radius: var(--arc-radius, 3px);
+  background: transparent;
+  color: var(--arc-ink-2, #b4bec9);
+  font-family: var(--arc-font-code);
+  font-size: var(--arc-text-2xs, 8px);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.arc-error-btn:hover {
+  color: var(--arc-acc, #4db8ff);
+  border-color: var(--arc-edge, rgba(77, 184, 255, 0.55));
+}
+
+.arc-error-btn svg {
+  width: var(--arc-icon-sm, 11px);
+  height: var(--arc-icon-sm, 11px);
+}
+
 /* ---- Canvas overlays (mode + pending badges) ---- */
 .arc-editor-mode-badge {
   position: absolute;
@@ -322,6 +396,56 @@ body,
   left: auto;
   right: var(--arc-space-5);
   background: #b8802a;
+}
+
+/* ---- Empty canvas ----
+   Pointer-transparent apart from the button, so the canvas underneath still
+   takes a click when the user already knows what to do. */
+.arc-canvas-empty {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--arc-space-3);
+  max-width: 40ch;
+  text-align: center;
+  pointer-events: none;
+  user-select: none;
+}
+
+.arc-canvas-empty-title {
+  margin: 0;
+  font-family: var(--arc-font-mono);
+  font-size: var(--arc-text-xs);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--arc-faint);
+}
+
+.arc-canvas-empty-hint {
+  margin: 0;
+  font-size: var(--arc-text-sm);
+  line-height: 1.7;
+  color: var(--arc-muted);
+}
+
+.arc-canvas-empty-hint kbd {
+  padding: 1px var(--arc-space-2);
+  border: 1px solid var(--arc-line-2);
+  border-radius: 2px;
+  background: var(--arc-surface-muted);
+  font-family: var(--arc-font-mono);
+  font-size: var(--arc-text-2xs);
+  color: var(--arc-ink-2);
+}
+
+.arc-canvas-empty-action {
+  margin-top: var(--arc-space-2);
+  pointer-events: auto;
 }
 
 /* ---- Anchor points (connector authoring) ---- */
@@ -551,7 +675,16 @@ body,
   line-height: 1.4;
 }
 
-/* ---- Floating toolbar ---- */
+/* ---- Floating toolbar ----
+   Its own dock, on the same bottom rhythm as the minimap and the canvas
+   controls, so the three bottom clusters share a baseline at any scale. */
+.arc-editor-toolbar-dock {
+  position: absolute;
+  left: 50%;
+  bottom: var(--arc-space-5);
+  z-index: 20;
+}
+
 .arc-editor-toolbar {
   display: flex;
   align-items: center;
@@ -619,7 +752,72 @@ body,
   color: var(--arc-acc);
 }
 
-/* ---- Canvas controls (zoom, view mode) ---- */
+/* ---- Canvas controls (zoom, view mode) ----
+
+   Both clusters share one dock rather than each hard-coding an offset from the
+   corner: their widths follow --arc-ui-scale, so a fixed `right` for the second
+   cluster is a collision waiting for a density change. */
+.arc-canvas-dock {
+  position: absolute;
+  right: var(--arc-space-5);
+  bottom: var(--arc-space-5);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  /* One row on purpose: wrapping put a second row under the first and into
+     the floating toolbar's lap on a narrow canvas. */
+  flex-wrap: nowrap;
+  gap: var(--arc-space-3);
+  z-index: 15;
+}
+
+/* Narrow drawing area — `.is-narrow` is set by DiagramCanvas from a measured
+   width, deliberately NOT by a CSS container query. `container-type` makes this
+   element a containment root, and the browser then misses paint invalidation
+   inside it when a chrome token changes on an ancestor: switching light/dark or
+   changing skin left the canvas and its controls painted in the old theme until
+   something else forced a repaint.
+
+   Below this width the minimap, the floating toolbar and the canvas controls
+   are all fighting for the same edge — the toolbar alone is ~390px. The minimap
+   is the one you can do without, and the controls take the free top-right
+   corner rather than sit under the toolbar. */
+.arc-canvas-frame.is-narrow .arc-canvas-minimap {
+  display: none;
+}
+
+.arc-canvas-frame.is-narrow .arc-canvas-dock {
+  top: var(--arc-space-5);
+  bottom: auto;
+}
+
+.arc-canvas-minimap {
+  position: absolute;
+  bottom: var(--arc-space-5);
+  left: var(--arc-space-5);
+  z-index: 15;
+  padding: var(--arc-space-1);
+  overflow: hidden;
+  cursor: pointer;
+  border: 1px solid var(--arc-line-2);
+  border-radius: var(--arc-radius);
+  background: color-mix(in srgb, var(--arc-surface) 92%, transparent);
+  backdrop-filter: blur(12px) saturate(130%);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--arc-glow) 35%, transparent), 0 8px 24px -14px rgba(0, 0, 0, 0.4);
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.arc-canvas-minimap:hover {
+  border-color: var(--arc-edge);
+  box-shadow: 0 0 0 1px var(--arc-glow), 0 10px 28px -14px rgba(0, 0, 0, 0.5);
+}
+
+.arc-canvas-minimap svg {
+  display: block;
+  border-radius: 2px;
+  background: var(--arc-surface-muted);
+}
+
 .arc-canvas-controls {
   display: flex;
   align-items: center;
@@ -936,6 +1134,51 @@ body,
   box-shadow: none;
   outline: 2px solid var(--arc-acc-soft);
   outline-offset: 1px;
+}
+
+/* Node shape picker — silhouettes, not labels; the shape is the label. */
+.arc-insp-shape-row {
+  display: flex;
+  gap: var(--arc-space-2);
+}
+
+.arc-insp-shape {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--arc-ctl-h);
+  padding: 0;
+  border: 1px solid var(--arc-line);
+  border-radius: var(--arc-radius);
+  background: var(--arc-surface-muted);
+  color: var(--arc-muted);
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.arc-insp-shape svg {
+  width: calc(var(--arc-icon) * 1.5);
+  height: auto;
+}
+
+.arc-insp-shape:hover {
+  color: var(--arc-ink);
+  border-color: var(--arc-line-2);
+}
+
+/* What the theme is already drawing — present, but not a choice you made. */
+.arc-insp-shape.is-inherited {
+  color: var(--arc-ink-2);
+  border-style: dashed;
+  border-color: var(--arc-edge);
+}
+
+.arc-insp-shape.is-selected {
+  color: #fff;
+  background: color-mix(in srgb, var(--arc-acc) 88%, #000);
+  border-color: var(--arc-edge);
+  box-shadow: 0 0 10px -4px var(--arc-glow);
 }
 
 .arc-insp-icon-grid {
@@ -1565,7 +1808,14 @@ body,
   color: var(--arc-faint);
 }
 
-/* CodeMirror fills the pane; Hudson's editor brings its own highlighting. */
+/* CodeMirror fills the pane.
+   Hudson's CodeEditor picks a light or dark theme from the shell's resolved
+   theme and brings its own syntax highlighting — good defaults, but its surface
+   colors are injected into <head> at runtime, so they land after this
+   stylesheet and win on a specificity tie. Hence !important: the editor should
+   sit on the pane's own skinned surface and borrow the chrome accent, in either
+   mode and under every chrome theme. Token colors stay Hudson's. */
+
 .arc-markup-source {
   display: flex;
   flex-direction: column;
@@ -1578,25 +1828,50 @@ body,
 
 .arc-markup-source .cm-editor {
   height: 100%;
-  background: transparent;
-  font-family: var(--arc-font-mono);
-  font-size: var(--arc-text-xs);
+  background: transparent !important;
+  color: var(--arc-ink) !important;
 }
 
 .arc-markup-source .cm-scroller {
-  font-family: var(--arc-font-mono);
-  line-height: 1.6;
+  font-family: var(--arc-font-mono) !important;
+  font-size: var(--arc-text-xs) !important;
+  line-height: 1.65 !important;
 }
 
 .arc-markup-source .cm-gutters {
-  border-right: 1px solid var(--arc-line);
-  background: transparent;
-  color: var(--arc-faint);
+  background: transparent !important;
+  color: var(--arc-faint) !important;
+  border-right: 1px solid var(--arc-line) !important;
 }
 
-.arc-markup-source .cm-activeLine,
+.arc-markup-source .cm-activeLine {
+  background: var(--arc-acc-soft) !important;
+}
+
 .arc-markup-source .cm-activeLineGutter {
-  background: var(--arc-acc-soft);
+  background: var(--arc-acc-soft) !important;
+  color: var(--arc-acc) !important;
+}
+
+.arc-markup-source .cm-content {
+  caret-color: var(--arc-acc) !important;
+}
+
+.arc-markup-source .cm-cursor,
+.arc-markup-source .cm-dropCursor {
+  border-left-color: var(--arc-acc) !important;
+}
+
+.arc-markup-source .cm-selectionBackground,
+.arc-markup-source .cm-focused .cm-selectionBackground,
+.arc-markup-source .cm-content ::selection {
+  background: color-mix(in srgb, var(--arc-acc) 20%, transparent) !important;
+}
+
+.arc-markup-source .cm-foldPlaceholder {
+  background: var(--arc-acc-soft) !important;
+  border-color: var(--arc-line-2) !important;
+  color: var(--arc-muted) !important;
 }
 
 .arc-markup-foot.is-error {

@@ -163,7 +163,10 @@ const EditableNode = memo(function EditableNode({
       >
         <PlayerNode
           node={{ x: 0, y: 0, size: (size as any) }}
-          data={{ icon: data.icon, name: data.name, subtitle: data.subtitle, color: (data.color || 'violet') as any }}
+          // Spread, don't cherry-pick: the fields this used to drop
+          // (description, and now shape) are exactly the ones that made the
+          // editor disagree with what the player renders.
+          data={{ ...data, color: (data.color || 'violet') as any }}
           mode={colorMode as any}
           themeColors={themeColors!}
           brand={brand}

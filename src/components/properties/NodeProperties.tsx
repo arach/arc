@@ -1,4 +1,4 @@
-import { useEditor, useDiagram, useViewMode } from '../editor/EditorProvider'
+import { useEditor, useDiagram, useViewMode, useResolvedBrand } from '../editor/EditorProvider'
 import { SIZE_OPTIONS, NODE_SIZES } from '../../utils/constants'
 import {
   InspSection,
@@ -16,6 +16,9 @@ import {
 } from '../editor/inspector-ui'
 import IconPicker from './IconPicker'
 import ColorPicker from './ColorPicker'
+import ShapePicker from './ShapePicker'
+import { resolveNodeRadius } from '../../utils/themes'
+import { resolveNodeShape } from '../../utils/nodeShape'
 
 const DEFAULT_ISO_HEIGHT = 25
 const DEFAULT_ISO_DEPTH = 50
@@ -51,6 +54,7 @@ export default function NodeProperties({ nodeId }: { nodeId: string }) {
   const { actions } = useEditor()
   const diagram = useDiagram()
   const viewMode = useViewMode()
+  const brand = useResolvedBrand()
 
   const node = diagram.nodes[nodeId]
   const data = diagram.nodeData[nodeId]
@@ -82,6 +86,10 @@ export default function NodeProperties({ nodeId }: { nodeId: string }) {
   const currentHeight = node.height || presetSize.height
   const hasCustomDimensions = node.width !== undefined || node.height !== undefined
 
+  // What the theme would draw, so the picker can show where an un-overridden
+  // node gets its silhouette from rather than showing nothing selected.
+  const themeShape = resolveNodeShape(brand?.nodeShape, resolveNodeRadius(brand))
+
   const isIsometric = viewMode === 'isometric'
   const isoZ = node.z ?? 0
   const isoHeight = node.isoHeight ?? DEFAULT_ISO_HEIGHT
@@ -109,6 +117,20 @@ export default function NodeProperties({ nodeId }: { nodeId: string }) {
         {hasCustomDimensions && (
           <InspLinkButton onClick={() => actions.resizeNode(nodeId, node.size || 'm')}>
             Reset to preset
+          </InspLinkButton>
+        )}
+      </InspField>
+
+      <InspField>
+        <InspLabel>Shape</InspLabel>
+        <ShapePicker
+          value={data.shape}
+          inherited={themeShape}
+          onChange={(v) => handleUpdate('shape', v)}
+        />
+        {data.shape && (
+          <InspLinkButton onClick={() => handleUpdate('shape', undefined)}>
+            Follow the theme
           </InspLinkButton>
         )}
       </InspField>

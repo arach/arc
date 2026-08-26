@@ -4,96 +4,120 @@
 
 ```
 src/
-├── main.jsx                    # Entry point
-├── App.jsx                     # Root component
+├── main.tsx                        # React entry
+├── App.tsx                         # Routes: /, /editor, /player, /showcase, /docs
+├── apps/
+│   ├── arc-editor/                 # Hudson shell — canonical editor UX
+│   │   ├── createArcApp.tsx        # HudsonApp factory
+│   │   ├── ArcEditorContent.tsx    # Content slot (markup pane + canvas)
+│   │   └── ArcEditorInspector.tsx  # Right rail
+│   └── arc-showcase/               # Player harness (/showcase)
 ├── components/
+│   ├── ArcDiagram.tsx              # 2D player (exported as @arach/arc)
 │   ├── editor/
-│   │   ├── DiagramEditor.jsx   # Main editor layout
-│   │   ├── EditorProvider.jsx  # State context + reducer
-│   │   ├── editorReducer.js    # State logic
-│   │   ├── Toolbar.jsx         # File/mode controls
-│   │   ├── DiagramCanvas.jsx   # Interactive canvas
-│   │   ├── EditableNode.jsx    # Draggable nodes
-│   │   ├── ConnectorLayer.jsx  # SVG connectors
-│   │   ├── AnchorPoints.jsx    # Connection points
-│   │   └── PropertiesPanel.jsx # Right sidebar
-│   ├── properties/
-│   │   ├── NodeProperties.jsx
-│   │   ├── ConnectorProperties.jsx
-│   │   ├── IconPicker.jsx
-│   │   └── ColorPicker.jsx
-│   └── dialogs/
-│       └── ExportDialog.jsx
-├── utils/
-│   ├── constants.js            # Colors, sizes, anchors
-│   ├── diagramHelpers.js       # Position/path calcs
-│   ├── iconRegistry.js         # Icon name → component
-│   └── fileOperations.js       # Save/load/export
-└── hooks/
-    └── useKeyboardShortcuts.js
+│   │   ├── DiagramEditor.tsx       # Editor layout (canvas host)
+│   │   ├── DiagramCanvas.tsx       # Pan/zoom, 2D + isometric modes
+│   │   ├── EditorProvider.tsx      # Context + action helpers
+│   │   ├── editorReducer.ts        # All state transitions
+│   │   ├── EditableNode.tsx        # Draggable nodes
+│   │   ├── ConnectorLayer.tsx      # SVG connectors
+│   │   ├── FloatingToolbar.tsx     # Bottom toolbar dock
+│   │   └── MiniMap.tsx, ZoomControls.tsx, ...
+│   ├── chrome/                     # Shell: SettingsRail, MarkupPanel, SettingsPanel
+│   ├── properties/                 # Inspector forms (Node, Connector, Group, ...)
+│   └── diagrams/*.diagram.ts       # Canonical examples
+├── types/
+│   ├── diagram.ts                  # Public ArcDiagramData schema
+│   └── editor.ts                   # Editor-only types (EmbedConfig, ViewMode, ...)
+├── utils/                          # themes, constants, validation, export, autoLayout
+└── iso/                            # Isometric renderer
+
+packages/
+├── viewer/                         # @arach/arc-viewer
+└── iso/                            # @arach/arc-iso
 ```
+
+## Editor Entry Flow
+
+```
+/editor/:sessionId
+  → App.tsx mounts Hudson with createArcEditorApp()
+    → ArcEditorProvider (session, status, file ops)
+      → ArcEditorContent
+        → DiagramEditor (EditorProvider + DiagramCanvas)
+```
+
+**Hudson** (`hudsonkit`) provides the app shell: nav, status bar, inspector slot,
+commands. Canvas logic stays in `src/components/editor/`. Chrome tokens live in
+`src/editor-shell.css` + `src/chrome-themes.css`.
 
 ## State Shape
 
 ```typescript
 {
   diagram: {
-    layout: { width, height },
-    nodes: Record<string, { x, y, size }>,
-    nodeData: Record<string, { icon, name, color, ... }>,
-    connectors: Array<{ from, to, fromAnchor, toAnchor, style }>,
-    connectorStyles: Record<string, { color, strokeWidth, label, ... }>
+    layout, grid,
+    nodes, nodeData, connectors, connectorStyles,
+    groups, images, exportZone,
   },
   editor: {
-    selectedNodeId: string | null,
-    selectedConnectorIndex: number | null,
-    mode: 'select' | 'addNode' | 'addConnector',
-    pendingConnector: { from, fromAnchor } | null,
-    isDragging: boolean
+    selectedNodeIds: string[],
+    selectedConnectorIndex, selectedGroupId, selectedImageId,
+    mode: 'select' | 'addNode' | 'addConnector' | 'addGroup' | 'pan',
+    pendingConnector, pendingGroup,
+    isDragging, dragOffset, dragNodeOffsets,
+    template, zoom,
+    viewMode: '2d' | 'isometric',
+    isoStyle: 'solid' | 'blueprint' | 'cyanotype',
+    themeId, colorMode,
   },
-  meta: {
-    filename: string | null,
-    isDirty: boolean,
-    lastSaved: Date | null
-  },
-  history: {
-    past: DiagramState[],
-    future: DiagramState[]
-  }
+  meta: { filename, isDirty, lastSaved, diagramMeta },
+  history: { past, future }   // max 50
 }
 ```
 
 ## Data Flow
 
 ```
-User Action → dispatch(action) → editorReducer → new state → Context → re-render
+User Action → dispatch({ type, ... }) → editorReducer → new state → Context → re-render
 ```
+
+Reducer action reference: `docs/agent/editor-actions.agent.md`
 
 ## Key Files to Modify
 
 | Task | File(s) |
 |------|---------|
-| Add icon | `src/utils/iconRegistry.js` |
-| Add color | `src/utils/constants.js` → `COLORS` |
-| Change node size | `src/utils/constants.js` → `NODE_SIZES` |
-| Edit drag behavior | `src/components/editor/EditableNode.jsx` |
-| Edit connector paths | `src/components/editor/ConnectorLayer.jsx` |
-| Add toolbar action | `src/components/editor/Toolbar.jsx` |
-| New export format | `src/utils/fileOperations.js` |
+| Add icon | `src/utils/iconRegistry.ts` |
+| Node sizes | `src/utils/constants.ts` → `NODE_SIZES` |
+| Diagram schema | `src/types/diagram.ts` |
+| Validate external JSON | `src/utils/diagramValidation.ts` |
+| Drag behavior | `src/components/editor/EditableNode.tsx` |
+| Connector paths | `src/components/editor/ConnectorLayer.tsx` |
+| Toolbar / modes | `src/components/editor/FloatingToolbar.tsx` |
+| Shell chrome | `src/apps/arc-editor/`, `src/components/chrome/` |
+| File save/open | `src/utils/fileOperations.ts` |
+| Markup pane | `src/components/chrome/MarkupPanel.tsx` |
+| Themes | `src/utils/themes.ts` |
+| Chrome skins | `src/utils/chromeThemes.ts`, `src/chrome-themes.css` |
 
 ## Editor Modes
 
 | Mode | Behavior |
 |------|----------|
 | `select` | Click to select, drag to move |
-| `addNode` | Click canvas to place node |
+| `addNode` | Click canvas to place node (default size `m`) |
 | `addConnector` | Click source anchor, then target anchor |
+| `addGroup` | Draw a group frame |
+| `pan` | Pan the canvas |
 
 ## Commands
 
 ```bash
-pnpm dev      # Dev server with HMR
-pnpm build    # Production build
-pnpm lint     # ESLint check
-pnpm preview  # Preview production build
+bun run dev       # Dev server with HMR (port 5188)
+bun run build     # Production build
+bun run lint      # ESLint
+bun run typecheck # tsc --noEmit
 ```
+
+Read `CLAUDE.md` before changing canvas overlays, markup pane sync, or chrome tokens.

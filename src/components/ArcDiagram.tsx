@@ -4,8 +4,10 @@ import * as LucideIcons from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { getTheme, resolveNodeRadius, type ThemeId, type Theme, type BrandSpec } from '../utils/themes'
 import {
+  radiusForShape,
   resolveNodeDecor,
   resolveNodeShape,
+  type NodeShape,
   shapeClipPath,
   shapeCut,
   shapeOutlinePath,
@@ -33,6 +35,8 @@ export interface NodeData {
   subtitle?: string
   description?: string
   color: DiagramColor
+  /** Per-node silhouette. Omit to follow the theme's own node shape. */
+  shape?: NodeShape
 }
 
 export interface Connector {
@@ -441,10 +445,13 @@ export function Node({ node, data, mode, themeColors, brand, hovered, dimmed, li
   const isLarge = node.size === 'l'
   const isSmall = node.size === 's'
   const isLight = mode === 'light'
-  const nodeRadius = resolveNodeRadius(brand)
+  const themeRadius = resolveNodeRadius(brand)
   const shellOpacity = brand?.nodeOpacity ?? 1
 
-  const shape = resolveNodeShape(brand?.nodeShape, nodeRadius)
+  // A node can override the theme's silhouette; the radius has to follow it,
+  // or a pill in a square theme still comes out square.
+  const shape = resolveNodeShape(data.shape || brand?.nodeShape, themeRadius)
+  const nodeRadius = data.shape ? radiusForShape(shape, themeRadius) : themeRadius
   const decor = resolveNodeDecor(brand?.nodeDecor, brand?.accentBar)
   const cut = shapeCut(node.size)
   const clipPath = shapeClipPath(shape, cut)
@@ -960,10 +967,15 @@ function DiagramLegend({ styles, connectors, groups, themeColors, brand, mode, l
   return (
     <div
       data-arc-legend
-      className="absolute z-10 backdrop-blur-sm pointer-events-none"
+      className="absolute z-10 backdrop-blur-sm"
       style={{
         left,
         bottom,
+        // A key with many styles and named groups can outgrow a short frame.
+        // Scroll it rather than let the frame cut the last rows off — which
+        // reads as a rendering fault, not as "there is more".
+        maxHeight: `calc(100% - ${bottom + 8}px)`,
+        overflowY: 'auto',
         padding: '7px 9px',
         border: `1px solid ${isLight ? 'rgba(24,24,27,0.14)' : 'rgba(244,244,245,0.14)'}`,
         borderRadius: brand?.nodeRadius ?? 6,

@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react'
@@ -18,7 +19,7 @@ import {
 import ShareSheet from '../../components/dialogs/ShareSheet'
 import useKeyboardShortcuts from '../../hooks/useKeyboardShortcuts'
 import { useMeta as usePageMeta } from '../../hooks/useMeta'
-import { saveDiagramSession, loadDiagramSession } from '../../utils/sessionStorage'
+import { saveDiagramSession, loadDiagramSession, rememberLastSession } from '../../utils/sessionStorage'
 import { saveDiagram, loadDiagram } from '../../utils/fileOperations'
 
 export interface ArcEditorInit {
@@ -29,12 +30,21 @@ export interface ArcEditorInit {
   initialDiagramMeta?: Record<string, any>
 }
 
+export type NoticeTone = 'emerald' | 'amber' | 'red'
+
+export interface EditorNotice {
+  message: string
+  tone: NoticeTone
+}
+
 interface ArcEditorContextValue {
   sessionId: string | null
   openShare: () => void
   handleNew: () => void
   handleOpen: () => Promise<void>
   handleSave: () => Promise<void>
+  /** Transient line in the status bar — what just happened, or why it didn't. */
+  notice: EditorNotice | null
 }
 
 const ArcEditorContext = createContext<ArcEditorContextValue | null>(null)
@@ -87,6 +97,21 @@ function ArcEditorSession({
   const meta = useMeta()
   const [showShare, setShowShare] = useState(false)
   const [viewportBounds, setViewportBounds] = useState(null)
+  const [notice, setNotice] = useState<EditorNotice | null>(null)
+  const noticeTimer = useRef<number | null>(null)
+
+  // File operations used to fail silently — a bad file left the editor looking
+  // as if nothing had been clicked. Say so, briefly, in the status bar.
+  const say = useCallback((message: string, tone: NoticeTone) => {
+    setNotice({ message, tone })
+    if (noticeTimer.current) window.clearTimeout(noticeTimer.current)
+    noticeTimer.current = window.setTimeout(
+      () => setNotice(null),
+      tone === 'red' ? 8000 : 3000,
+    )
+  }, [])
+
+  useEffect(() => () => { if (noticeTimer.current) window.clearTimeout(noticeTimer.current) }, [])
 
   const [originalDiagram] = useState(() => {
     if (!sessionId) return null
@@ -94,9 +119,17 @@ function ArcEditorSession({
     return existing?.originalDiagram || null
   })
 
+  // Autosave. Debounced so a drag doesn't write on every frame, but the
+  // pending write has to survive whatever ends the session — a route change to
+  // the player, a closed tab, a reload. Hence the flush, which the unmount
+  // cleanup and pagehide both call.
+  const writeSession = useRef<() => void>(() => {})
+  const saveTimer = useRef<number | null>(null)
+  const unsaved = useRef(false)
+
   useEffect(() => {
-    if (!sessionId) return
-    const timeout = setTimeout(() => {
+    writeSession.current = () => {
+      if (!sessionId) return
       saveDiagramSession(sessionId, {
         diagram: state.diagram,
         originalDiagram,
@@ -104,8 +137,18 @@ function ArcEditorSession({
         colorMode: state.editor.colorMode as 'light' | 'dark',
         diagramMeta: state.meta.diagramMeta || {},
       })
+      rememberLastSession(sessionId)
+    }
+  })
+
+  useEffect(() => {
+    if (!sessionId) return
+    unsaved.current = true
+    if (saveTimer.current) clearTimeout(saveTimer.current)
+    saveTimer.current = window.setTimeout(() => {
+      unsaved.current = false
+      writeSession.current()
     }, 1000)
-    return () => clearTimeout(timeout)
   }, [
     sessionId,
     state.diagram,
@@ -114,6 +157,20 @@ function ArcEditorSession({
     state.meta.diagramMeta,
     originalDiagram,
   ])
+
+  useEffect(() => {
+    const flush = () => {
+      if (!unsaved.current) return
+      unsaved.current = false
+      if (saveTimer.current) clearTimeout(saveTimer.current)
+      writeSession.current()
+    }
+    window.addEventListener('pagehide', flush)
+    return () => {
+      window.removeEventListener('pagehide', flush)
+      flush()
+    }
+  }, [])
 
   usePageMeta({
     title: 'Arc Editor | Visual Diagram Builder',
@@ -129,29 +186,38 @@ function ArcEditorSession({
 
   const handleOpen = useCallback(async () => {
     if (meta.isDirty && !window.confirm('Discard unsaved changes?')) return
-    const result = await loadDiagram() as { diagram: any; filename: string; meta?: any } | null
-    if (result) {
-      const { _meta, ...diagramData } = result.diagram
-      const diagramMeta = _meta || result.meta || {}
-      actions.loadDiagram(diagramData, result.filename)
-      if (diagramMeta.themeId) actions.setTheme(diagramMeta.themeId)
-      if (diagramMeta.colorMode) actions.setColorMode(diagramMeta.colorMode)
-      if (diagramMeta.isoStyle) actions.setIsoStyle(diagramMeta.isoStyle)
-      if (diagramMeta.viewMode) actions.setViewMode(diagramMeta.viewMode)
-      if (Object.keys(diagramMeta).length > 0) actions.setDiagramMeta(diagramMeta)
+    const result = await loadDiagram()
+    if (!result) return // cancelled
+    if (result.error) {
+      say(result.error, 'red')
+      return
     }
-  }, [meta.isDirty, actions])
+    const { _meta, ...diagramData } = result.diagram
+    const diagramMeta = _meta || {}
+    actions.loadDiagram(diagramData, result.filename)
+    if (diagramMeta.themeId) actions.setTheme(diagramMeta.themeId)
+    if (diagramMeta.colorMode) actions.setColorMode(diagramMeta.colorMode)
+    if (diagramMeta.isoStyle) actions.setIsoStyle(diagramMeta.isoStyle)
+    if (diagramMeta.viewMode) actions.setViewMode(diagramMeta.viewMode)
+    if (Object.keys(diagramMeta).length > 0) actions.setDiagramMeta(diagramMeta)
+    say(`Opened ${result.filename}`, 'emerald')
+  }, [meta.isDirty, actions, say])
 
   const handleSave = useCallback(async () => {
     const diagramWithMeta = {
       ...diagram,
       _meta: meta.diagramMeta || {},
     }
-    const filename = await saveDiagram(diagramWithMeta, meta.filename || 'diagram.json')
-    if (filename) {
-      actions.markSaved(filename)
+    try {
+      const filename = await saveDiagram(diagramWithMeta, meta.filename || 'diagram.json')
+      if (filename) {
+        actions.markSaved(filename)
+        say(`Saved ${filename}`, 'emerald')
+      }
+    } catch (err) {
+      say((err as Error).message || 'Could not save the diagram.', 'red')
     }
-  }, [diagram, meta.filename, meta.diagramMeta, actions])
+  }, [diagram, meta.filename, meta.diagramMeta, actions, say])
 
   const handleDelete = useCallback(() => {
     if (editor.selectedNodeIds?.length > 0) {
@@ -199,7 +265,8 @@ function ArcEditorSession({
     handleNew,
     handleOpen,
     handleSave,
-  }), [sessionId, handleNew, handleOpen, handleSave])
+    notice,
+  }), [sessionId, handleNew, handleOpen, handleSave, notice])
 
   return (
     <ArcEditorContext.Provider value={value}>

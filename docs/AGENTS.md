@@ -31,10 +31,28 @@ order: 6
 
 ## Quick Navigation
 
-- Entry point: `src/main.jsx`
-- Main editor: `src/components/editor/DiagramEditor.jsx`
-- State management: `src/components/editor/EditorProvider.jsx`
-- Canvas rendering: `src/components/editor/DiagramCanvas.jsx`
+- Entry point: `src/main.tsx`
+- Routes: `src/App.tsx`
+- Editor shell: `src/apps/arc-editor/createArcApp.tsx`
+- Canvas + reducer: `src/components/editor/`
+- Diagram schema: `src/types/diagram.ts`
+- Example diagrams: `src/components/diagrams/*.diagram.ts`
+- Contributor guide: `CLAUDE.md` (repo root)
+
+## MCP Support
+
+**Shipped** as the `arc-mcp` bin on `@arach/arc` (`scripts/mcp/server.ts`). See `docs/agent/mcp.agent.md`.
+
+## Package Decision Tree
+
+| Goal | Use |
+|------|-----|
+| Render 2D diagram in React | `@arach/arc` or `@arach/arc-viewer` |
+| Mermaid sequences | `@arach/arc-viewer` |
+| Isometric renderer | `@arach/arc-iso` |
+| Full visual studio | Clone repo → `bun run dev` → `/editor` |
+
+Details: `docs/agent/packages.agent.md`
 
 ## Overview
 
@@ -122,9 +140,10 @@ function App() {
 ## Development
 
 ```bash
-pnpm dev      # Start dev server
-pnpm build    # Production build
-pnpm lint     # Run ESLint
+bun run dev      # Start dev server (http://localhost:5188/editor)
+bun run build    # Production build
+bun run lint     # Run ESLint
+bun run typecheck
 ```
 
 ## Architecture
@@ -142,7 +161,7 @@ pnpm lint     # Run ESLint
 ```typescript
 {
   diagram: { layout, nodes, nodeData, connectors, connectorStyles },
-  editor: { selectedNodeId, selectedConnectorIndex, mode, pendingConnector, isDragging },
+  editor: { selectedNodeIds, selectedConnectorIndex, mode, pendingConnector, isDragging, viewMode, themeId, colorMode },
   meta: { filename, isDirty, lastSaved },
   history: { past, future }
 }
@@ -160,7 +179,7 @@ pnpm lint     # Run ESLint
 ```json
 {
   "layout": { "width": 700, "height": 340 },
-  "nodes": { "nodeId": { "x": 25, "y": 15, "size": "large" } },
+  "nodes": { "nodeId": { "x": 25, "y": 15, "size": "m" } },
   "nodeData": { "nodeId": { "icon": "Monitor", "name": "...", "color": "violet" } },
   "connectors": [{ "from": "a", "to": "b", "fromAnchor": "right", "toAnchor": "left", "style": "http" }],
   "connectorStyles": { "http": { "color": "amber", "strokeWidth": 2, "label": "HTTP" } }
@@ -200,7 +219,7 @@ interface ArcDiagramData {
 interface NodePosition {
   x: number
   y: number
-  size: 's' | 'm' | 'l'
+  size: 'xs' | 's' | 'm' | 'l'
 }
 
 interface NodeData {

@@ -77,7 +77,7 @@ export function editorReducer(state, action) {
           ...stateWithHistory.diagram,
           nodes: {
             ...stateWithHistory.diagram.nodes,
-            [nodeId]: { x: position.x, y: position.y, size: 'normal' },
+            [nodeId]: { x: position.x, y: position.y, size: 'm' },
           },
           nodeData: {
             ...stateWithHistory.diagram.nodeData,
@@ -162,13 +162,20 @@ export function editorReducer(state, action) {
     case 'node/update': {
       const { nodeId, updates } = action
       const stateWithHistory = saveToHistory(state)
+      // An update to `undefined` clears the field rather than recording it as
+      // present-but-empty — "follow the theme" has to leave no trace in the
+      // saved document, not a `"shape": undefined` that JSON quietly drops.
+      const next = { ...stateWithHistory.diagram.nodeData[nodeId], ...updates }
+      for (const key of Object.keys(updates)) {
+        if (updates[key] === undefined) delete next[key]
+      }
       return {
         ...stateWithHistory,
         diagram: {
           ...stateWithHistory.diagram,
           nodeData: {
             ...stateWithHistory.diagram.nodeData,
-            [nodeId]: { ...stateWithHistory.diagram.nodeData[nodeId], ...updates },
+            [nodeId]: next,
           },
         },
       }
@@ -761,9 +768,16 @@ export function editorReducer(state, action) {
 
     case 'layout/expand': {
       // Lightweight layout expansion without history (for auto-expand during drag)
+      //
+      // Snapped to a 20px step: the viewport that drives this is measured from
+      // getBoundingClientRect()/zoom, so the raw numbers are fractional. They
+      // used to land in the saved document as `width: 944.7000122070312`, and
+      // every pixel of drift wrote another one.
+      const step = 20
+      const grow = (n) => Math.ceil(n / step) * step
       const currentLayout = state.diagram.layout
-      const newWidth = Math.max(currentLayout.width, action.width || currentLayout.width)
-      const newHeight = Math.max(currentLayout.height, action.height || currentLayout.height)
+      const newWidth = Math.max(currentLayout.width, grow(action.width || currentLayout.width))
+      const newHeight = Math.max(currentLayout.height, grow(action.height || currentLayout.height))
 
       // Only update if actually expanding
       if (newWidth === currentLayout.width && newHeight === currentLayout.height) {

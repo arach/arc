@@ -5,6 +5,7 @@ node_modules
 dist
 dist-*
 lib
+bin/arc-mcp.mjs
 bundle-stats.html
 *.tsbuildinfo
 

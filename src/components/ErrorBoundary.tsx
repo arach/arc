@@ -1,10 +1,12 @@
 import { Component, type ReactNode, type ErrorInfo } from 'react'
-import { AlertTriangle, RefreshCw } from 'lucide-react'
+import { AlertTriangle, RefreshCw, RotateCcw } from 'lucide-react'
 
 interface Props {
   children: ReactNode
   fallback?: ReactNode
   onError?: (error: Error, errorInfo: ErrorInfo) => void
+  /** Changing this clears the error — useful when the input that broke it changed. */
+  resetKey?: unknown
 }
 
 interface State {
@@ -27,6 +29,14 @@ export class ErrorBoundary extends Component<Props, State> {
     this.props.onError?.(error, errorInfo)
   }
 
+  componentDidUpdate(prev: Props) {
+    // A new input deserves a fresh attempt — otherwise one bad diagram wedges
+    // the canvas until a reload, even after the edit that broke it is undone.
+    if (this.state.hasError && prev.resetKey !== this.props.resetKey) {
+      this.setState({ hasError: false, error: null })
+    }
+  }
+
   handleReset = () => {
     this.setState({ hasError: false, error: null })
   }
@@ -37,22 +47,25 @@ export class ErrorBoundary extends Component<Props, State> {
         return this.props.fallback
       }
 
+      // Styled from the chrome tokens rather than Tailwind: this can render
+      // inside an embed where no utility stylesheet is loaded.
       return (
-        <div className="flex flex-col items-center justify-center p-8 text-center bg-zinc-50 dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-700">
-          <AlertTriangle className="w-12 h-12 text-amber-500 mb-4" />
-          <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-2">
-            Something went wrong
-          </h3>
-          <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-4 max-w-md">
+        <div className="arc-error-fallback" role="alert">
+          <AlertTriangle className="arc-error-icon" aria-hidden="true" />
+          <h3 className="arc-error-title">This view stopped rendering</h3>
+          <p className="arc-error-detail">
             {this.state.error?.message || 'An unexpected error occurred while rendering this component.'}
           </p>
-          <button
-            onClick={this.handleReset}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-zinc-900 dark:bg-zinc-100 dark:text-zinc-900 rounded-lg hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors"
-          >
-            <RefreshCw className="w-4 h-4" />
-            Try Again
-          </button>
+          <div className="arc-error-actions">
+            <button type="button" onClick={this.handleReset} className="arc-error-btn">
+              <RotateCcw aria-hidden="true" />
+              Try again
+            </button>
+            <button type="button" onClick={() => window.location.reload()} className="arc-error-btn">
+              <RefreshCw aria-hidden="true" />
+              Reload
+            </button>
+          </div>
         </div>
       )
     }

@@ -1,6 +1,7 @@
 import { createElement, type ReactNode } from 'react'
 import { ScanSearch } from 'lucide-react'
 import type { HudsonApp } from 'hudsonkit'
+import { version } from '../../../package.json'
 import { ArcEditorProvider, type ArcEditorInit } from './ArcEditorContext'
 import ArcEditorContent from './ArcEditorContent'
 import ArcEditorInspector from './ArcEditorInspector'
@@ -27,7 +28,8 @@ export function createArcEditorApp(init: ArcEditorInit, initialDiagram: any): Hu
     name: 'Arc',
     description: 'Visual architecture diagram editor',
     mode: 'panel',
-    icon: createElement('span', { className: 'arc-editor-ver' }, 'v0.4.3'),
+    // Read from the manifest, not hand-written — the badge used to drift.
+    icon: createElement('span', { className: 'arc-editor-ver' }, `v${version}`),
     rightPanel: {
       title: '',
       icon: createElement(ScanSearch, { size: 12 }),

@@ -2,6 +2,7 @@
 // Enables URL-based session recovery: /editor/:sessionId
 
 const STORAGE_PREFIX = 'arc-session-'
+const LAST_SESSION_KEY = 'arc-last-session'
 
 export interface DiagramSession {
   diagram: any
@@ -58,7 +59,13 @@ export function loadDiagramSession(id: string): DiagramSession | null {
 /** List all saved diagram sessions, sorted by most recent */
 export function listDiagramSessions(): Array<{ id: string; name?: string; updatedAt: number }> {
   const sessions: Array<{ id: string; name?: string; updatedAt: number }> = []
-  for (let i = 0; i < localStorage.length; i++) {
+  let length = 0
+  try {
+    length = localStorage.length
+  } catch {
+    return sessions
+  }
+  for (let i = 0; i < length; i++) {
     const key = localStorage.key(i)
     if (!key?.startsWith(STORAGE_PREFIX)) continue
     try {
@@ -79,5 +86,33 @@ export function listDiagramSessions(): Array<{ id: string; name?: string; update
 
 /** Delete a diagram session */
 export function deleteDiagramSession(id: string): void {
-  localStorage.removeItem(`${STORAGE_PREFIX}${id}`)
+  try {
+    localStorage.removeItem(`${STORAGE_PREFIX}${id}`)
+  } catch (e) {
+    console.warn('Failed to delete diagram session:', e)
+  }
+}
+
+/**
+ * The session the editor was last on.
+ *
+ * Leaving the editor for another surface and coming back should return to the
+ * diagram in progress, not open a blank one — /editor with no id mints a new
+ * session every time.
+ */
+export function rememberLastSession(id: string): void {
+  try {
+    localStorage.setItem(LAST_SESSION_KEY, id)
+  } catch {
+    // Private mode — the link just falls back to a fresh editor.
+  }
+}
+
+export function lastSessionId(): string | null {
+  try {
+    const id = localStorage.getItem(LAST_SESSION_KEY)
+    return id && localStorage.getItem(`${STORAGE_PREFIX}${id}`) ? id : null
+  } catch {
+    return null
+  }
 }

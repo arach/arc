@@ -83,7 +83,9 @@ export default function ZoomControls({
   }, [])
 
   return (
-    <div className="arc-canvas-controls absolute bottom-3 right-3">
+    // Positioned by .arc-canvas-dock, so the clusters can't collide at any
+    // interface scale.
+    <div className="arc-canvas-controls">
       <button
         type="button"
         className="arc-canvas-btn"

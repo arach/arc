@@ -20,9 +20,10 @@ export default function ArcEditorContent() {
   const { sessionId } = useArcEditor()
   const { setViewportBounds } = useArcEditorViewport()
   // Remembered, so a split-view habit survives a reload.
-  const [showMarkup, setShowMarkup] = useState(
-    () => typeof window !== 'undefined' && window.localStorage.getItem('arc-editor-markup') === '1',
-  )
+  const [showMarkup, setShowMarkup] = useState(() => {
+    // Reading storage can throw outright, not just return null (private mode).
+    try { return window.localStorage.getItem('arc-editor-markup') === '1' } catch { return false }
+  })
 
   useEffect(() => {
     try { window.localStorage.setItem('arc-editor-markup', showMarkup ? '1' : '0') } catch { /* private mode */ }
@@ -45,7 +46,7 @@ export default function ArcEditorContent() {
 
   return (
     <div className="arc-shell-row">
-      <SettingsRail>
+      <SettingsRail editorTo={sessionId ? `/editor/${sessionId}` : undefined}>
         <button
           type="button"
           className={`arc-rail-btn${showMarkup ? ' is-active' : ''}`}
@@ -78,10 +79,12 @@ export default function ArcEditorContent() {
         </Suspense>
       )}
       <div className="arc-editor-canvas arc-shell-main">
-      <ErrorBoundary>
+      {/* An edit that fixes a broken diagram should bring the canvas back. */}
+      <ErrorBoundary resetKey={diagram}>
         <DiagramCanvas
           onViewportChange={setViewportBounds}
           embedConfig={{ enableViewModeToggle: true }}
+          surface="chrome"
           themeOverride={themeId || undefined}
           isDark={isDark}
         />
