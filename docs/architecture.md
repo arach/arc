@@ -23,7 +23,7 @@ The editor uses `useReducer` + Context for state management:
 ```typescript
 {
   diagram: { layout, nodes, nodeData, connectors, connectorStyles },
-  editor: { selectedNodeId, selectedConnectorIndex, mode, pendingConnector, isDragging },
+  editor: { selectedNodeIds, selectedConnectorIndex, mode, pendingConnector, isDragging },
   meta: { filename, isDirty, lastSaved },
   history: { past, future }
 }
@@ -43,7 +43,7 @@ Diagrams are stored as JSON:
 ```json
 {
   "layout": { "width": 700, "height": 340 },
-  "nodes": { "nodeId": { "x": 25, "y": 15, "size": "large" } },
+  "nodes": { "nodeId": { "x": 25, "y": 15, "size": "m" } },
   "nodeData": { "nodeId": { "icon": "Monitor", "name": "...", "color": "violet" } },
   "connectors": [{ "from": "a", "to": "b", "fromAnchor": "right", "toAnchor": "left", "style": "http" }],
   "connectorStyles": { "http": { "color": "amber", "strokeWidth": 2, "label": "HTTP" } }

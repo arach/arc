@@ -1,0 +1,58 @@
+{
+  "name": "@arach/arc-mcp",
+  "version": "0.1.0",
+  "description": "Model Context Protocol server for Arc diagrams — validate, layout, render, and hand off to the editor",
+  "type": "module",
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "bin": {
+    "arc-mcp": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^26.3.0",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.3"
+  },
+  "keywords": [
+    "arc",
+    "diagram",
+    "mcp",
+    "model-context-protocol",
+    "architecture"
+  ],
+  "author": "arach",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/arach/arc.git",
+    "directory": "packages/mcp"
+  },
+  "homepage": "https://github.com/arach/arc#readme",
+  "engines": {
+    "node": ">=18"
+  }
+}

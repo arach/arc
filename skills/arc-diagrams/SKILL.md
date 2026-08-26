@@ -52,13 +52,15 @@ Each node needs an `x`, `y` position and `size`:
 }
 ```
 
-**Size options:**
-| Size | Key | Dimensions |
-|------|-----|------------|
+**Size options** (canonical — use these):
+| Size | Key | Dimensions (px) |
+|------|-----|-----------------|
 | Extra Small | `xs` | 80 × 36 |
-| Small | `s` | 95 × 42 |
-| Medium | `m` | 145 × 68 |
-| Large | `l` | 210 × 85 |
+| Small | `s` | 110 × 48 |
+| Medium | `m` | 160 × 75 |
+| Large | `l` | 220 × 90 |
+
+Source: `src/utils/constants.ts` → `NODE_SIZES`. Do **not** use `large`/`normal`/`small`.
 
 ### 3. Define Node Data
 
@@ -180,12 +182,19 @@ Here's a full diagram for a typical web application:
 
 ## Layout Tips
 
-1. **Grid alignment:** Position nodes on a ~50px grid for clean layouts
-2. **Spacing:** Leave ~150-200px between connected nodes horizontally
-3. **Flow direction:** Left-to-right or top-to-bottom for data flow
-4. **Grouping:** Place related nodes close together
-5. **Large nodes:** Use `l` size for primary/entry-point components
-6. **Connectors:** Match connector colors to the source or destination node
+1. **Prefer auto-layout** — use `autoLayout()` from `@arach/arc` when you don't need pixel-perfect placement
+2. **Grid alignment:** Position nodes on a ~50px grid for clean manual layouts
+3. **Spacing:** Leave ~150–200px between connected nodes horizontally
+4. **Flow direction:** Left-to-right or top-to-bottom for data flow
+5. **Grouping:** Use `groups` + `layoutHints` for framed sections (see `docs/group-layout.md`)
+6. **Large nodes:** Use `l` size for primary/entry-point components
+7. **Connectors:** Match connector colors to the source or destination node
+
+## Validation
+
+Before handing off JSON, ensure every `nodes` key has a matching `nodeData` entry.
+In the repo, `validateDiagramShape()` in `src/utils/diagramValidation.ts` returns a
+human-readable error or `null`.
 
 ## Output
 

@@ -1,29 +1,93 @@
 # Arc - LLM Context File
 
-> Visual diagram editor outputting declarative JSON/TypeScript configs
+> Diagrams as code — visual editor + React renderer for architecture diagrams
 > Source: https://github.com/arach/arc
 > Docs: https://arc.arach.dev/docs
+> Contributor guide: CLAUDE.md (repo root — read before editor changes)
 
 ## Quick Facts
 
-- **What**: Drag-and-drop architecture diagram editor
-- **Output**: JSON/TypeScript configs (not images)
-- **Stack**: React 19, Vite 7, TailwindCSS 4
-- **Packages**: @arach/arc (full), @arach/arc-viewer (viewer), @arach/arc-iso (isometric)
+- **What**: Drag-and-drop studio + `<ArcDiagram />` player for typed architecture diagrams
+- **Output**: JSON / TypeScript configs (not images) — diffable, versionable
+- **Stack**: React 19, Vite 7, TailwindCSS 4, Hudson shell (editor chrome)
+- **Package manager**: bun (`bun install`, `bun run dev`)
+- **MCP**: `@arach/arc-mcp` — see `docs/agent/mcp.agent.md` and `packages/mcp/README.md`
 
-## Installation
+## Which Package?
+
+| Goal | Package / path |
+|------|----------------|
+| Render a 2D diagram in React | `@arach/arc` or `@arach/arc-viewer` |
+| Mermaid sequence diagrams | `@arach/arc-viewer` (`ArcMermaidPlayer`) |
+| Isometric / YAML tier diagrams | `@arach/arc-iso` |
+| Full visual studio | Clone repo → `bun run dev` → `/editor` |
+| Contribute to editor | This repo — see CLAUDE.md |
+
+`@arach/arc` is the main publish surface (player + editor components + utilities).
+`@arach/arc-viewer` is a slimmer install when you only need read-only rendering.
+
+## Commands
 
 ```bash
-npm install @arach/arc
-npx @arach/arc-editor
+bun install
+bun run dev          # → http://localhost:5188/editor
+bun run build
+bun run lint
+bun run typecheck
 ```
+
+## Canonical Diagram Schema
+
+Source of truth: `src/types/diagram.ts`
+
+```typescript
+interface ArcDiagramData {
+  id?: string
+  layout: { width: number; height: number }
+  layoutHints?: LayoutHints          // auto-layout inside groups
+  nodes: Record<string, { x: number; y: number; size: 'xs' | 's' | 'm' | 'l' }>
+  nodeData: Record<string, {
+    icon: string                     // Lucide name as string
+    name: string
+    subtitle?: string
+    description?: string
+    color: DiagramColor
+    shape?: NodeShape                // per-node silhouette override
+  }>
+  connectors: Array<{
+    from: string; to: string
+    fromAnchor: AnchorPosition; toAnchor: AnchorPosition
+    style: string
+    curve?: 'natural' | 'step'
+  }>
+  connectorStyles: Record<string, {
+    color: DiagramColor
+    strokeWidth: number
+    label?: string
+    dashed?: boolean
+  }>
+  groups?: GroupShape[]
+  focusTargets?: Record<string, FocusTarget>
+}
+```
+
+**Node sizes** (`src/utils/constants.ts` NODE_SIZES):
+- `xs` 80×36 · `s` 110×48 · `m` 160×75 · `l` 220×90
+
+**Do not use** legacy Talkie sizes (`large`, `normal`, `small`) — see HANDOFF.md.
+
+**`_meta`** (saved with files, round-trips through sessions):
+`themeId`, `colorMode`, `viewMode`, `isoStyle`, `viewport`
+
+Validate external JSON with `validateDiagramShape()` in `src/utils/diagramValidation.ts`.
 
 ## Minimal Example
 
 ```tsx
 import { ArcDiagram } from '@arach/arc'
+import type { ArcDiagramData } from '@arach/arc'
 
-const diagram = {
+const diagram: ArcDiagramData = {
   layout: { width: 600, height: 300 },
   nodes: {
     frontend: { x: 50, y: 100, size: 'm' },
@@ -34,97 +98,110 @@ const diagram = {
     backend: { icon: 'Server', name: 'Backend', color: 'emerald' },
   },
   connectors: [
-    { from: 'frontend', to: 'backend', fromAnchor: 'right', toAnchor: 'left', style: 'api' }
+    { from: 'frontend', to: 'backend', fromAnchor: 'right', toAnchor: 'left', style: 'api' },
   ],
   connectorStyles: {
-    api: { color: 'violet', strokeWidth: 2, label: 'REST' }
+    api: { color: 'violet', strokeWidth: 2, label: 'REST' },
   },
 }
 
-<ArcDiagram data={diagram} mode="light" theme="default" />
+<ArcDiagram data={diagram} mode="light" theme="default" defaultZoom="fit" />
 ```
 
-## Schema
+## Auto-layout (prefer over hand-positioning)
 
 ```typescript
-interface ArcDiagramData {
-  id?: string
-  layout: { width: number; height: number }
-  nodes: Record<string, { x: number; y: number; size: 's' | 'm' | 'l' }>
-  nodeData: Record<string, { icon: string; name: string; color: DiagramColor; subtitle?: string }>
-  connectors: Array<{ from: string; to: string; fromAnchor: AnchorPosition; toAnchor: AnchorPosition; style: string }>
-  connectorStyles: Record<string, { color: DiagramColor; strokeWidth: number; label?: string; dashed?: boolean }>
-}
+import { autoLayout } from '@arach/arc'
 
-type DiagramColor = 'violet' | 'emerald' | 'blue' | 'amber' | 'sky' | 'zinc' | 'rose' | 'orange'
-type AnchorPosition = 'left' | 'right' | 'top' | 'bottom' | 'topLeft' | 'topRight' | 'bottomLeft' | 'bottomRight'
+const laidOut = autoLayout({
+  nodeData: { /* ... */ },
+  connectors: [/* omit anchors — inferred */],
+  connectorStyles: { /* ... */ },
+})
 ```
 
-## Props
+See `docs/group-layout.md` for `layoutHints` / group frames.
 
-| Prop | Type | Default |
-|------|------|---------|
-| data | ArcDiagramData | required |
-| mode | 'light' \| 'dark' | 'light' |
-| theme | 'default' \| 'warm' \| 'cool' \| 'mono' | 'default' |
-| interactive | boolean | true |
-
-## Available Icons (Lucide)
-
-Server, Database, Cloud, CloudCog, Monitor, Smartphone, Laptop, Globe, Terminal, MessageSquare, Mail, Bell, Shield, Lock, Key, FileText, Folder, Package, Layers, Wifi, Radio, Plug, RefreshCw, Download, Upload, Send, Zap, HardDrive, Network, Cpu, Archive, Cable, Router
-
-## Project Structure
+## Project Structure (contributors)
 
 ```
-src/components/editor/
-├── DiagramEditor.jsx     # Main layout
-├── EditorProvider.jsx    # State (useReducer + Context)
-├── editorReducer.js      # State logic
-├── DiagramCanvas.jsx     # Interactive canvas
-├── EditableNode.jsx      # Draggable nodes
-├── ConnectorLayer.jsx    # SVG connectors
-└── PropertiesPanel.jsx   # Editing sidebar
+src/
+├── main.tsx / App.tsx              # Routes: /, /editor, /player, /showcase, /docs
+├── apps/
+│   ├── arc-editor/                 # Hudson shell wrapper (canonical editor UX)
+│   └── arc-showcase/               # Player harness with inspector controls
+├── components/
+│   ├── ArcDiagram.tsx              # 2D player (also exported as @arach/arc)
+│   ├── editor/                     # Canvas, reducer, nodes, connectors
+│   │   ├── editorReducer.ts        # All state transitions
+│   │   ├── DiagramCanvas.tsx
+│   │   ├── DiagramEditor.tsx       # Legacy layout (canvas still lives here)
+│   │   └── EditorProvider.tsx
+│   ├── chrome/                     # Settings rail, markup pane (CodeMirror)
+│   └── diagrams/*.diagram.ts       # Canonical examples — copy these
+├── types/diagram.ts                # Public diagram schema
+├── utils/                          # themes, validation, export, autoLayout, icons
+└── iso/                            # Isometric renderer
 
-src/utils/
-├── constants.js          # Colors, sizes
-├── iconRegistry.js       # Icon mapping
-├── diagramHelpers.js     # Geometry utils
-└── fileOperations.js     # Save/load/export
+packages/
+├── viewer/                         # @arach/arc-viewer (+ Mermaid)
+└── iso/                            # @arach/arc-iso
 ```
+
+**Editor entry flow**: `/editor` → `createArcEditorApp()` (Hudson) → `ArcEditorContent` → `DiagramEditor` / `DiagramCanvas`.
+Shell chrome (nav, rail, inspector, markup pane) is Hudson + `src/components/chrome/`.
+Canvas logic and reducer are in `src/components/editor/`.
 
 ## State Shape
 
 ```typescript
 {
-  diagram: { layout, nodes, nodeData, connectors, connectorStyles },
-  editor: { selectedNodeId, selectedConnectorIndex, mode, pendingConnector, isDragging },
-  meta: { filename, isDirty, lastSaved },
-  history: { past, future }
+  diagram: { layout, grid, nodes, nodeData, connectors, connectorStyles, groups, images, exportZone },
+  editor: { selectedNodeIds, selectedConnectorIndex, mode, pendingConnector, viewMode, isoStyle, themeId, colorMode, ... },
+  meta: { filename, isDirty, lastSaved, diagramMeta },
+  history: { past, future }   // capped at 50
 }
 ```
 
-## Common Modifications
+Reducer actions: see `docs/agent/editor-actions.agent.md`
 
-| Task | File |
-|------|------|
-| Add icon | src/utils/iconRegistry.js |
-| Add color | src/utils/constants.js COLORS |
-| Edit drag | src/components/editor/EditableNode.jsx |
-| Edit paths | src/components/editor/ConnectorLayer.jsx |
-| New export | src/utils/fileOperations.js |
+## Themes
 
-## Commands
+Diagram themes (8): `default`, `warm`, `cool`, `mono`, `engineering`, `workbench`, `tactical`, `command`
+Chrome skins (shell only): `console`, `graphite`, `amber`, `viridian`, `paper`
+
+## Visual Verification
 
 ```bash
-pnpm dev      # Start dev server
-pnpm build    # Production build
-pnpm lint     # ESLint
+bun run dev
+# Open http://localhost:5188/editor/:sessionId
+# Or http://localhost:5188/showcase?doc=platform
+
+# Dev-only PNG capture:
+curl "http://localhost:5188/capture/my-session" > out.png
 ```
+
+## Agent Artifacts
+
+| File | Purpose |
+|------|---------|
+| CLAUDE.md | Full contributor context (best doc in repo) |
+| docs/llm.txt | This file — dense agent briefing |
+| docs/agent/*.agent.md | Per-topic agent context |
+| skills/arc-diagrams/SKILL.md | Diagram generation skill |
+| docs/prompts/*.md | Task prompt templates |
+| public/llms.txt | Served at /llms.txt (summary) |
+
+## MCP
+
+Shipped as `@arach/arc-mcp` (`packages/mcp/`). Tools: validate_diagram, auto_layout,
+render_ascii, diagram_to_typescript, editor_handoff. See docs/agent/mcp.agent.md.
 
 ## Critical Rules
 
-1. Diagrams are JSON data, not images - maintain declarative format
-2. State is immutable - always return new objects from reducer
-3. History is capped at 50 states
-4. Icons must be registered in iconRegistry.js before use
-5. Exports should be deterministic (same input = same output)
+1. Diagrams are JSON data — keep them declarative and deterministic
+2. Node sizes are `xs` | `s` | `m` | `l` only
+3. Icons are Lucide **string names**, registered in `src/utils/iconRegistry.ts`
+4. State is immutable — reducer returns new objects; history on diagram mutations
+5. `diagram/replace` (markup pane) pushes history; `diagram/load` does not
+6. Read CLAUDE.md before touching chrome tokens, markup pane, or canvas overlays

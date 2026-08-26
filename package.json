@@ -57,6 +57,7 @@
     "dev": "vite",
     "build": "tsc && vite build && node scripts/generate-docs-html.js",
     "build:lib": "vite build --config vite.config.lib.js",
+    "build:mcp": "bun run --filter @arach/arc-mcp build",
     "build:iso": "vite build --config vite.config.iso.js && vite build --config vite.config.iso-slim.js",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",

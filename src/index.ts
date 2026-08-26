@@ -81,6 +81,12 @@ export { renderAscii, type AsciiOptions } from './utils/asciiRenderer'
 export type { ViewMode, EmbedConfig, NodePosition, ConnectorStyle, DiagramMeta } from './types/editor'
 
 // =============================================================================
+// Diagram Validation & Export
+// =============================================================================
+export { validateDiagramShape, isDiagramShape } from './utils/diagramValidation'
+export { toTypeScriptSource, toExportFormat } from './types/diagram'
+
+// =============================================================================
 // Session Persistence
 // =============================================================================
 export { generateSessionId, deriveSessionId, saveDiagramSession, loadDiagramSession, listDiagramSessions, deleteDiagramSession } from './utils/sessionStorage'

@@ -545,6 +545,12 @@ import quickstartAgentMd from '../../../docs/agent/quickstart.agent.md?raw'
 import apiAgentMd from '../../../docs/agent/api.agent.md?raw'
 import architectureAgentMd from '../../../docs/agent/architecture.agent.md?raw'
 
+import packagesAgentMd from '../../../docs/agent/packages.agent.md?raw'
+import editorActionsAgentMd from '../../../docs/agent/editor-actions.agent.md?raw'
+import verificationAgentMd from '../../../docs/agent/verification.agent.md?raw'
+import mcpAgentMd from '../../../docs/agent/mcp.agent.md?raw'
+import skillMd from '../../../docs/skill.md?raw'
+
 // Import combined llm.txt for full context
 import llmTxt from '../../../docs/llm.txt?raw'
 
@@ -605,6 +611,10 @@ const pageTree: PageNode[] = [
     name: 'Agents',
     children: [
       { type: 'page', id: 'agents', name: 'AI Agents', icon: 'Bot', description: 'LLM-optimized docs' },
+      { type: 'page', id: 'agent-packages', name: 'Packages', icon: 'Package', description: 'Which package to use' },
+      { type: 'page', id: 'agent-actions', name: 'Editor Actions', icon: 'Workflow', description: 'Reducer action reference' },
+      { type: 'page', id: 'agent-verification', name: 'Verification', icon: 'ScanSearch', description: 'Test and capture workflows' },
+      { type: 'page', id: 'agent-mcp', name: 'MCP Server', icon: 'Plug', description: 'Model Context Protocol tools' },
       { type: 'page', id: 'skills', name: 'Skills', icon: 'Sparkles', description: 'Pre-built agent skills' },
     ],
   },
@@ -1197,9 +1207,37 @@ The AI should return:
     description: 'LLM-optimized documentation for AI coding assistants.',
     badge: 'Agents',
   },
+  'agent-packages': {
+    content: stripFrontmatter(packagesAgentMd),
+    agentContent: stripFrontmatter(packagesAgentMd),
+    title: 'Packages',
+    description: 'Which npm package to install — and when to clone the studio repo instead.',
+    badge: 'Agents',
+  },
+  'agent-actions': {
+    content: stripFrontmatter(editorActionsAgentMd),
+    agentContent: stripFrontmatter(editorActionsAgentMd),
+    title: 'Editor Actions',
+    description: 'Complete reference for editorReducer dispatch actions.',
+    badge: 'Agents',
+  },
+  'agent-verification': {
+    content: stripFrontmatter(verificationAgentMd),
+    agentContent: stripFrontmatter(verificationAgentMd),
+    title: 'Visual Verification',
+    description: 'How agents validate diagrams headlessly and verify in the dev server.',
+    badge: 'Agents',
+  },
+  'agent-mcp': {
+    content: stripFrontmatter(mcpAgentMd),
+    agentContent: stripFrontmatter(mcpAgentMd),
+    title: 'MCP Server',
+    description: 'Model Context Protocol tools for validate, layout, ASCII, and editor handoff.',
+    badge: 'Agents',
+  },
   skills: {
-    content: stripFrontmatter(agentsMd),
-    agentContent: llmTxt,
+    content: stripFrontmatter(skillMd),
+    agentContent: stripFrontmatter(skillMd),
     prompt: {
       title: 'Arc Skills Library',
       description: 'Task-specific prompts for common operations',
@@ -1390,7 +1428,7 @@ function DocPage({ pageId }: { pageId: string }) {
           </p>
 
           {/* Agent quick action for agents page */}
-          {(pageId === 'agents' || pageId === 'skills') && (
+          {(pageId === 'agents' || pageId === 'skills' || pageId === 'agent-mcp') && (
             <div
               className="mb-8 p-4 rounded-xl"
               style={{

@@ -15,7 +15,7 @@ export interface Transform {
   pan: Point
 }
 
-export type NodeSize = 'large' | 'normal' | 'small'
+export type NodeSize = 'xs' | 's' | 'm' | 'l'
 
 export type AnchorPosition =
   | 'top'
@@ -124,16 +124,18 @@ export interface PendingConnector {
 }
 
 export interface EditorState {
-  selectedNodeId: string | null
+  selectedNodeIds: string[]
   selectedConnectorIndex: number | null
+  selectedGroupId: string | null
+  selectedImageId: string | null
   mode: EditorMode
   pendingConnector: PendingConnector | null
+  pendingGroup: { type: string; startX: number; startY: number } | null
   isDragging: boolean
   dragOffset: Point
+  dragNodeOffsets: Record<string, Point>
   template: string
   zoom: number
-  pan: Point
-  isPanning: boolean
   viewMode: ViewMode  // '2d' | 'isometric'
   isoStyle: IsoStyleId         // Isometric render style: 'solid' | 'blueprint' | 'cyanotype'
   themeId: string | null       // Arc theme override (null = use template defaults)

@@ -77,7 +77,7 @@ export function editorReducer(state, action) {
           ...stateWithHistory.diagram,
           nodes: {
             ...stateWithHistory.diagram.nodes,
-            [nodeId]: { x: position.x, y: position.y, size: 'normal' },
+            [nodeId]: { x: position.x, y: position.y, size: 'm' },
           },
           nodeData: {
             ...stateWithHistory.diagram.nodeData,

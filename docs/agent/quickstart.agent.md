@@ -3,8 +3,9 @@
 ## Install
 
 ```bash
-npm install @arach/arc        # Core package
-npx @arach/arc-editor         # Visual editor
+npm install @arach/arc          # or: bun add @arach/arc
+# Visual studio (not an npm one-liner for full shell):
+git clone https://github.com/arach/arc && cd arc && bun install && bun run dev
 ```
 
 ## Minimal Example
@@ -36,17 +37,30 @@ const diagram: ArcDiagramData = {
 }
 
 function App() {
-  return <ArcDiagram data={diagram} mode="light" theme="default" />
+  return <ArcDiagram data={diagram} mode="light" theme="default" defaultZoom="fit" />
 }
 ```
 
-## Vanilla JS
+## Auto-layout (skip hand-positioning)
 
-```html
-<script type="module">
-  import { renderDiagram } from '@arach/arc-iso'
-  renderDiagram(document.getElementById('diagram'), diagramConfig)
-</script>
+```typescript
+import { autoLayout } from '@arach/arc'
+
+const diagram = autoLayout({
+  nodeData: {
+    client: { icon: 'Monitor', name: 'Client', color: 'violet' },
+    api: { icon: 'Server', name: 'API', color: 'emerald' },
+    db: { icon: 'Database', name: 'DB', color: 'blue' },
+  },
+  connectors: [
+    { from: 'client', to: 'api', style: 'http' },
+    { from: 'api', to: 'db', style: 'sql' },
+  ],
+  connectorStyles: {
+    http: { color: 'violet', strokeWidth: 2, label: 'HTTP' },
+    sql: { color: 'blue', strokeWidth: 2, label: 'SQL' },
+  },
+})
 ```
 
 ## Props Reference
@@ -55,13 +69,33 @@ function App() {
 |------|------|---------|-------------|
 | `data` | `ArcDiagramData` | required | Diagram config |
 | `mode` | `'light' \| 'dark'` | `'light'` | Color mode |
-| `theme` | `ThemeId` | `'default'` | Color theme |
-| `interactive` | `boolean` | `true` | Enable zoom/pan |
+| `theme` | `ThemeId` | `'default'` | Diagram theme |
+| `interactive` | `boolean` | `true` | Pan/zoom |
+| `defaultZoom` | `number \| 'fit'` | `1` | Initial zoom |
+| `maxFitZoom` | `number` | `1` | Cap when `defaultZoom='fit'` |
+| `hoverEffects` | `boolean \| object` | `true` | Hover highlighting |
+| `showLegend` | `boolean` | `false` | Connector/group key |
 
 ## Theme Options
 
+Eight diagram themes, each with light/dark: `default`, `warm`, `cool`, `mono`,
+`engineering`, `workbench`, `tactical`, `command`.
+
 ```tsx
-<ArcDiagram data={d} mode="light" theme="warm" />   // Editorial
-<ArcDiagram data={d} mode="dark" theme="cool" />    // Technical
-<ArcDiagram data={d} mode="light" theme="mono" />   // Print
+<ArcDiagram data={d} mode="light" theme="engineering" />
+<ArcDiagram data={d} mode="dark" theme="tactical" />
 ```
+
+## Dev Commands
+
+```bash
+bun run dev        # Studio at http://localhost:5188/editor
+bun run build
+bun run lint
+bun run typecheck
+```
+
+## Verify Your Work
+
+See `docs/agent/verification.agent.md` for dev server URLs, session seeding,
+and the `/capture/:sessionId` PNG endpoint.

@@ -1,13 +1,24 @@
 # API Reference - Agent Context
 
+Canonical types: `src/types/diagram.ts` and `lib/index.d.ts` (published).
+
 ## ArcDiagram Component
 
 ```tsx
 interface ArcDiagramProps {
   data: ArcDiagramData
   mode?: 'light' | 'dark'
-  theme?: 'default' | 'warm' | 'cool' | 'mono'
+  theme?: ThemeId
   interactive?: boolean
+  defaultZoom?: number | 'fit'
+  maxFitZoom?: number
+  hoverEffects?: boolean | HoverEffectsConfig
+  showControls?: boolean
+  showMinimap?: boolean
+  showLegend?: boolean
+  showFocusStory?: boolean
+  frame?: BrandSpec['frame']
+  onNodeHover?: (nodeId: string | null) => void
   className?: string
 }
 ```
@@ -18,10 +29,13 @@ interface ArcDiagramProps {
 interface ArcDiagramData {
   id?: string
   layout: { width: number; height: number }
+  layoutHints?: LayoutHints
   nodes: Record<string, NodePosition>
   nodeData: Record<string, NodeData>
   connectors: Connector[]
   connectorStyles: Record<string, ConnectorStyle>
+  groups?: GroupShape[]
+  focusTargets?: Record<string, FocusTarget>
 }
 ```
 
@@ -31,15 +45,16 @@ interface ArcDiagramData {
 interface NodePosition {
   x: number
   y: number
-  size: 's' | 'm' | 'l'
+  size: 'xs' | 's' | 'm' | 'l'
 }
 
 interface NodeData {
-  icon: string           // Lucide icon name
+  icon: string           // Lucide icon name (string, not component)
   name: string
   subtitle?: string
   description?: string
   color: DiagramColor
+  shape?: NodeShape      // per-node override; omit to follow theme
 }
 
 type DiagramColor = 'violet' | 'emerald' | 'blue' | 'amber' | 'sky' | 'zinc' | 'rose' | 'orange'
@@ -57,15 +72,68 @@ interface Connector {
   curve?: 'natural' | 'step'
 }
 
-type AnchorPosition = 'left' | 'right' | 'top' | 'bottom' | 'bottomLeft' | 'bottomRight' | 'topLeft' | 'topRight'
+type AnchorPosition = 'left' | 'right' | 'top' | 'bottom' |
+                      'bottomLeft' | 'bottomRight' | 'topLeft' | 'topRight'
 
 interface ConnectorStyle {
   color: DiagramColor
   strokeWidth: number
   label?: string
-  labelAlign?: 'left' | 'right' | 'center'
   dashed?: boolean
 }
+```
+
+## Advanced Fields
+
+```typescript
+// Group frames
+interface GroupShape {
+  id: string; x: number; y: number; width: number; height: number
+  type: 'rect' | 'circle'; color: DiagramColor
+  label?: string; dashed?: boolean
+}
+
+// Auto-layout hints (see docs/group-layout.md)
+interface LayoutHints {
+  nodes?: Record<string, { group?: string; layer?: number; order?: number }>
+  groups?: Record<string, { direction?: 'horizontal' | 'vertical'; padding?: number; ... }>
+}
+
+// Hover/select story (player chrome)
+interface FocusTarget {
+  mode?: 'append' | 'replace'
+  nodes?: string[]
+  connectors?: Array<{ from: string; to: string }>
+  caption?: string
+  steps?: Array<{ icon: string; label: string }>
+}
+```
+
+## Saved File Metadata
+
+```json
+{
+  "layout": { ... },
+  "nodes": { ... },
+  "_meta": {
+    "themeId": "engineering",
+    "colorMode": "light",
+    "viewMode": "2d",
+    "isoStyle": "blueprint",
+    "viewport": { "width": 800, "height": 400 }
+  }
+}
+```
+
+## Utilities
+
+```typescript
+import { ArcDiagram, autoLayout, renderAscii, validateDiagramShape, isDiagramShape, toTypeScriptSource, getTheme, getThemeList } from '@arach/arc'
+
+const err = validateDiagramShape(json)  // null = valid, else error string
+const ascii = renderAscii(diagram)
+const laidOut = autoLayout(diagram)
+const ts = toTypeScriptSource(diagram, 'myDiagram')
 ```
 
 ## Theme API
@@ -73,13 +141,24 @@ interface ConnectorStyle {
 ```typescript
 import { getTheme, getThemeList, THEMES } from '@arach/arc'
 
-const theme = getTheme('warm')
-const themes = getThemeList()
+const theme = getTheme('engineering')
 const palette = theme.light.palette.violet
-// { border, bg, icon, stroke }
 ```
 
-## Available Icons (Lucide)
+Theme IDs: `default`, `warm`, `cool`, `mono`, `engineering`, `workbench`, `tactical`, `command`
+
+## Valid Values Quick Reference
+
+| Property | Valid Values |
+|----------|-------------|
+| `size` | `'xs'`, `'s'`, `'m'`, `'l'` |
+| `color` | `'violet'`, `'emerald'`, `'blue'`, `'amber'`, `'sky'`, `'zinc'`, `'rose'`, `'orange'` |
+| `theme` | eight ThemeIds above |
+| `mode` | `'light'`, `'dark'` |
+| `anchor` | `'left'`, `'right'`, `'top'`, `'bottom'`, corner variants |
+| `curve` | `'natural'`, `'step'` |
+
+## Icons (Lucide string names)
 
 **Infrastructure**: Server, Database, Cloud, CloudCog, HardDrive, Network, Cpu
 **Interfaces**: Monitor, Smartphone, Laptop, Globe, Terminal
@@ -88,13 +167,4 @@ const palette = theme.light.palette.violet
 **Connectivity**: Wifi, Radio, Plug, Cable, Router
 **Actions**: RefreshCw, Download, Upload, Send, Zap
 
-## Valid Values Quick Reference
-
-| Property | Valid Values |
-|----------|-------------|
-| `size` | `'s'`, `'m'`, `'l'` |
-| `color` | `'violet'`, `'emerald'`, `'blue'`, `'amber'`, `'sky'`, `'zinc'`, `'rose'`, `'orange'` |
-| `theme` | `'default'`, `'warm'`, `'cool'`, `'mono'` |
-| `mode` | `'light'`, `'dark'` |
-| `anchor` | `'left'`, `'right'`, `'top'`, `'bottom'`, `'topLeft'`, `'topRight'`, `'bottomLeft'`, `'bottomRight'` |
-| `curve` | `'natural'`, `'step'` |
+Full registry: `src/utils/iconRegistry.ts`
