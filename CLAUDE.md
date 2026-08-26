@@ -189,6 +189,24 @@ container, which is right for embeds where the frame is part of the artifact;
 infinite workspace follows the shell skin rather than fighting it — the diagram
 theme still colors the nodes and connectors.
 
+### Snap-to-Grid
+
+When `diagram.grid.enabled`, dragged nodes settle onto the grid at **drag end**
+— the move itself stays continuous, so snapping reads as a final alignment
+rather than a constraint mid-drag. Snap size is `diagram.grid.size` (the same
+dial that sizes the visible grid, `DEFAULT_GRID.size` = 24); a grid that is
+enabled but carries no size falls back to `DEFAULT_SNAP_SIZE` = 16.
+
+- Held **Alt** skips the snap for free placement.
+- 2D mode only — isometric uses a different coordinate system.
+- Multi-select snaps every selected node; nodes already on-grid are skipped.
+- The snap move is dispatched *before* `drag/end`, so it lands inside the same
+  history entry — one ⌘Z undoes the whole drag, snap included.
+
+The snap function is `snapToGrid(value, gridSize)` in `src/utils/diagramHelpers.ts`
+(round-to-nearest, no-op on an invalid size); `DiagramCanvas` applies it in
+`handlePointerUp`.
+
 ### Canvas Overlays
 
 Four things float over the drawing, and they all have to share one edge:

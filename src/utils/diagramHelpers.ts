@@ -86,3 +86,10 @@ export function getCanvasCenter(layout: DiagramLayout): Point {
     y: layout.height / 2 - NODE_SIZES.m.height / 2,
   }
 }
+
+
+// Snap a coordinate to the nearest grid line. A missing/invalid size is a no-op.
+export function snapToGrid(value: number, gridSize: number): number {
+  if (!Number.isFinite(gridSize) || gridSize <= 0) return value
+  return Math.round(value / gridSize) * gridSize
+}

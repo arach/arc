@@ -3,6 +3,8 @@ import { useEditor, useDiagram, useEditorState, useTemplate, useViewMode, useIso
 import { NODE_SIZES } from '../../utils/constants'
 import { getTemplate } from '../../utils/templates'
 import { screenToIsoFloor } from '../../utils/isometric'
+import { snapToGrid } from '../../utils/diagramHelpers'
+import { DEFAULT_SNAP_SIZE } from '../../utils/constants'
 import { useCanvasTransform } from '../../hooks/useCanvasTransform'
 import EditableNode from './EditableNode'
 import ConnectorLayer from './ConnectorLayer'
@@ -286,11 +288,36 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
     ]
   )
 
-  const handlePointerUp = useCallback(() => {
+  const handlePointerUp = useCallback((e: React.PointerEvent) => {
     if (editor.isDragging) {
+      // Snap to grid on drag end when the grid is enabled — Alt skips the
+      // snap for free placement. Dragging stays continuous so the snap reads
+      // as a final settle, not a constraint during the move.
+      const grid = diagram.grid
+      if (
+        grid?.enabled &&
+        !e.altKey &&
+        viewMode === '2d' &&
+        editor.selectedNodeIds.length > 0
+      ) {
+        const size = grid.size || DEFAULT_SNAP_SIZE
+        const moves = editor.selectedNodeIds
+          .map((nodeId: string) => {
+            const node = diagram.nodes[nodeId]
+            if (!node) return null
+            const x = snapToGrid(node.x, size)
+            const y = snapToGrid(node.y, size)
+            if (x === node.x && y === node.y) return null
+            return { nodeId, x, y }
+          })
+          .filter((m): m is { nodeId: string; x: number; y: number } => m !== null)
+        if (moves.length > 0) {
+          actions.moveNodes(moves)
+        }
+      }
       actions.endDrag()
     }
-  }, [editor.isDragging, actions])
+  }, [editor.isDragging, editor.selectedNodeIds, diagram.grid, diagram.nodes, viewMode, actions])
 
   const handleNodeClick = useCallback(
     (nodeId: string, _e?: React.MouseEvent) => {

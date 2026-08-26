@@ -43,6 +43,9 @@ export const DEFAULT_GRID: GridConfig = {
   type: 'dots',
 }
 
+// Fallback snap size used when a diagram enables the grid but carries no size.
+export const DEFAULT_SNAP_SIZE = 16
+
 // Grid color presets
 export const GRID_COLORS: GridColorPreset[] = [
   { name: 'Zinc', value: '#71717a' },
