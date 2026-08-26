@@ -14,6 +14,13 @@ import {
   type NodeDecor,
 } from '../utils/nodeShape'
 import { autoLayout } from '../utils/autoLayout'
+import { getIsoStyle, type IsoStyleId } from '../utils/isoStyles'
+import { isoContentBounds, isoPlateBounds, buildNodeIndex } from '../utils/isoBlueprint'
+import IsometricNodeLayer from './editor/IsometricNodeLayer'
+import IsometricConnectorLayer from './editor/IsometricConnectorLayer'
+import TechnicalBackdrop from './technical/TechnicalBackdrop'
+import TechnicalPlate from './technical/TechnicalPlate'
+import type { Connector as EditorConnector } from '../types/editor'
 
 // ============================================
 // Types
@@ -22,6 +29,8 @@ import { autoLayout } from '../utils/autoLayout'
 export type NodeSize = 'xs' | 's' | 'm' | 'l'
 export type AnchorPosition = 'left' | 'right' | 'top' | 'bottom' | 'bottomLeft' | 'bottomRight' | 'topLeft' | 'topRight'
 export type DiagramColor = 'violet' | 'emerald' | 'blue' | 'amber' | 'sky' | 'zinc' | 'rose' | 'orange'
+export type ViewMode = '2d' | 'isometric'
+export type { IsoStyleId }
 
 export interface NodePosition {
   x: number
@@ -1397,6 +1406,10 @@ interface ArcDiagramProps {
   onNodeHover?: (nodeId: string | null) => void
   /** Override the engineering title-block fields (shown when the theme opts in). */
   titleBlock?: TitleBlockInfo
+  /** Render the diagram in isometric projection. Default: '2d' */
+  defaultViewMode?: ViewMode
+  /** Isometric render style — 'solid' | 'blueprint' | 'cyanotype'. Default: 'solid' */
+  defaultIsoStyle?: IsoStyleId
 }
 
 export default function ArcDiagram({
@@ -1420,6 +1433,8 @@ export default function ArcDiagram({
   onNodeHover,
   titleBlock,
   maxFitZoom = 1,
+  defaultViewMode = '2d',
+  defaultIsoStyle = 'solid',
 }: ArcDiagramProps) {
   const isLight = mode === 'light'
   const containerRef = React.useRef<HTMLDivElement>(null)
@@ -1455,6 +1470,23 @@ export default function ArcDiagram({
   const gridId = React.useId()
   const frameVariant = frame ?? brand?.frame ?? 'hairline'
 
+  // Isometric projection — mirrors the editor canvas composition (origin at the
+  // layout's bottom-center), but without selection state.
+  const isIso = defaultViewMode === 'isometric'
+  const isoStyle = getIsoStyle(defaultIsoStyle)
+  const isoOriginX = layout.width / 2
+  const isoOriginY = layout.height - 100
+  const isoBounds = useMemo(() => {
+    if (!isIso) return null
+    if (isoStyle.technical) {
+      return isoPlateBounds(nodes, nodeData, isoOriginX, isoOriginY, layout)
+    }
+    const bounds = isoContentBounds(nodes, nodeData, isoOriginX, isoOriginY)
+    if (!bounds) return null
+    const pad = 60
+    return { minX: bounds.minX - pad, minY: bounds.minY - pad, maxX: bounds.maxX + pad, maxY: bounds.maxY + pad }
+  }, [isIso, isoStyle.technical, nodes, nodeData, isoOriginX, isoOriginY, layout])
+
   // Inject the brand font stylesheet once (only for themes that set a fontImport).
   React.useEffect(() => {
     const href = brand?.fontImport
@@ -1478,11 +1510,19 @@ export default function ArcDiagram({
     const containerHeight = container.clientHeight
     // Add padding for chrome (zoom controls, label)
     const padding = 40
+    // Isometric drawings spill outside the 2D layout rect — fit the projected bounds.
+    if (isIso && isoBounds) {
+      const boundsWidth = isoBounds.maxX - isoBounds.minX
+      const boundsHeight = isoBounds.maxY - isoBounds.minY
+      if (boundsWidth > 0 && boundsHeight > 0) {
+        return Math.min((containerWidth - padding) / boundsWidth, (containerHeight - padding) / boundsHeight, maxFitZoom)
+      }
+    }
     const fitX = (containerWidth - padding) / layout.width
     const fitY = (containerHeight - padding) / layout.height
     // Use the smaller ratio to fit both dimensions, cap at maxFitZoom
     return Math.min(fitX, fitY, maxFitZoom)
-  }, [layout.width, layout.height, maxFitZoom])
+  }, [isIso, isoBounds, layout.width, layout.height, maxFitZoom])
 
   // Determine initial zoom
   const getInitialZoom = useCallback(() => {
@@ -1502,10 +1542,31 @@ export default function ArcDiagram({
   // Set initial zoom after mount (needed for 'fit' to measure container)
   React.useEffect(() => {
     if (!initialized) {
-      setZoom(getInitialZoom())
+      const nextZoom = getInitialZoom()
+      setZoom(nextZoom)
+      // Centre the isometric drawing in its container once the fit zoom is known.
+      if (isIso && isoBounds && containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect()
+        setPan({
+          x: rect.width / 2 - ((isoBounds.minX + isoBounds.maxX) / 2) * nextZoom,
+          y: rect.height / 2 - ((isoBounds.minY + isoBounds.maxY) / 2) * nextZoom,
+        })
+      }
       setInitialized(true)
     }
-  }, [initialized, getInitialZoom])
+  }, [initialized, getInitialZoom, isIso, isoBounds])
+
+  // Numeric defaultZoom skips the init effect above, so centre the isometric
+  // drawing separately (2D content sits at the origin; the iso projection
+  // spreads around the bottom-centre origin and can spill outside the rect).
+  React.useEffect(() => {
+    if (!isIso || !isoBounds || typeof defaultZoom !== 'number' || !containerRef.current) return
+    const rect = containerRef.current.getBoundingClientRect()
+    setPan({
+      x: rect.width / 2 - ((isoBounds.minX + isoBounds.maxX) / 2) * defaultZoom,
+      y: rect.height / 2 - ((isoBounds.minY + isoBounds.maxY) / 2) * defaultZoom,
+    })
+  }, [isIso, isoBounds, defaultZoom])
 
   // Sorted zoom levels for consistent navigation
   const sortedZoomLevels = React.useMemo(() => [...zoomLevels].sort((a, b) => a - b), [zoomLevels])
@@ -1525,9 +1586,18 @@ export default function ArcDiagram({
   }, [sortedZoomLevels])
 
   const handleReset = useCallback(() => {
-    setZoom(getInitialZoom())
-    setPan({ x: 0, y: 0 })
-  }, [getInitialZoom])
+    const nextZoom = getInitialZoom()
+    setZoom(nextZoom)
+    if (isIso && isoBounds && containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect()
+      setPan({
+        x: rect.width / 2 - ((isoBounds.minX + isoBounds.maxX) / 2) * nextZoom,
+        y: rect.height / 2 - ((isoBounds.minY + isoBounds.maxY) / 2) * nextZoom,
+      })
+    } else {
+      setPan({ x: 0, y: 0 })
+    }
+  }, [getInitialZoom, isIso, isoBounds])
 
   const handleWheel = useCallback((e: React.WheelEvent) => {
     if (!interactive) return
@@ -1610,6 +1680,12 @@ export default function ArcDiagram({
       onMouseLeave={handleMouseUp}
       style={{ cursor: interactive ? (isPanning ? 'grabbing' : 'grab') : 'default', fontFamily: brand?.fontFamily, borderRadius: brand?.nodeRadius, borderColor: frameVariant !== 'hairline' && frameVariant !== 'none' ? 'transparent' : undefined }}
     >
+      {/* Paper stock fills the whole surface for the technical isometric styles;
+          its graph grid is pinned to the panned/zoomed drawing underneath. */}
+      {isIso && isoStyle.technical && (
+        <TechnicalBackdrop style={isoStyle} pan={pan} zoom={zoom} />
+      )}
+
       <div
         className="relative transition-transform duration-150 ease-out"
         style={{
@@ -1621,7 +1697,7 @@ export default function ArcDiagram({
         }}
       >
         {/* Grid background - extends beyond content for pan */}
-        {brand?.gridType !== 'none' && (
+        {brand?.gridType !== 'none' && !(isIso && isoStyle.technical) && (
           <svg
             className="absolute pointer-events-none"
             style={{
@@ -1653,67 +1729,117 @@ export default function ArcDiagram({
           </svg>
         )}
 
-        {/* Group boundaries sit behind connectors and nodes. */}
-        <DiagramGroups groups={groups} themeColors={themeColors} />
-
-        {/* Connectors */}
-        <svg
-          className="absolute inset-0 w-full h-full pointer-events-none"
-          viewBox={`0 0 ${layout.width} ${layout.height}`}
-        >
-          {connectors.map((conn, i) => {
-            const isConnected = activeNodeId != null && focusState.connectorIndexes.has(i)
-            return (
-              <ConnectorPath
-                key={i}
-                connector={conn}
-                connectorIndex={i}
-                nodes={nodes}
-                styles={connectorStyles}
-                themeColors={themeColors}
-                brand={brand}
-                highlighted={fx.highlightEdges && isConnected}
-                dimmed={fx.dim && activeNodeId != null && !isConnected}
-                dimOpacity={fx.connectorDimOpacity}
+        {isIso ? (
+          <>
+            {/* Drafting plate: frame, component index, title block */}
+            {isoStyle.technical && isoBounds && (
+              <TechnicalPlate
+                style={isoStyle}
+                plate={isoBounds}
+                rows={Object.entries(buildNodeIndex(nodes, nodeData))
+                  .sort(([, a], [, b]) => (a as number) - (b as number))
+                  .map(([nodeId, n]) => ({
+                    n: n as number,
+                    name: nodeData[nodeId]?.name || nodeId,
+                    subtitle: nodeData[nodeId]?.subtitle,
+                    color: nodeData[nodeId]?.color,
+                  }))}
+                title={titleBlock?.title ?? displayLabel}
+                tally={`${String(Object.keys(nodeData).length).padStart(2, '0')} CMP / ${String(connectors.length).padStart(2, '0')} LNK`}
               />
-            )
-          })}
-        </svg>
+            )}
 
-        {/* Nodes */}
-        {Object.entries(nodes).map(([nodeId, node]) => {
-          const nd = nodeData[nodeId]
-          if (!nd) return null
-          const isActive = activeNodeId === nodeId
-          const isInFocus = focusState.nodeIds.has(nodeId)
-          return (
-            <Node
-              key={nodeId}
-              node={node}
-              data={nd}
-              mode={mode}
-              themeColors={themeColors}
-              brand={brand}
-              hovered={isActive}
-              dimmed={fx.dim && activeNodeId != null && !isInFocus}
-              lift={fx.lift}
-              glow={fx.glow}
-              dimOpacity={fx.dimOpacity}
-              onMouseEnter={() => { if (!lockedNodeId) { setHoveredNodeId(nodeId); onNodeHover?.(nodeId) } }}
-              onMouseLeave={() => { if (!lockedNodeId) { setHoveredNodeId(null); onNodeHover?.(null) } }}
-              onClick={() => handleNodeClick(nodeId)}
+            {/* Isometric connectors (the iso layer ignores `curve` — it draws
+                its own 3D-aware runs) */}
+            <IsometricConnectorLayer
+              nodes={nodes}
+              nodeData={nodeData}
+              connectors={connectors as EditorConnector[]}
+              connectorStyles={connectorStyles}
+              selectedConnectorIndex={null}
+              originX={isoOriginX}
+              originY={isoOriginY}
+              isoStyle={isoStyle}
             />
-          )
-        })}
+
+            {/* Isometric nodes */}
+            <IsometricNodeLayer
+              nodes={nodes}
+              nodeData={nodeData}
+              selectedNodeIds={[]}
+              originX={isoOriginX}
+              originY={isoOriginY}
+              isoStyle={isoStyle}
+            />
+          </>
+        ) : (
+          <>
+            {/* Group boundaries sit behind connectors and nodes. */}
+            <DiagramGroups groups={groups} themeColors={themeColors} />
+
+            {/* Connectors */}
+            <svg
+              className="absolute inset-0 w-full h-full pointer-events-none"
+              viewBox={`0 0 ${layout.width} ${layout.height}`}
+            >
+              {connectors.map((conn, i) => {
+                const isConnected = activeNodeId != null && focusState.connectorIndexes.has(i)
+                return (
+                  <ConnectorPath
+                    key={i}
+                    connector={conn}
+                    connectorIndex={i}
+                    nodes={nodes}
+                    styles={connectorStyles}
+                    themeColors={themeColors}
+                    brand={brand}
+                    highlighted={fx.highlightEdges && isConnected}
+                    dimmed={fx.dim && activeNodeId != null && !isConnected}
+                    dimOpacity={fx.connectorDimOpacity}
+                  />
+                )
+              })}
+            </svg>
+
+            {/* Nodes */}
+            {Object.entries(nodes).map(([nodeId, node]) => {
+              const nd = nodeData[nodeId]
+              if (!nd) return null
+              const isActive = activeNodeId === nodeId
+              const isInFocus = focusState.nodeIds.has(nodeId)
+              return (
+                <Node
+                  key={nodeId}
+                  node={node}
+                  data={nd}
+                  mode={mode}
+                  themeColors={themeColors}
+                  brand={brand}
+                  hovered={isActive}
+                  dimmed={fx.dim && activeNodeId != null && !isInFocus}
+                  lift={fx.lift}
+                  glow={fx.glow}
+                  dimOpacity={fx.dimOpacity}
+                  onMouseEnter={() => { if (!lockedNodeId) { setHoveredNodeId(nodeId); onNodeHover?.(nodeId) } }}
+                  onMouseLeave={() => { if (!lockedNodeId) { setHoveredNodeId(null); onNodeHover?.(null) } }}
+                  onClick={() => handleNodeClick(nodeId)}
+                />
+              )
+            })}
+          </>
+        )}
       </div>
 
       {/* Viewer chrome - fixed position regardless of zoom/pan */}
 
-      {/* Edge/frame treatment at the diagram boundary */}
-      <DiagramFrame variant={frameVariant} color={isLight ? 'rgba(20,20,20,0.55)' : 'rgba(230,230,235,0.55)'} />
+      {/* Edge/frame treatment at the diagram boundary — the technical plate
+          draws its own frame, so skip it there */}
+      {!isIso && (
+        <DiagramFrame variant={frameVariant} color={isLight ? 'rgba(20,20,20,0.55)' : 'rgba(230,230,235,0.55)'} />
+      )}
 
       {/* Engineering title block - bottom right (theme opt-in) */}
-      {brand?.titleBlock && !showArc && (
+      {brand?.titleBlock && !showArc && !(isIso && isoStyle.technical) && (
         <TitleBlock
           mode={mode}
           mono={brand.monoFamily}

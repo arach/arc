@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { ArcDiagram, type ArcDiagramData } from '@arach/arc'
 import { useMeta } from '../hooks/useMeta'
 import ArcMark from './ArcMark'
+import IsoPlateShowcase from './IsoPlateShowcase'
 import SequenceEngineShowcase from './SequenceEngineShowcase'
 import '../landing-technical.css'
 
@@ -79,6 +80,7 @@ export default function LandingPage({ onLaunchEditor }: LandingPageProps) {
           <nav className="tl-nav">
             <a href="#why">WHY ARC</a>
             <a href="#pipeline">ARCHITECTURE</a>
+            <a href="#isometric">ISOMETRIC</a>
             <a href="#sequence">SEQUENCE</a>
             <Link to="/docs">DOCS</Link>
             <a className="tl-nav-accent" href="https://github.com/arach/arc" target="_blank" rel="noopener noreferrer">GITHUB ↗</a>
@@ -174,6 +176,22 @@ export default function LandingPage({ onLaunchEditor }: LandingPageProps) {
               />
             </div>
           </div>
+        </section>
+
+        {/* ISOMETRIC PLATES */}
+        <section id="isometric" className="tl-section">
+          <div className="tl-pipeline-head">
+            <div>
+              <div className="tl-tag">// 02b — ISOMETRIC VIEWS</div>
+              <h2 className="tl-h2">The same model, on the drafting table.</h2>
+              <p className="tl-section-p" style={{ marginTop: 16 }}>
+                One typed config in isometric view — toggle the ink between sepia
+                blueprint and cyanotype.
+              </p>
+            </div>
+            <div className="tl-pipeline-id">ARC.ARCH.001<br />viewMode: isometric</div>
+          </div>
+          <IsoPlateShowcase data={archDiagram} />
         </section>
 
         {/* NATIVE MERMAID SEQUENCE */}
