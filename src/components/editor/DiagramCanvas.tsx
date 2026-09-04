@@ -210,7 +210,8 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
   )
 
   // Centre the isometric view when entering it, or when the style change moves
-  // what counts as the drawing's extent.
+  // what counts as the drawing's extent. Fit zoom and pan together — a pan
+  // computed from the pre-fit zoom races the mount-time 2D fit and sticks.
   useEffect(() => {
     const isFirstRun = prevViewModeRef.current === null
     const viewModeChanged = prevViewModeRef.current !== viewMode
@@ -219,21 +220,14 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
     prevViewModeRef.current = viewMode
     prevIsoStyleRef.current = isoStyleId
 
-    if (viewMode === 'isometric' && containerRef.current) {
+    if (viewMode === 'isometric') {
       const bounds = getIsoBounds()
-      if (!bounds) return
-      const rect = containerRef.current.getBoundingClientRect()
-      // The canvas is transformed as translate(pan) scale(zoom), so a canvas
-      // point p lands at pan + p·zoom — the pan has to account for the zoom.
-      setPan({
-        x: rect.width / 2 - ((bounds.minX + bounds.maxX) / 2) * zoom,
-        y: rect.height / 2 - ((bounds.minY + bounds.maxY) / 2) * zoom,
-      })
+      if (bounds) fitToRect(bounds)
     } else if (viewMode === '2d' && viewModeChanged && !isFirstRun) {
-      // Reset to normal view when going back to 2D
-      resetTransform()
+      if (contentBounds) fitToRect(contentBounds)
+      else resetTransform()
     }
-  }, [viewMode, isoStyleId, zoom, getIsoBounds, containerRef, setPan, resetTransform])
+  }, [viewMode, isoStyleId, getIsoBounds, contentBounds, fitToRect, resetTransform])
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent, nodeId: string) => {

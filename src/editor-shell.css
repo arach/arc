@@ -28,10 +28,6 @@
   --arc-font-body: var(--arc-font-ui);
   --arc-font-mono: var(--arc-font-code);
 
-  /* Drafting-table backdrop tokens — dot pitches match the diagram grid (24) */
-  --arc-backdrop-dot-minor: var(--hud-canvas-dot-minor, rgba(43, 127, 212, 0.05));
-  --arc-backdrop-dot-major: var(--hud-canvas-dot-major, rgba(43, 127, 212, 0.11));
-
   height: 100%;
   min-height: 0;
   font-family: var(--arc-font-body);
@@ -254,25 +250,22 @@ body,
   background: var(--arc-canvas);
 }
 
-/* Drafting-table backdrop: a quiet paper dot grid instead of hard ruling
-   lines — the diagram's own 24px grid still pins to the drawing, and this
-   surface texture reads as paper under it in both light and dark chrome.
-   Minor dots every 24px, a heavier register dot every 120px. */
+/* Paper dots: 24px minor / 120px major, matching the diagram grid pitch.
+   Read --hud-canvas-dot-* here (inside the hudson theme node) so chrome
+   skins actually tint them — an alias on .arc-editor-root would freeze
+   the fallback. */
 .arc-editor-canvas::before {
   content: '';
   position: absolute;
   inset: 0;
   background-image:
-    radial-gradient(circle, var(--arc-backdrop-dot-major) 1.1px, transparent 1.3px),
-    radial-gradient(circle, var(--arc-backdrop-dot-minor) 0.9px, transparent 1.1px);
+    radial-gradient(circle, var(--hud-canvas-dot-major, rgba(43, 127, 212, 0.11)) 1.1px, transparent 1.3px),
+    radial-gradient(circle, var(--hud-canvas-dot-minor, rgba(43, 127, 212, 0.05)) 0.9px, transparent 1.1px);
   background-size: 120px 120px, 24px 24px;
   pointer-events: none;
   z-index: 0;
 }
 
-/* Desk-lamp vignette: a soft falloff toward the edges, like paper under a
-   pool of light. The colour is a plain alpha wash so it reads as shadow in
-   dark chrome and a gentle deepening in light, without muddy color-mix. */
 .arc-editor-canvas::after {
   content: '';
   position: absolute;
