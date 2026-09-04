@@ -37,12 +37,38 @@ export function isoNodeDims(node: NodePosition): IsoNodeDims {
   }
 }
 
+/** Screen-space bounds of a rectangle (or its inscribed ellipse) on the iso floor. */
+function isoFloorBounds(
+  x: number,
+  y: number,
+  width: number,
+  depth: number,
+  originX: number,
+  originY: number
+): Bounds {
+  const corners = [
+    isoToScreen(x, y, 0),
+    isoToScreen(x + width, y, 0),
+    isoToScreen(x + width, y + depth, 0),
+    isoToScreen(x, y + depth, 0),
+  ]
+  const xs = corners.map((p) => p.screenX + originX)
+  const ys = corners.map((p) => p.screenY + originY)
+  return {
+    minX: Math.min(...xs),
+    minY: Math.min(...ys),
+    maxX: Math.max(...xs),
+    maxY: Math.max(...ys),
+  }
+}
+
 /** Screen-space bounds of every drawn box — used to size the drawing sheet. */
 export function isoContentBounds(
   nodes: Record<string, NodePosition>,
   nodeData: Record<string, NodeData>,
   originX: number,
-  originY: number
+  originY: number,
+  groups?: Array<{ x: number; y: number; width: number; height: number }>
 ): Bounds | null {
   let bounds: Bounds | null = null
 
@@ -58,6 +84,13 @@ export function isoContentBounds(
       originY + origin.screenY
     )
     bounds = unionBounds(bounds, box)
+  }
+
+  for (const group of groups || []) {
+    bounds = unionBounds(
+      bounds,
+      isoFloorBounds(group.x, group.y, group.width, group.height, originX, originY)
+    )
   }
 
   return bounds
@@ -84,9 +117,10 @@ export function isoPlateBounds(
   nodeData: Record<string, NodeData>,
   originX: number,
   originY: number,
-  fallback: { width: number; height: number }
+  fallback: { width: number; height: number },
+  groups?: Array<{ x: number; y: number; width: number; height: number }>
 ): Bounds {
-  const bounds = isoContentBounds(nodes, nodeData, originX, originY) || {
+  const bounds = isoContentBounds(nodes, nodeData, originX, originY, groups) || {
     minX: 0,
     minY: 0,
     maxX: fallback.width,

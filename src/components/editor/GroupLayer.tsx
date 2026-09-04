@@ -1,4 +1,7 @@
 import { useState, useCallback } from 'react'
+import { isoToScreen, isoFloorRect, isoFloorEllipse, canvasToIsoFloor } from '../../utils/isometric'
+import type { IsoStyleSpec } from '../../utils/isoStyles'
+import type { GroupShape as Group } from '../../types/diagram'
 
 interface GroupDragState {
   groupId: string
@@ -12,6 +15,11 @@ interface GroupDragState {
   originalHeight?: number
 }
 
+interface IsoOrigin {
+  x: number
+  y: number
+}
+
 // Group colors matching the node color palette
 const groupColors: Record<string, { fill: string; stroke: string }> = {
   violet: { fill: 'rgba(139, 92, 246, 0.1)', stroke: 'rgba(139, 92, 246, 0.5)' },
@@ -22,31 +30,84 @@ const groupColors: Record<string, { fill: string; stroke: string }> = {
   sky: { fill: 'rgba(56, 189, 248, 0.1)', stroke: 'rgba(56, 189, 248, 0.5)' },
 }
 
-function GroupShape({ group, isSelected, onClick, onDragStart, onResize }) {
-  const colors = groupColors[group.color] || groupColors.zinc
-  const { x, y, width, height, type, label } = group
+function projectPoint(x: number, y: number, isoOrigin: IsoOrigin | null | undefined) {
+  if (!isoOrigin) return { x, y }
+  const p = isoToScreen(x, y, 0)
+  return { x: isoOrigin.x + p.screenX, y: isoOrigin.y + p.screenY }
+}
 
-  const handleMouseDown = (e) => {
+function GroupShape({
+  group,
+  isSelected,
+  onClick,
+  onDragStart,
+  onResize,
+  isoOrigin,
+  isoStyle,
+}: {
+  group: Group
+  isSelected: boolean
+  onClick: (id: string) => void
+  onDragStart: (groupId: string, e: React.MouseEvent) => void
+  onResize: (groupId: string, corner: string, e: React.MouseEvent) => void
+  isoOrigin?: IsoOrigin | null
+  isoStyle?: IsoStyleSpec | null
+}) {
+  const palette = groupColors[group.color] || groupColors.zinc
+  const technical = isoStyle?.technical ? isoStyle : null
+  const colors = technical
+    ? { fill: technical.face.top, stroke: technical.ink.muted }
+    : palette
+  const { x, y, width, height, type, label } = group
+  const stroke = isSelected ? (technical ? technical.ink.accent : '#3b82f6') : colors.stroke
+  const fillOpacity = technical ? 0.45 : 1
+
+  const handleMouseDown = (e: React.MouseEvent) => {
     e.stopPropagation()
     onClick(group.id)
     onDragStart(group.id, e)
   }
 
-  const handleResizeMouseDown = (e, corner) => {
+  const handleResizeMouseDown = (e: React.MouseEvent, corner: string) => {
     e.stopPropagation()
     onResize(group.id, corner, e)
   }
 
+  const projected = Boolean(isoOrigin)
+  const path = projected
+    ? type === 'circle'
+      ? isoFloorEllipse(x + width / 2, y + height / 2, width / 2, height / 2, isoOrigin!.x, isoOrigin!.y)
+      : isoFloorRect(x, y, width, height, isoOrigin!.x, isoOrigin!.y, 6)
+    : null
+
+  const labelPos = projectPoint(x + 12, y + 20, isoOrigin)
+  const handles = [
+    { corner: 'nw', ...projectPoint(x, y, isoOrigin), cursor: 'cursor-nwse-resize' },
+    { corner: 'ne', ...projectPoint(x + width, y, isoOrigin), cursor: 'cursor-nesw-resize' },
+    { corner: 'sw', ...projectPoint(x, y + height, isoOrigin), cursor: 'cursor-nesw-resize' },
+    { corner: 'se', ...projectPoint(x + width, y + height, isoOrigin), cursor: 'cursor-nwse-resize' },
+  ]
+
   return (
     <g className="cursor-move">
-      {type === 'circle' ? (
+      {path ? (
+        <path
+          d={path}
+          fill={colors.fill}
+          fillOpacity={fillOpacity}
+          stroke={stroke}
+          strokeWidth={isSelected ? 2 : 1.5}
+          strokeDasharray={group.dashed ? '8 4' : undefined}
+          onMouseDown={handleMouseDown}
+        />
+      ) : type === 'circle' ? (
         <ellipse
           cx={x + width / 2}
           cy={y + height / 2}
           rx={width / 2}
           ry={height / 2}
           fill={colors.fill}
-          stroke={isSelected ? '#3b82f6' : colors.stroke}
+          stroke={stroke}
           strokeWidth={isSelected ? 2 : 1.5}
           strokeDasharray={group.dashed ? '8 4' : undefined}
           onMouseDown={handleMouseDown}
@@ -60,7 +121,7 @@ function GroupShape({ group, isSelected, onClick, onDragStart, onResize }) {
           rx={6}
           ry={6}
           fill={colors.fill}
-          stroke={isSelected ? '#3b82f6' : colors.stroke}
+          stroke={stroke}
           strokeWidth={isSelected ? 2 : 1.5}
           strokeDasharray={group.dashed ? '8 4' : undefined}
           onMouseDown={handleMouseDown}
@@ -70,12 +131,12 @@ function GroupShape({ group, isSelected, onClick, onDragStart, onResize }) {
       {/* Label */}
       {label && (
         <text
-          x={x + 12}
-          y={y + 20}
-          fill={colors.stroke}
+          x={labelPos.x}
+          y={labelPos.y}
+          fill={technical ? technical.ink.text : colors.stroke}
           fontSize="12"
           fontWeight="500"
-          fontFamily="ui-sans-serif, system-ui, sans-serif"
+          fontFamily={technical ? technical.font : 'ui-sans-serif, system-ui, sans-serif'}
           style={{ pointerEvents: 'none' }}
         >
           {label}
@@ -83,30 +144,17 @@ function GroupShape({ group, isSelected, onClick, onDragStart, onResize }) {
       )}
 
       {/* Selection/resize handles */}
-      {isSelected && (
-        <>
-          <circle
-            cx={x} cy={y} r={5} fill="#3b82f6"
-            className="cursor-nwse-resize"
-            onMouseDown={(e) => handleResizeMouseDown(e, 'nw')}
-          />
-          <circle
-            cx={x + width} cy={y} r={5} fill="#3b82f6"
-            className="cursor-nesw-resize"
-            onMouseDown={(e) => handleResizeMouseDown(e, 'ne')}
-          />
-          <circle
-            cx={x} cy={y + height} r={5} fill="#3b82f6"
-            className="cursor-nesw-resize"
-            onMouseDown={(e) => handleResizeMouseDown(e, 'sw')}
-          />
-          <circle
-            cx={x + width} cy={y + height} r={5} fill="#3b82f6"
-            className="cursor-nwse-resize"
-            onMouseDown={(e) => handleResizeMouseDown(e, 'se')}
-          />
-        </>
-      )}
+      {isSelected && handles.map((handle) => (
+        <circle
+          key={handle.corner}
+          cx={handle.x}
+          cy={handle.y}
+          r={5}
+          fill={technical ? technical.ink.accent : '#3b82f6'}
+          className={handle.cursor}
+          onMouseDown={(e) => handleResizeMouseDown(e, handle.corner)}
+        />
+      ))}
     </g>
   )
 }
@@ -118,14 +166,31 @@ export default function GroupLayer({
   onGroupClick,
   onGroupUpdate,
   screenToCanvas,
+  isoOrigin,
+  isoStyle,
+}: {
+  layout: { width: number; height: number }
+  groups: Group[]
+  selectedGroupId: string | null
+  onGroupClick: (groupId: string) => void
+  onGroupUpdate: (groupId: string, updates: Partial<Group>) => void
+  screenToCanvas: (point: { x: number; y: number }) => { x: number; y: number }
+  isoOrigin?: IsoOrigin | null
+  isoStyle?: IsoStyleSpec | null
 }) {
   const [dragState, setDragState] = useState<GroupDragState | null>(null)
+
+  const pointerToWorld = useCallback((e: React.MouseEvent) => {
+    const canvas = screenToCanvas({ x: e.clientX, y: e.clientY })
+    if (!isoOrigin) return canvas
+    return canvasToIsoFloor(canvas.x, canvas.y, isoOrigin.x, isoOrigin.y)
+  }, [screenToCanvas, isoOrigin])
 
   const handleDragStart = useCallback((groupId: string, e: React.MouseEvent) => {
     const group = groups.find(g => g.id === groupId)
     if (!group) return
 
-    const point = screenToCanvas({ x: e.clientX, y: e.clientY })
+    const point = pointerToWorld(e)
     setDragState({
       groupId,
       type: 'move',
@@ -134,13 +199,13 @@ export default function GroupLayer({
       originalX: group.x,
       originalY: group.y,
     })
-  }, [groups, screenToCanvas])
+  }, [groups, pointerToWorld])
 
   const handleResizeStart = useCallback((groupId: string, corner: string, e: React.MouseEvent) => {
     const group = groups.find(g => g.id === groupId)
     if (!group) return
 
-    const point = screenToCanvas({ x: e.clientX, y: e.clientY })
+    const point = pointerToWorld(e)
     setDragState({
       groupId,
       type: 'resize',
@@ -152,12 +217,12 @@ export default function GroupLayer({
       originalWidth: group.width,
       originalHeight: group.height,
     })
-  }, [groups, screenToCanvas])
+  }, [groups, pointerToWorld])
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (!dragState) return
 
-    const point = screenToCanvas({ x: e.clientX, y: e.clientY })
+    const point = pointerToWorld(e)
     const dx = point.x - dragState.startX
     const dy = point.y - dragState.startY
 
@@ -197,7 +262,7 @@ export default function GroupLayer({
         })
       }
     }
-  }, [dragState, screenToCanvas, onGroupUpdate])
+  }, [dragState, pointerToWorld, onGroupUpdate])
 
   const handleMouseUp = useCallback(() => {
     setDragState(null)
@@ -208,12 +273,12 @@ export default function GroupLayer({
   return (
     <svg
       className="absolute inset-0 w-full h-full pointer-events-none"
-      viewBox={`0 0 ${layout.width} ${layout.height}`}
-      preserveAspectRatio="none"
+      viewBox={isoOrigin ? undefined : `0 0 ${layout.width} ${layout.height}`}
+      preserveAspectRatio={isoOrigin ? undefined : 'none'}
       onMouseMove={dragState ? handleMouseMove : undefined}
       onMouseUp={dragState ? handleMouseUp : undefined}
       onMouseLeave={dragState ? handleMouseUp : undefined}
-      style={{ pointerEvents: dragState ? 'auto' : 'none' }}
+      style={{ overflow: 'visible', pointerEvents: dragState ? 'auto' : 'none' }}
     >
       <g className="pointer-events-auto">
         {groups.map((group) => (
@@ -224,6 +289,8 @@ export default function GroupLayer({
             onClick={onGroupClick}
             onDragStart={handleDragStart}
             onResize={handleResizeStart}
+            isoOrigin={isoOrigin}
+            isoStyle={isoStyle}
           />
         ))}
       </g>

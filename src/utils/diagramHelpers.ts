@@ -86,3 +86,43 @@ export function getCanvasCenter(layout: DiagramLayout): Point {
     y: layout.height / 2 - NODE_SIZES.m.height / 2,
   }
 }
+
+/** Bounding box of everything drawn — nodes, groups, images — in canvas
+ *  coordinates. Returns null when the canvas is empty. */
+export function getContentBounds(
+  nodes: Record<string, NodePosition>,
+  groups?: Array<{ x: number; y: number; width: number; height: number }>,
+  images?: Array<{ x: number; y: number; width: number; height: number }>,
+): { minX: number; minY: number; maxX: number; maxY: number } | null {
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+  let found = false
+
+  for (const node of Object.values(nodes)) {
+    const dims = NODE_SIZES[node.size as NodeSizeKey] || NODE_SIZES.m
+    const w = node.width || dims.width
+    const h = node.height || dims.height
+    minX = Math.min(minX, node.x)
+    minY = Math.min(minY, node.y)
+    maxX = Math.max(maxX, node.x + w)
+    maxY = Math.max(maxY, node.y + h)
+    found = true
+  }
+
+  for (const g of groups || []) {
+    minX = Math.min(minX, g.x)
+    minY = Math.min(minY, g.y)
+    maxX = Math.max(maxX, g.x + g.width)
+    maxY = Math.max(maxY, g.y + g.height)
+    found = true
+  }
+
+  for (const img of images || []) {
+    minX = Math.min(minX, img.x)
+    minY = Math.min(minY, img.y)
+    maxX = Math.max(maxX, img.x + img.width)
+    maxY = Math.max(maxY, img.y + img.height)
+    found = true
+  }
+
+  return found ? { minX, minY, maxX, maxY } : null
+}
