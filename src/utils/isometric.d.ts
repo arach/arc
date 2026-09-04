@@ -82,8 +82,40 @@ export declare function isoToScreen(x: number, y: number, z?: number): IsoScreen
 /** Convert 2D screen coordinates to the isometric floor position (z = 0). */
 export declare function screenToIsoFloor(screenX: number, screenY: number): { x: number; y: number };
 
+/** Convert a canvas-space point to isometric floor coordinates. */
+export declare function canvasToIsoFloor(
+  canvasX: number,
+  canvasY: number,
+  originX: number,
+  originY: number
+): { x: number; y: number };
+
 /** SVG path (`d` attribute) for an isometric rectangle on a given face. */
 export declare function isoRect(width: number, height: number, face: IsoFace, originX?: number, originY?: number): string;
+
+/** SVG path for a rectangle on the isometric floor (XY plane). */
+export declare function isoFloorRect(
+  x: number,
+  y: number,
+  width: number,
+  depth: number,
+  originX?: number,
+  originY?: number,
+  radius?: number,
+  z?: number
+): string;
+
+/** SVG path for an ellipse (or circle) on the isometric floor (XY plane). */
+export declare function isoFloorEllipse(
+  cx: number,
+  cy: number,
+  rx: number,
+  ry: number,
+  originX?: number,
+  originY?: number,
+  z?: number,
+  segments?: number
+): string;
 
 /** SVG path strings for an isometric box (cuboid) with its visible faces. */
 export declare function isoBox(width: number, depth: number, height: number, originX?: number, originY?: number, radius?: number): IsoBoxPaths;

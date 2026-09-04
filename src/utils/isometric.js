@@ -99,6 +99,14 @@ export function screenToIsoFloor(screenX, screenY) {
 }
 
 /**
+ * Convert a point in canvas space to isometric floor coordinates.
+ * `originX`/`originY` is where world (0,0,0) is drawn on the canvas.
+ */
+export function canvasToIsoFloor(canvasX, canvasY, originX, originY) {
+  return screenToIsoFloor(canvasX - originX, canvasY - originY);
+}
+
+/**
  * Generate SVG path points for an isometric rectangle on a specific face
  * @param {number} width - Width of the rectangle
  * @param {number} height - Height of the rectangle
@@ -152,6 +160,59 @@ export function isoRect(width, height, face, originX = 0, originY = 0) {
   }));
 
   return `M ${translated.map(p => `${p.x},${p.y}`).join(' L ')} Z`;
+}
+
+/**
+ * SVG path for a rectangle on the isometric floor (XY plane).
+ * World (x, y) is the near corner; width runs along X, depth along Y.
+ * Optional radius rounds the corners in world space (they project to elliptical arcs).
+ */
+export function isoFloorRect(x, y, width, depth, originX = 0, originY = 0, radius = 0, z = 0) {
+  const toScreen = (wx, wy) => {
+    const p = isoToScreen(wx, wy, z);
+    return `${p.screenX + originX},${p.screenY + originY}`;
+  };
+
+  if (!(width > 0) || !(depth > 0)) {
+    const p = toScreen(x, y);
+    return `M ${p} Z`;
+  }
+
+  if (radius <= 0) {
+    return `M ${toScreen(x, y)} L ${toScreen(x + width, y)} L ${toScreen(x + width, y + depth)} L ${toScreen(x, y + depth)} Z`;
+  }
+
+  const rad = Math.min(radius, Math.min(width, depth) / 2);
+  const arcSegments = 8;
+  const path = [];
+  const addArc = (cx, cy, startAngle, endAngle) => {
+    for (let i = 0; i <= arcSegments; i++) {
+      const theta = startAngle + (endAngle - startAngle) * (i / arcSegments);
+      path.push(toScreen(cx + rad * Math.cos(theta), cy + rad * Math.sin(theta)));
+    }
+  };
+
+  addArc(x + rad, y + rad, Math.PI, Math.PI * 1.5);
+  addArc(x + width - rad, y + rad, Math.PI * 1.5, Math.PI * 2);
+  addArc(x + width - rad, y + depth - rad, 0, Math.PI * 0.5);
+  addArc(x + rad, y + depth - rad, Math.PI * 0.5, Math.PI);
+
+  return `M ${path[0]} L ${path.slice(1).join(' L ')} Z`;
+}
+
+/**
+ * SVG path for an ellipse (or circle) on the isometric floor (XY plane).
+ * A circle in world XY projects to the classic isometric ellipse.
+ */
+export function isoFloorEllipse(cx, cy, rx, ry, originX = 0, originY = 0, z = 0, segments = 64) {
+  const n = Math.max(8, segments | 0);
+  const path = [];
+  for (let i = 0; i <= n; i++) {
+    const theta = (i / n) * Math.PI * 2;
+    const p = isoToScreen(cx + rx * Math.cos(theta), cy + ry * Math.sin(theta), z);
+    path.push(`${p.screenX + originX},${p.screenY + originY}`);
+  }
+  return `M ${path[0]} L ${path.slice(1).join(' L ')} Z`;
 }
 
 /**

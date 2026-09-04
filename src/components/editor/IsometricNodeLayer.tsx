@@ -81,24 +81,25 @@ export default function IsometricNodeLayer({
 
   return (
     <svg
-      className="absolute inset-0 w-full h-full"
+      className="absolute inset-0 w-full h-full pointer-events-none"
       style={{ overflow: 'visible' }}
     >
       {technical && <TechnicalDefs uid={uid} style={isoStyle} />}
 
       {technical &&
         technicalItems.map(({ nodeId, data, box }) => (
-          <TechnicalBox
-            key={nodeId}
-            uid={uid}
-            style={isoStyle}
-            box={box}
-            color={data.color}
-            tag={nodeIndex[nodeId]}
-            selected={selectedNodeIds.includes(nodeId)}
-            onClick={() => onNodeClick?.(nodeId)}
-            onPointerDown={(e) => onNodePointerDown?.(e, nodeId)}
-          />
+          <g key={nodeId} className="pointer-events-auto">
+            <TechnicalBox
+              uid={uid}
+              style={isoStyle}
+              box={box}
+              color={data.color}
+              tag={nodeIndex[nodeId]}
+              selected={selectedNodeIds.includes(nodeId)}
+              onClick={() => onNodeClick?.(nodeId)}
+              onPointerDown={(e) => onNodePointerDown?.(e, nodeId)}
+            />
+          </g>
         ))}
 
       {technical &&
@@ -149,7 +150,7 @@ export default function IsometricNodeLayer({
         const labelY = originY + labelPos.screenY
 
         return (
-          <g key={nodeId} className="cursor-pointer" {...handlers}>
+          <g key={nodeId} className="cursor-pointer pointer-events-auto" {...handlers}>
             {/* Selection glow */}
             {isSelected && (
               <g filter="url(#selection-glow)">

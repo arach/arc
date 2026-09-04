@@ -3,7 +3,7 @@ import { useEditor, useDiagram, useEditorState, useTemplate, useViewMode, useIso
 import { NODE_SIZES } from '../../utils/constants'
 import { getContentBounds } from '../../utils/diagramHelpers'
 import { getTemplate } from '../../utils/templates'
-import { screenToIsoFloor } from '../../utils/isometric'
+import { canvasToIsoFloor, isoFloorRect, isoFloorEllipse } from '../../utils/isometric'
 import { useCanvasTransform } from '../../hooks/useCanvasTransform'
 import EditableNode from './EditableNode'
 import ConnectorLayer from './ConnectorLayer'
@@ -21,7 +21,7 @@ import IsometricConnectorLayer from './IsometricConnectorLayer'
 import TechnicalBackdrop from '../technical/TechnicalBackdrop'
 import TechnicalPlate from '../technical/TechnicalPlate'
 import { getIsoStyle } from '../../utils/isoStyles'
-import { isoContentBounds, isoPlateBounds, buildNodeIndex } from '../../utils/isoBlueprint'
+import { isoContentBounds, isoPlateBounds, buildNodeIndex, isoNodeDims } from '../../utils/isoBlueprint'
 import type { EmbedConfig, ZoomConfig } from '../../types/editor'
 
 // Default embed configuration
@@ -49,6 +49,63 @@ interface DiagramCanvasProps {
   /** Override canvas background with an Arc theme. */
   themeOverride?: string
   isDark?: boolean
+}
+
+function DrawingGroupPreview({
+  drawing,
+  layout,
+  isoOrigin,
+}: {
+  drawing: { type: 'rect' | 'circle'; startX: number; startY: number; currentX: number; currentY: number }
+  layout: { width: number; height: number }
+  isoOrigin: { x: number; y: number } | null
+}) {
+  const x = Math.min(drawing.startX, drawing.currentX)
+  const y = Math.min(drawing.startY, drawing.currentY)
+  const width = Math.abs(drawing.currentX - drawing.startX)
+  const height = Math.abs(drawing.currentY - drawing.startY)
+  const fill = 'rgba(113, 113, 122, 0.1)'
+  const stroke = 'rgba(113, 113, 122, 0.5)'
+  const path = isoOrigin
+    ? drawing.type === 'circle'
+      ? isoFloorEllipse(x + width / 2, y + height / 2, width / 2, height / 2, isoOrigin.x, isoOrigin.y)
+      : isoFloorRect(x, y, width, height, isoOrigin.x, isoOrigin.y, 6)
+    : null
+
+  return (
+    <svg
+      className="absolute inset-0 w-full h-full pointer-events-none"
+      viewBox={isoOrigin ? undefined : `0 0 ${layout.width} ${layout.height}`}
+      style={{ overflow: 'visible' }}
+    >
+      {path ? (
+        <path d={path} fill={fill} stroke={stroke} strokeWidth={2} strokeDasharray="8 4" />
+      ) : drawing.type === 'circle' ? (
+        <ellipse
+          cx={x + width / 2}
+          cy={y + height / 2}
+          rx={width / 2}
+          ry={height / 2}
+          fill={fill}
+          stroke={stroke}
+          strokeWidth={2}
+          strokeDasharray="8 4"
+        />
+      ) : (
+        <rect
+          x={x}
+          y={y}
+          width={width}
+          height={height}
+          rx={6}
+          fill={fill}
+          stroke={stroke}
+          strokeWidth={2}
+          strokeDasharray="8 4"
+        />
+      )}
+    </svg>
+  )
 }
 
 export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfig, surface = 'theme', themeOverride, isDark }: DiagramCanvasProps) {
@@ -126,9 +183,9 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
   const isoOrigin = { x: diagram.layout.width / 2, y: diagram.layout.height - 100 }
   const getIsoBounds = useCallback(() => {
     if (isoStyle.technical) {
-      return isoPlateBounds(diagram.nodes, diagram.nodeData, isoOrigin.x, isoOrigin.y, diagram.layout)
+      return isoPlateBounds(diagram.nodes, diagram.nodeData, isoOrigin.x, isoOrigin.y, diagram.layout, diagram.groups)
     }
-    const bounds = isoContentBounds(diagram.nodes, diagram.nodeData, isoOrigin.x, isoOrigin.y)
+    const bounds = isoContentBounds(diagram.nodes, diagram.nodeData, isoOrigin.x, isoOrigin.y, diagram.groups)
     if (!bounds) return null
     const pad = 60
     return {
@@ -137,7 +194,20 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
       maxX: bounds.maxX + pad,
       maxY: bounds.maxY + pad,
     }
-  }, [isoStyle.technical, diagram.nodes, diagram.nodeData, diagram.layout, isoOrigin.x, isoOrigin.y])
+  }, [isoStyle.technical, diagram.nodes, diagram.nodeData, diagram.groups, diagram.layout, isoOrigin.x, isoOrigin.y])
+
+  const canvasToWorld = useCallback(
+    (canvasPoint: { x: number; y: number }) => {
+      if (viewMode !== 'isometric') return canvasPoint
+      return canvasToIsoFloor(canvasPoint.x, canvasPoint.y, isoOrigin.x, isoOrigin.y)
+    },
+    [viewMode, isoOrigin.x, isoOrigin.y]
+  )
+
+  const pointerToWorld = useCallback(
+    (clientX: number, clientY: number) => canvasToWorld(screenToCanvas({ x: clientX, y: clientY })),
+    [canvasToWorld, screenToCanvas]
+  )
 
   // Centre the isometric view when entering it, or when the style change moves
   // what counts as the drawing's extent.
@@ -171,17 +241,8 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
       if (!config.enableSelection && !config.enableDrag) return
 
       if (e.target instanceof Element) e.target.setPointerCapture?.(e.pointerId)
-      const canvasPoint = screenToCanvas({ x: e.clientX, y: e.clientY })
+      const dragPoint = pointerToWorld(e.clientX, e.clientY)
       const isShiftHeld = e.shiftKey
-
-      // In isometric mode, convert screen coordinates to isometric floor coordinates
-      let dragPoint = canvasPoint
-      if (viewMode === 'isometric') {
-        const originX = diagram.layout.width / 2
-        const originY = diagram.layout.height - 100
-        const isoPoint = screenToIsoFloor(canvasPoint.x - originX, canvasPoint.y - originY)
-        dragPoint = isoPoint
-      }
 
       // Compute new selection based on shift state
       let newSelectedIds: string[]
@@ -225,23 +286,14 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
         y: dragPoint.y - clickedNode.y,
       }, nodeOffsets, newSelectedIds)
     },
-    [editor.mode, editor.selectedNodeIds, isPanning, diagram.nodes, diagram.layout, actions, screenToCanvas, viewMode, config.enableDrag, config.enableSelection]
+    [editor.mode, editor.selectedNodeIds, isPanning, diagram.nodes, actions, pointerToWorld, config.enableDrag, config.enableSelection]
   )
 
   const handlePointerMove = useCallback(
     (e: React.PointerEvent) => {
       if (!editor.isDragging || editor.selectedNodeIds.length === 0 || isPanning) return
 
-      const canvasPoint = screenToCanvas({ x: e.clientX, y: e.clientY })
-
-      // In isometric mode, convert screen coordinates to isometric floor coordinates
-      let dragPoint = canvasPoint
-      if (viewMode === 'isometric') {
-        const originX = diagram.layout.width / 2
-        const originY = diagram.layout.height - 100
-        const isoPoint = screenToIsoFloor(canvasPoint.x - originX, canvasPoint.y - originY)
-        dragPoint = isoPoint
-      }
+      const dragPoint = pointerToWorld(e.clientX, e.clientY)
 
       // Move all selected nodes together - allow negative coords for infinite canvas
       const moves = editor.selectedNodeIds.map((nodeId: string) => {
@@ -290,7 +342,7 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
       diagram.nodes,
       diagram.layout,
       actions,
-      screenToCanvas,
+      pointerToWorld,
       viewMode,
     ]
   )
@@ -342,16 +394,24 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
 
       // Selection is handled by mousedown/mouseup for marquee selection
       if (editor.mode === 'addNode') {
-        const canvasPoint = screenToCanvas({ x: e.clientX, y: e.clientY })
-        const x = Math.round(canvasPoint.x - NODE_SIZES.m.width / 2)
-        const y = Math.round(canvasPoint.y - NODE_SIZES.m.height / 2)
-        actions.addNode({ x: Math.max(0, x), y: Math.max(0, y) })
+        const world = pointerToWorld(e.clientX, e.clientY)
+        if (viewMode === 'isometric') {
+          const dims = isoNodeDims({ x: 0, y: 0, size: 'm' })
+          actions.addNode({
+            x: Math.round(world.x - dims.width / 2),
+            y: Math.round(world.y - dims.depth / 2),
+          })
+        } else {
+          const x = Math.round(world.x - NODE_SIZES.m.width / 2)
+          const y = Math.round(world.y - NODE_SIZES.m.height / 2)
+          actions.addNode({ x: Math.max(0, x), y: Math.max(0, y) })
+        }
       } else if (editor.mode === 'addConnector') {
         actions.clearPendingConnector()
         setHoveredNodeId(null)
       }
     },
-    [editor.mode, isPanning, actions, screenToCanvas]
+    [editor.mode, isPanning, actions, pointerToWorld, viewMode]
   )
 
   const handleConnectorClick = useCallback(
@@ -537,13 +597,13 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
       const isCanvasBg = target.classList.contains('canvas-bg') || target === canvasRef.current
 
       if (editor.mode === 'addRect' || editor.mode === 'addCircle') {
-        const canvasPoint = screenToCanvas({ x: e.clientX, y: e.clientY })
+        const world = pointerToWorld(e.clientX, e.clientY)
         setDrawingGroup({
           type: editor.mode === 'addRect' ? 'rect' : 'circle',
-          startX: canvasPoint.x,
-          startY: canvasPoint.y,
-          currentX: canvasPoint.x,
-          currentY: canvasPoint.y,
+          startX: world.x,
+          startY: world.y,
+          currentX: world.x,
+          currentY: world.y,
         })
       } else if (editor.mode === 'select' && isCanvasBg && !isPanning) {
         // Start marquee selection on empty canvas
@@ -556,17 +616,17 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
         })
       }
     },
-    [editor.mode, screenToCanvas, isPanning]
+    [editor.mode, screenToCanvas, pointerToWorld, isPanning]
   )
 
   const handleCanvasMouseMove = useCallback(
     (e: React.MouseEvent) => {
       if (drawingGroup) {
-        const canvasPoint = screenToCanvas({ x: e.clientX, y: e.clientY })
+        const world = pointerToWorld(e.clientX, e.clientY)
         setDrawingGroup(prev => prev ? {
           ...prev,
-          currentX: canvasPoint.x,
-          currentY: canvasPoint.y,
+          currentX: world.x,
+          currentY: world.y,
         } : null)
       }
       if (marqueeSelection) {
@@ -578,7 +638,7 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
         } : null)
       }
     },
-    [drawingGroup, marqueeSelection, screenToCanvas]
+    [drawingGroup, marqueeSelection, screenToCanvas, pointerToWorld]
   )
 
   const handleCanvasMouseUp = useCallback(() => {
@@ -749,6 +809,8 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
               onGroupClick={handleGroupClick}
               onGroupUpdate={actions.updateGroup}
               screenToCanvas={screenToCanvas}
+              isoOrigin={viewMode === 'isometric' ? isoOrigin : null}
+              isoStyle={viewMode === 'isometric' ? isoStyle : null}
             />
 
             {/* Images - render above groups but below nodes */}
@@ -763,35 +825,11 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
 
             {/* Drawing preview for groups */}
             {drawingGroup && (
-              <svg
-                className="absolute inset-0 w-full h-full pointer-events-none"
-                viewBox={`0 0 ${diagram.layout.width} ${diagram.layout.height}`}
-              >
-                {drawingGroup.type === 'circle' ? (
-                  <ellipse
-                    cx={(drawingGroup.startX + drawingGroup.currentX) / 2}
-                    cy={(drawingGroup.startY + drawingGroup.currentY) / 2}
-                    rx={Math.abs(drawingGroup.currentX - drawingGroup.startX) / 2}
-                    ry={Math.abs(drawingGroup.currentY - drawingGroup.startY) / 2}
-                    fill="rgba(113, 113, 122, 0.1)"
-                    stroke="rgba(113, 113, 122, 0.5)"
-                    strokeWidth="2"
-                    strokeDasharray="8 4"
-                  />
-                ) : (
-                  <rect
-                    x={Math.min(drawingGroup.startX, drawingGroup.currentX)}
-                    y={Math.min(drawingGroup.startY, drawingGroup.currentY)}
-                    width={Math.abs(drawingGroup.currentX - drawingGroup.startX)}
-                    height={Math.abs(drawingGroup.currentY - drawingGroup.startY)}
-                    rx={6}
-                    fill="rgba(113, 113, 122, 0.1)"
-                    stroke="rgba(113, 113, 122, 0.5)"
-                    strokeWidth="2"
-                    strokeDasharray="8 4"
-                  />
-                )}
-              </svg>
+              <DrawingGroupPreview
+                drawing={drawingGroup}
+                layout={diagram.layout}
+                isoOrigin={viewMode === 'isometric' ? isoOrigin : null}
+              />
             )}
 
             {/* Marquee selection */}
@@ -876,7 +914,8 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
                       diagram.nodeData,
                       isoOrigin.x,
                       isoOrigin.y,
-                      diagram.layout
+                      diagram.layout,
+                      diagram.groups
                     )}
                     rows={Object.entries(buildNodeIndex(diagram.nodes, diagram.nodeData))
                       .sort(([, a], [, b]) => (a as number) - (b as number))
