@@ -14,8 +14,9 @@ interface IsometricNodeLayerProps {
   nodes: Record<string, NodePosition>
   nodeData: Record<string, NodeData>
   selectedNodeIds: string[]
-  onNodeClick?: (nodeId: string) => void
+  onNodeClick?: (nodeId: string, e: React.MouseEvent) => void
   onNodePointerDown?: (e: React.PointerEvent, nodeId: string) => void
+  onNodePointerEnter?: (nodeId: string) => void
   // Canvas origin offset - where (0,0,0) appears on screen
   originX?: number
   originY?: number
@@ -36,6 +37,7 @@ export default function IsometricNodeLayer({
   selectedNodeIds,
   onNodeClick,
   onNodePointerDown,
+  onNodePointerEnter,
   originX = 400,
   originY = 500,
   isoStyle = getIsoStyle('solid'),
@@ -88,7 +90,13 @@ export default function IsometricNodeLayer({
 
       {technical &&
         technicalItems.map(({ nodeId, data, box }) => (
-          <g key={nodeId} className="pointer-events-auto">
+          <g
+            key={nodeId}
+            className="pointer-events-auto cursor-pointer"
+            onClick={(e) => onNodeClick?.(nodeId, e)}
+            onPointerDown={(e) => onNodePointerDown?.(e, nodeId)}
+            onPointerEnter={() => onNodePointerEnter?.(nodeId)}
+          >
             <TechnicalBox
               uid={uid}
               style={isoStyle}
@@ -96,8 +104,6 @@ export default function IsometricNodeLayer({
               color={data.color}
               tag={nodeIndex[nodeId]}
               selected={selectedNodeIds.includes(nodeId)}
-              onClick={() => onNodeClick?.(nodeId)}
-              onPointerDown={(e) => onNodePointerDown?.(e, nodeId)}
             />
           </g>
         ))}
@@ -133,8 +139,9 @@ export default function IsometricNodeLayer({
         const isSelected = selectedNodeIds.includes(nodeId)
 
         const handlers = {
-          onClick: () => onNodeClick?.(nodeId),
+          onClick: (e: React.MouseEvent) => onNodeClick?.(nodeId, e),
           onPointerDown: (e: React.PointerEvent) => onNodePointerDown?.(e, nodeId),
+          onPointerEnter: () => onNodePointerEnter?.(nodeId),
         }
 
         // Generate the box paths

@@ -679,6 +679,186 @@ body,
   line-height: 1.4;
 }
 
+/* ---- Share sheet ---- */
+.arc-share-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--arc-space-6);
+  background: color-mix(in srgb, #06090e 46%, transparent);
+  backdrop-filter: blur(6px);
+}
+
+.arc-share-dialog {
+  width: min(520px, 100%);
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--arc-line-2);
+  border-radius: var(--arc-radius);
+  background: var(--arc-surface);
+  color: var(--arc-ink);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--arc-glow) 40%, transparent),
+    0 28px 56px -28px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+}
+
+.arc-share-head {
+  display: flex;
+  align-items: center;
+  gap: var(--arc-space-3);
+  padding: var(--arc-space-3) var(--arc-space-4);
+  border-bottom: 1px solid var(--arc-line);
+  background: color-mix(in srgb, var(--arc-surface) 88%, transparent);
+}
+
+.arc-share-title {
+  flex: 1;
+  margin: 0;
+  font-family: var(--arc-font-mono);
+  font-size: var(--arc-text-xs);
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--arc-ink);
+}
+
+.arc-share-stage {
+  position: relative;
+  height: 280px;
+  overflow: hidden;
+  background: var(--arc-canvas);
+  border-bottom: 1px solid var(--arc-line);
+}
+
+.arc-share-live,
+.arc-share-stage [data-arc-diagram] {
+  width: 100%;
+  height: 100%;
+  border-radius: 0 !important;
+}
+
+.arc-share-crop-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+}
+
+.arc-share-crop-svg-layer {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.arc-share-crop-size {
+  position: absolute;
+  right: var(--arc-space-3);
+  bottom: var(--arc-space-3);
+  padding: 1px var(--arc-space-3);
+  border: 1px solid var(--arc-line-2);
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--arc-surface) 88%, transparent);
+  font-family: var(--arc-font-mono);
+  font-size: var(--arc-text-2xs);
+  letter-spacing: 0.08em;
+  color: var(--arc-muted);
+  pointer-events: none;
+}
+
+.arc-share-crop-frame {
+  fill: none;
+  stroke: var(--arc-acc);
+  stroke-width: 1.5;
+  cursor: move;
+}
+
+.arc-share-crop-handle {
+  fill: var(--arc-acc);
+}
+
+.arc-share-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: var(--arc-line);
+  border-top: 1px solid var(--arc-line);
+}
+
+.arc-share-option {
+  display: flex;
+  align-items: center;
+  gap: var(--arc-space-4);
+  width: 100%;
+  padding: var(--arc-space-4) var(--arc-space-5);
+  border: none;
+  background: var(--arc-surface);
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.arc-share-option.is-wide {
+  grid-column: 1 / -1;
+}
+
+.arc-share-option:hover:not(:disabled) {
+  background: var(--arc-acc-soft);
+}
+
+.arc-share-option:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.arc-share-option.is-done {
+  color: var(--arc-acc);
+}
+
+.arc-share-option-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--arc-ctl-h);
+  height: var(--arc-ctl-h);
+  flex-shrink: 0;
+  border: 1px solid var(--arc-line);
+  border-radius: var(--arc-radius);
+  background: var(--arc-surface-muted);
+  color: var(--arc-ink-2);
+}
+
+.arc-share-option.is-done .arc-share-option-icon {
+  border-color: var(--arc-edge);
+  background: var(--arc-acc-soft);
+  color: var(--arc-acc);
+}
+
+.arc-share-option-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 1px;
+}
+
+.arc-share-option-name {
+  font-size: var(--arc-text-ui);
+  font-weight: 500;
+  color: var(--arc-ink);
+}
+
+.arc-share-option.is-done .arc-share-option-name {
+  color: var(--arc-acc);
+}
+
+.arc-share-option-desc {
+  font-size: var(--arc-text-sm);
+  color: var(--arc-muted);
+}
+
 /* ---- Floating toolbar ----
    Its own dock, on the same bottom rhythm as the minimap and the canvas
    controls, so the three bottom clusters share a baseline at any scale. */
@@ -1464,7 +1644,8 @@ body,
 .arc-editor-btn-ghost svg,
 .arc-insp-list-item svg,
 .arc-insp-accordion-trigger svg,
-.arc-insp-subsection-toggle svg {
+.arc-insp-subsection-toggle svg,
+.arc-share-option-icon svg {
   width: var(--arc-icon-sm);
   height: var(--arc-icon-sm);
 }

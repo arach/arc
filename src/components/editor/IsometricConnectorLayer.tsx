@@ -1,6 +1,5 @@
 import { useId } from 'react'
-import { isoToScreen } from '../../utils/isometric'
-import { isoNodeDims } from '../../utils/isoBlueprint'
+import { isoNodeAnchor } from '../../utils/isoBlueprint'
 import { getIsoStyle, d } from '../../utils/isoStyles'
 import type { IsoStyleSpec } from '../../utils/isoStyles'
 import TechnicalDefs, { arrowMarkerId } from '../technical/TechnicalDefs'
@@ -27,80 +26,6 @@ interface IsometricConnectorLayerProps {
   originY?: number
   /** Render style — technical styles draw dotted ink lines instead of colored curves. */
   isoStyle?: IsoStyleSpec
-}
-
-// Get anchor position on an isometric box
-function getIsoAnchor(
-  node: NodePosition,
-  anchorPosition: string,
-  originX: number,
-  originY: number
-): { x: number; y: number } {
-  const { width: isoWidth, depth: isoDepth, height: isoHeight, elevation } = isoNodeDims(node)
-
-  // Calculate 3D anchor positions on the box
-  let wx: number, wy: number, wz: number
-
-  switch (anchorPosition) {
-    case 'left':
-      // Center of left face (x=0)
-      wx = node.x
-      wy = node.y + isoDepth / 2
-      wz = elevation + isoHeight / 2
-      break
-    case 'right':
-      // Center of right (front) face (y=0)
-      wx = node.x + isoWidth / 2
-      wy = node.y
-      wz = elevation + isoHeight / 2
-      break
-    case 'top':
-      // Center of top face
-      wx = node.x + isoWidth / 2
-      wy = node.y + isoDepth / 2
-      wz = elevation + isoHeight
-      break
-    case 'bottom':
-      // Center of bottom
-      wx = node.x + isoWidth / 2
-      wy = node.y + isoDepth / 2
-      wz = elevation
-      break
-    case 'topLeft':
-      // Back-left corner of top
-      wx = node.x
-      wy = node.y + isoDepth
-      wz = elevation + isoHeight
-      break
-    case 'topRight':
-      // Front-right corner of top
-      wx = node.x + isoWidth
-      wy = node.y
-      wz = elevation + isoHeight
-      break
-    case 'bottomLeft':
-      wx = node.x
-      wy = node.y + isoDepth
-      wz = elevation
-      break
-    case 'bottomRight':
-      wx = node.x + isoWidth
-      wy = node.y
-      wz = elevation
-      break
-    default:
-      // Default to center of top face
-      wx = node.x + isoWidth / 2
-      wy = node.y + isoDepth / 2
-      wz = elevation + isoHeight
-  }
-
-  // Project to screen space
-  const screen = isoToScreen(wx, wy, wz)
-  return {
-    x: originX + screen.screenX,
-    y: originY + screen.screenY,
-  }
 }
 
 // Generate a smooth 3D-aware path between two points
@@ -174,8 +99,8 @@ export default function IsometricConnectorLayer({
           if (!fromNode || !toNode) return null
           if (!nodeData[connector.from] || !nodeData[connector.to]) return null
 
-          const from = getIsoAnchor(fromNode, connector.fromAnchor, originX, originY)
-          const to = getIsoAnchor(toNode, connector.toAnchor, originX, originY)
+          const from = isoNodeAnchor(fromNode, connector.fromAnchor, originX, originY)
+          const to = isoNodeAnchor(toNode, connector.toAnchor, originX, originY)
 
           const isSelected = selectedConnectorIndex === index
           const showArrow = style.showArrow !== false

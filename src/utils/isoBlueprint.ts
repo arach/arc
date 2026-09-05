@@ -5,7 +5,7 @@
 // silhouette, the three interior creases, and the three hidden edges that get
 // drawn as fine dashes — plus stable component numbers for the index table.
 
-import { isoToScreen } from './isometric'
+import { isoToScreen, isoBoundingBox } from './isometric'
 import { NODE_SIZES } from './constants'
 import { isoWireBox, unionBounds, toPlateBounds } from './isoWire'
 import type { Bounds } from './isoWire'
@@ -35,6 +35,110 @@ export function isoNodeDims(node: NodePosition): IsoNodeDims {
     height: node.isoHeight ?? DEFAULT_ISO_HEIGHT,
     elevation: node.z ?? 0,
   }
+}
+
+const ISO_FACE_ANCHORS = ['top', 'right', 'bottom', 'left'] as const
+export type IsoFaceAnchor = (typeof ISO_FACE_ANCHORS)[number]
+
+/** Canvas-space position of an anchor on an isometric box. */
+export function isoNodeAnchor(
+  node: NodePosition,
+  anchorPosition: string,
+  originX: number,
+  originY: number
+): { x: number; y: number } {
+  const { width: isoWidth, depth: isoDepth, height: isoHeight, elevation } = isoNodeDims(node)
+  let wx: number
+  let wy: number
+  let wz: number
+
+  switch (anchorPosition) {
+    case 'left':
+      wx = node.x
+      wy = node.y + isoDepth / 2
+      wz = elevation + isoHeight / 2
+      break
+    case 'right':
+      wx = node.x + isoWidth / 2
+      wy = node.y
+      wz = elevation + isoHeight / 2
+      break
+    case 'top':
+      wx = node.x + isoWidth / 2
+      wy = node.y + isoDepth / 2
+      wz = elevation + isoHeight
+      break
+    case 'bottom':
+      wx = node.x + isoWidth / 2
+      wy = node.y + isoDepth / 2
+      wz = elevation
+      break
+    case 'topLeft':
+      wx = node.x
+      wy = node.y + isoDepth
+      wz = elevation + isoHeight
+      break
+    case 'topRight':
+      wx = node.x + isoWidth
+      wy = node.y
+      wz = elevation + isoHeight
+      break
+    case 'bottomLeft':
+      wx = node.x
+      wy = node.y + isoDepth
+      wz = elevation
+      break
+    case 'bottomRight':
+      wx = node.x + isoWidth
+      wy = node.y
+      wz = elevation
+      break
+    default:
+      wx = node.x + isoWidth / 2
+      wy = node.y + isoDepth / 2
+      wz = elevation + isoHeight
+  }
+
+  const screen = isoToScreen(wx, wy, wz)
+  return { x: originX + screen.screenX, y: originY + screen.screenY }
+}
+
+/** Closest of the four main faces to a canvas-space point. */
+export function nearestIsoAnchor(
+  node: NodePosition,
+  canvasX: number,
+  canvasY: number,
+  originX: number,
+  originY: number
+): IsoFaceAnchor {
+  let best: IsoFaceAnchor = 'right'
+  let bestD = Infinity
+  for (const face of ISO_FACE_ANCHORS) {
+    const p = isoNodeAnchor(node, face, originX, originY)
+    const d = (p.x - canvasX) ** 2 + (p.y - canvasY) ** 2
+    if (d < bestD) {
+      bestD = d
+      best = face
+    }
+  }
+  return best
+}
+
+/** Screen-space AABB of a node's isometric box — for marquee hit-testing. */
+export function isoNodeScreenBounds(
+  node: NodePosition,
+  originX: number,
+  originY: number
+) {
+  const dims = isoNodeDims(node)
+  const origin = isoToScreen(node.x, node.y, dims.elevation)
+  return isoBoundingBox(
+    dims.width,
+    dims.depth,
+    dims.height,
+    originX + origin.screenX,
+    originY + origin.screenY
+  )
 }
 
 /** Screen-space bounds of a rectangle (or its inscribed ellipse) on the iso floor. */

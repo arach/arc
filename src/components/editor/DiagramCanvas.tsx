@@ -8,6 +8,7 @@ import { useCanvasTransform } from '../../hooks/useCanvasTransform'
 import EditableNode from './EditableNode'
 import ConnectorLayer from './ConnectorLayer'
 import AnchorPoints from './AnchorPoints'
+import IsoAnchorPoints from './IsoAnchorPoints'
 import GroupLayer from './GroupLayer'
 import ImageLayer from './ImageLayer'
 import MiniMap from './MiniMap'
@@ -21,8 +22,8 @@ import IsometricConnectorLayer from './IsometricConnectorLayer'
 import TechnicalBackdrop from '../technical/TechnicalBackdrop'
 import TechnicalPlate from '../technical/TechnicalPlate'
 import { getIsoStyle } from '../../utils/isoStyles'
-import { isoContentBounds, isoPlateBounds, buildNodeIndex, isoNodeDims } from '../../utils/isoBlueprint'
-import type { EmbedConfig, ZoomConfig } from '../../types/editor'
+import { isoContentBounds, isoPlateBounds, buildNodeIndex, isoNodeDims, nearestIsoAnchor, isoNodeScreenBounds } from '../../utils/isoBlueprint'
+import type { EmbedConfig, ZoomConfig, NodePosition } from '../../types/editor'
 
 // Default embed configuration
 const DEFAULT_EMBED_CONFIG: Required<EmbedConfig> = {
@@ -348,16 +349,31 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
   }, [editor.isDragging, actions])
 
   const handleNodeClick = useCallback(
-    (nodeId: string, _e?: React.MouseEvent) => {
+    (nodeId: string, e?: React.MouseEvent) => {
       if (isPanning) return
 
       // Selection is handled in pointerDown for proper shift+click support
-      // Click handler only needed for addConnector mode
-      if (editor.mode === 'addConnector') {
-        setHoveredNodeId(nodeId)
+      if (editor.mode !== 'addConnector') return
+      setHoveredNodeId(nodeId)
+      if (viewMode !== 'isometric' || !e) return
+      const node = diagram.nodes[nodeId]
+      if (!node) return
+      const canvas = screenToCanvas({ x: e.clientX, y: e.clientY })
+      const face = nearestIsoAnchor(node, canvas.x, canvas.y, isoOrigin.x, isoOrigin.y)
+      if (!editor.pendingConnector) {
+        actions.setPendingConnector({ from: nodeId, fromAnchor: face })
+      } else if (editor.pendingConnector.from !== nodeId) {
+        actions.addConnector(
+          editor.pendingConnector.from,
+          nodeId,
+          editor.pendingConnector.fromAnchor,
+          face,
+          'http'
+        )
+        setHoveredNodeId(null)
       }
     },
-    [editor.mode, isPanning]
+    [editor.mode, editor.pendingConnector, isPanning, viewMode, diagram.nodes, screenToCanvas, isoOrigin.x, isoOrigin.y, actions]
   )
 
   const handleAnchorClick = useCallback(
@@ -375,6 +391,8 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
           'http'
         )
         setHoveredNodeId(null)
+      } else {
+        actions.setPendingConnector({ from: nodeId, fromAnchor: position })
       }
     },
     [editor.mode, editor.pendingConnector, actions]
@@ -583,6 +601,7 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
     startY: number
     currentX: number
     currentY: number
+    additive: boolean
   } | null>(null)
 
   const handleCanvasMouseDown = useCallback(
@@ -607,6 +626,7 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
           startY: canvasPoint.y,
           currentX: canvasPoint.x,
           currentY: canvasPoint.y,
+          additive: e.shiftKey,
         })
       }
     },
@@ -666,18 +686,29 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
 
       // Only select if we actually dragged (not just clicked)
       if (width > 5 || height > 5) {
-        // Find all nodes that intersect with the marquee
         const selectedIds: string[] = []
-        for (const [nodeId, node] of Object.entries(diagram.nodes)) {
+        for (const [nodeId, raw] of Object.entries(diagram.nodes)) {
           const nodeData = diagram.nodeData[nodeId]
           if (!nodeData) continue
-          const size = NODE_SIZES[(node as { size?: string }).size as keyof typeof NODE_SIZES] || NODE_SIZES.m
-          const nodeWidth = size.width
-          const nodeHeight = size.height
-          const nodeX = (node as { x: number }).x
-          const nodeY = (node as { y: number }).y
+          const node = raw as NodePosition
+          let nodeX: number
+          let nodeY: number
+          let nodeWidth: number
+          let nodeHeight: number
+          if (viewMode === 'isometric') {
+            const box = isoNodeScreenBounds(node, isoOrigin.x, isoOrigin.y)
+            nodeX = box.minX
+            nodeY = box.minY
+            nodeWidth = box.width
+            nodeHeight = box.height
+          } else {
+            const size = NODE_SIZES[node.size] || NODE_SIZES.m
+            nodeWidth = size.width
+            nodeHeight = size.height
+            nodeX = node.x
+            nodeY = node.y
+          }
 
-          // Check if node intersects with marquee
           if (
             nodeX < x + width &&
             nodeX + nodeWidth > x &&
@@ -688,17 +719,19 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
           }
         }
         if (selectedIds.length > 0) {
-          actions.selectNodes(selectedIds)
-        } else {
+          const next = marqueeSelection.additive
+            ? [...new Set([...editor.selectedNodeIds, ...selectedIds])]
+            : selectedIds
+          actions.selectNodes(next)
+        } else if (!marqueeSelection.additive) {
           actions.clearSelection()
         }
-      } else {
-        // It was just a click, clear selection
+      } else if (!marqueeSelection.additive) {
         actions.clearSelection()
       }
       setMarqueeSelection(null)
     }
-  }, [drawingGroup, marqueeSelection, diagram.nodes, diagram.nodeData, actions])
+  }, [drawingGroup, marqueeSelection, diagram.nodes, diagram.nodeData, actions, viewMode, isoOrigin.x, isoOrigin.y, editor.selectedNodeIds])
 
   const anchorNodeId =
     editor.mode === 'addConnector' ? hoveredNodeId || editor.pendingConnector?.from : null
@@ -717,7 +750,7 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
       case 'addNode':
         return 'Click to place node'
       case 'addConnector':
-        return 'Click nodes to connect'
+        return viewMode === 'isometric' ? 'Click two boxes to connect' : 'Click nodes to connect'
       case 'pan':
         return 'Drag to pan canvas'
       case 'addRect':
@@ -942,12 +975,26 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
                   nodes={diagram.nodes}
                   nodeData={diagram.nodeData}
                   selectedNodeIds={editor.selectedNodeIds}
-                  onNodeClick={(nodeId) => actions.selectNode(nodeId)}
+                  onNodeClick={handleNodeClick}
                   onNodePointerDown={handlePointerDown}
+                  onNodePointerEnter={(nodeId) => {
+                    if (editor.mode === 'addConnector') setHoveredNodeId(nodeId)
+                  }}
                   originX={diagram.layout.width / 2}
                   originY={diagram.layout.height - 100}
                   isoStyle={isoStyle}
                 />
+
+                {anchorNodeId && diagram.nodes[anchorNodeId] && (
+                  <IsoAnchorPoints
+                    node={diagram.nodes[anchorNodeId]}
+                    nodeId={anchorNodeId}
+                    originX={isoOrigin.x}
+                    originY={isoOrigin.y}
+                    onAnchorClick={handleAnchorClick}
+                    pendingConnector={editor.pendingConnector}
+                  />
+                )}
               </>
             )}
 
