@@ -1,4 +1,5 @@
 import puppeteer from 'puppeteer'
+import { execFileSync } from 'child_process'
 import { fileURLToPath } from 'url'
 import path from 'path'
 import { mkdirSync, existsSync } from 'fs'
@@ -6,1017 +7,443 @@ import { mkdirSync, existsSync } from 'fs'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const publicDir = path.join(__dirname, '..', 'public')
 
-// Ensure public directory exists
 if (!existsSync(publicDir)) {
   mkdirSync(publicDir, { recursive: true })
 }
 
-// Main OG image HTML
-const mainOGHtml = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-
-    body {
-      width: 1200px;
-      height: 630px;
-      font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
-      background: #f7f3ec;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .grid-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-image:
-        linear-gradient(rgba(16, 21, 24, 0.04) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(16, 21, 24, 0.04) 1px, transparent 1px);
-      background-size: 60px 60px;
-    }
-
-    .accent-glow-1 {
-      position: absolute;
-      top: -100px;
-      left: -100px;
-      width: 400px;
-      height: 400px;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(240, 124, 79, 0.2) 0%, transparent 70%);
-    }
-
-    .accent-glow-2 {
-      position: absolute;
-      bottom: -150px;
-      right: -150px;
-      width: 500px;
-      height: 500px;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(240, 124, 79, 0.15) 0%, transparent 70%);
-    }
-
-    .content {
-      position: relative;
-      z-index: 10;
-      display: flex;
-      flex-direction: column;
-      padding: 80px 100px;
-      height: 100%;
-    }
-
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      margin-bottom: 60px;
-    }
-
-    .logo-dot {
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
-      background: #f07c4f;
-      box-shadow: 0 0 0 6px rgba(240, 124, 79, 0.15);
-    }
-
-    .logo-text {
-      font-family: 'Fraunces', serif;
-      font-size: 42px;
-      font-weight: 600;
-      color: #101518;
-    }
-
-    .headline {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .headline-line {
-      font-family: 'Fraunces', serif;
-      font-size: 72px;
-      font-weight: 600;
-      line-height: 1.1;
-      color: #101518;
-    }
-
-    .headline-accent {
-      color: #f07c4f;
-    }
-
-    .tagline {
-      font-size: 26px;
-      color: #5c676c;
-      margin-top: 40px;
-      max-width: 600px;
-    }
-
-    .features {
-      display: flex;
-      align-items: center;
-      gap: 24px;
-      margin-top: auto;
-    }
-
-    .feature {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 16px;
-      border-radius: 8px;
-      background: rgba(16, 21, 24, 0.04);
-      font-size: 15px;
-      font-weight: 500;
-      color: #5c676c;
-    }
-
-    .bottom-accent {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 6px;
-      background: linear-gradient(90deg, #f07c4f, #f2a071);
-    }
-  </style>
-</head>
-<body>
-  <div class="grid-overlay"></div>
-  <div class="accent-glow-1"></div>
-  <div class="accent-glow-2"></div>
-
-  <div class="content">
-    <div class="logo">
-      <div class="logo-dot"></div>
-      <span class="logo-text">Arc</span>
-    </div>
-
-    <div class="headline">
-      <span class="headline-line">Diagrams</span>
-      <span class="headline-line headline-accent">as Code</span>
-    </div>
-
-    <div class="tagline">Declarative architecture diagrams. Design visually, export as config.</div>
-
-    <div class="features">
-      <div class="feature">Drag & Drop</div>
-      <div class="feature">JSON Export</div>
-      <div class="feature">Light & Dark</div>
-    </div>
-  </div>
-
-  <div class="bottom-accent"></div>
-</body>
-</html>
+// Technical landing brand — Space Grotesk + JetBrains Mono, cool paper,
+// engineering blue, blueprint grid. Shared by every OG card so GitHub, Slack,
+// and docs previews match https://arc.jdi.sh.
+const MARK = `
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+  <path d="M4 10V4h6M22 4h6v6M28 22v6h-6M10 28H4v-6" stroke="#2e5fa5" stroke-opacity=".24"/>
+  <path d="M7 24C7 14.6 14.6 7 24 7" stroke="#2e5fa5" stroke-width="2.25"/>
+  <path d="M7 18v6h6M18 7h6v6" stroke="#101518" stroke-opacity=".34"/>
+  <rect x="4.5" y="21.5" width="5" height="5" fill="#101518"/>
+  <rect x="21.5" y="4.5" width="5" height="5" fill="#d95d39"/>
+</svg>
 `
 
-// Docs OG image HTML
-const docsOGHtml = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
+const FONTS = `
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-
-    body {
-      width: 1200px;
-      height: 630px;
-      font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
-      background: #f7f3ec;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .grid-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-image:
-        linear-gradient(rgba(16, 21, 24, 0.04) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(16, 21, 24, 0.04) 1px, transparent 1px);
-      background-size: 60px 60px;
-    }
-
-    .accent-glow {
-      position: absolute;
-      top: -100px;
-      right: -100px;
-      width: 400px;
-      height: 400px;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(240, 124, 79, 0.15) 0%, transparent 70%);
-    }
-
-    .content {
-      position: relative;
-      z-index: 10;
-      display: flex;
-      flex-direction: column;
-      padding: 80px 100px;
-      height: 100%;
-    }
-
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      margin-bottom: 60px;
-    }
-
-    .logo-dot {
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
-      background: #f07c4f;
-      box-shadow: 0 0 0 6px rgba(240, 124, 79, 0.15);
-    }
-
-    .logo-text {
-      font-family: 'Fraunces', serif;
-      font-size: 42px;
-      font-weight: 600;
-      color: #101518;
-    }
-
-    .divider {
-      width: 1px;
-      height: 28px;
-      background: rgba(16, 21, 24, 0.15);
-      margin: 0 8px;
-    }
-
-    .docs-label {
-      font-size: 14px;
-      font-weight: 700;
-      color: #5c676c;
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-    }
-
-    .headline {
-      font-family: 'Fraunces', serif;
-      font-size: 64px;
-      font-weight: 600;
-      line-height: 1.15;
-      color: #101518;
-    }
-
-    .subtitle {
-      font-size: 28px;
-      color: #5c676c;
-      margin-top: 20px;
-      max-width: 700px;
-    }
-
-    .features {
-      display: flex;
-      align-items: center;
-      gap: 40px;
-      margin-top: auto;
-    }
-
-    .feature {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .feature-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: #f07c4f;
-    }
-
-    .feature-text {
-      font-size: 18px;
-      color: #5c676c;
-    }
-
-    .bottom-accent {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 6px;
-      background: linear-gradient(90deg, #f07c4f, #f2a071);
-    }
-  </style>
-</head>
-<body>
-  <div class="grid-overlay"></div>
-  <div class="accent-glow"></div>
-
-  <div class="content">
-    <div class="logo">
-      <div class="logo-dot"></div>
-      <span class="logo-text">Arc</span>
-      <div class="divider"></div>
-      <span class="docs-label">DOCS</span>
-    </div>
-
-    <div class="headline">Arc Documentation</div>
-    <div class="subtitle">Everything you need to create declarative architecture diagrams</div>
-
-    <div class="features">
-      <div class="feature">
-        <div class="feature-dot"></div>
-        <span class="feature-text">Quickstart Guide</span>
-      </div>
-      <div class="feature">
-        <div class="feature-dot"></div>
-        <span class="feature-text">Format Reference</span>
-      </div>
-      <div class="feature">
-        <div class="feature-dot"></div>
-        <span class="feature-text">Agent-Friendly</span>
-      </div>
-    </div>
-  </div>
-
-  <div class="bottom-accent"></div>
-</body>
-</html>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 `
 
-// Doc page factory
-function docPageHtml(title, description) {
-  return `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-
-    body {
-      width: 1200px;
-      height: 630px;
-      font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
-      background: #f7f3ec;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .grid-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-image:
-        linear-gradient(rgba(16, 21, 24, 0.04) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(16, 21, 24, 0.04) 1px, transparent 1px);
-      background-size: 60px 60px;
-    }
-
-    .accent-glow {
-      position: absolute;
-      bottom: -100px;
-      left: -100px;
-      width: 400px;
-      height: 400px;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(240, 124, 79, 0.12) 0%, transparent 70%);
-    }
-
-    .content {
-      position: relative;
-      z-index: 10;
-      display: flex;
-      flex-direction: column;
-      padding: 80px 100px;
-      height: 100%;
-    }
-
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      margin-bottom: 60px;
-    }
-
-    .logo-dot {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      background: #f07c4f;
-      box-shadow: 0 0 0 5px rgba(240, 124, 79, 0.15);
-    }
-
-    .logo-text {
-      font-family: 'Fraunces', serif;
-      font-size: 36px;
-      font-weight: 600;
-      color: #101518;
-    }
-
-    .divider {
-      width: 1px;
-      height: 24px;
-      background: rgba(16, 21, 24, 0.15);
-      margin: 0 8px;
-    }
-
-    .docs-label {
-      font-size: 12px;
-      font-weight: 700;
-      color: #5c676c;
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-    }
-
-    .title {
-      font-family: 'Fraunces', serif;
-      font-size: 56px;
-      font-weight: 600;
-      line-height: 1.2;
-      color: #101518;
-      max-width: 900px;
-    }
-
-    .description {
-      font-size: 24px;
-      color: #5c676c;
-      margin-top: 24px;
-      max-width: 700px;
-      line-height: 1.5;
-    }
-
-    .bottom-accent {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 6px;
-      background: linear-gradient(90deg, #f07c4f, #f2a071);
-    }
-  </style>
-</head>
-<body>
-  <div class="grid-overlay"></div>
-  <div class="accent-glow"></div>
-
-  <div class="content">
-    <div class="logo">
-      <div class="logo-dot"></div>
-      <span class="logo-text">Arc</span>
-      <div class="divider"></div>
-      <span class="docs-label">DOCS</span>
-    </div>
-
-    <div class="title">${title}</div>
-    <div class="description">${description}</div>
-  </div>
-
-  <div class="bottom-accent"></div>
-</body>
-</html>
+const BASE_CSS = `
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; }
+  body {
+    font-family: 'Space Grotesk', 'Segoe UI', system-ui, sans-serif;
+    background: #fbfcfd;
+    color: #101518;
+    position: relative;
+    overflow: hidden;
+  }
+  .grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(46, 95, 165, 0.055) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(46, 95, 165, 0.055) 1px, transparent 1px);
+    background-size: 46px 46px;
+  }
+  .shell {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    gap: 48px;
+    align-items: center;
+    height: 100%;
+    padding: 52px 64px 48px;
+  }
+  .shell.split { grid-template-columns: 1.08fr 0.92fr; }
+  .shell.solo { grid-template-columns: 1fr; }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 36px;
+  }
+  .brand svg { display: block; }
+  .lockup { display: grid; gap: 5px; line-height: 1; }
+  .name { font-weight: 700; font-size: 22px; letter-spacing: -0.02em; }
+  .descriptor {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #6b757a;
+  }
+  .eyebrow {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 13px;
+    letter-spacing: 0.14em;
+    color: #2e5fa5;
+    margin-bottom: 18px;
+  }
+  h1 {
+    font-weight: 700;
+    font-size: 52px;
+    line-height: 1.04;
+    letter-spacing: -0.025em;
+    margin: 0 0 18px;
+  }
+  h1.compact { font-size: 46px; }
+  .lead {
+    font-size: 18px;
+    line-height: 1.5;
+    color: #3a4248;
+    max-width: 22em;
+    margin: 0 0 28px;
+  }
+  .spec {
+    display: flex;
+    flex-wrap: wrap;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    color: #8a9298;
+    border-top: 1px solid rgba(16, 21, 24, 0.10);
+    padding-top: 14px;
+  }
+  .spec span { padding: 0 14px; border-left: 1px solid rgba(16, 21, 24, 0.12); }
+  .spec span:first-child { padding-left: 0; border-left: none; }
+  .card {
+    border: 1px solid rgba(16, 21, 24, 0.12);
+    border-radius: 6px;
+    background: #fff;
+    overflow: hidden;
+    box-shadow: 0 1px 0 rgba(16, 21, 24, 0.04), 0 18px 40px -28px rgba(16, 21, 24, 0.30);
+  }
+  .card-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 11px 14px;
+    border-bottom: 1px solid rgba(16, 21, 24, 0.10);
+    background: #fbfcfd;
+  }
+  .dots { display: flex; gap: 6px; }
+  .dots i { width: 9px; height: 9px; border-radius: 50%; background: rgba(16, 21, 24, 0.14); display: block; }
+  .dots i:last-child { background: #2e5fa5; }
+  .card-name {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 11px;
+    color: #8a9298;
+    letter-spacing: 0.04em;
+  }
+  pre {
+    margin: 0;
+    padding: 20px 18px;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 13.5px;
+    line-height: 1.7;
+    color: #3a4248;
+  }
+  .c { color: #8a9298; }
+  .k { color: #2e5fa5; }
+  .s { color: #1f7a65; }
+  .doc-list { padding: 6px 0; }
+  .doc-row {
+    display: grid;
+    grid-template-columns: 64px 1fr;
+    gap: 14px;
+    align-items: baseline;
+    padding: 14px 18px;
+    border-top: 1px solid rgba(16, 21, 24, 0.08);
+  }
+  .doc-row:first-child { border-top: none; }
+  .doc-n {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    color: #2e5fa5;
+  }
+  .doc-h { font-weight: 600; font-size: 15px; }
+  .canvas {
+    height: 320px;
+    display: grid;
+    grid-template-columns: 1fr 36px 1fr 36px 1fr;
+    grid-template-rows: 1fr auto 36px auto 1fr;
+    align-items: center;
+    justify-items: stretch;
+    padding: 8px 20px;
+    background:
+      linear-gradient(rgba(46, 95, 165, 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(46, 95, 165, 0.06) 1px, transparent 1px);
+    background-size: 24px 24px;
+    background-color: #fff;
+  }
+  .node {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: #fff;
+    border: 1px solid rgba(16, 21, 24, 0.16);
+    box-shadow: 0 1px 0 rgba(16, 21, 24, 0.04);
+  }
+  .node .swatch { width: 8px; height: 8px; flex: none; }
+  .node .label { font-size: 13px; font-weight: 600; letter-spacing: -0.01em; }
+  .node .sub {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #8a9298;
+  }
+  .n-editor { grid-column: 1; grid-row: 2; }
+  .n-model { grid-column: 3; grid-row: 2; }
+  .n-docs { grid-column: 5; grid-row: 2; }
+  .n-export { grid-column: 3; grid-row: 4; }
+  .sw-editor { background: #2e5fa5; }
+  .sw-model { background: #5b4db0; }
+  .sw-docs { background: #3a7ca5; }
+  .sw-export { background: #1f7a65; }
+  .h-wire {
+    height: 2px;
+    width: 100%;
+    background: repeating-linear-gradient(90deg, #2e5fa5 0 5px, transparent 5px 9px);
+    opacity: 0.55;
+  }
+  .w-1 { grid-column: 2; grid-row: 2; }
+  .w-2 { grid-column: 4; grid-row: 2; }
+  .v-wire {
+    justify-self: center;
+    width: 2px;
+    height: 100%;
+    background: repeating-linear-gradient(#1f7a65 0 5px, transparent 5px 9px);
+    opacity: 0.55;
+  }
+  .w-3 { grid-column: 3; grid-row: 3; }
+  .ruler {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 18px;
+    border-top: 1px solid rgba(16, 21, 24, 0.10);
+    background-image: repeating-linear-gradient(90deg, rgba(16, 21, 24, 0.18) 0 1px, transparent 1px 46px);
+    background-size: 46px 9px;
+    background-repeat: repeat-x;
+  }
 `
+
+function specBar(items) {
+  return items.map((item) => `<span>${item}</span>`).join('')
 }
 
-async function generateOGImage(html, filename) {
-  const browser = await puppeteer.launch({
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox'],
+function plate({ eyebrow, title, lead, spec, right, compactTitle = false }) {
+  const split = Boolean(right)
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  ${FONTS}
+  <style>${BASE_CSS}</style>
+</head>
+<body>
+  <div class="grid"></div>
+  <div class="shell ${split ? 'split' : 'solo'}">
+    <div>
+      <div class="brand">
+        ${MARK}
+        <span class="lockup">
+          <span class="name">Arc</span>
+          <span class="descriptor">diagrams as code</span>
+        </span>
+      </div>
+      <div class="eyebrow">${eyebrow}</div>
+      <h1${compactTitle ? ' class="compact"' : ''}>${title}</h1>
+      <p class="lead">${lead}</p>
+      <div class="spec">${specBar(spec)}</div>
+    </div>
+    ${right ? `<div>${right}</div>` : ''}
+  </div>
+  <div class="ruler"></div>
+</body>
+</html>`
+}
+
+const codeCard = `
+  <div class="card">
+    <div class="card-bar">
+      <div class="dots"><i></i><i></i><i></i></div>
+      <span class="card-name">system.arc.ts</span>
+    </div>
+    <pre><span class="c">// the diagram is the source</span>
+<span class="k">const</span> system = {
+  nodes: { editor, model, exporters },
+  connectors: [
+    { from: <span class="s">'editor'</span>, to: <span class="s">'model'</span> },
+    { from: <span class="s">'model'</span>,  to: <span class="s">'exporters'</span> },
+  ],
+  theme: <span class="s">'cool'</span>,
+}
+<span class="c">// → render · diff · export</span></pre>
+  </div>
+`
+
+const docsIndexCard = `
+  <div class="card">
+    <div class="card-bar">
+      <div class="dots"><i></i><i></i><i></i></div>
+      <span class="card-name">docs.index</span>
+    </div>
+    <div class="doc-list">
+      <div class="doc-row"><span class="doc-n">DOC.01</span><span class="doc-h">Introduction to Arc</span></div>
+      <div class="doc-row"><span class="doc-n">DOC.02</span><span class="doc-h">Get up and running</span></div>
+      <div class="doc-row"><span class="doc-n">DOC.03</span><span class="doc-h">Data structure reference</span></div>
+      <div class="doc-row"><span class="doc-n">DOC.04</span><span class="doc-h">Color palettes</span></div>
+    </div>
+  </div>
+`
+
+const editorCard = `
+  <div class="card">
+    <div class="card-bar">
+      <div class="dots"><i></i><i></i><i></i></div>
+      <span class="card-name">canvas.arc</span>
+    </div>
+    <div class="canvas">
+      <div class="node n-editor">
+        <span class="swatch sw-editor"></span>
+        <span>
+          <span class="label">Editor</span>
+          <div class="sub">Canvas UI</div>
+        </span>
+      </div>
+      <div class="h-wire w-1"></div>
+      <div class="node n-model">
+        <span class="swatch sw-model"></span>
+        <span>
+          <span class="label">Model</span>
+          <div class="sub">JSON / TS</div>
+        </span>
+      </div>
+      <div class="h-wire w-2"></div>
+      <div class="node n-docs">
+        <span class="swatch sw-docs"></span>
+        <span>
+          <span class="label">Docs</span>
+          <div class="sub">Embed</div>
+        </span>
+      </div>
+      <div class="v-wire w-3"></div>
+      <div class="node n-export">
+        <span class="swatch sw-export"></span>
+        <span>
+          <span class="label">Export</span>
+          <div class="sub">SVG / PNG</div>
+        </span>
+      </div>
+    </div>
+  </div>
+`
+
+const mainOGHtml = plate({
+  eyebrow: '// DIAGRAMS-AS-CODE',
+  title: 'Diagrams that live where your system does.',
+  lead: 'Typed, diffable config. Visual editor. The picture ships with the code.',
+  spec: ['REACT', 'TYPESCRIPT', 'SVG / PNG', 'JSON / TS'],
+  right: codeCard,
+})
+
+const docsOGHtml = plate({
+  eyebrow: '// DOCUMENTATION',
+  title: 'Arc Documentation',
+  lead: 'Everything you need to create declarative architecture diagrams.',
+  spec: ['QUICKSTART', 'FORMAT', 'THEMES', 'AGENTS'],
+  right: docsIndexCard,
+})
+
+const editorOGHtml = plate({
+  eyebrow: '// EDITOR',
+  title: 'Open the editor.',
+  lead: 'A real canvas for nodes, connections, groups, and images. Export the same config you version in git.',
+  spec: ['CANVAS', 'ISOMETRIC', 'JSON / TS'],
+  right: editorCard,
+})
+
+function docPageHtml(code, title, description) {
+  return plate({
+    eyebrow: `// DOCS · ${code}`,
+    title,
+    lead: description,
+    spec: ['ARC', 'DOCS', code],
+    compactTitle: true,
   })
+}
 
+async function generateOGImage(browser, html, filename, { width = 1200, height = 630 } = {}) {
   const page = await browser.newPage()
-  await page.setViewport({ width: 1200, height: 630, deviceScaleFactor: 2 })
-
+  await page.setViewport({ width, height, deviceScaleFactor: 2 })
   await page.setContent(html, { waitUntil: 'networkidle0' })
-
-  // Wait for fonts to load
   await page.evaluate(() => document.fonts.ready)
-  await new Promise((resolve) => setTimeout(resolve, 1000))
+  await new Promise((resolve) => setTimeout(resolve, 400))
 
   const outputPath = path.join(publicDir, filename)
-
   await page.screenshot({
     path: outputPath,
     type: 'png',
-    clip: { x: 0, y: 0, width: 1200, height: 630 },
+    clip: { x: 0, y: 0, width, height },
   })
-
-  await browser.close()
+  await page.close()
   console.log(`✓ Generated ${filename}`)
 }
-
-// Landing page OG - marketing focused
-const landingOGHtml = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-
-    body {
-      width: 1200px;
-      height: 630px;
-      font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
-      background: #f7f3ec;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .grid-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-image:
-        linear-gradient(rgba(16, 21, 24, 0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(16, 21, 24, 0.03) 1px, transparent 1px);
-      background-size: 40px 40px;
-    }
-
-    .accent-glow-1 {
-      position: absolute;
-      top: -200px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 600px;
-      height: 600px;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(240, 124, 79, 0.25) 0%, transparent 60%);
-    }
-
-    .accent-glow-2 {
-      position: absolute;
-      bottom: -200px;
-      left: 20%;
-      width: 400px;
-      height: 400px;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(31, 122, 101, 0.12) 0%, transparent 70%);
-    }
-
-    .accent-glow-3 {
-      position: absolute;
-      bottom: -150px;
-      right: 10%;
-      width: 350px;
-      height: 350px;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(46, 95, 165, 0.1) 0%, transparent 70%);
-    }
-
-    .content {
-      position: relative;
-      z-index: 10;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100%;
-      text-align: center;
-      padding: 60px;
-    }
-
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      margin-bottom: 48px;
-    }
-
-    .logo-dot {
-      width: 18px;
-      height: 18px;
-      border-radius: 50%;
-      background: #f07c4f;
-      box-shadow: 0 0 0 8px rgba(240, 124, 79, 0.15);
-    }
-
-    .logo-text {
-      font-family: 'Fraunces', serif;
-      font-size: 56px;
-      font-weight: 600;
-      color: #101518;
-    }
-
-    .tagline {
-      font-family: 'Fraunces', serif;
-      font-size: 42px;
-      font-weight: 500;
-      color: #101518;
-      line-height: 1.3;
-      max-width: 800px;
-      margin-bottom: 40px;
-    }
-
-    .tagline-accent {
-      color: #f07c4f;
-    }
-
-    .subtitle {
-      font-size: 22px;
-      color: #5c676c;
-      max-width: 600px;
-    }
-
-    .bottom-accent {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 6px;
-      background: linear-gradient(90deg, #1f7a65, #f07c4f, #2e5fa5);
-    }
-  </style>
-</head>
-<body>
-  <div class="grid-overlay"></div>
-  <div class="accent-glow-1"></div>
-  <div class="accent-glow-2"></div>
-  <div class="accent-glow-3"></div>
-
-  <div class="content">
-    <div class="logo">
-      <div class="logo-dot"></div>
-      <span class="logo-text">Arc</span>
-    </div>
-
-    <div class="tagline">
-      Diagrams <span class="tagline-accent">as Code</span>
-    </div>
-
-    <div class="subtitle">
-      Declarative architecture diagrams you can design, version, and embed
-    </div>
-  </div>
-
-  <div class="bottom-accent"></div>
-</body>
-</html>
-`
-
-// Editor page OG - shows the product
-const editorOGHtml = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-
-    body {
-      width: 1200px;
-      height: 630px;
-      font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
-      background: #101518;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .grid-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-image:
-        linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-      background-size: 40px 40px;
-    }
-
-    .accent-glow {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 800px;
-      height: 800px;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(240, 124, 79, 0.08) 0%, transparent 50%);
-    }
-
-    .content {
-      position: relative;
-      z-index: 10;
-      display: flex;
-      height: 100%;
-      padding: 48px;
-      gap: 48px;
-    }
-
-    .left {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-    }
-
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 32px;
-    }
-
-    .logo-dot {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      background: #f07c4f;
-      box-shadow: 0 0 0 5px rgba(240, 124, 79, 0.2);
-    }
-
-    .logo-text {
-      font-family: 'Fraunces', serif;
-      font-size: 32px;
-      font-weight: 600;
-      color: #f3f4f6;
-    }
-
-    .headline {
-      font-family: 'Fraunces', serif;
-      font-size: 48px;
-      font-weight: 600;
-      color: #f3f4f6;
-      line-height: 1.15;
-      margin-bottom: 20px;
-    }
-
-    .headline-accent {
-      color: #f07c4f;
-    }
-
-    .subtitle {
-      font-size: 18px;
-      color: #9ca3af;
-      line-height: 1.6;
-      max-width: 400px;
-    }
-
-    .right {
-      width: 500px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .editor-preview {
-      width: 100%;
-      height: 380px;
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 16px;
-      overflow: hidden;
-      box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4);
-    }
-
-    .editor-header {
-      height: 40px;
-      background: rgba(255, 255, 255, 0.05);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-      display: flex;
-      align-items: center;
-      padding: 0 16px;
-      gap: 8px;
-    }
-
-    .dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-    }
-
-    .dot-red { background: #ff5f56; }
-    .dot-yellow { background: #ffbd2e; }
-    .dot-green { background: #27ca40; }
-
-    .editor-content {
-      padding: 24px;
-      display: flex;
-      gap: 24px;
-      height: calc(100% - 40px);
-    }
-
-    .canvas {
-      flex: 1;
-      background: rgba(247, 243, 236, 0.02);
-      border-radius: 8px;
-      position: relative;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .node {
-      position: absolute;
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 12px;
-      padding: 12px 16px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .node-icon {
-      width: 28px;
-      height: 28px;
-      border-radius: 6px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 14px;
-    }
-
-    .node-1 { top: 40px; left: 30px; }
-    .node-1 .node-icon { background: rgba(240, 124, 79, 0.2); color: #f07c4f; }
-
-    .node-2 { top: 40px; right: 30px; }
-    .node-2 .node-icon { background: rgba(31, 122, 101, 0.2); color: #1f7a65; }
-
-    .node-3 { bottom: 40px; left: 50%; transform: translateX(-50%); }
-    .node-3 .node-icon { background: rgba(46, 95, 165, 0.2); color: #2e5fa5; }
-
-    .node-label {
-      font-size: 12px;
-      color: #d1d5db;
-      font-weight: 500;
-    }
-
-    .connector {
-      position: absolute;
-      background: rgba(240, 124, 79, 0.4);
-      height: 2px;
-    }
-
-    .conn-1 {
-      top: 60px;
-      left: 130px;
-      width: 100px;
-    }
-
-    .conn-2 {
-      top: 100px;
-      left: 80px;
-      width: 2px;
-      height: 80px;
-    }
-
-    .sidebar {
-      width: 120px;
-      background: rgba(255, 255, 255, 0.03);
-      border-radius: 8px;
-      padding: 12px;
-    }
-
-    .sidebar-label {
-      font-size: 9px;
-      color: #6b7280;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      margin-bottom: 8px;
-    }
-
-    .sidebar-item {
-      height: 24px;
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 4px;
-      margin-bottom: 6px;
-    }
-
-    .bottom-accent {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 4px;
-      background: linear-gradient(90deg, #f07c4f, #f2a071);
-    }
-  </style>
-</head>
-<body>
-  <div class="grid-overlay"></div>
-  <div class="accent-glow"></div>
-
-  <div class="content">
-    <div class="left">
-      <div class="logo">
-        <div class="logo-dot"></div>
-        <span class="logo-text">Arc</span>
-      </div>
-
-      <div class="headline">
-        Open the <span class="headline-accent">Editor</span>
-      </div>
-
-      <div class="subtitle">
-        Drag-and-drop diagram builder with real-time preview and JSON export
-      </div>
-    </div>
-
-    <div class="right">
-      <div class="editor-preview">
-        <div class="editor-header">
-          <div class="dot dot-red"></div>
-          <div class="dot dot-yellow"></div>
-          <div class="dot dot-green"></div>
-        </div>
-        <div class="editor-content">
-          <div class="canvas">
-            <div class="node node-1">
-              <div class="node-icon">◈</div>
-              <span class="node-label">Client</span>
-            </div>
-            <div class="node node-2">
-              <div class="node-icon">⬡</div>
-              <span class="node-label">API</span>
-            </div>
-            <div class="node node-3">
-              <div class="node-icon">▢</div>
-              <span class="node-label">Database</span>
-            </div>
-          </div>
-          <div class="sidebar">
-            <div class="sidebar-label">Properties</div>
-            <div class="sidebar-item"></div>
-            <div class="sidebar-item"></div>
-            <div class="sidebar-item"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="bottom-accent"></div>
-</body>
-</html>
-`
 
 async function main() {
   console.log('Generating Arc OG images with Puppeteer...\n')
 
-  // Landing page OG image
-  await generateOGImage(landingOGHtml, 'og-landing.png')
+  const browser = await puppeteer.launch({
+    headless: true,
+    channel: 'chrome',
+    args: ['--no-sandbox', '--disable-setuid-sandbox'],
+  })
 
-  // Editor page OG image
-  await generateOGImage(editorOGHtml, 'og-editor.png')
+  await generateOGImage(browser, mainOGHtml, 'og-image.png')
+  await generateOGImage(browser, mainOGHtml, 'og-landing.png')
+  await generateOGImage(browser, mainOGHtml, 'github-social.png', { width: 1280, height: 640 })
 
-  // Main site OG image (existing)
-  await generateOGImage(mainOGHtml, 'og-image.png')
+  await generateOGImage(browser, editorOGHtml, 'og-editor.png')
+  await generateOGImage(browser, docsOGHtml, 'og-docs.png')
 
-  // Docs index OG image
-  await generateOGImage(docsOGHtml, 'og-docs.png')
-
-  // Individual doc pages
   await generateOGImage(
-    docPageHtml('Quickstart Guide', 'Get started with Arc in minutes. Create your first diagram and export it.'),
+    browser,
+    docPageHtml('QUICKSTART', 'Quickstart Guide', 'Get started with Arc in minutes. Create your first diagram and export it.'),
     'og-docs-quickstart.png'
   )
-
   await generateOGImage(
-    docPageHtml('Diagram Format', 'Complete reference for Arc diagram JSON schema, nodes, and connectors.'),
+    browser,
+    docPageHtml('FORMAT', 'Diagram Format', 'Complete reference for Arc diagram JSON schema, nodes, and connectors.'),
     'og-docs-format.png'
   )
-
   await generateOGImage(
-    docPageHtml('LLM & Agent Reference', 'Agent-friendly documentation for AI-assisted diagram generation.'),
+    browser,
+    docPageHtml('LLM', 'LLM & Agent Reference', 'Agent-friendly documentation for AI-assisted diagram generation.'),
     'og-docs-llm.png'
   )
-
   await generateOGImage(
-    docPageHtml('Overview', 'Arc is a visual diagram editor for architecture diagrams that are readable and versionable.'),
+    browser,
+    docPageHtml('OVERVIEW', 'Overview', 'Arc is a visual diagram editor for architecture diagrams that are readable and versionable.'),
     'og-docs-overview.png'
   )
-
   await generateOGImage(
-    docPageHtml('Themes', 'Color palettes and background treatments that adapt to light and dark modes.'),
+    browser,
+    docPageHtml('THEMES', 'Themes', 'Color palettes and background treatments that adapt to light and dark modes.'),
     'og-docs-themes.png'
   )
+
+  await browser.close()
+
+  // GitHub social preview wants 1280×640, not the 2× capture.
+  const social = path.join(publicDir, 'github-social.png')
+  execFileSync('sips', ['-z', '640', '1280', social])
+  console.log('✓ Downsampled github-social.png to 1280×640')
 
   console.log('\nDone!')
 }
 
-main().catch(console.error)
+main().catch((err) => {
+  console.error(err)
+  process.exit(1)
+})
