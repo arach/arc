@@ -1,7 +1,7 @@
 import { useRef, useCallback, useState, useEffect, useMemo } from 'react'
 import { useEditor, useDiagram, useEditorState, useTemplate, useViewMode, useIsoStyle, useMeta, useResolvedTheme, useResolvedBrand } from './EditorProvider'
 import { NODE_SIZES } from '../../utils/constants'
-import { getContentBounds } from '../../utils/diagramHelpers'
+import { getContentBounds, nearestNodeAnchor, hitTestNode, anchor } from '../../utils/diagramHelpers'
 import { getTemplate } from '../../utils/templates'
 import { canvasToIsoFloor, isoFloorRect, isoFloorEllipse } from '../../utils/isometric'
 import { useCanvasTransform } from '../../hooks/useCanvasTransform'
@@ -22,10 +22,10 @@ import IsometricConnectorLayer from './IsometricConnectorLayer'
 import TechnicalBackdrop from '../technical/TechnicalBackdrop'
 import TechnicalPlate from '../technical/TechnicalPlate'
 import { getIsoStyle } from '../../utils/isoStyles'
-import { isoContentBounds, isoPlateBounds, buildNodeIndex, isoNodeDims, nearestIsoAnchor, isoNodeScreenBounds } from '../../utils/isoBlueprint'
+import { isoContentBounds, isoPlateBounds, buildNodeIndex, isoNodeDims, nearestIsoAnchor, isoNodeScreenBounds, hitTestIsoNode, isoNodeAnchor } from '../../utils/isoBlueprint'
 import type { EmbedConfig, ZoomConfig, NodePosition } from '../../types/editor'
 import { CanvasContextMenu, type CtxMenuState, type CtxTarget } from './CanvasContextMenu'
-import { IsoAxisGizmo, IsoCoordHud } from './IsoOriginEditor'
+import { IsoOriginHud } from './IsoOriginEditor'
 
 // Default embed configuration
 const DEFAULT_EMBED_CONFIG: Required<EmbedConfig> = {
@@ -124,6 +124,8 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
   const themeColors = useResolvedTheme()
   const brand = useResolvedBrand()
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null)
+  const [retarget, setRetarget] = useState<{ index: number; end: 'from' | 'to' } | null>(null)
+  const [retargetPt, setRetargetPt] = useState<{ x: number; y: number } | null>(null)
 
   // Merge embed config with defaults
   const config = { ...DEFAULT_EMBED_CONFIG, ...embedConfig }
@@ -446,12 +448,78 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
 
   const handleConnectorClick = useCallback(
     (index: number) => {
-      if (editor.mode === 'select' && !isPanning) {
+      if (editor.mode === 'select' && !isPanning && !retarget) {
         actions.selectConnector(index)
       }
     },
-    [editor.mode, isPanning, actions]
+    [editor.mode, isPanning, actions, retarget]
   )
+
+  const handleEndpointDown = useCallback(
+    (index: number, end: 'from' | 'to', e: React.PointerEvent) => {
+      if (editor.mode !== 'select' || isPanning) return
+      actions.selectConnector(index)
+      setRetarget({ index, end })
+      setRetargetPt(screenToCanvas({ x: e.clientX, y: e.clientY }))
+    },
+    [editor.mode, isPanning, actions, screenToCanvas]
+  )
+
+  useEffect(() => {
+    if (!retarget) return
+    const onMove = (e: PointerEvent) => {
+      const canvas = screenToCanvas({ x: e.clientX, y: e.clientY })
+      setRetargetPt(canvas)
+      if (viewMode === 'isometric') {
+        setHoveredNodeId(
+          hitTestIsoNode(diagram.nodes, diagram.nodeData, canvas.x, canvas.y, isoOrigin.x, isoOrigin.y)
+        )
+      } else {
+        setHoveredNodeId(hitTestNode(diagram.nodes, diagram.nodeData, canvas))
+      }
+    }
+    const onUp = (e: PointerEvent) => {
+      const canvas = screenToCanvas({ x: e.clientX, y: e.clientY })
+      const c = diagram.connectors[retarget.index]
+      if (c) {
+        let nodeId: string | null = null
+        let face: string | null = null
+        if (viewMode === 'isometric') {
+          nodeId = hitTestIsoNode(
+            diagram.nodes,
+            diagram.nodeData,
+            canvas.x,
+            canvas.y,
+            isoOrigin.x,
+            isoOrigin.y
+          )
+          if (nodeId) {
+            face = nearestIsoAnchor(diagram.nodes[nodeId], canvas.x, canvas.y, isoOrigin.x, isoOrigin.y)
+          }
+        } else {
+          nodeId = hitTestNode(diagram.nodes, diagram.nodeData, canvas)
+          if (nodeId) face = nearestNodeAnchor(diagram.nodes, nodeId, canvas.x, canvas.y)
+        }
+        const other = retarget.end === 'from' ? c.to : c.from
+        if (nodeId && face && nodeId !== other) {
+          if (retarget.end === 'from') {
+            actions.updateConnector(retarget.index, { from: nodeId, fromAnchor: face })
+          } else {
+            actions.updateConnector(retarget.index, { to: nodeId, toAnchor: face })
+          }
+        }
+      }
+      setRetarget(null)
+      setRetargetPt(null)
+      setHoveredNodeId(null)
+    }
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+    return () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+    }
+  }, [retarget, screenToCanvas, viewMode, diagram.nodes, diagram.nodeData, diagram.connectors, isoOrigin.x, isoOrigin.y, actions])
 
   const handleGroupClick = useCallback(
     (groupId: string) => {
@@ -624,7 +692,7 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
 
   const handleCanvasMouseDown = useCallback(
     (e: React.MouseEvent) => {
-      if (e.button !== 0) return
+      if (e.button !== 0 || retarget) return
       const target = e.target as HTMLElement
       const isCanvasBg = target.classList.contains('canvas-bg') || target === canvasRef.current
 
@@ -649,7 +717,7 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
         })
       }
     },
-    [editor.mode, screenToCanvas, pointerToWorld, isPanning]
+    [editor.mode, screenToCanvas, pointerToWorld, isPanning, retarget]
   )
 
   const handleCanvasMouseMove = useCallback(
@@ -753,10 +821,27 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
   }, [drawingGroup, marqueeSelection, diagram.nodes, diagram.nodeData, actions, viewMode, isoOrigin.x, isoOrigin.y, editor.selectedNodeIds])
 
   const anchorNodeId =
-    editor.mode === 'addConnector' ? hoveredNodeId || editor.pendingConnector?.from : null
+    editor.mode === 'addConnector'
+      ? hoveredNodeId || editor.pendingConnector?.from
+      : retarget
+        ? hoveredNodeId
+        : null
+
+  const retargetFixed = (() => {
+    if (!retarget) return null
+    const c = diagram.connectors[retarget.index]
+    if (!c) return null
+    const nodeId = retarget.end === 'from' ? c.to : c.from
+    const face = retarget.end === 'from' ? c.toAnchor : c.fromAnchor
+    const node = diagram.nodes[nodeId]
+    if (!node) return null
+    if (viewMode === 'isometric') return isoNodeAnchor(node, face, isoOrigin.x, isoOrigin.y)
+    return anchor(diagram.nodes, nodeId, face)
+  })()
 
   const getCursorClass = () => {
     if (isPanning) return 'cursor-grabbing'
+    if (retarget) return 'cursor-grabbing'
     if (editor.mode === 'pan') return 'cursor-grab'
     if (editor.mode === 'addNode') return 'cursor-crosshair'
     if (editor.mode === 'addConnector') return 'cursor-pointer'
@@ -915,6 +1000,7 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
                   selectedConnectorIndex={editor.selectedConnectorIndex}
                   onConnectorClick={handleConnectorClick}
                   onConnectorContextMenu={(index, e) => openCtxMenu(e, { kind: 'connector', index })}
+                  onEndpointDown={handleEndpointDown}
                   themeColors={themeColors}
                   brand={brand}
                 />
@@ -993,6 +1079,7 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
                   selectedConnectorIndex={editor.selectedConnectorIndex}
                   onConnectorClick={handleConnectorClick}
                   onConnectorContextMenu={(index, e) => openCtxMenu(e, { kind: 'connector', index })}
+                  onEndpointDown={handleEndpointDown}
                   originX={diagram.layout.width / 2}
                   originY={diagram.layout.height - 100}
                   isoStyle={isoStyle}
@@ -1026,15 +1113,27 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
                   />
                 )}
 
-                {editor.selectedNodeIds.length === 1 && diagram.nodes[editor.selectedNodeIds[0]] && (
-                  <IsoAxisGizmo
-                    node={diagram.nodes[editor.selectedNodeIds[0]]}
-                    originX={isoOrigin.x}
-                    originY={isoOrigin.y}
-                    isoStyle={isoStyle}
-                  />
-                )}
               </>
+            )}
+
+            {retarget && retargetFixed && retargetPt && (
+              <svg
+                className="absolute inset-0 w-full h-full pointer-events-none"
+                viewBox={viewMode === '2d' ? `0 0 ${diagram.layout.width} ${diagram.layout.height}` : undefined}
+                style={{ overflow: 'visible' }}
+              >
+                <line
+                  x1={retargetFixed.x}
+                  y1={retargetFixed.y}
+                  x2={retargetPt.x}
+                  y2={retargetPt.y}
+                  stroke="var(--arc-acc, #2b7fd4)"
+                  strokeWidth={2}
+                  strokeDasharray="6 4"
+                  strokeLinecap="round"
+                />
+                <circle cx={retargetPt.x} cy={retargetPt.y} r={5} fill="var(--arc-acc, #2b7fd4)" />
+              </svg>
             )}
 
             {/* Export zone overlay */}
@@ -1047,21 +1146,6 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
             />
           </div>
         </div>
-
-        {viewMode === 'isometric'
-          && !editor.isDragging
-          && !isPanning
-          && editor.selectedNodeIds.length === 1
-          && diagram.nodes[editor.selectedNodeIds[0]] && (
-          <IsoCoordHud
-            node={diagram.nodes[editor.selectedNodeIds[0]]}
-            originX={isoOrigin.x}
-            originY={isoOrigin.y}
-            zoom={zoom}
-            pan={pan}
-            onChange={(updates) => actions.updateNodePosition(editor.selectedNodeIds[0], updates)}
-          />
-        )}
       </div>
 
       {/* Empty canvas — File → New leaves nothing to look at and no hint that
@@ -1139,6 +1223,16 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
           diagram={diagram}
           viewportBounds={viewportBounds}
           onViewportChange={handleMiniMapViewportChange}
+        />
+      )}
+
+      {viewMode === 'isometric'
+        && editor.selectedNodeIds.length === 1
+        && diagram.nodes[editor.selectedNodeIds[0]] && (
+        <IsoOriginHud
+          node={diagram.nodes[editor.selectedNodeIds[0]]}
+          name={diagram.nodeData[editor.selectedNodeIds[0]]?.name}
+          onChange={(updates) => actions.updateNodePosition(editor.selectedNodeIds[0], updates)}
         />
       )}
 

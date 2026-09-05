@@ -52,6 +52,47 @@ export function anchor(
   }
 }
 
+const MAIN_ANCHORS: AnchorPosition[] = ['top', 'right', 'bottom', 'left']
+
+/** Closest of the four main faces to a canvas-space point. */
+export function nearestNodeAnchor(
+  nodes: Record<string, NodePosition>,
+  nodeId: string,
+  canvasX: number,
+  canvasY: number
+): AnchorPosition {
+  let best: AnchorPosition = 'right'
+  let bestD = Infinity
+  for (const face of MAIN_ANCHORS) {
+    const p = anchor(nodes, nodeId, face)
+    const d = (p.x - canvasX) ** 2 + (p.y - canvasY) ** 2
+    if (d < bestD) {
+      bestD = d
+      best = face
+    }
+  }
+  return best
+}
+
+/** Last matching node in 2D canvas space (later draw order wins). */
+export function hitTestNode(
+  nodes: Record<string, NodePosition>,
+  nodeData: Record<string, unknown>,
+  pt: Point
+): string | null {
+  let hit: string | null = null
+  for (const [id, node] of Object.entries(nodes)) {
+    if (!nodeData[id]) continue
+    const size = NODE_SIZES[node.size as NodeSizeKey] || NODE_SIZES.m
+    const w = node.width || size.width
+    const h = node.height || size.height
+    if (pt.x >= node.x && pt.x <= node.x + w && pt.y >= node.y && pt.y <= node.y + h) {
+      hit = id
+    }
+  }
+  return hit
+}
+
 // Calculate midpoint between two coordinates
 export function midPoint(p1: Point, p2: Point): Point {
   return { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 }

@@ -256,6 +256,12 @@ export function CanvasContextMenu({
     )
   }
 
+  const host =
+    (typeof document !== 'undefined' &&
+      ((document.querySelector('.arc-editor-root [data-hudson-theme]') as HTMLElement | null) ||
+        (document.querySelector('.arc-editor-root') as HTMLElement | null))) ||
+    document.body
+
   return createPortal(
     <div
       ref={ref}
@@ -270,6 +276,6 @@ export function CanvasContextMenu({
     >
       {body}
     </div>,
-    document.body
+    host
   )
 }

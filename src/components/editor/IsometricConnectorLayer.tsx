@@ -23,6 +23,7 @@ interface IsometricConnectorLayerProps {
   selectedConnectorIndex: number | null
   onConnectorClick?: (index: number) => void
   onConnectorContextMenu?: (index: number, e: React.MouseEvent) => void
+  onEndpointDown?: (index: number, end: 'from' | 'to', e: React.PointerEvent) => void
   originX?: number
   originY?: number
   /** Render style — technical styles draw dotted ink lines instead of colored curves. */
@@ -57,6 +58,7 @@ export default function IsometricConnectorLayer({
   selectedConnectorIndex,
   onConnectorClick,
   onConnectorContextMenu,
+  onEndpointDown,
   originX = 400,
   originY = 500,
   isoStyle = getIsoStyle('solid'),
@@ -127,6 +129,11 @@ export default function IsometricConnectorLayer({
                   e.stopPropagation()
                   onConnectorContextMenu?.(index, e)
                 }}
+                onEndpointDown={
+                  isSelected && onEndpointDown
+                    ? (end, e) => onEndpointDown(index, end, e)
+                    : undefined
+                }
               />
             )
           }
@@ -203,11 +210,41 @@ export default function IsometricConnectorLayer({
                   {style.label}
                 </text>
               )}
+              {isSelected && onEndpointDown && (
+                <>
+                  <IsoEdgeHandle x={from.x} y={from.y} onPointerDown={(e) => onEndpointDown(index, 'from', e)} />
+                  <IsoEdgeHandle x={to.x} y={to.y} onPointerDown={(e) => onEndpointDown(index, 'to', e)} />
+                </>
+              )}
             </g>
           )
         })}
       </g>
     </svg>
+  )
+}
+
+function IsoEdgeHandle({
+  x,
+  y,
+  onPointerDown,
+}: {
+  x: number
+  y: number
+  onPointerDown: (e: React.PointerEvent) => void
+}) {
+  return (
+    <circle
+      cx={x}
+      cy={y}
+      r={7}
+      className="arc-edge-handle"
+      onPointerDown={(e) => {
+        e.stopPropagation()
+        e.preventDefault()
+        onPointerDown(e)
+      }}
+    />
   )
 }
 
@@ -221,6 +258,7 @@ interface TechnicalConnectorProps {
   showArrow: boolean
   onClick: (e: React.MouseEvent) => void
   onContextMenu?: (e: React.MouseEvent) => void
+  onEndpointDown?: (end: 'from' | 'to', e: React.PointerEvent) => void
 }
 
 /**
@@ -238,6 +276,7 @@ function TechnicalConnector({
   showArrow,
   onClick,
   onContextMenu,
+  onEndpointDown,
 }: TechnicalConnectorProps) {
   const ink = isSelected ? isoStyle.ink.accent : isoStyle.ink.line
   const path = `M ${from.x} ${from.y} L ${to.x} ${to.y}`
@@ -297,6 +336,12 @@ function TechnicalConnector({
             {text}
           </text>
         </g>
+      )}
+      {onEndpointDown && (
+        <>
+          <IsoEdgeHandle x={from.x} y={from.y} onPointerDown={(e) => onEndpointDown('from', e)} />
+          <IsoEdgeHandle x={to.x} y={to.y} onPointerDown={(e) => onEndpointDown('to', e)} />
+        </>
       )}
     </g>
   )

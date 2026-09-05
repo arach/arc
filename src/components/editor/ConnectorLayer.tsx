@@ -161,8 +161,32 @@ function generatePath(from, to, fromAnchor, toAnchor, curve, curveDepth = 50) {
   return `M ${from.x} ${from.y} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${to.x} ${to.y}`
 }
 
-function Connector({ connector, nodes, connectorStyles, isSelected, onClick, onContextMenu, index, themeColors, brand }: {
-  connector: any; nodes: any; connectorStyles: any; isSelected: boolean; onClick: (i: number) => void; onContextMenu?: (i: number, e: React.MouseEvent) => void; index: number; themeColors?: ResolvedThemeMode | null; brand?: BrandSpec
+function EdgeHandle({
+  x,
+  y,
+  onPointerDown,
+}: {
+  x: number
+  y: number
+  onPointerDown: (e: React.PointerEvent) => void
+}) {
+  return (
+    <circle
+      cx={x}
+      cy={y}
+      r={7}
+      className="arc-edge-handle"
+      onPointerDown={(e) => {
+        e.stopPropagation()
+        e.preventDefault()
+        onPointerDown(e)
+      }}
+    />
+  )
+}
+
+function Connector({ connector, nodes, connectorStyles, isSelected, onClick, onContextMenu, onEndpointDown, index, themeColors, brand }: {
+  connector: any; nodes: any; connectorStyles: any; isSelected: boolean; onClick: (i: number) => void; onContextMenu?: (i: number, e: React.MouseEvent) => void; onEndpointDown?: (i: number, end: 'from' | 'to', e: React.PointerEvent) => void; index: number; themeColors?: ResolvedThemeMode | null; brand?: BrandSpec
 }) {
   const style = connectorStyles[connector.style]
   if (!style) return null
@@ -314,6 +338,13 @@ function Connector({ connector, nodes, connectorStyles, isSelected, onClick, onC
           {style.label}
         </text>
       )}
+
+      {isSelected && onEndpointDown && (
+        <>
+          <EdgeHandle x={from.x} y={from.y} onPointerDown={(e) => onEndpointDown(index, 'from', e)} />
+          <EdgeHandle x={to.x} y={to.y} onPointerDown={(e) => onEndpointDown(index, 'to', e)} />
+        </>
+      )}
     </g>
   )
 }
@@ -326,10 +357,11 @@ export default function ConnectorLayer({
   selectedConnectorIndex,
   onConnectorClick,
   onConnectorContextMenu,
+  onEndpointDown,
   themeColors,
   brand,
 }: {
-  layout: any; nodes: any; connectors: any[]; connectorStyles: any; selectedConnectorIndex: number | null; onConnectorClick: (i: number) => void; onConnectorContextMenu?: (i: number, e: React.MouseEvent) => void; themeColors?: ResolvedThemeMode | null; brand?: BrandSpec
+  layout: any; nodes: any; connectors: any[]; connectorStyles: any; selectedConnectorIndex: number | null; onConnectorClick: (i: number) => void; onConnectorContextMenu?: (i: number, e: React.MouseEvent) => void; onEndpointDown?: (i: number, end: 'from' | 'to', e: React.PointerEvent) => void; themeColors?: ResolvedThemeMode | null; brand?: BrandSpec
 }) {
   // Get unique colors used by connectors for marker definitions
   const usedColors = [...new Set(
@@ -399,6 +431,7 @@ export default function ConnectorLayer({
               isSelected={selectedConnectorIndex === i}
               onClick={onConnectorClick}
               onContextMenu={onConnectorContextMenu}
+              onEndpointDown={onEndpointDown}
               themeColors={themeColors}
               brand={brand}
             />

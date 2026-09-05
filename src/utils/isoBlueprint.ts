@@ -185,6 +185,37 @@ export function nearestIsoAnchor(
   return best
 }
 
+/** Front-most isometric box whose screen AABB contains the canvas point. */
+export function hitTestIsoNode(
+  nodes: Record<string, NodePosition>,
+  nodeData: Record<string, NodeData>,
+  canvasX: number,
+  canvasY: number,
+  originX: number,
+  originY: number
+): string | null {
+  let best: string | null = null
+  let bestFront = -Infinity
+  for (const [id, node] of Object.entries(nodes)) {
+    if (!nodeData[id]) continue
+    const box = isoNodeScreenBounds(node, originX, originY)
+    if (
+      canvasX >= box.minX &&
+      canvasX <= box.minX + box.width &&
+      canvasY >= box.minY &&
+      canvasY <= box.minY + box.height
+    ) {
+      const world = isoWorldBox(id, node)
+      const front = world.maxX + world.maxY
+      if (front >= bestFront) {
+        bestFront = front
+        best = id
+      }
+    }
+  }
+  return best
+}
+
 /** Screen-space AABB of a node's isometric box — for marquee hit-testing. */
 export function isoNodeScreenBounds(
   node: NodePosition,
