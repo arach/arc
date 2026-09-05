@@ -43,10 +43,11 @@ function AxisLegend() {
   const X = isoToScreen(LEGEND, 0, 0)
   const Y = isoToScreen(0, LEGEND, 0)
   const Z = isoToScreen(0, 0, LEGEND)
+  const ink = 'var(--arc-ink-2)'
   const axes = [
-    { key: 'X', x: o.x + X.screenX, y: o.y + X.screenY, color: 'var(--arc-ink)' },
-    { key: 'Y', x: o.x + Y.screenX, y: o.y + Y.screenY, color: 'var(--arc-muted)' },
-    { key: 'Z', x: o.x + Z.screenX, y: o.y + Z.screenY, color: 'var(--arc-acc)' },
+    { key: 'X', x: o.x + X.screenX, y: o.y + X.screenY },
+    { key: 'Y', x: o.x + Y.screenX, y: o.y + Y.screenY },
+    { key: 'Z', x: o.x + Z.screenX, y: o.y + Z.screenY },
   ] as const
 
   return (
@@ -58,7 +59,7 @@ function AxisLegend() {
             y1={o.y}
             x2={a.x}
             y2={a.y}
-            stroke={a.color}
+            stroke={ink}
             strokeWidth={1.25}
             strokeLinecap="round"
           />
@@ -66,7 +67,7 @@ function AxisLegend() {
             x={a.x}
             y={a.y - 4}
             textAnchor="middle"
-            fill={a.color}
+            fill={ink}
             fontSize={8}
             fontFamily="var(--arc-font-mono, ui-monospace, monospace)"
             fontWeight={600}
@@ -75,7 +76,7 @@ function AxisLegend() {
           </text>
         </g>
       ))}
-      <circle cx={o.x} cy={o.y} r={2.25} fill="var(--arc-acc)" />
+      <circle cx={o.x} cy={o.y} r={2.25} fill={ink} />
     </svg>
   )
 }
