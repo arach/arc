@@ -63,7 +63,7 @@ const BASE_CSS = `
     display: flex;
     align-items: center;
     gap: 12px;
-    margin-bottom: 36px;
+    margin-bottom: 22px;
   }
   .brand svg { display: block; }
   .lockup { display: grid; gap: 5px; line-height: 1; }
@@ -75,12 +75,20 @@ const BASE_CSS = `
     text-transform: uppercase;
     color: #6b757a;
   }
+  .repo {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 22px;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    color: #2e5fa5;
+    margin-bottom: 22px;
+  }
   .eyebrow {
     font-family: 'JetBrains Mono', ui-monospace, monospace;
     font-size: 13px;
     letter-spacing: 0.14em;
     color: #2e5fa5;
-    margin-bottom: 18px;
+    margin-bottom: 14px;
   }
   h1 {
     font-weight: 700;
@@ -252,7 +260,8 @@ function plate({ eyebrow, title, lead, spec, right, compactTitle = false }) {
           <span class="descriptor">diagrams as code</span>
         </span>
       </div>
-      <div class="eyebrow">${eyebrow}</div>
+      <div class="repo">github.com/arach/arc</div>
+      ${eyebrow ? `<div class="eyebrow">${eyebrow}</div>` : ''}
       <h1${compactTitle ? ' class="compact"' : ''}>${title}</h1>
       <p class="lead">${lead}</p>
       <div class="spec">${specBar(spec)}</div>
@@ -341,7 +350,6 @@ const editorCard = `
 `
 
 const mainOGHtml = plate({
-  eyebrow: '// DIAGRAMS-AS-CODE',
   title: 'Diagrams that live where your system does.',
   lead: 'Typed, diffable config. Visual editor. The picture ships with the code.',
   spec: ['REACT', 'TYPESCRIPT', 'SVG / PNG', 'JSON / TS'],
