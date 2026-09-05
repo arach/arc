@@ -22,6 +22,7 @@ interface IsometricConnectorLayerProps {
   connectorStyles: Record<string, ConnectorStyle>
   selectedConnectorIndex: number | null
   onConnectorClick?: (index: number) => void
+  onConnectorContextMenu?: (index: number, e: React.MouseEvent) => void
   originX?: number
   originY?: number
   /** Render style — technical styles draw dotted ink lines instead of colored curves. */
@@ -55,6 +56,7 @@ export default function IsometricConnectorLayer({
   connectorStyles,
   selectedConnectorIndex,
   onConnectorClick,
+  onConnectorContextMenu,
   originX = 400,
   originY = 500,
   isoStyle = getIsoStyle('solid'),
@@ -120,6 +122,11 @@ export default function IsometricConnectorLayer({
                   e.stopPropagation()
                   onConnectorClick?.(index)
                 }}
+                onContextMenu={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  onConnectorContextMenu?.(index, e)
+                }}
               />
             )
           }
@@ -135,6 +142,11 @@ export default function IsometricConnectorLayer({
               onClick={(e) => {
                 e.stopPropagation()
                 onConnectorClick?.(index)
+              }}
+              onContextMenu={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                onConnectorContextMenu?.(index, e)
               }}
             >
               {/* Wider invisible path for easier clicking */}
@@ -208,6 +220,7 @@ interface TechnicalConnectorProps {
   isSelected: boolean
   showArrow: boolean
   onClick: (e: React.MouseEvent) => void
+  onContextMenu?: (e: React.MouseEvent) => void
 }
 
 /**
@@ -224,6 +237,7 @@ function TechnicalConnector({
   isSelected,
   showArrow,
   onClick,
+  onContextMenu,
 }: TechnicalConnectorProps) {
   const ink = isSelected ? isoStyle.ink.accent : isoStyle.ink.line
   const path = `M ${from.x} ${from.y} L ${to.x} ${to.y}`
@@ -233,7 +247,7 @@ function TechnicalConnector({
   const plateWidth = text.length * d(5.2) + d(10)
 
   return (
-    <g className="cursor-pointer" onClick={onClick}>
+    <g className="cursor-pointer" onClick={onClick} onContextMenu={onContextMenu}>
       {/* Wider invisible path for easier clicking */}
       <path d={path} fill="none" stroke="transparent" strokeWidth={20} />
 

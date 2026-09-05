@@ -100,6 +100,36 @@ export function editorReducer(state, action) {
       }
     }
 
+    case 'node/duplicate': {
+      const sourceId = action.nodeId
+      const source = state.diagram.nodes[sourceId]
+      const sourceData = state.diagram.nodeData[sourceId]
+      if (!source || !sourceData) return state
+      const nodeId = generateNodeId()
+      const stateWithHistory = saveToHistory(state)
+      return {
+        ...stateWithHistory,
+        diagram: {
+          ...stateWithHistory.diagram,
+          nodes: {
+            ...stateWithHistory.diagram.nodes,
+            [nodeId]: { ...source, x: source.x + 24, y: source.y + 24 },
+          },
+          nodeData: {
+            ...stateWithHistory.diagram.nodeData,
+            [nodeId]: { ...sourceData },
+          },
+        },
+        editor: {
+          ...stateWithHistory.editor,
+          selectedNodeIds: [nodeId],
+          selectedConnectorIndex: null,
+          selectedGroupId: null,
+          selectedImageId: null,
+        },
+      }
+    }
+
     case 'node/remove': {
       const { nodeId } = action
       const stateWithHistory = saveToHistory(state)
@@ -214,6 +244,10 @@ export function editorReducer(state, action) {
       const { nodeId, updates } = action
       const stateWithHistory = saveToHistory(state)
       const currentNode = stateWithHistory.diagram.nodes[nodeId]
+      const next = { ...currentNode, ...updates }
+      for (const key of Object.keys(updates)) {
+        if (updates[key] === undefined) delete next[key]
+      }
 
       return {
         ...stateWithHistory,
@@ -221,7 +255,7 @@ export function editorReducer(state, action) {
           ...stateWithHistory.diagram,
           nodes: {
             ...stateWithHistory.diagram.nodes,
-            [nodeId]: { ...currentNode, ...updates },
+            [nodeId]: next,
           },
         },
       }

@@ -16,7 +16,7 @@ export type { WireBox, Bounds, IndexRow } from './isoWire'
 
 /** 2D node widths are scaled down in iso space for visual balance. */
 export const ISO_WIDTH_SCALE = 0.8
-export const DEFAULT_ISO_HEIGHT = 25
+export const DEFAULT_ISO_HEIGHT = 10
 export const DEFAULT_ISO_DEPTH = 50
 
 export interface IsoNodeDims {
@@ -35,6 +35,67 @@ export function isoNodeDims(node: NodePosition): IsoNodeDims {
     height: node.isoHeight ?? DEFAULT_ISO_HEIGHT,
     elevation: node.z ?? 0,
   }
+}
+
+/** Axis-aligned world box used for painter's-algorithm sorting. */
+export interface IsoWorldBox {
+  id: string
+  minX: number
+  maxX: number
+  minY: number
+  maxY: number
+  minZ: number
+  maxZ: number
+  order: number
+}
+
+export function isoWorldBox(id: string, node: NodePosition): IsoWorldBox {
+  const dims = isoNodeDims(node)
+  return {
+    id,
+    minX: node.x,
+    maxX: node.x + dims.width,
+    minY: node.y,
+    maxY: node.y + dims.depth,
+    minZ: dims.elevation,
+    maxZ: dims.elevation + dims.height,
+    order: node.isoOrder ?? 0,
+  }
+}
+
+/**
+ * Back-to-front compare for isometric AABBs.
+ *
+ * Camera looks from +X+Y+Z, so the near corner is (maxX, maxY, maxZ). When two
+ * volumes occupy the same space, `isoOrder` is the only way to pick a winner —
+ * that's the inspector's Under / Over control.
+ */
+export function compareIsoWorldBoxes(a: IsoWorldBox, b: IsoWorldBox): number {
+  const overlap =
+    a.minX < b.maxX && a.maxX > b.minX &&
+    a.minY < b.maxY && a.maxY > b.minY &&
+    a.minZ < b.maxZ && a.maxZ > b.minZ
+
+  if (overlap && a.order !== b.order) return a.order - b.order
+
+  const aFront = a.maxX + a.maxY
+  const bFront = b.maxX + b.maxY
+  if (aFront !== bFront) return aFront - bFront
+
+  if (a.maxZ !== b.maxZ) return a.maxZ - b.maxZ
+  if (a.order !== b.order) return a.order - b.order
+  return a.id < b.id ? -1 : a.id > b.id ? 1 : 0
+}
+
+export function sortIsoNodeIds(
+  nodes: Record<string, NodePosition>,
+  nodeData: Record<string, NodeData>
+): string[] {
+  return Object.keys(nodes)
+    .filter((id) => nodeData[id])
+    .map((id) => isoWorldBox(id, nodes[id]))
+    .sort(compareIsoWorldBoxes)
+    .map((box) => box.id)
 }
 
 const ISO_FACE_ANCHORS = ['top', 'right', 'bottom', 'left'] as const

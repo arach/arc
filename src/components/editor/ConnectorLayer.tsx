@@ -161,8 +161,8 @@ function generatePath(from, to, fromAnchor, toAnchor, curve, curveDepth = 50) {
   return `M ${from.x} ${from.y} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${to.x} ${to.y}`
 }
 
-function Connector({ connector, nodes, connectorStyles, isSelected, onClick, index, themeColors, brand }: {
-  connector: any; nodes: any; connectorStyles: any; isSelected: boolean; onClick: (i: number) => void; index: number; themeColors?: ResolvedThemeMode | null; brand?: BrandSpec
+function Connector({ connector, nodes, connectorStyles, isSelected, onClick, onContextMenu, index, themeColors, brand }: {
+  connector: any; nodes: any; connectorStyles: any; isSelected: boolean; onClick: (i: number) => void; onContextMenu?: (i: number, e: React.MouseEvent) => void; index: number; themeColors?: ResolvedThemeMode | null; brand?: BrandSpec
 }) {
   const style = connectorStyles[connector.style]
   if (!style) return null
@@ -232,6 +232,11 @@ function Connector({ connector, nodes, connectorStyles, isSelected, onClick, ind
       onClick={(e) => {
         e.stopPropagation()
         onClick(index)
+      }}
+      onContextMenu={(e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        onContextMenu?.(index, e)
       }}
     >
       {/* Invisible wider path for easier clicking */}
@@ -320,10 +325,11 @@ export default function ConnectorLayer({
   connectorStyles,
   selectedConnectorIndex,
   onConnectorClick,
+  onConnectorContextMenu,
   themeColors,
   brand,
 }: {
-  layout: any; nodes: any; connectors: any[]; connectorStyles: any; selectedConnectorIndex: number | null; onConnectorClick: (i: number) => void; themeColors?: ResolvedThemeMode | null; brand?: BrandSpec
+  layout: any; nodes: any; connectors: any[]; connectorStyles: any; selectedConnectorIndex: number | null; onConnectorClick: (i: number) => void; onConnectorContextMenu?: (i: number, e: React.MouseEvent) => void; themeColors?: ResolvedThemeMode | null; brand?: BrandSpec
 }) {
   // Get unique colors used by connectors for marker definitions
   const usedColors = [...new Set(
@@ -392,6 +398,7 @@ export default function ConnectorLayer({
               connectorStyles={connectorStyles}
               isSelected={selectedConnectorIndex === i}
               onClick={onConnectorClick}
+              onContextMenu={onConnectorContextMenu}
               themeColors={themeColors}
               brand={brand}
             />

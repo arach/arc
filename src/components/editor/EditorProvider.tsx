@@ -49,6 +49,10 @@ export function EditorProvider({ children, initialDiagram, initialThemeId = DEFA
       dispatch({ type: 'node/remove', nodeId })
     }, []),
 
+    duplicateNode: useCallback((nodeId) => {
+      dispatch({ type: 'node/duplicate', nodeId })
+    }, []),
+
     moveNode: useCallback((nodeId, x, y) => {
       dispatch({ type: 'node/move', nodeId, x, y })
     }, []),

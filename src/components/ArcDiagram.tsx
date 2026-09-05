@@ -1770,6 +1770,7 @@ export default function ArcDiagram({
               originX={isoOriginX}
               originY={isoOriginY}
               isoStyle={isoStyle}
+              brand={brand}
             />
           </>
         ) : (

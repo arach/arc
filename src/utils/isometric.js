@@ -80,6 +80,32 @@ export function isoToScreen(x, y, z = 0) {
 }
 
 /**
+ * SVG `matrix(a,b,c,d,e,f)` that lies a 2D drawing on the isometric top face.
+ *
+ * `dir` is which way local +x (the text baseline) runs in world XY:
+ *   x   along +X (up-right)     y   along +Y (up-left)
+ *   x-  along −X (down-left)    y-  along −Y (down-right)
+ * Local +y (SVG down) is a 90° turn toward the camera, so the page reads
+ * from the front of the box.
+ */
+export function isoTopFaceMatrix(dir = 'x') {
+  let ux = 1, uy = 0, vx = 0, vy = -1
+  if (dir === 'y') { ux = 0; uy = 1; vx = 1; vy = 0 }
+  else if (dir === 'x-') { ux = -1; uy = 0; vx = 0; vy = 1 }
+  else if (dir === 'y-') { ux = 0; uy = -1; vx = -1; vy = 0 }
+  const U = isoToScreen(ux, uy, 0)
+  const V = isoToScreen(vx, vy, 0)
+  return `${U.screenX},${U.screenY},${V.screenX},${V.screenY},0,0`
+}
+
+/** Pick a print axis: explicit, or the longer side of the top face. */
+export function resolveIsoLabelDir(dir, width, depth, flip) {
+  const axis = dir === 'x' || dir === 'y' ? dir : (width >= depth ? 'x' : 'y')
+  if (!flip) return axis
+  return axis === 'x' ? 'x-' : 'y-'
+}
+
+/**
  * Convert 2D screen coordinates to isometric floor position (z=0)
  * Useful for mouse interaction on the ground plane
  * Updated for flipped Y: screenY = -(x + y) * SIN_30 - z

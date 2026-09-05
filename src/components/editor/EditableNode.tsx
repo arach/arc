@@ -99,6 +99,7 @@ interface EditableNodeProps {
   isSelected: boolean
   onPointerDown: (e: React.PointerEvent, nodeId: string) => void
   onClick: (nodeId: string, e: React.MouseEvent) => void
+  onContextMenu?: (nodeId: string, e: React.MouseEvent) => void
   onMouseEnter: () => void
   onMouseLeave: () => void
   themeColors?: ResolvedThemeMode | null
@@ -114,6 +115,7 @@ const EditableNode = memo(function EditableNode({
   isSelected,
   onPointerDown,
   onClick,
+  onContextMenu,
   onMouseEnter,
   onMouseLeave,
   themeColors,
@@ -160,6 +162,7 @@ const EditableNode = memo(function EditableNode({
         onMouseLeave={onMouseLeave}
         onPointerDown={(e) => onPointerDown(e, nodeId)}
         onClick={(e) => { e.stopPropagation(); onClick(nodeId, e) }}
+        onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); onContextMenu?.(nodeId, e) }}
       >
         <PlayerNode
           node={{ x: 0, y: 0, size: (size as any) }}
@@ -198,6 +201,11 @@ const EditableNode = memo(function EditableNode({
       onClick={(e) => {
         e.stopPropagation()
         onClick(nodeId, e)
+      }}
+      onContextMenu={(e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        onContextMenu?.(nodeId, e)
       }}
     >
       <div

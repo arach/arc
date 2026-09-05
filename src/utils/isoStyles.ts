@@ -92,7 +92,7 @@ const blueprint: IsoStyleSpec = {
     accent: '#a8412a',
   },
   face: { top: '#f4ebd7', right: '#e6dabb', left: '#d6c6a2' },
-  hatchOpacity: { top: 0.3, right: 0.55, left: 0.85 },
+  hatchOpacity: { top: 0.48, right: 0.68, left: 0.92 },
   font: MONO,
   strokeWidth: 1,
 }
@@ -112,7 +112,7 @@ const cyanotype: IsoStyleSpec = {
     accent: '#ffc857',
   },
   face: { top: '#1b4675', right: '#153a61', left: '#0f2b49' },
-  hatchOpacity: { top: 0.28, right: 0.5, left: 0.78 },
+  hatchOpacity: { top: 0.46, right: 0.64, left: 0.88 },
   font: MONO,
   strokeWidth: 1,
 }
@@ -156,7 +156,7 @@ export function nextTechnicalStyle(id: string | null | undefined): IsoStyleId {
 export const MATERIAL_KEYS: Record<string, HatchKind> = {
   violet: 'cross',
   blue: 'lines',
-  sky: 'lines',
+  sky: 'dashes',
   cyan: 'dashes',
   emerald: 'dots',
   amber: 'dense',

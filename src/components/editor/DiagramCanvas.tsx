@@ -24,6 +24,8 @@ import TechnicalPlate from '../technical/TechnicalPlate'
 import { getIsoStyle } from '../../utils/isoStyles'
 import { isoContentBounds, isoPlateBounds, buildNodeIndex, isoNodeDims, nearestIsoAnchor, isoNodeScreenBounds } from '../../utils/isoBlueprint'
 import type { EmbedConfig, ZoomConfig, NodePosition } from '../../types/editor'
+import { CanvasContextMenu, type CtxMenuState, type CtxTarget } from './CanvasContextMenu'
+import { IsoAxisGizmo, IsoCoordHud } from './IsoOriginEditor'
 
 // Default embed configuration
 const DEFAULT_EMBED_CONFIG: Required<EmbedConfig> = {
@@ -157,6 +159,7 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
     contentBounds,
     zoomLevels: zoomConfig?.zoomLevels,
     zoomStep: zoomConfig?.zoomStep,
+    maxFitZoom: zoomConfig?.maxFitZoom ?? (surface === 'chrome' ? 2 : 1),
   })
 
   const canvasRef = useRef<HTMLDivElement>(null)
@@ -230,8 +233,23 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
     }
   }, [viewMode, isoStyleId, getIsoBounds, contentBounds, fitToRect, resetTransform])
 
+  const [ctxMenu, setCtxMenu] = useState<CtxMenuState | null>(null)
+  const closeCtxMenu = useCallback(() => setCtxMenu(null), [])
+
+  const openCtxMenu = useCallback((e: React.MouseEvent, target: CtxTarget) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (target.kind === 'connector') actions.selectConnector(target.index)
+    else if (target.kind === 'node') {
+      if (!editor.selectedNodeIds.includes(target.id)) actions.selectNodes([target.id])
+    } else if (target.kind === 'group') actions.selectGroup(target.id)
+    else if (target.kind === 'image') actions.selectImage(target.id)
+    setCtxMenu({ x: e.clientX, y: e.clientY, target })
+  }, [actions, editor.selectedNodeIds])
+
   const handlePointerDown = useCallback(
     (e: React.PointerEvent, nodeId: string) => {
+      if (e.button !== 0) return
       if (editor.mode !== 'select' || isPanning) return
       if (!config.enableSelection && !config.enableDrag) return
 
@@ -606,6 +624,7 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
 
   const handleCanvasMouseDown = useCallback(
     (e: React.MouseEvent) => {
+      if (e.button !== 0) return
       const target = e.target as HTMLElement
       const isCanvasBg = target.classList.contains('canvas-bg') || target === canvasRef.current
 
@@ -781,7 +800,7 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
       <div
         ref={containerRef}
         className={`
-          w-full h-full overflow-hidden
+          relative w-full h-full overflow-hidden
           ${surface === 'chrome' ? '' : themeColors ? '' : (themeOverride ? '' : template.canvas.background)}
           ${surface === 'chrome' ? '' : themeColors ? themeColors.background.container : (themeOverride ? getTheme(themeOverride as any)?.[isDark ? 'dark' : 'light']?.background?.container || '' : '')}
           ${getCursorClass()}
@@ -820,6 +839,10 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
               height: diagram.layout.height,
             }}
             onClick={handleCanvasClick}
+            onContextMenu={(e) => {
+              e.preventDefault()
+              setCtxMenu(null)
+            }}
             onMouseDown={handleCanvasMouseDown}
             onMouseMove={handleCanvasMouseMove}
             onMouseUp={handleCanvasMouseUp}
@@ -834,6 +857,7 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
               groups={diagram.groups || []}
               selectedGroupId={editor.selectedGroupId}
               onGroupClick={handleGroupClick}
+              onGroupContextMenu={(id, e) => openCtxMenu(e, { kind: 'group', id })}
               onGroupUpdate={actions.updateGroup}
               screenToCanvas={screenToCanvas}
               isoOrigin={viewMode === 'isometric' ? isoOrigin : null}
@@ -846,6 +870,7 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
               images={diagram.images || []}
               selectedImageId={editor.selectedImageId}
               onImageClick={handleImageClick}
+              onImageContextMenu={(id, e) => openCtxMenu(e, { kind: 'image', id })}
               onImageUpdate={actions.updateImage}
               screenToCanvas={screenToCanvas}
             />
@@ -889,6 +914,7 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
                   connectorStyles={diagram.connectorStyles}
                   selectedConnectorIndex={editor.selectedConnectorIndex}
                   onConnectorClick={handleConnectorClick}
+                  onConnectorContextMenu={(index, e) => openCtxMenu(e, { kind: 'connector', index })}
                   themeColors={themeColors}
                   brand={brand}
                 />
@@ -921,6 +947,7 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
                         isSelected={editor.selectedNodeIds.includes(nodeId)}
                         onPointerDown={handlePointerDown}
                         onClick={handleNodeClick}
+                        onContextMenu={(id, e) => openCtxMenu(e, { kind: 'node', id })}
                         onMouseEnter={() => editor.mode === 'addConnector' && setHoveredNodeId(nodeId)}
                         onMouseLeave={() => editor.mode === 'addConnector' && setHoveredNodeId(null)}
                         themeColors={themeColors}
@@ -965,6 +992,7 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
                   connectorStyles={diagram.connectorStyles}
                   selectedConnectorIndex={editor.selectedConnectorIndex}
                   onConnectorClick={handleConnectorClick}
+                  onConnectorContextMenu={(index, e) => openCtxMenu(e, { kind: 'connector', index })}
                   originX={diagram.layout.width / 2}
                   originY={diagram.layout.height - 100}
                   isoStyle={isoStyle}
@@ -977,12 +1005,14 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
                   selectedNodeIds={editor.selectedNodeIds}
                   onNodeClick={handleNodeClick}
                   onNodePointerDown={handlePointerDown}
+                  onNodeContextMenu={(id, e) => openCtxMenu(e, { kind: 'node', id })}
                   onNodePointerEnter={(nodeId) => {
                     if (editor.mode === 'addConnector') setHoveredNodeId(nodeId)
                   }}
                   originX={diagram.layout.width / 2}
                   originY={diagram.layout.height - 100}
                   isoStyle={isoStyle}
+                  brand={brand}
                 />
 
                 {anchorNodeId && diagram.nodes[anchorNodeId] && (
@@ -993,6 +1023,15 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
                     originY={isoOrigin.y}
                     onAnchorClick={handleAnchorClick}
                     pendingConnector={editor.pendingConnector}
+                  />
+                )}
+
+                {editor.selectedNodeIds.length === 1 && diagram.nodes[editor.selectedNodeIds[0]] && (
+                  <IsoAxisGizmo
+                    node={diagram.nodes[editor.selectedNodeIds[0]]}
+                    originX={isoOrigin.x}
+                    originY={isoOrigin.y}
+                    isoStyle={isoStyle}
                   />
                 )}
               </>
@@ -1008,6 +1047,21 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
             />
           </div>
         </div>
+
+        {viewMode === 'isometric'
+          && !editor.isDragging
+          && !isPanning
+          && editor.selectedNodeIds.length === 1
+          && diagram.nodes[editor.selectedNodeIds[0]] && (
+          <IsoCoordHud
+            node={diagram.nodes[editor.selectedNodeIds[0]]}
+            originX={isoOrigin.x}
+            originY={isoOrigin.y}
+            zoom={zoom}
+            pan={pan}
+            onChange={(updates) => actions.updateNodePosition(editor.selectedNodeIds[0], updates)}
+          />
+        )}
       </div>
 
       {/* Empty canvas — File → New leaves nothing to look at and no hint that
@@ -1087,6 +1141,8 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
           onViewportChange={handleMiniMapViewportChange}
         />
       )}
+
+      <CanvasContextMenu menu={ctxMenu} onClose={closeCtxMenu} />
     </div>
   )
 }

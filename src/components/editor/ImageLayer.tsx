@@ -13,10 +13,11 @@ interface ImageDragState {
   aspectRatio?: number
 }
 
-function ImageShape({ image, isSelected, onClick, onDragStart, onResize }: {
-  image: { id: string; x: number; y: number; width: number; height: number; src: string; opacity?: number }
+function ImageShape({ image, isSelected, onClick, onContextMenu, onDragStart, onResize }: {
+  image: { id: string; x: number; y: number; width: number; height: number; src: string; opacity?: number; name?: string }
   isSelected: boolean
   onClick: (id: string) => void
+  onContextMenu?: (id: string, e: React.MouseEvent) => void
   onDragStart: (id: string, e: React.MouseEvent) => void
   onResize: (id: string, corner: string, e: React.MouseEvent) => void
 }) {
@@ -24,6 +25,7 @@ function ImageShape({ image, isSelected, onClick, onDragStart, onResize }: {
 
   const handleMouseDown = (e) => {
     e.stopPropagation()
+    if (e.button !== 0) return
     onClick(image.id)
     onDragStart(image.id, e)
   }
@@ -34,7 +36,14 @@ function ImageShape({ image, isSelected, onClick, onDragStart, onResize }: {
   }
 
   return (
-    <g className="cursor-move">
+    <g
+      className="cursor-move"
+      onContextMenu={(e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        onContextMenu?.(image.id, e)
+      }}
+    >
       {/* Image element */}
       <image
         href={src}
@@ -93,6 +102,7 @@ export default function ImageLayer({
   images,
   selectedImageId,
   onImageClick,
+  onImageContextMenu,
   onImageUpdate,
   screenToCanvas,
 }) {
@@ -225,6 +235,7 @@ export default function ImageLayer({
             image={image}
             isSelected={selectedImageId === image.id}
             onClick={onImageClick}
+            onContextMenu={onImageContextMenu}
             onDragStart={handleDragStart}
             onResize={handleResizeStart}
           />

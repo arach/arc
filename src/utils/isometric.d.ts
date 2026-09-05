@@ -79,6 +79,20 @@ export type IsoColorName = keyof typeof ISO_COLORS;
 /** Convert 3D isometric coordinates to 2D screen coordinates. */
 export declare function isoToScreen(x: number, y: number, z?: number): IsoScreenPoint;
 
+/** Which way a top-face print runs in world XY. */
+export type IsoFaceDir = 'x' | 'y' | 'x-' | 'y-';
+
+/** SVG matrix that lies a 2D drawing on the isometric top face. */
+export declare function isoTopFaceMatrix(dir?: IsoFaceDir): string;
+
+/** Resolve Auto to an axis, then optionally flip 180°. */
+export declare function resolveIsoLabelDir(
+  dir: 'auto' | 'x' | 'y' | undefined,
+  width: number,
+  depth: number,
+  flip?: boolean
+): IsoFaceDir;
+
 /** Convert 2D screen coordinates to the isometric floor position (z = 0). */
 export declare function screenToIsoFloor(screenX: number, screenY: number): { x: number; y: number };
 

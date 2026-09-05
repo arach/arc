@@ -40,6 +40,7 @@ function GroupShape({
   group,
   isSelected,
   onClick,
+  onContextMenu,
   onDragStart,
   onResize,
   isoOrigin,
@@ -48,6 +49,7 @@ function GroupShape({
   group: Group
   isSelected: boolean
   onClick: (id: string) => void
+  onContextMenu?: (id: string, e: React.MouseEvent) => void
   onDragStart: (groupId: string, e: React.MouseEvent) => void
   onResize: (groupId: string, corner: string, e: React.MouseEvent) => void
   isoOrigin?: IsoOrigin | null
@@ -64,6 +66,7 @@ function GroupShape({
 
   const handleMouseDown = (e: React.MouseEvent) => {
     e.stopPropagation()
+    if (e.button !== 0) return
     onClick(group.id)
     onDragStart(group.id, e)
   }
@@ -89,7 +92,14 @@ function GroupShape({
   ]
 
   return (
-    <g className="cursor-move">
+    <g
+      className="cursor-move"
+      onContextMenu={(e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        onContextMenu?.(group.id, e)
+      }}
+    >
       {path ? (
         <path
           d={path}
@@ -164,6 +174,7 @@ export default function GroupLayer({
   groups,
   selectedGroupId,
   onGroupClick,
+  onGroupContextMenu,
   onGroupUpdate,
   screenToCanvas,
   isoOrigin,
@@ -173,6 +184,7 @@ export default function GroupLayer({
   groups: Group[]
   selectedGroupId: string | null
   onGroupClick: (groupId: string) => void
+  onGroupContextMenu?: (groupId: string, e: React.MouseEvent) => void
   onGroupUpdate: (groupId: string, updates: Partial<Group>) => void
   screenToCanvas: (point: { x: number; y: number }) => { x: number; y: number }
   isoOrigin?: IsoOrigin | null
@@ -287,6 +299,7 @@ export default function GroupLayer({
             group={group}
             isSelected={selectedGroupId === group.id}
             onClick={onGroupClick}
+            onContextMenu={onGroupContextMenu}
             onDragStart={handleDragStart}
             onResize={handleResizeStart}
             isoOrigin={isoOrigin}

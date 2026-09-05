@@ -59,8 +59,8 @@ export function InspField({
   return <div className={`arc-insp-field ${className}`.trim()}>{children}</div>
 }
 
-export function InspInput(props: InputHTMLAttributes<HTMLInputElement>) {
-  return <input className="arc-insp-input" {...props} />
+export function InspInput({ className = '', ...props }: InputHTMLAttributes<HTMLInputElement>) {
+  return <input className={`arc-insp-input ${className}`.trim()} {...props} />
 }
 
 export function InspSelect({
@@ -133,6 +133,10 @@ export function InspGrid2({ children }: { children: ReactNode }) {
   return <div className="arc-insp-grid-2">{children}</div>
 }
 
+export function InspGrid3({ children }: { children: ReactNode }) {
+  return <div className="arc-insp-grid-3">{children}</div>
+}
+
 export function InspSegmented<T extends string>({
   value,
   options,
@@ -159,6 +163,47 @@ export function InspSegmented<T extends string>({
   )
 }
 
+export function InspKv({
+  label,
+  children,
+  className = '',
+}: {
+  label: string
+  children: ReactNode
+  className?: string
+}) {
+  return (
+    <div className={`arc-insp-kv ${className}`.trim()}>
+      <span className="arc-insp-k">{label}</span>
+      <div className="arc-insp-v">{children}</div>
+    </div>
+  )
+}
+
+export function InspPair({ children }: { children: ReactNode }) {
+  return <div className="arc-insp-pair">{children}</div>
+}
+
+export function InspPairButton({
+  children,
+  onClick,
+  active = false,
+}: {
+  children: ReactNode
+  onClick: () => void
+  active?: boolean
+}) {
+  return (
+    <button
+      type="button"
+      className={`arc-insp-pair-btn${active ? ' is-active' : ''}`}
+      onClick={onClick}
+    >
+      {children}
+    </button>
+  )
+}
+
 export function InspRange({
   label,
   value,
@@ -175,11 +220,8 @@ export function InspRange({
   suffix?: string
 }) {
   return (
-    <InspField>
-      <InspLabel>
-        {label}
-        {suffix ? `: ${value}${suffix}` : ''}
-      </InspLabel>
+    <div className="arc-insp-kv arc-insp-kv-range">
+      <span className="arc-insp-k">{label}</span>
       <InspInput
         type="range"
         min={min}
@@ -187,7 +229,11 @@ export function InspRange({
         value={value}
         onChange={(e) => onChange(parseInt(e.target.value, 10))}
       />
-    </InspField>
+      <span className="arc-insp-kv-value">
+        {value}
+        {suffix ?? ''}
+      </span>
+    </div>
   )
 }
 

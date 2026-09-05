@@ -12,6 +12,7 @@ import { componentTag } from '../../utils/isoWire'
 import type { WireBox } from '../../utils/isoWire'
 import { materialFor, d } from '../../utils/isoStyles'
 import type { IsoStyleSpec } from '../../utils/isoStyles'
+import { getIconComponent } from '../../utils/iconRegistry'
 
 interface TechnicalBoxProps {
   uid: string
@@ -110,6 +111,7 @@ interface TechnicalCalloutProps {
   box: WireBox
   name: string
   subtitle?: string
+  icon?: string
   selected?: boolean
   opacity?: number
 }
@@ -119,11 +121,13 @@ export function TechnicalCallout({
   box,
   name,
   subtitle,
+  icon,
   selected = false,
   opacity,
 }: TechnicalCalloutProps) {
   const edgeColor = selected ? style.ink.accent : style.ink.line
   const textColor = selected ? style.ink.accent : style.ink.text
+  const Icon = icon ? getIconComponent(icon) : null
 
   const label = (name || '').toUpperCase()
   const spec = (subtitle || '').toUpperCase()
@@ -131,7 +135,13 @@ export function TechnicalCallout({
   const shelfY = box.minY - d(11)
   const subtitleY = shelfY - d(4)
   const nameY = spec ? shelfY - d(15) : shelfY - d(4)
-  const labelWidth = Math.max(label.length * d(5.6), spec.length * d(4.4), d(24))
+  const iconSize = d(9)
+  const iconGap = d(3)
+  const iconPad = Icon ? iconSize + iconGap : 0
+  const labelWidth = Math.max(label.length * d(5.6) + iconPad, spec.length * d(4.4), d(24))
+  const nameX = box.topCenter.x + iconPad / 2
+  const iconX = nameX - (label.length * d(5.6)) / 2 - iconGap - iconSize
+  const iconY = nameY - iconSize + d(1)
 
   return (
     <g pointerEvents="none" opacity={opacity}>
@@ -151,8 +161,13 @@ export function TechnicalCallout({
         stroke={edgeColor}
         strokeWidth={style.strokeWidth * 0.6}
       />
+      {Icon && (
+        <g transform={`translate(${iconX}, ${iconY})`} color={textColor}>
+          <Icon width={iconSize} height={iconSize} strokeWidth={1.75} />
+        </g>
+      )}
       <text
-        x={box.topCenter.x}
+        x={nameX}
         y={nameY}
         textAnchor="middle"
         fill={textColor}

@@ -10,7 +10,7 @@ export default function IconPicker({ value, onChange }: { value: string; onChang
     : DIAGRAM_ICONS
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+    <div className="arc-insp-icon-picker">
       <div className="arc-insp-search">
         <Search />
         <input
@@ -20,6 +20,7 @@ export default function IconPicker({ value, onChange }: { value: string; onChang
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
+        {value && <span className="arc-insp-search-value">{value}</span>}
       </div>
 
       <div className="arc-insp-icon-grid">
@@ -34,13 +35,11 @@ export default function IconPicker({ value, onChange }: { value: string; onChang
               title={iconName}
               className={`arc-insp-icon-btn${isSelected ? ' is-selected' : ''}`}
             >
-              <Icon size={18} strokeWidth={1.75} />
+              <Icon size={14} strokeWidth={1.75} />
             </button>
           )
         })}
       </div>
-
-      <div className="arc-insp-meta">Selected: {value}</div>
     </div>
   )
 }

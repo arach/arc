@@ -3,7 +3,7 @@
  * Core isometric component, optimized for embedding.
  */
 import React, { useState, useEffect, useId, useMemo } from 'react'
-import { isoToScreen, isoBox } from '../utils/isometric'
+import { isoToScreen, isoBox, isoTopFaceMatrix } from '../utils/isometric'
 import { isoWireBox } from '../utils/isoWire'
 import { getIsoStyle } from '../utils/isoStyles'
 import TechnicalDefs from '../components/technical/TechnicalDefs'
@@ -61,7 +61,7 @@ function IsoText({ x, y, z, children, fontSize = 8, color = '#1e293b', shadow }:
   const pos = isoToScreen(x, y, z)
   return (
     <g transform={`translate(${pos.screenX}, ${pos.screenY})`} filter={shadow}>
-      <g transform="matrix(0.866, -0.5, 0.866, 0.5, 0, 0)">
+      <g transform={`matrix(${isoTopFaceMatrix()})`}>
         <text x={0} y={0} textAnchor="middle" fill={color} fontSize={fontSize}
           fontWeight={600} fontFamily={MONO_FONT}
           style={{ textTransform: 'uppercase', letterSpacing: '0.06em' }}>

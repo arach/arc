@@ -64,8 +64,16 @@ export interface NodePosition {
   height?: number
   // Isometric properties (used when viewMode is 'isometric')
   z?: number        // Elevation above floor plane, defaults to 0
-  isoHeight?: number  // 3D box height, defaults to 20
+  isoHeight?: number  // 3D box height, defaults to 10
   isoDepth?: number   // 3D box depth (Y in iso space), defaults to 50
+  /** Painter's-algorithm bias when two boxes occupy the same volume. Higher draws later (in front). */
+  isoOrder?: number
+  /** Top-face label axis. Omit / `auto` = along the longer edge. */
+  isoLabelDir?: 'auto' | 'x' | 'y'
+  /** Rotate the print 180° on the face. */
+  isoLabelFlip?: boolean
+  /** Typeface for the printed label. Omit / `theme` follows the diagram brand. */
+  isoLabelFont?: 'theme' | 'ui' | 'mono'
 }
 
 export interface NodeData {
@@ -74,6 +82,8 @@ export interface NodeData {
   subtitle?: string
   description?: string
   color: string
+  /** Per-node silhouette. Omit to follow the theme. 2D only — iso boxes ignore it. */
+  shape?: string
 }
 
 export interface Connector {
@@ -184,4 +194,7 @@ export interface ZoomConfig {
   defaultZoom?: number | 'fit'  // Initial zoom level, or 'fit' to auto-calculate
   zoomLevels?: number[]         // Custom zoom level steps (overrides zoomStep)
   zoomStep?: number             // Zoom increment per step (default: 0.05 = 5%)
+  /** Cap for `defaultZoom: 'fit'` / Fit. Embeds stay at 1 so a small diagram
+   *  isn't blown up; the editor passes 2 so the drawing can fill the view. */
+  maxFitZoom?: number
 }

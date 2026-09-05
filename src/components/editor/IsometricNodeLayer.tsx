@@ -1,12 +1,20 @@
 import { useId, useMemo } from 'react'
 import { isoBox, isoToScreen, getColorShading, ISO_COLORS } from '../../utils/isometric'
-import { isoNodeDims, isoWireBox, buildNodeIndex } from '../../utils/isoBlueprint'
+import { isoNodeDims, isoWireBox, buildNodeIndex, sortIsoNodeIds } from '../../utils/isoBlueprint'
 import type { WireBox } from '../../utils/isoBlueprint'
 import { getIsoStyle } from '../../utils/isoStyles'
 import type { IsoStyleSpec } from '../../utils/isoStyles'
 import TechnicalDefs from '../technical/TechnicalDefs'
 import { TechnicalBox, TechnicalCallout } from '../technical/TechnicalNode'
+import IsoFacePrint from './IsoFacePrint'
 import type { NodePosition, NodeData } from '../../types/editor'
+import type { BrandSpec } from '../../utils/themes'
+
+function isoPrintFont(kind: NodePosition['isoLabelFont'], brand?: BrandSpec | null) {
+  if (kind === 'mono') return brand?.monoFamily || "'JetBrains Mono', ui-monospace, monospace"
+  if (kind === 'ui') return "'Inter', system-ui, sans-serif"
+  return brand?.fontFamily || "'Inter', system-ui, sans-serif"
+}
 
 const DEFAULT_CORNER_RADIUS = 6
 
@@ -17,11 +25,13 @@ interface IsometricNodeLayerProps {
   onNodeClick?: (nodeId: string, e: React.MouseEvent) => void
   onNodePointerDown?: (e: React.PointerEvent, nodeId: string) => void
   onNodePointerEnter?: (nodeId: string) => void
+  onNodeContextMenu?: (nodeId: string, e: React.MouseEvent) => void
   // Canvas origin offset - where (0,0,0) appears on screen
   originX?: number
   originY?: number
   /** Render style — 'solid' shades the faces, technical styles draw line art. */
   isoStyle?: IsoStyleSpec
+  brand?: BrandSpec | null
 }
 
 // Interpolate color based on intensity for corner shading
@@ -38,23 +48,23 @@ export default function IsometricNodeLayer({
   onNodeClick,
   onNodePointerDown,
   onNodePointerEnter,
+  onNodeContextMenu,
   originX = 400,
   originY = 500,
   isoStyle = getIsoStyle('solid'),
+  brand,
 }: IsometricNodeLayerProps) {
   const uid = useId().replace(/:/g, '')
 
-  // Sort nodes by depth for painter's algorithm (back to front)
-  // Nodes with higher (x + y) should be rendered first (they're further back)
-  const sortedNodes = useMemo(() => {
-    return Object.entries(nodes)
-      .filter(([nodeId]) => nodeData[nodeId]) // Only nodes with data
-      .sort(([, a], [, b]) => {
-        const depthA = a.x + a.y + (a.z || 0)
-        const depthB = b.x + b.y + (b.z || 0)
-        return depthA - depthB // Lower depth = rendered first (background)
-      })
-  }, [nodes, nodeData])
+  // Sort nodes by depth for painter's algorithm (back to front).
+  const sortedIds = useMemo(
+    () => sortIsoNodeIds(nodes, nodeData),
+    [nodes, nodeData]
+  )
+  const sortedNodes = useMemo(
+    () => sortedIds.map((id) => [id, nodes[id]] as const),
+    [sortedIds, nodes]
+  )
 
   const nodeIndex = useMemo(() => buildNodeIndex(nodes, nodeData), [nodes, nodeData])
 
@@ -96,6 +106,11 @@ export default function IsometricNodeLayer({
             onClick={(e) => onNodeClick?.(nodeId, e)}
             onPointerDown={(e) => onNodePointerDown?.(e, nodeId)}
             onPointerEnter={() => onNodePointerEnter?.(nodeId)}
+            onContextMenu={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              onNodeContextMenu?.(nodeId, e)
+            }}
           >
             <TechnicalBox
               uid={uid}
@@ -116,9 +131,41 @@ export default function IsometricNodeLayer({
             box={box}
             name={data.name}
             subtitle={data.subtitle}
+            icon={data.icon}
             selected={selectedNodeIds.includes(nodeId)}
           />
         ))}
+
+      {technical &&
+        technicalItems
+          .filter(({ nodeId }) => selectedNodeIds.includes(nodeId))
+          .map(({ nodeId, box }) => (
+            <g
+              key={`sel-${nodeId}`}
+              className="pointer-events-auto cursor-pointer"
+              onClick={(e) => onNodeClick?.(nodeId, e)}
+              onPointerDown={(e) => onNodePointerDown?.(e, nodeId)}
+              onPointerEnter={() => onNodePointerEnter?.(nodeId)}
+              onContextMenu={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                onNodeContextMenu?.(nodeId, e)
+              }}
+            >
+              <path
+                d={box.visible}
+                fill="none"
+                stroke={isoStyle.ink.accent}
+                strokeWidth={isoStyle.strokeWidth * 1.7}
+                strokeLinejoin="round"
+                strokeLinecap="round"
+                pointerEvents="none"
+              />
+              <path d={box.left} fill="transparent" />
+              <path d={box.right} fill="transparent" />
+              <path d={box.top} fill="transparent" />
+            </g>
+          ))}
 
       {!technical &&
         sortedNodes.map(([nodeId, node]) => {
@@ -142,6 +189,11 @@ export default function IsometricNodeLayer({
           onClick: (e: React.MouseEvent) => onNodeClick?.(nodeId, e),
           onPointerDown: (e: React.PointerEvent) => onNodePointerDown?.(e, nodeId),
           onPointerEnter: () => onNodePointerEnter?.(nodeId),
+          onContextMenu: (e: React.MouseEvent) => {
+            e.preventDefault()
+            e.stopPropagation()
+            onNodeContextMenu?.(nodeId, e)
+          },
         }
 
         // Generate the box paths
@@ -151,10 +203,10 @@ export default function IsometricNodeLayer({
         const colorDef = ISO_COLORS[data.color as keyof typeof ISO_COLORS] || ISO_COLORS.violet
         const shading = getColorShading(data.color)
 
-        // Calculate label position (center of top face)
         const labelPos = isoToScreen(node.x + isoWidth / 2, node.y + isoDepth / 2, elevation + isoHeight)
         const labelX = originX + labelPos.screenX
         const labelY = originY + labelPos.screenY
+        const printClip = `iso-print-${uid}-${nodeId}`
 
         return (
           <g key={nodeId} className="cursor-pointer pointer-events-auto" {...handlers}>
@@ -223,22 +275,60 @@ export default function IsometricNodeLayer({
               strokeWidth={isSelected ? 2 : 0.5}
             />
 
-            {/* Node label */}
-            <text
-              x={labelX}
-              y={labelY - 5}
-              textAnchor="middle"
-              className="fill-white text-xs font-semibold pointer-events-none"
-              style={{
-                textShadow: '0 1px 2px rgba(0,0,0,0.8)',
-                fontSize: '11px',
-              }}
-            >
-              {data.name}
-            </text>
+            <clipPath id={printClip}>
+              <path d={box.top} />
+            </clipPath>
+            <g clipPath={`url(#${printClip})`}>
+              <IsoFacePrint
+                cx={labelX}
+                cy={labelY}
+                width={isoWidth}
+                depth={isoDepth}
+                name={data.name}
+                icon={data.icon}
+                dir={node.isoLabelDir}
+                flip={node.isoLabelFlip}
+                fontFamily={isoPrintFont(node.isoLabelFont, brand)}
+                uppercase={node.isoLabelFont !== 'ui' && node.isoLabelFont !== 'mono' && !!brand?.upperLabels}
+              />
+            </g>
           </g>
         )
       })}
+
+      {!technical &&
+        selectedNodeIds.map((nodeId) => {
+          const node = nodes[nodeId]
+          const data = nodeData[nodeId]
+          if (!node || !data) return null
+          const dims = isoNodeDims(node)
+          const origin = isoToScreen(node.x, node.y, dims.elevation)
+          const box = isoBox(
+            dims.width,
+            dims.depth,
+            dims.height,
+            originX + origin.screenX,
+            originY + origin.screenY,
+            DEFAULT_CORNER_RADIUS
+          )
+          const handlers = {
+            onClick: (e: React.MouseEvent) => onNodeClick?.(nodeId, e),
+            onPointerDown: (e: React.PointerEvent) => onNodePointerDown?.(e, nodeId),
+            onPointerEnter: () => onNodePointerEnter?.(nodeId),
+            onContextMenu: (e: React.MouseEvent) => {
+              e.preventDefault()
+              e.stopPropagation()
+              onNodeContextMenu?.(nodeId, e)
+            },
+          }
+          return (
+            <g key={`sel-${nodeId}`} className="pointer-events-auto cursor-pointer" {...handlers}>
+              <path d={box.left} fill="transparent" />
+              <path d={box.right} fill="transparent" />
+              <path d={box.top} fill="transparent" />
+            </g>
+          )
+        })}
 
       {/* Filter definitions */}
       <defs>

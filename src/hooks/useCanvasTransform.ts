@@ -13,6 +13,8 @@ interface UseCanvasTransformOptions {
   contentBounds?: { minX: number; minY: number; maxX: number; maxY: number } | null
   zoomLevels?: number[]      // Custom zoom level steps (overrides zoomStep)
   zoomStep?: number          // Zoom increment per step (default: 0.05 = 5%)
+  /** Upper bound for fit. Default 1 (never zoom in). */
+  maxFitZoom?: number
 }
 
 interface CanvasTransformState {
@@ -30,6 +32,7 @@ export function useCanvasTransform(options: UseCanvasTransformOptions = {}) {
     contentSize,
     contentBounds,
     zoomLevels,
+    maxFitZoom = 1,
   } = options
 
   // Generate zoom levels from step if not explicitly provided
@@ -182,7 +185,7 @@ export function useCanvasTransform(options: UseCanvasTransformOptions = {}) {
     const rect = containerRef.current.getBoundingClientRect()
     const scaleX = (rect.width - padding * 2) / size.width
     const scaleY = (rect.height - padding * 2) / size.height
-    const rawZoom = Math.min(scaleX, scaleY, 1)  // Cap at 100%
+    const rawZoom = Math.min(scaleX, scaleY, maxFitZoom)
 
     // Round to nearest zoom step
     const roundedZoom = findNearestZoomLevel(rawZoom)
@@ -196,7 +199,7 @@ export function useCanvasTransform(options: UseCanvasTransformOptions = {}) {
     setState({ zoom: roundedZoom, pan, isPanning: false })
 
     return roundedZoom  // Return for use in initial 'fit' calculation
-  }, [findNearestZoomLevel])
+  }, [findNearestZoomLevel, maxFitZoom])
 
   /**
    * Fit an arbitrary rect (which may start at a negative offset, as isometric
@@ -213,7 +216,7 @@ export function useCanvasTransform(options: UseCanvasTransformOptions = {}) {
 
       const scaleX = (rect.width - padding * 2) / width
       const scaleY = (rect.height - padding * 2) / height
-      const roundedZoom = findNearestZoomLevel(Math.min(scaleX, scaleY, 1))
+      const roundedZoom = findNearestZoomLevel(Math.min(scaleX, scaleY, maxFitZoom))
       const pan = {
         x: rect.width / 2 - ((rectToFit.minX + rectToFit.maxX) / 2) * roundedZoom,
         y: rect.height / 2 - ((rectToFit.minY + rectToFit.maxY) / 2) * roundedZoom,
@@ -224,7 +227,7 @@ export function useCanvasTransform(options: UseCanvasTransformOptions = {}) {
 
       return roundedZoom
     },
-    [findNearestZoomLevel]
+    [findNearestZoomLevel, maxFitZoom]
   )
 
   const handleWheel = useCallback(
@@ -346,7 +349,7 @@ export function useCanvasTransform(options: UseCanvasTransformOptions = {}) {
       const fittedZoom = findNearestZoomLevel(Math.min(
         (rect.width - padding * 2) / w,
         (rect.height - padding * 2) / h,
-        1,
+        maxFitZoom,
       ))
       const pan = {
         x: rect.width / 2 - ((contentBounds.minX + contentBounds.maxX) / 2) * fittedZoom,
@@ -361,7 +364,7 @@ export function useCanvasTransform(options: UseCanvasTransformOptions = {}) {
 
     const scaleX = (rect.width - padding * 2) / contentSize!.width
     const scaleY = (rect.height - padding * 2) / contentSize!.height
-    const rawZoom = Math.min(scaleX, scaleY, 1)  // Cap at 100%
+    const rawZoom = Math.min(scaleX, scaleY, maxFitZoom)
 
     const fittedZoom = findNearestZoomLevel(rawZoom)
     const pan = {
@@ -373,7 +376,7 @@ export function useCanvasTransform(options: UseCanvasTransformOptions = {}) {
     defaultPanRef.current = pan
 
     setState({ zoom: fittedZoom, pan, isPanning: false })
-  }, [needsFitZoom, contentSize, contentBounds, findNearestZoomLevel])
+  }, [needsFitZoom, contentSize, contentBounds, findNearestZoomLevel, maxFitZoom])
 
   const screenToCanvas = useCallback(
     (screenPoint: Point): Point => {
