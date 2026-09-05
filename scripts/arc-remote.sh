@@ -72,25 +72,25 @@ EOF
 
 case "$ROLE" in
   author|a)
-    if scout ask --to @arc-author.master.node:arc-server --notify "$PROMPT" 2>/dev/null; then
+    if scout ask --to @arc-author.node:arc-server --notify "$PROMPT" 2>/dev/null; then
       exit 0
     fi
     ssh exe.dev shelley prompt arc-server "$(wrap_author)"
     ;;
   fast|f)
-    if scout ask --to @arc-fast.master.node:arc-server --notify "$PROMPT" 2>/dev/null; then
+    if scout ask --to @arc-fast.node:arc-server --notify "$PROMPT" 2>/dev/null; then
       exit 0
     fi
     ssh exe.dev shelley prompt arc-server "$(wrap_fast)"
     ;;
   host|h|ops)
-    if scout ask --to @arc-host.master.node:arc-server --notify "$PROMPT" 2>/dev/null; then
+    if scout ask --to @arc-host.node:arc-server --notify "$PROMPT" 2>/dev/null; then
       exit 0
     fi
     ssh exe.dev shelley prompt arc-server "$(wrap_host)"
     ;;
   composer|c)
-    if scout ask --to @arc-composer.master.node:arc-server --notify "$PROMPT" 2>/dev/null; then
+    if scout ask --to @arc-composer.node:arc-server --notify "$PROMPT" 2>/dev/null; then
       exit 0
     fi
     ssh exe.dev shelley prompt arc-server "$(wrap_composer)"

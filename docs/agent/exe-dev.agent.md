@@ -32,16 +32,16 @@ Mesh enroll once from your Mac:
 scout mesh enroll ssh://arc-server.exe.xyz --tier control --yes
 ```
 
-Then join Tailscale and announce the broker:
+Then join the mesh (one command per machine):
 
 ```bash
-scripts/exe-dev-mesh.sh   # opens Tailscale auth URL if needed, then mesh announce
+scripts/exe-dev-mesh.sh   # Tailscale auth if needed, then `scout mesh join` on both sides
 ```
 
 After mesh is live, dispatch without local LLM:
 
 ```bash
-scout ask --to @arc-author.master.node:arc-server --notify "Draft a diagram and hand off to studio"
+scout ask --to arc-author.arc-server --notify "Draft a diagram and hand off to studio"
 ```
 
 `scripts/arc-remote.sh` tries mesh first, falls back to Shelley if the node isn't reachable yet.
