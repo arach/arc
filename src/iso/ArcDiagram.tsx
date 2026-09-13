@@ -1,3 +1,4 @@
+import { PRINT_COLORS, PRINT_DOTS } from './materials'
 /**
  * ArcDiagram - Lightweight isometric diagram renderer
  * Core isometric component, optimized for embedding.
@@ -123,10 +124,11 @@ export default function ArcDiagram({ config, options = {}, className, style, onN
   const technical = techStyle.technical
   const uid = useId().replace(/:/g, '')
 
-  const colors = theme === 'dark' ? DARK_COLORS : LIGHT_COLORS
-  const bgColor = technical ? techStyle.paper.to : theme === 'dark' ? '#0f172a' : '#fafafa'
-  const textColor = technical ? techStyle.ink.text : theme === 'dark' ? '#e2e8f0' : '#1e293b'
-  const labelColor = technical ? techStyle.ink.muted : theme === 'dark' ? '#64748b' : '#94a3b8'
+  const print = !technical && config.material === 'retro-print'
+  const colors = print ? PRINT_COLORS : theme === 'dark' ? DARK_COLORS : LIGHT_COLORS
+  const bgColor = technical ? techStyle.paper.to : print ? (theme === 'dark' ? '#202624' : '#f4efe6') : theme === 'dark' ? '#0f172a' : '#fafafa'
+  const textColor = technical ? techStyle.ink.text : print ? '#202a29' : theme === 'dark' ? '#e2e8f0' : '#1e293b'
+  const labelColor = technical ? techStyle.ink.muted : print ? (theme === 'dark' ? '#c5c4b7' : '#505b56') : theme === 'dark' ? '#64748b' : '#94a3b8'
 
   // Component numbers for the index table and the on-box tags, in a stable
   // bottom-tier-first reading order.
@@ -142,6 +144,7 @@ export default function ArcDiagram({ config, options = {}, className, style, onN
   // The packaged renderer draws on a fixed canvas, so the plate frames the
   // sheet itself rather than the drawing's extent.
   const plate = { minX: 16, minY: 16, maxX: canvas.width - 16, maxY: canvas.height - 16 }
+
 
   // Entrance animation
   const [animatedTiers, setAnimatedTiers] = useState<Set<number>>(new Set())
@@ -180,6 +183,9 @@ export default function ArcDiagram({ config, options = {}, className, style, onN
       <svg width={canvas.width} height={canvas.height} style={{ backgroundColor: bgColor }}
         onClick={() => { if (interactive) { setSelected(null); setSoloTier(null) } }}>
         <defs>
+          {print && <pattern id={`print-${config.id}`} width="64" height="64" patternUnits="userSpaceOnUse">
+            {PRINT_DOTS.map((dot, i) => <circle key={i} cx={dot.x} cy={dot.y} r={dot.r} fill="#26362e" opacity={0.32} />)}
+          </pattern>}
           <pattern id={`grid-${config.id}`} width="24" height="24" patternUnits="userSpaceOnUse">
             <circle cx="12" cy="12" r="0.5" fill={theme === 'dark' ? '#1e293b' : '#e2e8f0'} />
           </pattern>
@@ -224,10 +230,11 @@ export default function ArcDiagram({ config, options = {}, className, style, onN
           </>
         ) : (
           <>
-            <rect width="100%" height="100%" fill={`url(#bg-${config.id})`} />
+            <rect width="100%" height="100%" fill={print ? bgColor : `url(#bg-${config.id})`} />
             <rect width="100%" height="100%" fill={`url(#grid-${config.id})`} opacity="0.5" />
           </>
         )}
+
 
         <g transform={`translate(${origin.x}, ${origin.y})`}>
           {tiers.map((tier, tierIndex) => {
@@ -366,9 +373,9 @@ export default function ArcDiagram({ config, options = {}, className, style, onN
                           fill={interpolateColor(nodeColors.side, nodeColors.front, seg.intensity)} />
                       ))}
                       <path d={box.left} fill={nodeColors.side} />
-                      <path d={box.left} fill={`url(#shade-${config.id})`} />
+                      <path d={box.left} fill={`url(#${print ? "print" : "shade"}-${config.id})`} />
                       <path d={box.right} fill={nodeColors.front} />
-                      <path d={box.right} fill={`url(#shade-${config.id})`} />
+                      <path d={box.right} fill={`url(#${print ? "print" : "shade"}-${config.id})`} />
                       {box.cornerFrontRight?.map((seg: { path: string; intensity: number }, idx: number) => (
                         <path key={`cfr-${idx}`} d={seg.path}
                           fill={interpolateColor(nodeColors.front, nodeColors.side, seg.intensity)} />
@@ -378,7 +385,7 @@ export default function ArcDiagram({ config, options = {}, className, style, onN
                           fill={interpolateColor(nodeColors.front, nodeColors.side, seg.intensity)} />
                       ))}
                       <path d={box.top} fill={nodeColors.top} />
-                      <path d={box.top} fill={`url(#sheen-${config.id})`} />
+                      <path d={box.top} fill={`url(#${print ? "print" : "sheen"}-${config.id})`} />
                       <path d={box.top} fill="none" stroke={isSelected ? '#ffffff' : 'rgba(255,255,255,0.28)'}
                         strokeWidth={isSelected ? 1.4 : 0.75} strokeLinejoin="round" />
 
@@ -387,7 +394,7 @@ export default function ArcDiagram({ config, options = {}, className, style, onN
                         <IsoText x={node.x + node.width / 2} y={node.y + node.depth / 2}
                           z={nodeElevation + node.height + 2}
                           fontSize={node.width > 70 ? 9 : 8} color={textColor}
-                          shadow={`url(#label-${config.id})`}>
+                          shadow={print ? undefined : `url(#label-${config.id})`}>
                           {node.label}
                         </IsoText>
                       )}
