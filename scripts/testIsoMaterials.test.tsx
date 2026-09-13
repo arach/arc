@@ -1,9 +1,9 @@
 import { describe, expect, test } from 'bun:test'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import ArcDiagram from './ArcDiagram'
-import { renderToString } from './vanilla'
-import type { DiagramConfig } from './types'
+import ArcDiagram from '../src/iso/ArcDiagram'
+import { renderToString } from '../src/iso/vanilla'
+import type { DiagramConfig } from '../src/iso/types'
 const config: DiagramConfig = {id:'test',title:'Test',theme:'light',canvas:{width:400,height:400},origin:{x:200,y:300},tiers:[{name:'Runtime',elevation:0}],floorSize:{width:120,depth:80},nodes:[{tier:0,x:10,y:10,width:90,depth:40,height:12,color:'rose',label:'Runtime'}]}
 describe('print material across renderers',()=>{
  for (const render of [renderToString,(c:DiagramConfig)=>renderToStaticMarkup(createElement(ArcDiagram, {config:c, options:{animate:false}}))] ) {
