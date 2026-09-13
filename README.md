@@ -255,3 +255,11 @@ If you're using a custom Tailwind config that restricts the color palette, ensur
 ## License
 
 MIT
+
+### Retro print material
+
+Set `material: 'retro-print'` on an isometric `DiagramConfig` for mineral inks,
+warm paper, and deterministic stipple. It works in the React diagram and static
+SVG renderer. Omit the option (or use `'standard'`) to keep the existing finish.
+React technical styles such as blueprint and cyanotype take precedence over
+the material setting.
