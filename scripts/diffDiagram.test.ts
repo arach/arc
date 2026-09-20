@@ -93,6 +93,15 @@ describe('diffDiagram', () => {
     expect(d.nodes.changed).toEqual([{ id: 'a', fields: ['name'] }])
   })
 
+  test('custom node geometry fields count as changed', () => {
+    const pos = (over: Record<string, unknown>) => ({ x: 0, y: 0, size: 'm', ...over }) as ArcDiagramData['nodes'][string]
+    const base = diagram({ nodes: { a: pos({ width: 160, isoHeight: 20 }) } })
+    const head = diagram({ nodes: { a: pos({ width: 220, isoHeight: 20, isoOrder: 2 }) } })
+    const d = diffDiagram(base, head)
+    expect(d.nodes.moved).toEqual([])
+    expect(d.nodes.changed).toEqual([{ id: 'a', fields: ['width', 'isoOrder'] }])
+  })
+
   test('connectors: added, removed, changed by from→to', () => {
     const base = diagram({
       connectors: [
