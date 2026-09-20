@@ -19,6 +19,9 @@ import { validateDiagramShape, isDiagramShape } from '../../src/utils/diagramVal
 import { validateDiagram } from '../../src/utils/diagramDiagnostics.ts'
 import { toTypeScriptSource } from '../../src/types/diagram.ts'
 import type { ArcDiagram, ArcDiagramData } from '../../src/types/diagram.ts'
+// Inlined by `bun run build:mcp` so the published arc-mcp bin serves the schema
+// without depending on the package's on-disk layout.
+import diagramSchemaJson from '../../schemas/arc-diagram.schema.json'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const REPO_ROOT = join(__dirname, '..', '..')
@@ -212,11 +215,14 @@ export function createArcMcpServer(): McpServer {
   server.resource(
     'schema',
     'arc://schema/diagram',
-    { description: 'ArcDiagramData TypeScript schema excerpt', mimeType: 'text/plain' },
-    async () => {
-      const text = await readRepoFile('src', 'types', 'diagram.ts')
-      return { contents: [{ uri: 'arc://schema/diagram', mimeType: 'text/plain', text }] }
-    },
+    { description: 'Generated JSON Schema (draft-07) for ArcDiagramData', mimeType: 'application/json' },
+    async () => ({
+      contents: [{
+        uri: 'arc://schema/diagram',
+        mimeType: 'application/json',
+        text: JSON.stringify(diagramSchemaJson, null, 2),
+      }],
+    }),
   )
 
   server.resource(

@@ -44,6 +44,12 @@ JSX for whatever combination you dial in.
 
 ## ArcDiagramData Schema
 
+A generated JSON Schema (draft-07) ships at `schemas/arc-diagram.schema.json` —
+use it to validate diagram JSON in tooling or to give agents the exact contract.
+Closed object types declare `additionalProperties: false`; the `Record` maps
+(`nodes`, `nodeData`, `connectorStyles`, `focusTargets`, `layoutHints.*`) keep
+open keys. Regenerate with `bun run generate:schema`.
+
 ```typescript
 interface ArcDiagramData {
   id?: string                                    // Optional diagram identifier
