@@ -8,6 +8,7 @@
 // s 110×48, xs 80×36.
 
 import type { ArcDiagramData } from '../../components/ArcDiagram'
+import { diffDiagram, type DiagramDelta } from '../../utils/diffDiagram'
 
 export interface ShowcaseDoc {
   id: string
@@ -16,6 +17,8 @@ export interface ShowcaseDoc {
   /** Feature the document is here to demonstrate. */
   demonstrates: string
   data: ArcDiagramData
+  /** When set, the player renders `data` with this delta overlaid. */
+  delta?: DiagramDelta
 }
 
 // --- 01 · Pipeline ---------------------------------------------------------
@@ -209,6 +212,66 @@ const platform: ArcDiagramData = {
   },
 }
 
+// --- 04 · Delta ------------------------------------------------------------
+// diffDiagram(v1, v2) overlaid on v2: ghosts where things were, marks on what
+// changed. The delta is self-contained — the base doc never reaches the player.
+
+const deployBase: ArcDiagramData = {
+  layout: { width: 860, height: 420 },
+  nodes: {
+    web:  { x: 60,  y: 170, size: 'm' },
+    api:  { x: 340, y: 90,  size: 'm' },
+    jobs: { x: 340, y: 270, size: 's' },
+    db:   { x: 620, y: 170, size: 'm' },
+  },
+  nodeData: {
+    web:  { icon: 'Globe',    name: 'Web',      subtitle: 'SPA',        color: 'sky' },
+    api:  { icon: 'Server',   name: 'API',      subtitle: 'REST',       color: 'blue' },
+    jobs: { icon: 'Cpu',      name: 'Jobs',     subtitle: 'Cron',       color: 'amber' },
+    db:   { icon: 'Database', name: 'Postgres', subtitle: 'Primary',    color: 'rose' },
+  },
+  connectors: [
+    { from: 'web', to: 'api',  fromAnchor: 'right',  toAnchor: 'left', style: 'http' },
+    { from: 'api', to: 'db',   fromAnchor: 'right',  toAnchor: 'left', style: 'sql' },
+    { from: 'api', to: 'jobs', fromAnchor: 'bottom', toAnchor: 'top',  style: 'run' },
+  ],
+  connectorStyles: {
+    http: { color: 'sky',   strokeWidth: 2,   label: 'https' },
+    sql:  { color: 'rose',  strokeWidth: 2,   label: 'sql' },
+    run:  { color: 'amber', strokeWidth: 1.5, label: 'run', dashed: true },
+  },
+}
+
+const deployHead: ArcDiagramData = {
+  id: 'ARC.DELTA.004',
+  layout: { width: 860, height: 420 },
+  groups: [
+    { id: 'edge', x: 24, y: 120, width: 200, height: 160, type: 'rect', color: 'sky', label: 'Public', dashed: true },
+  ],
+  nodes: {
+    web:   { x: 60,  y: 170, size: 'm' },
+    api:   { x: 340, y: 200, size: 'm' },
+    jobs:  { x: 340, y: 320, size: 's' },
+    cache: { x: 620, y: 90,  size: 's' },
+  },
+  nodeData: {
+    web:   { icon: 'Globe',    name: 'Web',      subtitle: 'SPA',              color: 'sky' },
+    api:   { icon: 'Server',   name: 'Edge API', subtitle: 'REST + cache',     color: 'violet' },
+    jobs:  { icon: 'Cpu',      name: 'Jobs',     subtitle: 'Cron',             color: 'amber' },
+    cache: { icon: 'Zap',      name: 'Cache',    subtitle: 'Redis',            color: 'rose' },
+  },
+  connectors: [
+    { from: 'web', to: 'api',   fromAnchor: 'right', toAnchor: 'left', style: 'http', curve: 'natural' },
+    { from: 'api', to: 'cache', fromAnchor: 'right', toAnchor: 'left', style: 'cache' },
+    { from: 'api', to: 'jobs',  fromAnchor: 'bottom', toAnchor: 'top', style: 'run' },
+  ],
+  connectorStyles: {
+    http:  { color: 'sky',   strokeWidth: 2,   label: 'https' },
+    cache: { color: 'rose',  strokeWidth: 1.5, label: 'cache', dashed: true },
+    run:   { color: 'amber', strokeWidth: 1.5, label: 'run', dashed: true },
+  },
+}
+
 export const SHOWCASE_DOCS: ShowcaseDoc[] = [
   {
     id: 'pipeline',
@@ -230,5 +293,13 @@ export const SHOWCASE_DOCS: ShowcaseDoc[] = [
     blurb: '11 nodes · 11 edges · 3 groups',
     demonstrates: 'A dense canvas — fit zoom, minimap, and a six-entry key.',
     data: platform,
+  },
+  {
+    id: 'delta',
+    name: 'Delta',
+    blurb: 'v1 → v2 · ghosts + marks',
+    demonstrates: 'diffDiagram + delta render — moved ghost, removed ghost, added/changed marks.',
+    data: deployHead,
+    delta: diffDiagram(deployBase, deployHead),
   },
 ]
