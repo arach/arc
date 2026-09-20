@@ -325,6 +325,12 @@ async function captureChromeScreenshot(executablePath: string, dir: string, url:
       loaded,
       new Promise<void>((_, reject) => setTimeout(() => reject(new RenderError('render/chrome-timeout', `Chrome did not finish loading within ${CHROME_TIMEOUT_MS}ms`, ['rerun the render'])), CHROME_TIMEOUT_MS)),
     ])
+    // Webfonts fetch lazily once SVG text lays out — wait for them so branded
+    // faces land in the PNG. Bounded: an offline env still renders fallbacks.
+    await Promise.race([
+      send('Runtime.evaluate', { expression: 'document.fonts.ready.then(() => true)', awaitPromise: true, returnByValue: true }, sessionId).catch(() => undefined),
+      new Promise<void>((resolve) => setTimeout(resolve, 6000)),
+    ])
     const screenshot = await send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false }, sessionId)
     try {
       ws.send(JSON.stringify({ id: ++nextId, method: 'Browser.close' }))
@@ -365,7 +371,12 @@ export async function renderDiagramPng(diagram: ArcDiagramData, options: RenderP
   const pngPath = join(dir, 'diagram.png')
   try {
     writeFileSync(svgPath, rendered.svg, 'utf8')
-    writeFileSync(htmlPath, `<!doctype html><meta charset="utf-8"><style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:${rendered.backgroundColor}}svg{display:block}</style>${rendered.svg}`, 'utf8')
+    // Brand fonts ride the document <link> — inline SVG text inherits document
+    // fonts, and the embedded @import in the SVG is the standalone-view fallback.
+    const fontLink = rendered.theme && THEMES[rendered.theme].brand?.fontImport
+      ? `<link rel="stylesheet" href="${THEMES[rendered.theme].brand!.fontImport}">`
+      : ''
+    writeFileSync(htmlPath, `<!doctype html><meta charset="utf-8"><style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:${rendered.backgroundColor}}svg{display:block}</style>${fontLink}${rendered.svg}`, 'utf8')
     const png = options.runChrome
       ? await (async () => {
           const args = [
@@ -380,6 +391,8 @@ export async function renderDiagramPng(diagram: ArcDiagramData, options: RenderP
             '--no-first-run',
             '--no-sandbox',
             '--run-all-compositor-stages-before-draw',
+            // Virtual time lets the stylesheet + font fetches settle before the shot.
+            '--virtual-time-budget=8000',
             `--force-device-scale-factor=${scale}`,
             `--window-size=${rendered.width},${rendered.height}`,
             `--screenshot=${pngPath}`,

@@ -1,5 +1,5 @@
 import React from 'react'
-import { anchor, midPoint } from '../../utils/diagramHelpers'
+import { anchor, connectorPath, midPoint } from '../../utils/diagramHelpers'
 import type { BrandSpec, Theme } from '../../utils/themes'
 
 type ResolvedThemeMode = Theme['light'] | Theme['dark']
@@ -101,65 +101,8 @@ function EndpointDot({ x, y, color, size = 3, themeColors }: { x: number; y: num
   )
 }
 
-// Get control point offset based on anchor position
-function getControlOffset(anchor, distance) {
-  const d = Math.abs(distance) * 0.5 // Control point distance
-  switch (anchor) {
-    case 'top': return { dx: 0, dy: -d }
-    case 'bottom': return { dx: 0, dy: d }
-    case 'left': return { dx: -d, dy: 0 }
-    case 'right': return { dx: d, dy: 0 }
-    case 'bottomRight': return { dx: d * 0.7, dy: d * 0.7 }
-    case 'bottomLeft': return { dx: -d * 0.7, dy: d * 0.7 }
-    default: return { dx: 0, dy: 0 }
-  }
-}
-
-// Generate smooth curved path between two points
-function generatePath(from, to, fromAnchor, toAnchor, curve, curveDepth = 50) {
-  const dx = to.x - from.x
-  const dy = to.y - from.y
-  const distance = Math.sqrt(dx * dx + dy * dy)
-
-  // Natural bezier curve - control points extend from anchors in their natural direction
-  if (curve === 'natural' || curve === 'down' || curve === 'up') {
-    const fromOffset = getControlOffset(fromAnchor, distance)
-    const toOffset = getControlOffset(toAnchor, distance)
-
-    // Scale by curveDepth (default 50 = 50% of distance for control points)
-    const scale = curveDepth / 50
-
-    const cp1x = from.x + fromOffset.dx * scale
-    const cp1y = from.y + fromOffset.dy * scale
-    const cp2x = to.x + toOffset.dx * scale
-    const cp2y = to.y + toOffset.dy * scale
-
-    return `M ${from.x} ${from.y} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${to.x} ${to.y}`
-  }
-
-  // For horizontal connections (right->left or left->right)
-  if ((fromAnchor === 'right' && toAnchor === 'left') || (fromAnchor === 'left' && toAnchor === 'right')) {
-    const midX = (from.x + to.x) / 2
-    return `M ${from.x} ${from.y} C ${midX} ${from.y}, ${midX} ${to.y}, ${to.x} ${to.y}`
-  }
-
-  // For vertical connections (top->bottom or bottom->top)
-  if ((fromAnchor === 'bottom' && toAnchor === 'top') || (fromAnchor === 'top' && toAnchor === 'bottom')) {
-    const midY = (from.y + to.y) / 2
-    return `M ${from.x} ${from.y} C ${from.x} ${midY}, ${to.x} ${midY}, ${to.x} ${to.y}`
-  }
-
-  // For any other connections, use a gentle curve based on anchor directions
-  const fromOffset = getControlOffset(fromAnchor, distance)
-  const toOffset = getControlOffset(toAnchor, distance)
-
-  const cp1x = from.x + fromOffset.dx
-  const cp1y = from.y + fromOffset.dy
-  const cp2x = to.x + toOffset.dx
-  const cp2y = to.y + toOffset.dy
-
-  return `M ${from.x} ${from.y} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${to.x} ${to.y}`
-}
+// Connector paths share the helper in diagramHelpers so the canvas and the
+// SVG export draw identical curves for the same connector.
 
 function EdgeHandle({
   x,
@@ -197,7 +140,7 @@ function Connector({ connector, nodes, connectorStyles, isSelected, onClick, onC
 
   // Get curve depth from connector or use default
   const curveDepth = connector.curveDepth ?? 40
-  const path = generatePath(from, to, connector.fromAnchor, connector.toAnchor, connector.curve, curveDepth)
+  const path = connectorPath(from, to, connector.fromAnchor, connector.toAnchor, connector.curve, curveDepth)
   const strokeColor = resolveStrokeColor(style.color, themeColors)
 
   // Arrow control - default to true if not specified

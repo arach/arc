@@ -1,6 +1,6 @@
 import { buildEditorHandoff } from './diagramHandoff.ts'
 import { assertRenderTheme, renderDiagramSvg, RenderError, resolveRenderMode, type RenderSvgOptions } from './renderImage.ts'
-import { themeCanvas, type ThemeId } from '../src/utils/themes.ts'
+import { THEMES, themeCanvas, type ThemeId } from '../src/utils/themes.ts'
 import type { ArcDiagramData } from '../src/types/diagram.ts'
 
 export type RenderHtmlFormat = 'component' | 'iframe' | 'html'
@@ -103,12 +103,13 @@ function htmlSource(diagram: ArcDiagramData, options: RenderHtmlOptions): string
   const rendered = renderDiagramSvg(diagram, options)
   const title = options.title ?? diagram.id ?? 'Arc diagram'
   const background = rendered.theme ? themeCanvas(rendered.theme, rendered.mode ?? 'light') : '#fafafa'
+  const fontImport = rendered.theme ? THEMES[rendered.theme].brand?.fontImport : undefined
   return `<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>${escapeHtml(title)}</title>
+  <title>${escapeHtml(title)}</title>${fontImport ? `\n  <link rel="stylesheet" href="${escapeHtml(fontImport)}" />` : ''}
   <style>
     html, body { margin: 0; min-height: 100%; background: ${background}; }
     body { display: grid; place-items: center; padding: 24px; box-sizing: border-box; }
