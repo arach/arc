@@ -50,7 +50,7 @@ From a global install (after publish):
 
 | Tool | Description |
 |------|-------------|
-| `validate_diagram` | Check JSON against `ArcDiagramData` |
+| `validate_diagram` | Validate JSON; returns `{ok, diagnostics[]}` with stable codes + repair fixes |
 | `diff_diagram` | Structural diff `{ base, head }` → `DiagramDelta` |
 | `auto_layout` | Sugiyama layout (full diagram or minimal input) |
 | `render_ascii` | Unicode/ASCII box-drawing output |
