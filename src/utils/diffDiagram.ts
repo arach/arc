@@ -107,7 +107,8 @@ function diffNodes(base: ArcDiagramData, head: ArcDiagramData): DiagramDelta['no
       continue
     }
     if (b.x !== h.x || b.y !== h.y || b.size !== h.size) moved.push({ id, from: b, to: h })
-    const fields = changedFields(base.nodeData[id] ?? {}, head.nodeData[id] ?? {})
+    const geometryFields = changedFields(b, h).filter(f => f !== 'x' && f !== 'y' && f !== 'size')
+    const fields = [...geometryFields, ...changedFields(base.nodeData[id] ?? {}, head.nodeData[id] ?? {})]
     if (fields.length) changed.push({ id, fields })
   }
 
