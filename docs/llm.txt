@@ -183,8 +183,9 @@ Reducer actions: see `docs/agent/editor-actions.agent.md`
 
 ## Themes
 
-Diagram themes (8): `default`, `warm`, `cool`, `mono`, `engineering`, `workbench`, `tactical`, `command`
-Chrome skins (shell only): `console`, `graphite`, `amber`, `viridian`, `paper`
+Diagram themes (11): `default`, `warm`, `cool`, `mono`, `engineering`, `workbench`, `tactical`, `command`, `spacex`, `claude`, `codex`
+Chrome skins (shell only): `console`, `graphite`, `amber`, `viridian`, `paper`, `spacex`, `claude`, `codex`
+Brand pairings: `spacex` = mission plate/telemetry cyan, `claude` = parchment/clay/serif, `codex` = graphite console/mint signal
 
 ## Visual Verification
 
@@ -213,7 +214,7 @@ curl "http://localhost:5188/capture/my-session" > out.png
 `arc` bin on `@arach/arc` (`bun run build:cli` for publish) exposes `schema`, `check`, `diff`, `render`, and `bench`.
 `arc-mcp` bin (`bun run mcp` in dev, `bun run build:mcp` for publish).
 Tools: validate_diagram, diff_diagram, auto_layout, render_ascii, render_svg, render_png, render_html, diagram_to_typescript, editor_handoff.
-`render_png` uses an installed Chrome/Chromium binary (`ARC_CHROME` overrides lookup); `render_html` emits component/iframe/html text.
+`render_svg`/`render_png`/`render_html` accept `theme` and `mode`; omitted modes use the theme default. `render_png` uses an installed Chrome/Chromium binary (`ARC_CHROME` overrides lookup); `render_html` emits component/iframe/html text.
 See docs/agent/mcp.agent.md for remaining coverage gaps (Mermaid stays elsewhere).
 
 ## Critical Rules

@@ -39,6 +39,28 @@ describe('renderDiagramSvg', () => {
     expect(first.svg).toContain('Postgres')
   })
 
+  test('applies branded themes and their default mode', () => {
+    const clayDiagram = structuredClone(diagram)
+    clayDiagram.connectorStyles.sql.color = 'orange'
+    const claude = renderDiagramSvg(clayDiagram, { theme: 'claude', includeGrid: true })
+    expect(claude.theme).toBe('claude')
+    expect(claude.mode).toBe('light')
+    expect(claude.svg).toContain('#f6f1e8')
+    expect(claude.svg).toContain('#d97757')
+
+    const spacex = renderDiagramSvg(diagram, { theme: 'spacex' })
+    expect(spacex.mode).toBe('dark')
+    expect(spacex.svg).toContain('#050608')
+    expect(spacex.svg).toContain('#67e8f9')
+    expect(spacex.svg).toContain('<defs><pattern')
+    expect(renderDiagramSvg(diagram, { theme: 'spacex', includeGrid: false }).svg).not.toContain('<defs><pattern')
+  })
+
+  test('rejects unknown themes and modes', () => {
+    expect(() => renderDiagramSvg(diagram, { theme: 'unknown' })).toThrow(expect.objectContaining({ code: 'render/invalid-option' }))
+    expect(() => renderDiagramSvg(diagram, { theme: 'codex', mode: 'sepia' as never })).toThrow(expect.objectContaining({ code: 'render/invalid-option' }))
+  })
+
   test('rejects unsafe background values', () => {
     expect(() => renderDiagramSvg(diagram, { backgroundColor: 'red" onclick="x' })).toThrow(RenderError)
   })
@@ -55,6 +77,7 @@ describe('renderDiagramPng', () => {
     const rendered = await renderDiagramPng(diagram, {
       chromePath: process.execPath,
       scale: 2,
+      theme: 'codex',
       runChrome: async (_executable, args) => {
         seenArgs = args
         const output = args.find(arg => arg.startsWith('--screenshot='))?.slice('--screenshot='.length)
@@ -64,6 +87,8 @@ describe('renderDiagramPng', () => {
     })
 
     expect(rendered.png.equals(PNG_BYTES)).toBe(true)
+    expect(rendered.theme).toBe('codex')
+    expect(rendered.mode).toBe('dark')
     expect(rendered.width).toBe(680)
     expect(rendered.height).toBe(360)
     expect(seenArgs).toContain('--headless')

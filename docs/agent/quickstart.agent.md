@@ -78,8 +78,8 @@ const diagram = autoLayout({
 
 ## Theme Options
 
-Eight diagram themes, each with light/dark: `default`, `warm`, `cool`, `mono`,
-`engineering`, `workbench`, `tactical`, `command`.
+Eleven diagram themes, each with light/dark: `default`, `warm`, `cool`, `mono`,
+`engineering`, `workbench`, `tactical`, `command`, `spacex`, `claude`, `codex`.
 
 ```tsx
 <ArcDiagram data={d} mode="light" theme="engineering" />

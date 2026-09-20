@@ -24,8 +24,10 @@ const diagram: ArcDiagramData = { /* … */ }
 ## SVG
 
 Vector export — crisp at any size, ideal for docs, decks, and print. The static
-`generateSVG()` path is deterministic; agents can call the same export through
-MCP `render_svg`.
+`generateSVG()` path is deterministic and theme-aware; agents can call the same
+export through MCP `render_svg` with `theme`/`mode` (`spacex`, `claude`, and
+`codex` each have a sensible default mode). Branded themes include their grid
+and frame by default; pass `includeGrid: false` to suppress the grid.
 
 ## PNG
 

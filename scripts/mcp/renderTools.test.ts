@@ -55,12 +55,14 @@ describe('arc-mcp render tools', () => {
     await ready
     const result = await client.callTool({
       name: 'render_svg',
-      arguments: { diagram, padding: 10 },
+      arguments: { diagram, padding: 10, theme: 'codex' },
     })
     expect(result.isError).toBeUndefined()
     expect(result.content[0]?.type).toBe('text')
     const text = result.content[0]?.type === 'text' ? result.content[0].text : ''
     expect(text).toContain('<svg xmlns="http://www.w3.org/2000/svg" width="660" height="340"')
+    expect(text).toContain('#0b0d10')
+    expect(text).toContain('#34d399')
     expect(text).toContain('API')
   })
 
@@ -68,13 +70,13 @@ describe('arc-mcp render tools', () => {
     await ready
     const component = await client.callTool({
       name: 'render_html',
-      arguments: { diagram, format: 'component', componentName: 'ServiceMap', theme: 'command', mode: 'dark' },
+      arguments: { diagram, format: 'component', componentName: 'ServiceMap', theme: 'claude' },
     })
     expect(component.isError).toBeUndefined()
     expect(component.content[0]?.type).toBe('text')
     const componentText = component.content[0]?.type === 'text' ? component.content[0].text : ''
     expect(componentText).toContain('export function ServiceMap()')
-    expect(componentText).toContain('<ArcDiagram data={diagram} mode="dark" theme="command" />')
+    expect(componentText).toContain('<ArcDiagram data={diagram} mode="light" theme="claude" />')
 
     const iframe = await client.callTool({
       name: 'render_html',
@@ -85,10 +87,12 @@ describe('arc-mcp render tools', () => {
 
     const html = await client.callTool({
       name: 'render_html',
-      arguments: { diagram, format: 'html' },
+      arguments: { diagram, format: 'html', theme: 'spacex' },
     })
     const htmlText = html.content[0]?.type === 'text' ? html.content[0].text : ''
     expect(htmlText).toContain('<!doctype html>')
+    expect(htmlText).toContain('background: #050608')
+    expect(htmlText).toContain('#67e8f9')
     expect(htmlText).toContain('<svg xmlns="http://www.w3.org/2000/svg"')
   })
 

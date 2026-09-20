@@ -107,7 +107,7 @@ interface ConnectorStyle {
 
 ## Themes
 
-Arc includes 4 built-in themes:
+Arc includes 11 built-in themes:
 
 | Theme ID | Name | Description |
 |----------|------|-------------|
@@ -115,6 +115,13 @@ Arc includes 4 built-in themes:
 | warm | Warm | Editorial, earth tones |
 | cool | Cool | Technical, blue-focused |
 | mono | Mono | Grayscale for print |
+| engineering | Engineering | Structured blueprint plate |
+| workbench | Workbench | Quiet hardware/drafting bench |
+| tactical | Tactical | Hard-edged field diagram |
+| command | Command | Glass mission console |
+| spacex | SpaceX | Mission plate, telemetry cyan |
+| claude | Claude | Warm parchment, clay accents |
+| codex | Codex | Graphite console, mint signal |
 
 ### Theme API
 

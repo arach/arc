@@ -30,6 +30,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 const REPO_ROOT = join(__dirname, '..', '..')
 
 const diagramSchema = z.record(z.unknown())
+const themeDescription = 'Arc theme id: default, warm, cool, mono, engineering, workbench, tactical, command, spacex, claude, or codex'
 
 function parseDiagram(value: unknown, label = 'diagram'): ArcDiagramData {
   const parsed = typeof value === 'string' ? JSON.parse(value) : value
@@ -180,14 +181,16 @@ export function createArcMcpServer(): McpServer {
     'Render an Arc diagram as deterministic SVG markup using the package export path.',
     {
       diagram: diagramSchema.describe('Valid ArcDiagramData JSON'),
-      backgroundColor: z.string().optional().describe('CSS background color (default: #ffffff)'),
-      includeGrid: z.boolean().optional().describe('Render the diagram grid when present'),
+      theme: z.string().optional().describe(themeDescription),
+      mode: z.enum(['light', 'dark']).optional().describe('Color mode; defaults to the theme default'),
+      backgroundColor: z.string().optional().describe('CSS background color (defaults to the theme canvas)'),
+      includeGrid: z.boolean().optional().describe('Render the diagram grid (default: branded themes on, others off)'),
       padding: z.number().nonnegative().optional().describe('Padding around the export bounds in px (default: 20)'),
     },
-    async ({ diagram, backgroundColor, includeGrid, padding }) => {
+    async ({ diagram, theme, mode, backgroundColor, includeGrid, padding }) => {
       try {
         const data = parseDiagram(diagram)
-        const rendered = renderDiagramSvg(data, { backgroundColor, includeGrid, padding })
+        const rendered = renderDiagramSvg(data, { theme, mode, backgroundColor, includeGrid, padding })
         return { content: [{ type: 'text', text: rendered.svg }] }
       } catch (err) {
         return renderToolError(err)
@@ -200,15 +203,17 @@ export function createArcMcpServer(): McpServer {
     'Render an Arc diagram as a PNG via an installed Chrome/Chromium binary. Returns MCP image content plus render metadata. Set ARC_CHROME if Chrome is not on PATH.',
     {
       diagram: diagramSchema.describe('Valid ArcDiagramData JSON'),
-      backgroundColor: z.string().optional().describe('CSS background color (default: #ffffff)'),
-      includeGrid: z.boolean().optional().describe('Render the diagram grid when present'),
+      theme: z.string().optional().describe(themeDescription),
+      mode: z.enum(['light', 'dark']).optional().describe('Color mode; defaults to the theme default'),
+      backgroundColor: z.string().optional().describe('CSS background color (defaults to the theme canvas)'),
+      includeGrid: z.boolean().optional().describe('Render the diagram grid (default: branded themes on, others off)'),
       padding: z.number().nonnegative().optional().describe('Padding around the export bounds in px (default: 20)'),
       scale: z.number().positive().max(4).optional().describe('Raster scale factor (default: 2, max: 4)'),
     },
-    async ({ diagram, backgroundColor, includeGrid, padding, scale }) => {
+    async ({ diagram, theme, mode, backgroundColor, includeGrid, padding, scale }) => {
       try {
         const data = parseDiagram(diagram)
-        const rendered = await renderDiagramPng(data, { backgroundColor, includeGrid, padding, scale })
+        const rendered = await renderDiagramPng(data, { theme, mode, backgroundColor, includeGrid, padding, scale })
         return {
           content: [
             { type: 'image', data: rendered.png.toString('base64'), mimeType: 'image/png' },
@@ -221,6 +226,8 @@ export function createArcMcpServer(): McpServer {
                 scale: rendered.scale,
                 bytes: rendered.png.length,
                 chrome: rendered.chrome,
+                theme: rendered.theme,
+                mode: rendered.mode,
               }, null, 2),
             },
           ],
@@ -239,16 +246,16 @@ export function createArcMcpServer(): McpServer {
       format: z.enum(['component', 'iframe', 'html']).optional().describe('Output format: component (TSX), iframe (embed tag), or html (standalone SVG page). Default: html'),
       componentName: z.string().optional().describe('Component function name for format=component (default: ArcDiagramExample)'),
       dataName: z.string().optional().describe('Diagram const name for format=component (default: diagram)'),
-      theme: z.string().optional().describe('Arc theme id: default, warm, cool, mono, engineering, workbench, tactical, or command'),
-      mode: z.enum(['light', 'dark']).optional().describe('Color mode for component/iframe output'),
+      theme: z.string().optional().describe(themeDescription),
+      mode: z.enum(['light', 'dark']).optional().describe('Color mode; defaults to the theme default'),
       interactive: z.boolean().optional().describe('Whether the React component is interactive'),
       baseUrl: z.string().url().optional().describe('Studio base URL for format=iframe (default: ARC_EDITOR_URL or http://localhost:5188)'),
       sessionId: z.string().optional().describe('Session id for format=iframe URLs (generated if omitted)'),
       title: z.string().optional().describe('HTML document title or iframe title'),
       width: z.union([z.number().positive(), z.string()]).optional().describe('Iframe width in px or CSS percentage'),
       height: z.union([z.number().positive(), z.string()]).optional().describe('Iframe height in px or CSS percentage'),
-      backgroundColor: z.string().optional().describe('CSS background color for format=html (default: #ffffff)'),
-      includeGrid: z.boolean().optional().describe('Render the diagram grid for format=html'),
+      backgroundColor: z.string().optional().describe('CSS background color for format=html (defaults to the theme canvas)'),
+      includeGrid: z.boolean().optional().describe('Render the diagram grid for format=html (default: branded themes on, others off)'),
       padding: z.number().nonnegative().optional().describe('Padding around the export bounds in px for format=html (default: 20)'),
     },
     async ({ diagram, format, componentName, dataName, theme, mode, interactive, baseUrl, sessionId, title, width, height, backgroundColor, includeGrid, padding }) => {

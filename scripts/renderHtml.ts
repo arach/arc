@@ -1,7 +1,6 @@
 import { buildEditorHandoff } from './diagramHandoff.ts'
-import { renderDiagramSvg, RenderError, type RenderSvgOptions } from './renderImage.ts'
-import { THEMES } from '../src/utils/themes.ts'
-import type { ThemeId } from '../src/utils/themes.ts'
+import { assertRenderTheme, renderDiagramSvg, RenderError, resolveRenderMode, type RenderSvgOptions } from './renderImage.ts'
+import { themeCanvas, type ThemeId } from '../src/utils/themes.ts'
 import type { ArcDiagramData } from '../src/types/diagram.ts'
 
 export type RenderHtmlFormat = 'component' | 'iframe' | 'html'
@@ -25,6 +24,8 @@ export interface RenderedHtml {
   code: string
   mimeType: 'text/html' | 'text/tsx'
   url?: string
+  theme?: ThemeId
+  mode?: 'light' | 'dark'
 }
 
 const IDENTIFIER = /^[A-Za-z_$][\w$]*$/
@@ -36,22 +37,6 @@ function assertIdentifier(value: string | undefined, fallback: string, name: str
     throw new RenderError('render/invalid-option', `${name} must be a valid identifier`, [`use letters, digits, _ or $; ${name} cannot start with a digit`])
   }
   return resolved
-}
-
-function assertTheme(theme: string | undefined): ThemeId | undefined {
-  if (!theme) return undefined
-  if (!(theme in THEMES)) {
-    throw new RenderError('render/invalid-option', `theme must be one of: ${Object.keys(THEMES).join(', ')}`, ['omit theme or use a valid Arc theme id'])
-  }
-  return theme as ThemeId
-}
-
-function assertMode(mode: string | undefined): 'light' | 'dark' | undefined {
-  if (!mode) return undefined
-  if (mode !== 'light' && mode !== 'dark') {
-    throw new RenderError('render/invalid-option', 'mode must be light or dark', ['use mode="light" or mode="dark"'])
-  }
-  return mode
 }
 
 function assertCssLength(value: number | string | undefined, fallback: number, name: string): string {
@@ -80,8 +65,8 @@ function escapeHtml(value: string): string {
 function componentSource(diagram: ArcDiagramData, options: RenderHtmlOptions): string {
   const componentName = assertIdentifier(options.componentName, 'ArcDiagramExample', 'componentName')
   const dataName = assertIdentifier(options.dataName, 'diagram', 'dataName')
-  const theme = assertTheme(options.theme)
-  const mode = assertMode(options.mode)
+  const theme = options.theme as ThemeId | undefined
+  const mode = options.mode
   const props = [`data={${dataName}}`]
   if (mode) props.push(`mode="${mode}"`)
   if (theme) props.push(`theme="${theme}"`)
@@ -98,8 +83,8 @@ export function ${componentName}() {
 }
 
 function iframeSource(diagram: ArcDiagramData, options: RenderHtmlOptions): { code: string; url: string } {
-  const theme = assertTheme(options.theme)
-  const mode = assertMode(options.mode)
+  const theme = options.theme as ThemeId | undefined
+  const mode = options.mode
   const rendered = renderDiagramSvg(diagram, options)
   const width = assertCssLength(options.width, rendered.width, 'width')
   const height = assertCssLength(options.height, rendered.height, 'height')
@@ -117,6 +102,7 @@ function iframeSource(diagram: ArcDiagramData, options: RenderHtmlOptions): { co
 function htmlSource(diagram: ArcDiagramData, options: RenderHtmlOptions): string {
   const rendered = renderDiagramSvg(diagram, options)
   const title = options.title ?? diagram.id ?? 'Arc diagram'
+  const background = rendered.theme ? themeCanvas(rendered.theme, rendered.mode ?? 'light') : '#fafafa'
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -124,7 +110,7 @@ function htmlSource(diagram: ArcDiagramData, options: RenderHtmlOptions): string
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>${escapeHtml(title)}</title>
   <style>
-    html, body { margin: 0; min-height: 100%; background: #fafafa; }
+    html, body { margin: 0; min-height: 100%; background: ${background}; }
     body { display: grid; place-items: center; padding: 24px; box-sizing: border-box; }
     svg { display: block; max-width: 100%; height: auto; }
   </style>
@@ -138,15 +124,18 @@ ${rendered.svg}
 
 export function renderDiagramHtml(diagram: ArcDiagramData, options: RenderHtmlOptions = {}): RenderedHtml {
   const format = options.format ?? 'html'
+  const theme = assertRenderTheme(options.theme)
+  const mode = resolveRenderMode(theme, options.mode)
+  const resolvedOptions: RenderHtmlOptions = { ...options, theme, mode }
   if (format === 'component') {
-    return { format, code: componentSource(diagram, options), mimeType: 'text/tsx' }
+    return { format, code: componentSource(diagram, resolvedOptions), mimeType: 'text/tsx', theme, mode }
   }
   if (format === 'iframe') {
-    const iframe = iframeSource(diagram, options)
-    return { format, code: iframe.code, mimeType: 'text/html', url: iframe.url }
+    const iframe = iframeSource(diagram, resolvedOptions)
+    return { format, code: iframe.code, mimeType: 'text/html', url: iframe.url, theme, mode }
   }
   if (format === 'html') {
-    return { format, code: htmlSource(diagram, options), mimeType: 'text/html' }
+    return { format, code: htmlSource(diagram, resolvedOptions), mimeType: 'text/html', theme, mode }
   }
   throw new RenderError('render/invalid-option', 'format must be component, iframe, or html', ['use format="component", "iframe", or "html"'])
 }

@@ -63,11 +63,20 @@ describe('renderDiagramHtml', () => {
     expect(payload.nodes.api).toEqual(diagram.nodes.api)
   })
 
-  test('html format emits a standalone SVG document', () => {
-    const rendered = renderDiagramHtml(diagram, { format: 'html', title: 'Service <map>' })
+  test('component format uses the theme default mode when mode is omitted', () => {
+    const rendered = renderDiagramHtml(diagram, { format: 'component', theme: 'claude' })
+    expect(rendered.mode).toBe('light')
+    expect(rendered.code).toContain('mode="light" theme="claude"')
+  })
+
+  test('html format emits a standalone themed SVG document', () => {
+    const rendered = renderDiagramHtml(diagram, { format: 'html', title: 'Service <map>', theme: 'codex' })
     expect(rendered.mimeType).toBe('text/html')
+    expect(rendered.mode).toBe('dark')
     expect(rendered.code).toContain('<!doctype html>')
     expect(rendered.code).toContain('<title>Service &lt;map&gt;</title>')
+    expect(rendered.code).toContain('background: #0b0d10')
+    expect(rendered.code).toContain('#34d399')
     expect(rendered.code).toContain('<svg xmlns="http://www.w3.org/2000/svg"')
     expect(rendered.code).toContain('API')
   })

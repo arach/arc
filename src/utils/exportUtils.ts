@@ -1,4 +1,6 @@
 import { NODE_SIZES } from './constants'
+import { resolveNodeDecor, resolveNodeShape, shapeCut, shapeFillPath } from './nodeShape'
+import { getTheme, resolveNodeRadius, themeCanvas, type BrandSpec, type Theme, type ThemeId } from './themes'
 
 // Helper: Calculate anchor position on a node
 function getAnchorPosition(x: any, y: any, width: any, height: any, position: any) {
@@ -75,15 +77,94 @@ const groupColors = {
   orange: { fill: 'rgba(249, 115, 22, 0.1)', stroke: 'rgba(249, 115, 22, 0.5)' },
 }
 
+type ExportMode = 'light' | 'dark'
+
+function classColor(className: string | undefined, fallback: string): string {
+  const match = className?.match(/#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{3})/)
+  if (match) return match[0]
+  if (className?.includes('text-white')) return '#ffffff'
+  if (className?.includes('text-zinc-700')) return '#334155'
+  if (className?.includes('text-zinc-300')) return '#cbd5e1'
+  return fallback
+}
+
+function hexWithAlpha(color: string, alpha: number): string {
+  const hex = color.replace('#', '')
+  if (hex.length !== 3 && hex.length !== 6) return color
+  return `${color}${Math.round(alpha * 255).toString(16).padStart(2, '0')}`
+}
+
+function svgGridPattern(gridType: string, color: string, size: number, x: number, y: number, w: number, h: number): string {
+  if (gridType === 'none') return ''
+  if (gridType === 'lines') {
+    return `<defs><pattern id="grid" width="${size}" height="${size}" patternUnits="userSpaceOnUse"><path d="M ${size} 0 L 0 0 0 ${size}" fill="none" stroke="${color}" stroke-width="1"/></pattern></defs><rect x="${x}" y="${y}" width="${w}" height="${h}" fill="url(#grid)"/>`
+  }
+  if (gridType === 'crosshair') {
+    return `<defs><pattern id="grid" width="${size}" height="${size}" patternUnits="userSpaceOnUse"><path d="M ${size / 2} ${size * 0.35} V ${size * 0.65} M ${size * 0.35} ${size / 2} H ${size * 0.65}" stroke="${color}" stroke-width="1"/></pattern></defs><rect x="${x}" y="${y}" width="${w}" height="${h}" fill="url(#grid)"/>`
+  }
+  return `<defs><pattern id="grid" width="${size}" height="${size}" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1" fill="${color}"/></pattern></defs><rect x="${x}" y="${y}" width="${w}" height="${h}" fill="url(#grid)"/>`
+}
+
+function svgFrame(frame: BrandSpec['frame'], x: number, y: number, w: number, h: number, color: string): string {
+  const stroke = `stroke="${color}" stroke-width="1" fill="none"`
+  if (!frame || frame === 'none') return ''
+  if (frame === 'hairline' || frame === 'inset' || frame === 'sheet') {
+    return `<rect x="${x}" y="${y}" width="${w}" height="${h}" ${stroke}/>`
+  }
+  if (frame === 'brackets' || frame === 'corners') {
+    const t = frame === 'brackets' ? 18 : 26
+    return `<path d="M ${x} ${y + t} V ${y} H ${x + t} M ${x + w - t} ${y} H ${x + w} V ${y + t} M ${x + w} ${y + h - t} V ${y + h} H ${x + w - t} M ${x + t} ${y + h} H ${x} V ${y + h - t}" ${stroke}/>`
+  }
+  if (frame === 'ticks') {
+    return `<path d="M ${x + w / 2} ${y} V ${y + 10} M ${x + w / 2} ${y + h} V ${y + h - 10} M ${x} ${y + h / 2} H ${x + 10} M ${x + w} ${y + h / 2} H ${x + w - 10}" ${stroke}/>`
+  }
+  if (frame === 'cropmarks') {
+    const t = 14
+    return `<path d="M ${x - 12} ${y} H ${x + t} M ${x} ${y - 12} V ${y + t} M ${x + w + 12} ${y} H ${x + w - t} M ${x + w} ${y - 12} V ${y + t} M ${x + w + 12} ${y + h} H ${x + w - t} M ${x + w} ${y + h + 12} V ${y + h - t} M ${x - 12} ${y + h} H ${x + t} M ${x} ${y + h + 12} V ${y + h - t}" ${stroke}/>`
+  }
+  if (frame === 'reticle') {
+    const t = 18
+    return `<path d="M ${x} ${y + t} V ${y} H ${x + t} M ${x + w - t} ${y} H ${x + w} V ${y + t} M ${x + w} ${y + h - t} V ${y + h} H ${x + w - t} M ${x + t} ${y + h} H ${x} V ${y + h - t} M ${x + w / 2 - 8} ${y + h / 2} H ${x + w / 2 + 8} M ${x + w / 2} ${y + h / 2 - 8} V ${y + h / 2 + 8}" ${stroke}/>`
+  }
+  return ''
+}
+
+function svgNodeDecor(decor: string, w: number, h: number, accent: string): string {
+  if (decor === 'bar-left') return `<rect x="0" y="0" width="4" height="${h}" fill="${accent}"/>`
+  if (decor === 'bar-top') return `<rect x="0" y="0" width="${w}" height="4" fill="${accent}"/>`
+  if (decor === 'rule') return `<line x1="14" y1="${h - 10}" x2="${w - 14}" y2="${h - 10}" stroke="${accent}" stroke-width="1" opacity="0.45"/>`
+  if (decor === 'dot') return `<circle cx="16" cy="16" r="3.5" fill="${accent}"/>`
+  if (decor === 'ticks') {
+    return `<path d="M 4 8 V 4 H 8 M ${w - 8} 4 H ${w - 4} V 8 M ${w - 4} ${h - 8} V ${h - 4} H ${w - 8} M 8 ${h - 4} H 4 V ${h - 8}" stroke="${accent}" stroke-width="1" fill="none" opacity="0.75"/>`
+  }
+  if (decor === 'stripe') {
+    return `<path d="M ${w - 18} 6 L ${w - 6} 18 M ${w - 24} 6 L ${w - 6} 24" stroke="${accent}" stroke-width="1.5" opacity="0.45"/>`
+  }
+  return ''
+}
+
+function svgTitleBlock(theme: Theme | undefined, title: string, x: number, y: number, ink: string, muted: string, accent: string): string {
+  if (!theme?.brand?.titleBlock) return ''
+  const fontFamily = theme.brand.monoFamily || theme.brand.fontFamily || 'ui-monospace, monospace'
+  return `<g><rect x="${x}" y="${y}" width="208" height="42" fill="none" stroke="${accent}" stroke-width="1"/><text x="${x + 12}" y="${y + 18}" font-family="${escapeXml(fontFamily)}" font-size="10" font-weight="600" letter-spacing="1.5" fill="${ink}">${escapeXml(title.toUpperCase())}</text><text x="${x + 12}" y="${y + 32}" font-family="${escapeXml(fontFamily)}" font-size="8" letter-spacing="1.2" fill="${muted}">ARC / MISSION PLATE</text></g>`
+}
+
 /**
  * Generate SVG string from diagram data
  */
 export function generateSVG(diagram: any, options: any = {}) {
-  const {
-    backgroundColor = '#ffffff',
-    includeGrid = false,
-    padding = 20,
-  } = options
+  const { padding = 20 } = options
+  const theme = options.theme ? getTheme(options.theme as ThemeId) : undefined
+  const mode = (options.mode ?? theme?.defaultMode ?? 'light') as ExportMode
+  const themeColors = theme?.[mode]
+  const brand = theme?.brand
+  const fontFamily = brand?.fontFamily || 'ui-sans-serif, system-ui, sans-serif'
+  const monoFamily = brand?.monoFamily || fontFamily
+  const backgroundColor = options.backgroundColor ?? (theme ? themeCanvas(theme.id, mode) : '#ffffff')
+  const ink = themeColors ? classColor(themeColors.text.primary, mode === 'dark' ? '#f4f4f5' : '#111827') : '#ffffff'
+  const mutedInk = themeColors ? classColor(themeColors.text.secondary, mode === 'dark' ? '#a1a1aa' : '#475569') : '#ffffff'
+  const accent = themeColors?.palette.zinc.stroke || '#71717a'
+  const showGrid = options.includeGrid ?? Boolean(brand?.gridType && brand.gridType !== 'none')
 
   // Use export zone if defined, otherwise full layout
   const bounds = diagram.exportZone || {
@@ -102,33 +183,29 @@ export function generateSVG(diagram: any, options: any = {}) {
   // Background
   svg += `  <rect x="${bounds.x - padding}" y="${bounds.y - padding}" width="${bounds.width + padding * 2}" height="${bounds.height + padding * 2}" fill="${backgroundColor}"/>\n`
 
-  // Grid (optional)
-  if (includeGrid && diagram.grid?.enabled) {
-    const gridSize = diagram.grid.size || 20
-    const gridColor = diagram.grid.color || '#e5e7eb'
-    svg += `  <defs>\n`
-    svg += `    <pattern id="grid" width="${gridSize}" height="${gridSize}" patternUnits="userSpaceOnUse">\n`
-    if (diagram.grid.type === 'dots') {
-      svg += `      <circle cx="${gridSize/2}" cy="${gridSize/2}" r="1" fill="${gridColor}"/>\n`
-    } else {
-      svg += `      <path d="M ${gridSize} 0 L 0 0 0 ${gridSize}" fill="none" stroke="${gridColor}" stroke-width="0.5"/>\n`
-    }
-    svg += `    </pattern>\n`
-    svg += `  </defs>\n`
-    svg += `  <rect x="${bounds.x - padding}" y="${bounds.y - padding}" width="${bounds.width + padding * 2}" height="${bounds.height + padding * 2}" fill="url(#grid)"/>\n`
+  // Branded themes draw their grid by default; includeGrid can force or suppress it.
+  if (showGrid && (themeColors || diagram.grid?.enabled)) {
+    const gridSize = themeColors?.background.grid.size || diagram.grid?.size || 20
+    const gridColor = themeColors?.background.grid.color || diagram.grid?.color || '#e5e7eb'
+    const gridType = brand?.gridType || diagram.grid?.type || 'dots'
+    svg += `  ${svgGridPattern(gridType, gridColor, gridSize, bounds.x - padding, bounds.y - padding, bounds.width + padding * 2, bounds.height + padding * 2)}\n`
   }
 
   // Groups (render first, behind everything)
   const groups = diagram.groups || []
   for (const group of groups) {
     const colors = groupColors[group.color] || groupColors.zinc
+    const tone = themeColors?.palette[group.color]
+    const groupFill = tone ? hexWithAlpha(tone.stroke, 0.08) : colors.fill
+    const groupStroke = tone?.stroke || colors.stroke
     if (group.type === 'circle') {
-      svg += `  <ellipse cx="${group.x + group.width / 2}" cy="${group.y + group.height / 2}" rx="${group.width / 2}" ry="${group.height / 2}" fill="${colors.fill}" stroke="${colors.stroke}" stroke-width="1.5"${group.dashed ? ' stroke-dasharray="8 4"' : ''}/>\n`
+      svg += `  <ellipse cx="${group.x + group.width / 2}" cy="${group.y + group.height / 2}" rx="${group.width / 2}" ry="${group.height / 2}" fill="${groupFill}" stroke="${groupStroke}" stroke-width="1.5"${group.dashed ? ' stroke-dasharray="8 4"' : ''}/>\n`
     } else {
-      svg += `  <rect x="${group.x}" y="${group.y}" width="${group.width}" height="${group.height}" rx="12" fill="${colors.fill}" stroke="${colors.stroke}" stroke-width="1.5"${group.dashed ? ' stroke-dasharray="8 4"' : ''}/>\n`
+      svg += `  <rect x="${group.x}" y="${group.y}" width="${group.width}" height="${group.height}" rx="12" fill="${groupFill}" stroke="${groupStroke}" stroke-width="1.5"${group.dashed ? ' stroke-dasharray="8 4"' : ''}/>\n`
     }
     if (group.label) {
-      svg += `  <text x="${group.x + 12}" y="${group.y + 20}" fill="${colors.stroke}" font-size="12" font-weight="500" font-family="ui-sans-serif, system-ui, sans-serif">${escapeXml(group.label)}</text>\n`
+      const label = brand?.upperLabels ? group.label.toUpperCase() : group.label
+      svg += `  <text x="${group.x + 12}" y="${group.y + 20}" fill="${groupStroke}" font-size="12" font-weight="500" font-family="${escapeXml(monoFamily)}"${brand?.upperLabels ? ' letter-spacing="1"' : ''}>${escapeXml(label)}</text>\n`
     }
   }
 
@@ -148,7 +225,7 @@ export function generateSVG(diagram: any, options: any = {}) {
     const toSize = NODE_SIZES[toNode.size] || NODE_SIZES.m
 
     const style = diagram.connectorStyles?.[connector.style] || { color: 'zinc', strokeWidth: 2 }
-    const strokeColor = nodeColors[style.color]?.bg || '#71717a'
+    const strokeColor = themeColors?.palette[style.color]?.stroke || nodeColors[style.color]?.bg || accent
 
     const fromPos = getAnchorPosition(
       fromNode.x,
@@ -166,17 +243,31 @@ export function generateSVG(diagram: any, options: any = {}) {
     )
 
     const path = getConnectorPath(fromPos, toPos, connector.fromAnchor, connector.toAnchor)
+    const strokeWidth = style.strokeWidth || 2
 
-    svg += `  <path d="${path}" fill="none" stroke="${strokeColor}" stroke-width="${style.strokeWidth || 2}"${style.dashed ? ' stroke-dasharray="6 3"' : ''}/>\n`
+    if (brand?.connectorGlow) {
+      svg += `  <path d="${path}" fill="none" stroke="${strokeColor}" stroke-width="${strokeWidth + 4}" opacity="0.16"/>\n`
+    }
+    svg += `  <path d="${path}" fill="none" stroke="${strokeColor}" stroke-width="${strokeWidth}"${style.dashed ? ' stroke-dasharray="6 3"' : ''}/>\n`
 
     // Arrow head
-    svg += `  <circle cx="${toPos.x}" cy="${toPos.y}" r="4" fill="${strokeColor}"/>\n`
+    const angle = Math.atan2(toPos.y - fromPos.y, toPos.x - fromPos.x) * 180 / Math.PI
+    if (themeColors) {
+      if (brand?.arrowhead === 'chevron') {
+        svg += `  <path d="M -1 -5 L 7 0 L -1 5" fill="none" stroke="${strokeColor}" stroke-width="1.5" transform="translate(${toPos.x} ${toPos.y}) rotate(${angle})"/>\n`
+      } else {
+        svg += `  <polygon points="-1,-4 7,0 -1,4" fill="${strokeColor}" transform="translate(${toPos.x} ${toPos.y}) rotate(${angle})"/>\n`
+      }
+    } else {
+      svg += `  <circle cx="${toPos.x}" cy="${toPos.y}" r="4" fill="${strokeColor}"/>\n`
+    }
 
     // Label
     if (style.label) {
       const midX = (fromPos.x + toPos.x) / 2
       const midY = (fromPos.y + toPos.y) / 2
-      svg += `  <text x="${midX}" y="${midY - 8}" text-anchor="middle" fill="${strokeColor}" font-size="10" font-family="ui-sans-serif, system-ui, sans-serif">${escapeXml(style.label)}</text>\n`
+      const label = brand?.upperLabels ? style.label.toUpperCase() : style.label
+      svg += `  <text x="${midX}" y="${midY - 8}" text-anchor="middle" fill="${strokeColor}" font-size="10" font-family="${escapeXml(monoFamily)}"${brand?.upperLabels ? ' letter-spacing="1"' : ''}>${escapeXml(label)}</text>\n`
     }
   }
 
@@ -189,18 +280,51 @@ export function generateSVG(diagram: any, options: any = {}) {
     const width = node.width || size.width
     const height = node.height || size.height
     const colors = nodeColors[data.color] || nodeColors.zinc
+    const tone = themeColors?.palette[data.color]
+    const nodeAccent = tone?.stroke || colors.bg
+    const nodeFill = themeColors
+      ? hexWithAlpha(nodeAccent, brand?.nodeGlass ? 0.10 : mode === 'dark' ? 0.12 : 0.08)
+      : colors.bg
+    const nodeText = themeColors ? ink : colors.text
+    const nodeRadius = resolveNodeRadius(brand)
+    const shape = resolveNodeShape(data.shape || brand?.nodeShape, nodeRadius)
+    const cut = shapeCut(node.size)
+    const shapePath = shapeFillPath(shape, width, height, cut)
+    const decor = resolveNodeDecor(data.decor || brand?.nodeDecor, brand?.accentBar)
+    const nodeOpacity = brand?.nodeOpacity ?? 1
+    const borderWidth = parseFloat(brand?.nodeBorderWidth || '') || 1
 
-    // Node background
-    svg += `  <rect x="${node.x}" y="${node.y}" width="${width}" height="${height}" rx="12" fill="${colors.bg}"/>\n`
+    svg += `  <g opacity="${nodeOpacity}">\n`
+    if (shapePath) {
+      svg += `    <path d="${shapePath}" transform="translate(${node.x} ${node.y})" fill="${nodeFill}"${themeColors ? ` stroke="${nodeAccent}" stroke-width="${borderWidth}" stroke-opacity="0.75"` : ''}/>\n`
+    } else {
+      const rx = nodeRadius ? parseFloat(nodeRadius) : 12
+      svg += `    <rect x="${node.x}" y="${node.y}" width="${width}" height="${height}" rx="${rx}" fill="${nodeFill}"${themeColors ? ` stroke="${nodeAccent}" stroke-width="${borderWidth}" stroke-opacity="0.75"` : ''}/>\n`
+    }
+    if (decor !== 'none') {
+      svg += `    <g transform="translate(${node.x} ${node.y})">${svgNodeDecor(decor, width, height, nodeAccent)}</g>\n`
+    }
 
     // Node name
     const fontSize = node.size === 'xs' ? 10 : node.size === 's' ? 11 : 13
-    svg += `  <text x="${node.x + width / 2}" y="${node.y + height / 2 + fontSize / 3}" text-anchor="middle" fill="${colors.text}" font-size="${fontSize}" font-weight="600" font-family="ui-sans-serif, system-ui, sans-serif">${escapeXml(data.name || 'Node')}</text>\n`
+    svg += `    <text x="${node.x + width / 2}" y="${node.y + height / 2 + fontSize / 3}" text-anchor="middle" fill="${nodeText}" font-size="${fontSize}" font-weight="600" font-family="${escapeXml(fontFamily)}">${escapeXml(data.name || 'Node')}</text>\n`
 
     // Subtitle (if space allows)
     if (data.subtitle && height >= 60) {
-      svg += `  <text x="${node.x + width / 2}" y="${node.y + height / 2 + fontSize + 8}" text-anchor="middle" fill="${colors.text}" opacity="0.8" font-size="${fontSize - 2}" font-family="ui-sans-serif, system-ui, sans-serif">${escapeXml(data.subtitle)}</text>\n`
+      const subtitle = brand?.upperLabels ? data.subtitle.toUpperCase() : data.subtitle
+      svg += `    <text x="${node.x + width / 2}" y="${node.y + height / 2 + fontSize + 8}" text-anchor="middle" fill="${themeColors ? mutedInk : colors.text}" opacity="0.8" font-size="${fontSize - 2}" font-family="${escapeXml(brand?.upperLabels ? monoFamily : fontFamily)}"${brand?.upperLabels ? ' letter-spacing="0.8"' : ''}>${escapeXml(subtitle)}</text>\n`
     }
+    svg += `  </g>\n`
+  }
+
+  if (themeColors && brand?.frame && brand.frame !== 'none') {
+    const frameX = bounds.x - padding + 8
+    const frameY = bounds.y - padding + 8
+    svg += `  ${svgFrame(brand.frame, frameX, frameY, bounds.width + padding * 2 - 16, bounds.height + padding * 2 - 16, accent)}\n`
+  }
+
+  if (themeColors && brand?.titleBlock) {
+    svg += `  ${svgTitleBlock(theme, diagram.id || 'diagram', bounds.x + bounds.width - 216, bounds.y + bounds.height - 50, ink, mutedInk, accent)}\n`
   }
 
   svg += `</svg>`
@@ -211,10 +335,10 @@ export function generateSVG(diagram: any, options: any = {}) {
  * Generate PNG from diagram using canvas
  */
 export async function generatePNG(diagram: any, options: any = {}) {
-  const { scale = 2, backgroundColor = '#ffffff' } = options
+  const { scale = 2 } = options
 
   // Generate SVG first
-  const svgString = generateSVG(diagram, { backgroundColor, ...options })
+  const svgString = generateSVG(diagram, options)
 
   // Create blob and image
   const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' })

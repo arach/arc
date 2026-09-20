@@ -61,7 +61,7 @@ From a global install (after publish):
 | `diagram_to_typescript` | Emit a typed TS module |
 | `editor_handoff` | Build `#data=` studio URL + session id |
 
-`render_png` returns MCP `image` content (`mimeType: image/png`, base64 `data`) plus text metadata (`width`, `height`, `scale`, `bytes`, `chrome`). `render_html` returns paste-ready text: a React component for `format=component`, an iframe tag backed by the studio hash URL for `format=iframe`, or a standalone SVG HTML document for `format=html`.
+`render_png` returns MCP `image` content (`mimeType: image/png`, base64 `data`) plus text metadata (`width`, `height`, `scale`, `bytes`, `chrome`, `theme`, `mode`). `render_svg`, `render_png`, and `render_html` accept Arc `theme`/`mode`; omit `mode` to use the theme's default (`claude` → light, `spacex`/`codex` → dark). Branded themes include their grid/frame by default; set `includeGrid: false` to suppress it. `render_html` returns paste-ready text: a React component for `format=component`, an iframe tag backed by the studio hash URL for `format=iframe`, or a standalone SVG HTML document for `format=html`.
 
 ## Resources
 

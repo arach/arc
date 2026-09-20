@@ -78,7 +78,7 @@ Architecture diagrams typically live in design tools, disconnected from the code
 
 - **Declarative Format** - Diagrams are data structures
 - **Templates** - Structural presets for layout
-- **Themes** - Color palettes (default, warm, cool, mono)
+- **Themes** - Color and decor palettes (default, warm, cool, mono, engineering, workbench, tactical, command, spacex, claude, codex)
 - **Export** - SVG, PNG, JSON, TypeScript
 
 ## Links
@@ -265,6 +265,13 @@ interface ConnectorStyle {
 | warm | Warm | Editorial, earth tones |
 | cool | Cool | Technical, blue-focused |
 | mono | Mono | Grayscale for print |
+| engineering | Engineering | Structured blueprint plate |
+| workbench | Workbench | Quiet hardware/drafting bench |
+| tactical | Tactical | Hard-edged field diagram |
+| command | Command | Glass mission console |
+| spacex | SpaceX | Mission plate, telemetry cyan |
+| claude | Claude | Warm parchment, clay accents |
+| codex | Codex | Graphite console, mint signal |
 
 ### Theme API
 
