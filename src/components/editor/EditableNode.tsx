@@ -2,7 +2,8 @@ import { memo } from 'react'
 import { getIconComponent } from '../../utils/iconRegistry'
 import { NODE_SIZES } from '../../utils/constants'
 import { Node as PlayerNode } from '../ArcDiagram'
-import type { BrandSpec, Theme } from '../../utils/themes'
+import { radiusForShape, resolveNodeShape, shapeCut, shapeOutlinePath, type NodeShape } from '../../utils/nodeShape'
+import { resolveNodeRadius, type BrandSpec, type Theme } from '../../utils/themes'
 
 type ResolvedThemeMode = Theme['light'] | Theme['dark']
 
@@ -90,7 +91,7 @@ const subtitleColorMap = {
 interface EditableNodeProps {
   nodeId: string
   node: { x: number; y: number; size?: string; width?: number; height?: number }
-  data: { icon: string; name: string; subtitle?: string; description?: string; color?: string }
+  data: { icon: string; name: string; subtitle?: string; description?: string; color?: string; shape?: NodeShape }
   layout: { width: number; height: number }
   template: {
     node?: Record<string, unknown>
@@ -104,6 +105,37 @@ interface EditableNodeProps {
   onMouseLeave: () => void
   themeColors?: ResolvedThemeMode | null
   brand?: BrandSpec
+}
+
+function SelectionOutline({ width, height, shape, cut, radius }: {
+  width: number
+  height: number
+  shape: ReturnType<typeof resolveNodeShape>
+  cut: number
+  radius?: string
+}) {
+  const outline = shapeOutlinePath(shape, width + 6, height + 6, cut + 3)
+  if (outline) {
+    return (
+      <svg
+        className="absolute pointer-events-none"
+        style={{ left: -3, top: -3 }}
+        width={width + 6}
+        height={height + 6}
+        aria-hidden="true"
+      >
+        <path d={outline} fill="none" stroke="#3b82f6" strokeWidth={2} />
+      </svg>
+    )
+  }
+
+  return (
+    <span
+      className="absolute pointer-events-none"
+      style={{ inset: -3, border: '2px solid #3b82f6', borderRadius: radius || '12px' }}
+      aria-hidden="true"
+    />
+  )
 }
 
 const EditableNode = memo(function EditableNode({
@@ -154,10 +186,14 @@ const EditableNode = memo(function EditableNode({
   // When a theme is active, use the player's Node component directly — same rendering, same styles
   if (isThemed) {
     const colorMode = isLightTheme ? 'light' : 'dark'
+    const themeRadius = resolveNodeRadius(brand)
+    const shape = resolveNodeShape(data.shape || brand?.nodeShape, themeRadius)
+    const selectionRadius = data.shape ? radiusForShape(shape, themeRadius) : themeRadius
+    const cut = shapeCut(size as keyof typeof NODE_SIZES)
     return (
       <div
-        className={`cursor-move select-none pointer-events-auto ${isSelected ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-white rounded-xl' : ''}`}
-        style={{ position: 'absolute', left: node.x, top: node.y, width: width }}
+        className="cursor-move select-none pointer-events-auto"
+        style={{ position: 'absolute', left: node.x, top: node.y, width, height }}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
         onPointerDown={(e) => onPointerDown(e, nodeId)}
@@ -174,6 +210,7 @@ const EditableNode = memo(function EditableNode({
           themeColors={themeColors!}
           brand={brand}
         />
+        {isSelected && <SelectionOutline width={width} height={height} shape={shape} cut={cut} radius={selectionRadius} />}
       </div>
     )
   }
