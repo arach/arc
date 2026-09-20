@@ -6,7 +6,7 @@
   "workspaces": [
     "packages/*"
   ],
-  "description": "Diagrams as code for React — design, render, and export typed architecture diagrams",
+  "description": "Diagrams as code for React \u2014 design, render, and export typed architecture diagrams",
   "author": "Arach Tchoupani",
   "license": "MIT",
   "repository": {
