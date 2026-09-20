@@ -32,12 +32,26 @@ export interface NodeData {
 }
 
 export interface Connector {
+  /**
+   * Stable identity for diffs, deep links, and diagnostics. Without it a
+   * connector is only addressable by `from`/`to` pair or array index, which
+   * breaks under reordering and parallel edges.
+   */
+  id?: string
   from: string
   to: string
   fromAnchor: AnchorPosition
   toAnchor: AnchorPosition
   style: string
   curve?: 'natural' | 'step'
+}
+
+/**
+ * Stable identity for a connector: its authored `id`, else the `from→to`
+ * pair. Parallel edges between the same endpoints collide without `id`.
+ */
+export function connectorKey(connector: Pick<Connector, 'from' | 'to' | 'id'>): string {
+  return connector.id ?? `${connector.from}->${connector.to}`
 }
 
 export interface ConnectorStyle {
@@ -73,8 +87,11 @@ export interface GroupShape {
 }
 
 export interface FocusConnectorRef {
-  from: string
-  to: string
+  /** Pins a specific connector by `Connector.id` — survives reordering and parallel edges. */
+  id?: string
+  /** Endpoint-pair matching, used when `id` is absent. Ambiguous on parallel edges. */
+  from?: string
+  to?: string
 }
 
 export interface FocusStep {
