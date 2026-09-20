@@ -19,6 +19,23 @@ export interface NodePosition {
   x: number
   y: number
   size: NodeSize
+  /** Custom rendered dimensions; when present they override the size preset. */
+  width?: number
+  height?: number
+  /** Isometric elevation above the floor plane. */
+  z?: number
+  /** Isometric box height. */
+  isoHeight?: number
+  /** Isometric box depth (Y in iso space). */
+  isoDepth?: number
+  /** Painter's-algorithm bias when two iso boxes occupy the same volume. */
+  isoOrder?: number
+  /** Top-face label axis. Omit / `auto` = along the longer edge. */
+  isoLabelDir?: 'auto' | 'x' | 'y'
+  /** Rotate the printed iso label 180° on the face. */
+  isoLabelFlip?: boolean
+  /** Typeface for the printed iso label. Omit / `theme` follows the diagram brand. */
+  isoLabelFont?: 'theme' | 'ui' | 'mono'
 }
 
 export interface NodeData {
@@ -30,6 +47,8 @@ export interface NodeData {
   /** Per-node silhouette. Omit to follow the theme's own node shape. */
   shape?: NodeShape
 }
+
+export type ConnectorCurve = 'natural' | 'down' | 'up' | 'step'
 
 export interface Connector {
   /**
@@ -43,7 +62,9 @@ export interface Connector {
   fromAnchor: AnchorPosition
   toAnchor: AnchorPosition
   style: string
-  curve?: 'natural' | 'step'
+  curve?: ConnectorCurve
+  /** Bezier control-point scale for curved connectors (percent of distance). */
+  curveDepth?: number
 }
 
 /**
@@ -54,11 +75,19 @@ export function connectorKey(connector: Pick<Connector, 'from' | 'to' | 'id'>): 
   return connector.id ?? `${connector.from}->${connector.to}`
 }
 
+export type LabelAlign = 'left' | 'right' | 'center'
+
 export interface ConnectorStyle {
   color: DiagramColor
   strokeWidth: number
   label?: string
+  /** For vertical connectors, `right`/`left` places the label beside the line. */
+  labelAlign?: LabelAlign
   dashed?: boolean
+  bidirectional?: boolean
+  animated?: boolean
+  showArrow?: boolean
+  showEndpoints?: boolean
 }
 
 export interface DiagramLayout {
