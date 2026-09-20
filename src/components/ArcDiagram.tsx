@@ -49,6 +49,9 @@ export interface NodeData {
 }
 
 export interface Connector {
+  /** Stable identity for diffs, deep links, and diagnostics. Without it a
+   * connector is only addressable by `from`/`to` pair or array index. */
+  id?: string
   from: string
   to: string
   fromAnchor: AnchorPosition
@@ -73,8 +76,11 @@ export interface DiagramLayout {
 }
 
 export interface FocusConnectorRef {
-  from: string
-  to: string
+  /** Pins a specific connector by `Connector.id` — survives reordering and parallel edges. */
+  id?: string
+  /** Endpoint-pair matching, used when `id` is absent. Ambiguous on parallel edges. */
+  from?: string
+  to?: string
 }
 
 export interface FocusStep {
@@ -207,7 +213,10 @@ export function resolveFocusState(
 
   for (const ref of target?.connectors || []) {
     connectors.forEach((connector, index) => {
-      if (connector.from !== ref.from || connector.to !== ref.to) return
+      const matches = ref.id
+        ? connector.id === ref.id
+        : connector.from === ref.from && connector.to === ref.to
+      if (!matches) return
       connectorIndexes.add(index)
       nodeIds.add(connector.from)
       nodeIds.add(connector.to)

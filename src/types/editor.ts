@@ -87,6 +87,8 @@ export interface NodeData {
 }
 
 export interface Connector {
+  /** Stable identity for diffs, deep links, and diagnostics. */
+  id?: string
   from: string
   to: string
   fromAnchor: AnchorPosition
