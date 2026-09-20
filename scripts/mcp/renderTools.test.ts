@@ -45,10 +45,10 @@ afterAll(async () => {
 })
 
 describe('arc-mcp render tools', () => {
-  test('registers render_svg and render_png', async () => {
+  test('registers render_svg, render_png, and render_html', async () => {
     await ready
     const { tools } = await client.listTools()
-    expect(tools.map(tool => tool.name)).toEqual(expect.arrayContaining(['render_svg', 'render_png']))
+    expect(tools.map(tool => tool.name)).toEqual(expect.arrayContaining(['render_svg', 'render_png', 'render_html']))
   })
 
   test('render_svg returns deterministic SVG text', async () => {
@@ -62,6 +62,34 @@ describe('arc-mcp render tools', () => {
     const text = result.content[0]?.type === 'text' ? result.content[0].text : ''
     expect(text).toContain('<svg xmlns="http://www.w3.org/2000/svg" width="660" height="340"')
     expect(text).toContain('API')
+  })
+
+  test('render_html emits component, iframe, and standalone HTML outputs', async () => {
+    await ready
+    const component = await client.callTool({
+      name: 'render_html',
+      arguments: { diagram, format: 'component', componentName: 'ServiceMap', theme: 'command', mode: 'dark' },
+    })
+    expect(component.isError).toBeUndefined()
+    expect(component.content[0]?.type).toBe('text')
+    const componentText = component.content[0]?.type === 'text' ? component.content[0].text : ''
+    expect(componentText).toContain('export function ServiceMap()')
+    expect(componentText).toContain('<ArcDiagram data={diagram} mode="dark" theme="command" />')
+
+    const iframe = await client.callTool({
+      name: 'render_html',
+      arguments: { diagram, format: 'iframe', baseUrl: 'https://arc.example', sessionId: 'abc123' },
+    })
+    const iframeText = iframe.content[0]?.type === 'text' ? iframe.content[0].text : ''
+    expect(iframeText).toContain('<iframe src="https://arc.example/editor/abc123#data=')
+
+    const html = await client.callTool({
+      name: 'render_html',
+      arguments: { diagram, format: 'html' },
+    })
+    const htmlText = html.content[0]?.type === 'text' ? html.content[0].text : ''
+    expect(htmlText).toContain('<!doctype html>')
+    expect(htmlText).toContain('<svg xmlns="http://www.w3.org/2000/svg"')
   })
 
   test('render_png reports a coded error when Chrome is unavailable', async () => {

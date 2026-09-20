@@ -43,5 +43,5 @@ bun install && bun run dev    # → http://localhost:5188/editor
 
 `arc` on `@arach/arc` — `arc check`, `arc diff`, `arc render`, `arc bench`, `arc schema` (`bun run build:cli` for the published bin).
 `arc-mcp` on `@arach/arc` — `bun run mcp` locally, `bun run build:mcp` for the published bin.
-Tools include validate/diff/layout plus ASCII, SVG, and optional Chrome-backed PNG rendering.
+Tools include validate/diff/layout plus ASCII, SVG, component/iframe/HTML, and optional Chrome-backed PNG rendering.
 See docs/agent/mcp.agent.md.

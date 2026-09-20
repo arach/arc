@@ -6,7 +6,6 @@
 import { readFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { randomBytes } from 'node:crypto'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod'
@@ -18,6 +17,8 @@ import { renderAscii } from '../../src/utils/asciiRenderer.ts'
 import { validateDiagramShape, isDiagramShape } from '../../src/utils/diagramValidation.ts'
 import { validateDiagram } from '../../src/utils/diagramDiagnostics.ts'
 import { diffDiagram } from '../../src/utils/diffDiagram.ts'
+import { buildEditorHandoff } from '../diagramHandoff.ts'
+import { renderDiagramHtml } from '../renderHtml.ts'
 import { renderDiagramPng, renderDiagramSvg, RenderError } from '../renderImage.ts'
 import { toTypeScriptSource } from '../../src/types/diagram.ts'
 import type { ArcDiagram, ArcDiagramData } from '../../src/types/diagram.ts'
@@ -37,16 +38,14 @@ function parseDiagram(value: unknown, label = 'diagram'): ArcDiagramData {
   return parsed as ArcDiagramData
 }
 
-function editorBaseUrl(): string {
-  return process.env.ARC_EDITOR_URL || 'http://localhost:5188'
-}
-
-function encodeHashData(diagram: ArcDiagramData): string {
-  return Buffer.from(JSON.stringify(diagram), 'utf8').toString('base64')
-}
-
-function generateSessionId(): string {
-  return randomBytes(4).toString('hex')
+function renderToolError(err: unknown) {
+  const payload = err instanceof RenderError
+    ? { ok: false, error: { code: err.code, message: err.message, supportedFixes: err.supportedFixes } }
+    : { ok: false, error: { code: 'render/internal', message: err instanceof Error ? err.message : String(err) } }
+  return {
+    content: [{ type: 'text' as const, text: JSON.stringify(payload, null, 2) }],
+    isError: true as const,
+  }
 }
 
 async function readRepoFile(...segments: string[]): Promise<string> {
@@ -191,13 +190,7 @@ export function createArcMcpServer(): McpServer {
         const rendered = renderDiagramSvg(data, { backgroundColor, includeGrid, padding })
         return { content: [{ type: 'text', text: rendered.svg }] }
       } catch (err) {
-        const payload = err instanceof RenderError
-          ? { ok: false, error: { code: err.code, message: err.message, supportedFixes: err.supportedFixes } }
-          : { ok: false, error: { code: 'render/internal', message: err instanceof Error ? err.message : String(err) } }
-        return {
-          content: [{ type: 'text', text: JSON.stringify(payload, null, 2) }],
-          isError: true,
-        }
+        return renderToolError(err)
       }
     },
   )
@@ -233,13 +226,53 @@ export function createArcMcpServer(): McpServer {
           ],
         }
       } catch (err) {
-        const payload = err instanceof RenderError
-          ? { ok: false, error: { code: err.code, message: err.message, supportedFixes: err.supportedFixes } }
-          : { ok: false, error: { code: 'render/internal', message: err instanceof Error ? err.message : String(err) } }
-        return {
-          content: [{ type: 'text', text: JSON.stringify(payload, null, 2) }],
-          isError: true,
-        }
+        return renderToolError(err)
+      }
+    },
+  )
+
+  server.tool(
+    'render_html',
+    'Render an Arc diagram as a React component snippet, iframe embed, or standalone HTML page.',
+    {
+      diagram: diagramSchema.describe('Valid ArcDiagramData JSON'),
+      format: z.enum(['component', 'iframe', 'html']).optional().describe('Output format: component (TSX), iframe (embed tag), or html (standalone SVG page). Default: html'),
+      componentName: z.string().optional().describe('Component function name for format=component (default: ArcDiagramExample)'),
+      dataName: z.string().optional().describe('Diagram const name for format=component (default: diagram)'),
+      theme: z.string().optional().describe('Arc theme id: default, warm, cool, mono, engineering, workbench, tactical, or command'),
+      mode: z.enum(['light', 'dark']).optional().describe('Color mode for component/iframe output'),
+      interactive: z.boolean().optional().describe('Whether the React component is interactive'),
+      baseUrl: z.string().url().optional().describe('Studio base URL for format=iframe (default: ARC_EDITOR_URL or http://localhost:5188)'),
+      sessionId: z.string().optional().describe('Session id for format=iframe URLs (generated if omitted)'),
+      title: z.string().optional().describe('HTML document title or iframe title'),
+      width: z.union([z.number().positive(), z.string()]).optional().describe('Iframe width in px or CSS percentage'),
+      height: z.union([z.number().positive(), z.string()]).optional().describe('Iframe height in px or CSS percentage'),
+      backgroundColor: z.string().optional().describe('CSS background color for format=html (default: #ffffff)'),
+      includeGrid: z.boolean().optional().describe('Render the diagram grid for format=html'),
+      padding: z.number().nonnegative().optional().describe('Padding around the export bounds in px for format=html (default: 20)'),
+    },
+    async ({ diagram, format, componentName, dataName, theme, mode, interactive, baseUrl, sessionId, title, width, height, backgroundColor, includeGrid, padding }) => {
+      try {
+        const data = parseDiagram(diagram)
+        const rendered = renderDiagramHtml(data, {
+          format,
+          componentName,
+          dataName,
+          theme,
+          mode,
+          interactive,
+          baseUrl,
+          sessionId,
+          title,
+          width,
+          height,
+          backgroundColor,
+          includeGrid,
+          padding,
+        })
+        return { content: [{ type: 'text', text: rendered.code }] }
+      } catch (err) {
+        return renderToolError(err)
       }
     },
   )
@@ -277,19 +310,15 @@ export function createArcMcpServer(): McpServer {
     async ({ diagram, sessionId, baseUrl }) => {
       try {
         const data = parseDiagram(diagram)
-        const id = sessionId ?? generateSessionId()
-        const origin = baseUrl ?? editorBaseUrl()
-        const hash = encodeHashData(data)
-        const editorUrl = `${origin}/editor/${id}#data=${hash}`
-        const showcaseUrl = `${origin}/showcase`
+        const handoff = buildEditorHandoff(data, { sessionId, baseUrl })
 
         return {
           content: [{
             type: 'text',
             text: JSON.stringify({
-              sessionId: id,
-              editorUrl,
-              showcaseUrl,
+              sessionId: handoff.sessionId,
+              editorUrl: handoff.editorUrl,
+              showcaseUrl: handoff.showcaseUrl,
               note: 'Open editorUrl in a browser with the Arc dev server running (bun run dev). The hash seeds the diagram; the session id is for bookmarking after load.',
               diagram: data,
             }, null, 2),

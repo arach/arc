@@ -57,10 +57,11 @@ From a global install (after publish):
 | `render_ascii` | Unicode/ASCII box-drawing output |
 | `render_svg` | Deterministic SVG markup from the static export path |
 | `render_png` | PNG image content via optional Chrome/Chromium rasterization |
+| `render_html` | `component` TSX, `iframe` embed, or standalone `html` output |
 | `diagram_to_typescript` | Emit a typed TS module |
 | `editor_handoff` | Build `#data=` studio URL + session id |
 
-`render_png` returns MCP `image` content (`mimeType: image/png`, base64 `data`) plus text metadata (`width`, `height`, `scale`, `bytes`, `chrome`).
+`render_png` returns MCP `image` content (`mimeType: image/png`, base64 `data`) plus text metadata (`width`, `height`, `scale`, `bytes`, `chrome`). `render_html` returns paste-ready text: a React component for `format=component`, an iframe tag backed by the studio hash URL for `format=iframe`, or a standalone SVG HTML document for `format=html`.
 
 ## Resources
 
