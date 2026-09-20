@@ -2337,6 +2337,17 @@ body,
   color: var(--arc-faint);
 }
 
+/* Codes and messages stay readable — the footer's own caps style is for labels. */
+.arc-markup-diagnostics {
+  margin-top: var(--arc-space-1);
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.arc-markup-diagnostic {
+  margin-top: 1px;
+}
+
 /* CodeMirror fills the pane.
    Hudson's CodeEditor picks a light or dark theme from the shell's resolved
    theme and brings its own syntax highlighting — good defaults, but its surface

@@ -16,6 +16,7 @@ import {
 } from '../../src/utils/autoLayout.ts'
 import { renderAscii } from '../../src/utils/asciiRenderer.ts'
 import { validateDiagramShape, isDiagramShape } from '../../src/utils/diagramValidation.ts'
+import { validateDiagram } from '../../src/utils/diagramDiagnostics.ts'
 import { diffDiagram } from '../../src/utils/diffDiagram.ts'
 import { toTypeScriptSource } from '../../src/types/diagram.ts'
 import type { ArcDiagram, ArcDiagramData } from '../../src/types/diagram.ts'
@@ -59,21 +60,23 @@ export function createArcMcpServer(): McpServer {
 
   server.tool(
     'validate_diagram',
-    'Check whether a JSON value is a valid ArcDiagramData document. Returns ok:true or a human-readable error.',
+    'Validate an ArcDiagramData document. Returns coded diagnostics — consume by `code`, apply one `supportedFixes` entry, re-validate. `ok` is false while any error-severity diagnostic remains.',
     {
       diagram: diagramSchema.describe('Arc diagram JSON object or JSON string'),
+      severity: z.enum(['error', 'warning', 'all']).optional().describe('Filter returned diagnostics by severity (default: all)'),
     },
-    async ({ diagram }) => {
+    async ({ diagram, severity }) => {
       try {
         const value = typeof diagram === 'string' ? JSON.parse(diagram) : diagram
-        const problem = validateDiagramShape(value)
-        if (problem) {
-          return {
-            content: [{ type: 'text', text: JSON.stringify({ ok: false, error: problem }, null, 2) }],
-          }
-        }
+        const diagnostics = validateDiagram(value)
+        const shown = severity && severity !== 'all'
+          ? diagnostics.filter(d => d.severity === severity)
+          : diagnostics
+        const firstError = diagnostics.find(d => d.severity === 'error')
+        const payload: Record<string, unknown> = { ok: !firstError, diagnostics: shown }
+        if (firstError) payload.error = firstError.message
         return {
-          content: [{ type: 'text', text: JSON.stringify({ ok: true }, null, 2) }],
+          content: [{ type: 'text', text: JSON.stringify(payload, null, 2) }],
         }
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err)

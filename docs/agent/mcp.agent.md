@@ -50,7 +50,7 @@ From a global install (after publish):
 
 | Tool | Description |
 |------|-------------|
-| `validate_diagram` | Check JSON against `ArcDiagramData` |
+| `validate_diagram` | Validate JSON; returns `{ok, diagnostics[]}` with stable codes + repair fixes |
 | `diff_diagram` | Structural diff `{ base, head }` → `DiagramDelta` |
 | `auto_layout` | Sugiyama layout (full diagram or minimal input) |
 | `render_ascii` | Unicode/ASCII box-drawing output |
@@ -61,7 +61,7 @@ From a global install (after publish):
 
 | URI | Content |
 |-----|---------|
-| `arc://schema/diagram` | `src/types/diagram.ts` |
+| `arc://schema/diagram` | Generated `schemas/arc-diagram.schema.json` |
 | `arc://skill/diagrams` | `skills/arc-diagrams/SKILL.md` |
 | `arc://docs/llm` | `docs/llm.txt` |
 

@@ -136,6 +136,8 @@ Define connections between nodes:
 
 **Optional:** Add `"curve": "natural"` or `"curve": "step"` for curved connectors.
 
+**Stable identity:** Give a connector an `id` when it may be referenced by a focus story, reviewed in a diff, or when another connector shares the same `from`/`to` pair. Without an `id`, a connector is only addressable by endpoint pair or array index.
+
 ### 5. Style Connectors
 
 Define appearance for each connector style:
@@ -190,11 +192,29 @@ Here's a full diagram for a typical web application:
 6. **Large nodes:** Use `l` size for primary/entry-point components
 7. **Connectors:** Match connector colors to the source or destination node
 
-## Validation
+## Validation and repair
 
-Before handing off JSON, ensure every `nodes` key has a matching `nodeData` entry.
-In the repo, `validateDiagramShape()` in `src/utils/diagramValidation.ts` returns a
-human-readable error or `null`.
+Always validate before handing off JSON.
+
+- In the repo, call `validateDiagram(value)` from `src/utils/diagramDiagnostics.ts`.
+- Through MCP, call `validate_diagram`; it returns `{ ok, diagnostics }`.
+- `validateDiagramShape()` remains the low-level shape gate; `validateDiagram` wraps it and adds repairable diagnostics.
+
+Each diagnostic has a stable `code`, `severity`, `subject`, human `message`, optional `evidence`, and `supportedFixes`.
+
+Repair loop:
+
+1. Read `diagnostics`; fix `severity: "error"` before warnings.
+2. Apply one `supportedFixes` entry when offered, or make the direct correction it names.
+3. Re-validate the edited document.
+4. Repeat until no error-severity diagnostics remain; leave warnings only when intentional.
+
+Common codes:
+
+- `shape/*` — malformed document or entries; fix these before anything else.
+- `semantic/dangling-connector-endpoint` — retarget `from`/`to` or remove the connector.
+- `semantic/unknown-*` and `semantic/duplicate-connector-id` — use the suggested valid value or unique connector `id`.
+- `geometry/node-overlap`, `geometry/connector-through-node`, `geometry/node-outside-layout` — move nodes or run `autoLayout()`.
 
 ## Output
 
