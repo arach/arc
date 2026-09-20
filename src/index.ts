@@ -81,10 +81,12 @@ export { renderAscii, type AsciiOptions } from './utils/asciiRenderer'
 export type { ViewMode, EmbedConfig, NodePosition, ConnectorStyle, DiagramMeta } from './types/editor'
 
 // =============================================================================
-// Diagram Validation & Export
+// Diagram Validation, Diff & Export
 // =============================================================================
 export { validateDiagramShape, isDiagramShape } from './utils/diagramValidation'
 export { toTypeScriptSource, toExportFormat, connectorKey } from './types/diagram'
+export { diffDiagram } from './utils/diffDiagram'
+export type { DiagramDelta, RemovedNode, MovedNode, ChangedNode, ConnectorDelta, ChangedConnector, ChangedKeys, ChangedIds } from './utils/diffDiagram'
 
 // =============================================================================
 // Session Persistence

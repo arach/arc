@@ -187,6 +187,7 @@ export function ShowcaseProvider({ children }: { children: ReactNode }) {
   // --- the exact props the stage is rendering, as copyable JSX ---
   const snippet = useMemo(() => {
     const lines: string[] = ['data={diagram}', `theme="${themeId}"`, `mode="${mode}"`]
+    if (doc.delta) lines.push('delta={delta}')
     if (zoom === 'fit') {
       lines.push('defaultZoom="fit"')
       if (maxFit !== 1) lines.push(`maxFitZoom={${maxFit}}`)
@@ -214,7 +215,7 @@ export function ShowcaseProvider({ children }: { children: ReactNode }) {
       if (fx.length) lines.push(`hoverEffects={{ ${fx.join(', ')} }}`)
     }
     return `<ArcDiagram\n  ${lines.join('\n  ')}\n/>`
-  }, [themeId, mode, zoom, maxFit, interactive, controls, source, legend, minimap, focusStory, autoLayoutBtn, label, corner, frame, hover, dim, dimOpacity, lift, glow, edges])
+  }, [doc, themeId, mode, zoom, maxFit, interactive, controls, source, legend, minimap, focusStory, autoLayoutBtn, label, corner, frame, hover, dim, dimOpacity, lift, glow, edges])
 
   const shareUrl =
     typeof window === 'undefined' ? '' : `${window.location.origin}/showcase${query ? `?${query}` : ''}`
