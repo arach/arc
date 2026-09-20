@@ -195,7 +195,7 @@ curl "http://localhost:5188/capture/my-session" > out.png
 ## MCP
 
 `arc-mcp` bin on `@arach/arc` (`bun run mcp` in dev, `bun run build:mcp` for publish).
-Tools: validate_diagram, auto_layout, render_ascii, diagram_to_typescript, editor_handoff.
+Tools: validate_diagram, diff_diagram, auto_layout, render_ascii, diagram_to_typescript, editor_handoff.
 See docs/agent/mcp.agent.md for coverage gaps (SVG/PNG/Mermaid stay elsewhere).
 
 ## Critical Rules

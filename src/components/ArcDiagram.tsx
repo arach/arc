@@ -21,6 +21,7 @@ import IsometricConnectorLayer from './editor/IsometricConnectorLayer'
 import TechnicalBackdrop from './technical/TechnicalBackdrop'
 import TechnicalPlate from './technical/TechnicalPlate'
 import type { Connector as EditorConnector } from '../types/editor'
+import type { DiagramDelta } from '../utils/diffDiagram'
 
 // ============================================
 // Types
@@ -641,6 +642,21 @@ function getAngle(from: { x: number; y: number }, to: { x: number; y: number }):
   return Math.atan2(to.y - from.y, to.x - from.x) * (180 / Math.PI)
 }
 
+// Path string between resolved anchor points — shared by ConnectorPath and the
+// delta overlay's ghost/halo strokes.
+function connectorPathD(connector: Connector, from: { x: number; y: number }, to: { x: number; y: number }): string {
+  if (connector.curve === 'natural') {
+    const dx = to.x - from.x
+    const dy = to.y - from.y
+    const cp1x = from.x + dx * 0.4
+    const cp1y = from.y + dy * 0.1
+    const cp2x = to.x - dx * 0.4
+    const cp2y = to.y - dy * 0.1
+    return `M ${from.x} ${from.y} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${to.x} ${to.y}`
+  }
+  return `M ${from.x} ${from.y} L ${to.x} ${to.y}`
+}
+
 interface ConnectorProps {
   connector: Connector
   connectorIndex: number
@@ -680,8 +696,7 @@ function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors, 
   const color = themeColors.palette[style.color]?.stroke || themeColors.palette.zinc.stroke
   const gradientId = `connector-gradient-${connectorIndex}`
 
-  // Calculate path
-  let path: string
+  const path = connectorPathD(connector, from, to)
   const isVertical = Math.abs(to.y - from.y) > Math.abs(to.x - from.x)
   const labelAlign = style.labelAlign || (isVertical ? 'right' : 'center')
 
@@ -691,18 +706,9 @@ function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors, 
   let textAnchor: 'start' | 'middle' | 'end' = 'middle'
 
   if (connector.curve === 'natural') {
-    // Curved path for diagonal connections
-    const dx = to.x - from.x
-    const dy = to.y - from.y
-    const cp1x = from.x + dx * 0.4
-    const cp1y = from.y + dy * 0.1
-    const cp2x = to.x - dx * 0.4
-    const cp2y = to.y - dy * 0.1
-    path = `M ${from.x} ${from.y} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${to.x} ${to.y}`
     labelPos = { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 }
     labelOffset = { x: 0, y: -8 }
   } else {
-    path = `M ${from.x} ${from.y} L ${to.x} ${to.y}`
     labelPos = { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 }
 
     if (isVertical) {
@@ -815,6 +821,165 @@ function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors, 
         </text>
       )}
     </g>
+  )
+}
+
+// ============================================
+// Delta Overlay
+// ============================================
+
+interface DeltaOverlayProps {
+  delta: DiagramDelta
+  nodes: Record<string, NodePosition>
+  nodeData: Record<string, NodeData>
+  styles: Record<string, ConnectorStyle>
+  themeColors: Theme['light'] | Theme['dark']
+  layout: DiagramLayout
+  mode: DiagramMode
+}
+
+/**
+ * A DiagramDelta read over the rendered head diagram: added entries get a soft
+ * accent ring/halo in the element's own palette color, changed get the same
+ * dashed, removed and moved-from geometry draw as dashed zinc ghosts. Pure
+ * overlay — never interactive.
+ */
+function DeltaOverlay({ delta, nodes, nodeData, styles, themeColors, layout, mode }: DeltaOverlayProps) {
+  const ghost = themeColors.palette.zinc.stroke
+  const ghostOpacity = mode === 'light' ? 0.5 : 0.42
+
+  // Positions in the base document: head positions with moved nodes rewound to
+  // their origin, plus removed nodes carried on the delta itself.
+  const baseNodes = useMemo(() => {
+    const map = new Map<string, NodePosition>(Object.entries(nodes))
+    for (const m of delta.nodes.moved) map.set(m.id, m.from)
+    for (const r of delta.nodes.removed) map.set(r.id, r.position)
+    return map
+  }, [delta, nodes])
+  const headNodes = useMemo(() => new Map(Object.entries(nodes)), [nodes])
+
+  const pathFor = (connector: Connector, lookup: Map<string, NodePosition>): string | null => {
+    const fromNode = lookup.get(connector.from)
+    const toNode = lookup.get(connector.to)
+    if (!fromNode || !toNode || !NODE_SIZES[fromNode.size] || !NODE_SIZES[toNode.size]) return null
+    try {
+      return connectorPathD(connector, getAnchorPoint(fromNode, connector.fromAnchor), getAnchorPoint(toNode, connector.toAnchor))
+    } catch {
+      return null
+    }
+  }
+
+  const strokeFor = (connector: Connector): string => {
+    const color = styles[connector.style]?.color ?? 'zinc'
+    return themeColors.palette[color]?.stroke ?? ghost
+  }
+
+  const ghostNode = (key: string, pos: NodePosition, name?: string) => {
+    const sz = NODE_SIZES[pos.size]
+    if (!sz) return null
+    return (
+      <g key={key}>
+        <rect
+          x={pos.x} y={pos.y} width={sz.width} height={sz.height} rx={8}
+          fill={ghost} fillOpacity={0.05}
+          stroke={ghost} strokeOpacity={ghostOpacity} strokeWidth={1.25} strokeDasharray="5 4"
+        />
+        {name && (
+          <text
+            x={pos.x + 10} y={pos.y + 17} fill={ghost} fillOpacity={0.75}
+            fontSize={9} fontFamily="ui-monospace, monospace" letterSpacing="0.04em"
+          >
+            {name}
+          </text>
+        )}
+      </g>
+    )
+  }
+
+  const nodeMark = (id: string, kind: 'added' | 'changed') => {
+    const pos = nodes[id]
+    const sz = pos && NODE_SIZES[pos.size]
+    if (!pos || !sz) return null
+    const color = themeColors.palette[nodeData[id]?.color ?? 'zinc']?.stroke ?? ghost
+    const inset = 4
+    const dashed = kind === 'changed'
+    return (
+      <rect
+        key={`${kind}-${id}`}
+        x={pos.x - inset} y={pos.y - inset}
+        width={sz.width + 2 * inset} height={sz.height + 2 * inset} rx={10}
+        fill="none" stroke={color}
+        strokeOpacity={dashed ? 0.6 : 0.85}
+        strokeWidth={dashed ? 1.25 : 1.5}
+        strokeDasharray={dashed ? '4 3' : undefined}
+      />
+    )
+  }
+
+  const connectorMark = (connector: Connector, kind: 'added' | 'changed', i: number) => {
+    const d = pathFor(connector, headNodes)
+    if (!d) return null
+    return (
+      <path
+        key={`${kind}-c${i}`}
+        d={d} fill="none" stroke={strokeFor(connector)}
+        strokeWidth={(styles[connector.style]?.strokeWidth ?? 2) + 4}
+        strokeOpacity={kind === 'changed' ? 0.22 : 0.3}
+        strokeDasharray={kind === 'changed' ? '5 4' : undefined}
+        strokeLinecap="round"
+      />
+    )
+  }
+
+  const ghostConn = (connector: Connector, key: string) => {
+    const d = pathFor(connector, baseNodes)
+    if (!d) return null
+    return (
+      <path
+        key={key} d={d} fill="none" stroke={ghost}
+        strokeOpacity={ghostOpacity} strokeWidth={1.5}
+        strokeDasharray="5 4" strokeLinecap="round"
+      />
+    )
+  }
+
+  return (
+    <svg
+      className="absolute inset-0 w-full h-full pointer-events-none"
+      viewBox={`0 0 ${layout.width} ${layout.height}`}
+      aria-hidden="true"
+      data-arc-delta
+    >
+      {/* Ghosts first — old geometry sits under the marks. */}
+      {delta.connectors.removed.map((e, i) => ghostConn(e.connector, `rm-c${i}`))}
+      {delta.connectors.changed.map((e, i) => {
+        const before = pathFor(e.before, baseNodes)
+        if (!before || before === pathFor(e.after, headNodes)) return null
+        return ghostConn(e.before, `chg-c${i}`)
+      })}
+      {delta.nodes.moved.map(m => {
+        const sz = NODE_SIZES[m.from.size]
+        const tsz = NODE_SIZES[m.to.size]
+        return (
+          <g key={`mv-${m.id}`}>
+            {sz && tsz && (
+              <line
+                x1={m.from.x + sz.width / 2} y1={m.from.y + sz.height / 2}
+                x2={m.to.x + tsz.width / 2} y2={m.to.y + tsz.height / 2}
+                stroke={ghost} strokeOpacity={0.3} strokeWidth={1} strokeDasharray="2 5"
+              />
+            )}
+            {ghostNode(`mv-g-${m.id}`, m.from, nodeData[m.id]?.name ?? m.id)}
+          </g>
+        )
+      })}
+      {delta.nodes.removed.map(r => ghostNode(`rm-${r.id}`, r.position, r.data?.name ?? r.id))}
+
+      {delta.connectors.added.map((e, i) => connectorMark(e.connector, 'added', i))}
+      {delta.connectors.changed.map((e, i) => connectorMark(e.after, 'changed', i))}
+      {delta.nodes.added.map(id => nodeMark(id, 'added'))}
+      {delta.nodes.changed.map(c => nodeMark(c.id, 'changed'))}
+    </svg>
   )
 }
 
@@ -1419,6 +1584,10 @@ interface ArcDiagramProps {
   defaultViewMode?: ViewMode
   /** Isometric render style — 'solid' | 'blueprint' | 'cyanotype'. Default: 'solid' */
   defaultIsoStyle?: IsoStyleId
+  /** Structural diff overlay — pass `diffDiagram(base, data)`. Marks added/changed
+   *  entries, ghosts removed ones and moved nodes' old positions. 2D only —
+   *  ignored under `defaultViewMode="isometric"`. `data` stays the head truth. */
+  delta?: DiagramDelta
 }
 
 export default function ArcDiagram({
@@ -1444,6 +1613,7 @@ export default function ArcDiagram({
   maxFitZoom = 1,
   defaultViewMode = '2d',
   defaultIsoStyle = 'solid',
+  delta,
 }: ArcDiagramProps) {
   const isLight = mode === 'light'
   const containerRef = React.useRef<HTMLDivElement>(null)
@@ -1836,6 +2006,19 @@ export default function ArcDiagram({
                 />
               )
             })}
+
+            {/* Diff overlay — ghosts + marks painted over the head drawing */}
+            {delta && (
+              <DeltaOverlay
+                delta={delta}
+                nodes={nodes}
+                nodeData={nodeData}
+                styles={connectorStyles}
+                themeColors={themeColors}
+                layout={layout}
+                mode={mode}
+              />
+            )}
           </>
         )}
       </div>

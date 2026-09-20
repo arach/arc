@@ -16,6 +16,7 @@ import {
 } from '../../src/utils/autoLayout.ts'
 import { renderAscii } from '../../src/utils/asciiRenderer.ts'
 import { validateDiagramShape, isDiagramShape } from '../../src/utils/diagramValidation.ts'
+import { diffDiagram } from '../../src/utils/diffDiagram.ts'
 import { toTypeScriptSource } from '../../src/types/diagram.ts'
 import type { ArcDiagram, ArcDiagramData } from '../../src/types/diagram.ts'
 
@@ -50,7 +51,7 @@ async function readRepoFile(...segments: string[]): Promise<string> {
 export function createArcMcpServer(): McpServer {
   const server = new McpServer({
     name: 'arc',
-    version: '0.5.0',
+    version: '0.6.0',
   })
 
   server.tool(
@@ -75,6 +76,29 @@ export function createArcMcpServer(): McpServer {
         const message = err instanceof Error ? err.message : String(err)
         return {
           content: [{ type: 'text', text: JSON.stringify({ ok: false, error: message }, null, 2) }],
+          isError: true,
+        }
+      }
+    },
+  )
+
+  server.tool(
+    'diff_diagram',
+    'Structural diff of two Arc diagrams. Returns a DiagramDelta — added/removed/moved/changed nodes, connector adds/removes/changes (keyed by connector id or from→to), connectorStyles and groups deltas, layoutChanged. Feed it to <ArcDiagram data={head} delta={delta} /> for a diff render.',
+    {
+      base: diagramSchema.describe('Base ArcDiagramData JSON object or JSON string'),
+      head: diagramSchema.describe('Head ArcDiagramData JSON object or JSON string'),
+    },
+    async ({ base, head }) => {
+      try {
+        const delta = diffDiagram(parseDiagram(base, 'base'), parseDiagram(head, 'head'))
+        return {
+          content: [{ type: 'text', text: JSON.stringify(delta, null, 2) }],
+        }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err)
+        return {
+          content: [{ type: 'text', text: message }],
           isError: true,
         }
       }

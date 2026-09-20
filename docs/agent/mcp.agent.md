@@ -51,6 +51,7 @@ From a global install (after publish):
 | Tool | Description |
 |------|-------------|
 | `validate_diagram` | Check JSON against `ArcDiagramData` |
+| `diff_diagram` | Structural diff `{ base, head }` → `DiagramDelta` |
 | `auto_layout` | Sugiyama layout (full diagram or minimal input) |
 | `render_ascii` | Unicode/ASCII box-drawing output |
 | `diagram_to_typescript` | Emit a typed TS module |
@@ -76,7 +77,7 @@ These stay CLI/studio/API paths for now:
 | Read-only embed | `@arach/arc-viewer` (`<ArcDiagram />`) |
 | Isometric YAML | `@arach/arc-iso` |
 
-v0 targets the **authoring loop**: validate → layout → preview as text → open in studio.
+v0 targets the **authoring loop**: validate → layout → preview as text → open in studio. `diff_diagram` covers the review loop: base vs head → render the delta.
 
 ## Implementation
 
