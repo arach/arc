@@ -77,11 +77,11 @@
       "additionalProperties": false,
       "properties": {
         "curve": {
-          "enum": [
-            "natural",
-            "step"
-          ],
-          "type": "string"
+          "$ref": "#/definitions/ConnectorCurve"
+        },
+        "curveDepth": {
+          "description": "Bezier control-point scale for curved connectors (percent of distance).",
+          "type": "number"
         },
         "from": {
           "type": "string"
@@ -112,9 +112,24 @@
       ],
       "type": "object"
     },
+    "ConnectorCurve": {
+      "enum": [
+        "natural",
+        "down",
+        "up",
+        "step"
+      ],
+      "type": "string"
+    },
     "ConnectorStyle": {
       "additionalProperties": false,
       "properties": {
+        "animated": {
+          "type": "boolean"
+        },
+        "bidirectional": {
+          "type": "boolean"
+        },
         "color": {
           "$ref": "#/definitions/DiagramColor"
         },
@@ -123,6 +138,16 @@
         },
         "label": {
           "type": "string"
+        },
+        "labelAlign": {
+          "$ref": "#/definitions/LabelAlign",
+          "description": "For vertical connectors, `right`/`left` places the label beside the line."
+        },
+        "showArrow": {
+          "type": "boolean"
+        },
+        "showEndpoints": {
+          "type": "boolean"
         },
         "strokeWidth": {
           "type": "number"
@@ -319,6 +344,14 @@
       ],
       "type": "object"
     },
+    "LabelAlign": {
+      "enum": [
+        "left",
+        "right",
+        "center"
+      ],
+      "type": "string"
+    },
     "LayoutAlignment": {
       "enum": [
         "start",
@@ -397,13 +430,58 @@
     "NodePosition": {
       "additionalProperties": false,
       "properties": {
+        "height": {
+          "type": "number"
+        },
+        "isoDepth": {
+          "description": "Isometric box depth (Y in iso space).",
+          "type": "number"
+        },
+        "isoHeight": {
+          "description": "Isometric box height.",
+          "type": "number"
+        },
+        "isoLabelDir": {
+          "description": "Top-face label axis. Omit / `auto` = along the longer edge.",
+          "enum": [
+            "auto",
+            "x",
+            "y"
+          ],
+          "type": "string"
+        },
+        "isoLabelFlip": {
+          "description": "Rotate the printed iso label 180° on the face.",
+          "type": "boolean"
+        },
+        "isoLabelFont": {
+          "description": "Typeface for the printed iso label. Omit / `theme` follows the diagram brand.",
+          "enum": [
+            "theme",
+            "ui",
+            "mono"
+          ],
+          "type": "string"
+        },
+        "isoOrder": {
+          "description": "Painter's-algorithm bias when two iso boxes occupy the same volume.",
+          "type": "number"
+        },
         "size": {
           "$ref": "#/definitions/NodeSize"
+        },
+        "width": {
+          "description": "Custom rendered dimensions; when present they override the size preset.",
+          "type": "number"
         },
         "x": {
           "type": "number"
         },
         "y": {
+          "type": "number"
+        },
+        "z": {
+          "description": "Isometric elevation above the floor plane.",
           "type": "number"
         }
       },

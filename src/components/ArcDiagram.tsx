@@ -36,6 +36,23 @@ export interface NodePosition {
   x: number
   y: number
   size: NodeSize
+  /** Custom rendered dimensions; when present they override the size preset. */
+  width?: number
+  height?: number
+  /** Isometric elevation above the floor plane. */
+  z?: number
+  /** Isometric box height. */
+  isoHeight?: number
+  /** Isometric box depth (Y in iso space). */
+  isoDepth?: number
+  /** Painter's-algorithm bias when two iso boxes occupy the same volume. */
+  isoOrder?: number
+  /** Top-face label axis. Omit / `auto` = along the longer edge. */
+  isoLabelDir?: 'auto' | 'x' | 'y'
+  /** Rotate the printed iso label 180° on the face. */
+  isoLabelFlip?: boolean
+  /** Typeface for the printed iso label. Omit / `theme` follows the diagram brand. */
+  isoLabelFont?: 'theme' | 'ui' | 'mono'
 }
 
 export interface NodeData {
@@ -48,6 +65,8 @@ export interface NodeData {
   shape?: NodeShape
 }
 
+export type ConnectorCurve = 'natural' | 'down' | 'up' | 'step'
+
 export interface Connector {
   /** Stable identity for diffs, deep links, and diagnostics. Without it a
    * connector is only addressable by `from`/`to` pair or array index. */
@@ -57,7 +76,9 @@ export interface Connector {
   fromAnchor: AnchorPosition
   toAnchor: AnchorPosition
   style: string
-  curve?: 'natural' | 'step'
+  curve?: ConnectorCurve
+  /** Bezier control-point scale for curved connectors (percent of distance). */
+  curveDepth?: number
 }
 
 export type LabelAlign = 'left' | 'right' | 'center'
@@ -68,6 +89,10 @@ export interface ConnectorStyle {
   label?: string
   labelAlign?: LabelAlign  // For vertical: 'right' = right of line, 'left' = left of line. Default: 'right'
   dashed?: boolean
+  bidirectional?: boolean
+  animated?: boolean
+  showArrow?: boolean
+  showEndpoints?: boolean
 }
 
 export interface DiagramLayout {

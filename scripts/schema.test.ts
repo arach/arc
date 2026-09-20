@@ -87,7 +87,7 @@ const validDiagram = {
     nodes: { api: { group: 'backend', layer: 0, order: 1 } },
   },
   nodes: {
-    editor: { x: 50, y: 50, size: 'l' },
+    editor: { x: 50, y: 50, size: 'l', width: 240, height: 110, z: 8, isoHeight: 24, isoDepth: 90, isoOrder: 1, isoLabelDir: 'x', isoLabelFlip: true, isoLabelFont: 'mono' },
     api: { x: 340, y: 150, size: 'm' },
     'db-primary': { x: 600, y: 150, size: 's' },
   },
@@ -97,11 +97,11 @@ const validDiagram = {
     'db-primary': { icon: 'Database', name: 'Postgres', description: 'Primary store.', color: 'emerald' },
   },
   connectors: [
-    { id: 'c1', from: 'editor', to: 'api', fromAnchor: 'right', toAnchor: 'left', style: 'http' },
+    { id: 'c1', from: 'editor', to: 'api', fromAnchor: 'right', toAnchor: 'left', style: 'http', curve: 'down', curveDepth: 65 },
     { from: 'api', to: 'db-primary', fromAnchor: 'right', toAnchor: 'left', style: 'db', curve: 'step' },
   ],
   connectorStyles: {
-    http: { color: 'violet', strokeWidth: 2, label: 'HTTP' },
+    http: { color: 'violet', strokeWidth: 2, label: 'HTTP', labelAlign: 'left', bidirectional: true, animated: false, showArrow: true, showEndpoints: false },
     db: { color: 'blue', strokeWidth: 1.5, dashed: true },
   },
   groups: [
