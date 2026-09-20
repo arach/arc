@@ -53,7 +53,7 @@ export interface EmbedConfig {
   showGrid?: boolean               // Show background grid, defaults to true
 }
 
-export type ConnectorCurve = 'natural' | 'down' | 'up'
+export type ConnectorCurve = 'natural' | 'down' | 'up' | 'step'
 
 export interface NodePosition {
   x: number
@@ -95,12 +95,16 @@ export interface Connector {
   toAnchor: AnchorPosition
   style: string
   curve?: ConnectorCurve
+  /** Bezier control-point scale for curved connectors (percent of distance). */
+  curveDepth?: number
 }
 
 export interface ConnectorStyle {
   color: string
   strokeWidth: number
   label?: string
+  /** For vertical connectors, `right`/`left` places the label beside the line. */
+  labelAlign?: 'left' | 'right' | 'center'
   dashed?: boolean
   bidirectional?: boolean
   animated?: boolean
