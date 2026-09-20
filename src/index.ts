@@ -84,6 +84,7 @@ export type { ViewMode, EmbedConfig, NodePosition, ConnectorStyle, DiagramMeta }
 // Diagram Validation & Export
 // =============================================================================
 export { validateDiagramShape, isDiagramShape } from './utils/diagramValidation'
+export { validateDiagram, type Diagnostic, type DiagnosticSeverity, type DiagnosticSubject, type Fix } from './utils/diagramDiagnostics'
 export { toTypeScriptSource, toExportFormat, connectorKey } from './types/diagram'
 
 // =============================================================================

@@ -18,7 +18,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Check, Copy, X } from 'lucide-react'
 import { CodeEditor } from 'hudsonkit/controls'
-import { validateDiagramShape } from '../../utils/diagramValidation'
+import { validateDiagram, type Diagnostic } from '../../utils/diagramDiagnostics'
 
 export type MarkupFormat = 'ts' | 'json'
 
@@ -80,6 +80,8 @@ export default function MarkupPanel({ title, data, onApply, onClose }: MarkupPan
   const [status, setStatus] = useState<Status>({ kind: 'clean' })
   // Text the user is editing; null means "follow the diagram".
   const [draft, setDraft] = useState<string | null>(null)
+  // Diagnostics for the draft once it has parsed; null means "use the live ones".
+  const [draftDiagnostics, setDraftDiagnostics] = useState<Diagnostic[] | null>(null)
   const applyTimer = useRef<number | null>(null)
   const copyTimer = useRef<number | null>(null)
   // The source our own apply is expected to produce. An edit echoing back must
@@ -95,6 +97,9 @@ export default function MarkupPanel({ title, data, onApply, onClose }: MarkupPan
   const editable = format === 'json' && !!onApply
   const source = draft ?? rendered
 
+  const liveDiagnostics = useMemo(() => validateDiagram(data), [data])
+  const diagnostics = draftDiagnostics ?? liveDiagnostics
+
   useEffect(() => {
     if (echo.current !== null && echo.current === rendered) {
       echo.current = null
@@ -102,6 +107,7 @@ export default function MarkupPanel({ title, data, onApply, onClose }: MarkupPan
     }
     echo.current = null
     setDraft(null)
+    setDraftDiagnostics(null)
     setStatus({ kind: 'clean' })
   }, [rendered])
 
@@ -176,6 +182,7 @@ export default function MarkupPanel({ title, data, onApply, onClose }: MarkupPan
     if (next === rendered) {
       if (applyTimer.current) window.clearTimeout(applyTimer.current)
       setDraft(null)
+      setDraftDiagnostics(null)
       return
     }
     setDraft(next)
@@ -188,11 +195,15 @@ export default function MarkupPanel({ title, data, onApply, onClose }: MarkupPan
         parsed = JSON.parse(next)
       } catch (err) {
         setStatus({ kind: 'error', message: (err as Error).message.replace(/^JSON\.parse: /, '') })
+        setDraftDiagnostics(null)
         return
       }
-      const problem = validateDiagramShape(parsed)
-      if (problem) {
-        setStatus({ kind: 'error', message: problem })
+      const diags = validateDiagram(parsed)
+      setDraftDiagnostics(diags)
+      // Only shape failures block apply — the same bar validateDiagramShape set.
+      const shapeError = diags.find(dd => dd.code.startsWith('shape/'))
+      if (shapeError) {
+        setStatus({ kind: 'error', message: shapeError.message })
         return
       }
       echo.current = JSON.stringify(parsed, null, 2)
@@ -206,6 +217,7 @@ export default function MarkupPanel({ title, data, onApply, onClose }: MarkupPan
     // Drop a pending apply — it belongs to text that is about to be replaced.
     if (applyTimer.current) window.clearTimeout(applyTimer.current)
     setDraft(null)
+    setDraftDiagnostics(null)
     setStatus({ kind: 'clean' })
     setFormat(next)
   }
@@ -229,6 +241,10 @@ export default function MarkupPanel({ title, data, onApply, onClose }: MarkupPan
       : status.kind === 'applied'
         ? `${lines} lines · applied to canvas`
         : `${lines} lines · ${format === 'ts' ? 'read-only export' : editable ? 'edit to update the diagram' : 'diagram JSON'}`
+
+  const shownDiagnostics = diagnostics.slice(0, 3)
+  const hiddenDiagnostics = diagnostics.length - shownDiagnostics.length
+  const hasErrorDiagnostic = diagnostics.some(dd => dd.severity === 'error')
 
   return (
     <aside className="arc-markup-pane" style={{ width }} aria-label="Diagram markup">
@@ -279,11 +295,22 @@ export default function MarkupPanel({ title, data, onApply, onClose }: MarkupPan
       </div>
 
       <div
-        className={`arc-markup-foot${status.kind === 'error' ? ' is-error' : ''}`}
+        className={`arc-markup-foot${status.kind === 'error' || hasErrorDiagnostic ? ' is-error' : ''}`}
         role="status"
         aria-live="polite"
       >
-        {footer}
+        <div>{footer}</div>
+        {diagnostics.length > 0 && (
+          <div className="arc-markup-diagnostics">
+            {diagnostics.length} {diagnostics.length === 1 ? 'diagnostic' : 'diagnostics'}
+            {shownDiagnostics.map((dd, i) => (
+              <div key={i} className="arc-markup-diagnostic">
+                {dd.code} · {dd.message}
+              </div>
+            ))}
+            {hiddenDiagnostics > 0 && <div>+{hiddenDiagnostics} more</div>}
+          </div>
+        )}
       </div>
 
       <div
