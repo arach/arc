@@ -39,6 +39,11 @@ bun run typecheck
 ## Canonical Diagram Schema
 
 Source of truth: `src/types/diagram.ts`
+Generated JSON Schema (draft-07): `schemas/arc-diagram.schema.json` — closed object
+types set `additionalProperties: false` so validators reject invented fields; `Record`
+maps (`nodes`, `nodeData`, `connectorStyles`, `focusTargets`, `layoutHints.*`) keep
+open keys. Regenerate after type changes with `bun run generate:schema`; the MCP
+server also serves it as `arc://schema/diagram`.
 
 ```typescript
 interface ArcDiagramData {

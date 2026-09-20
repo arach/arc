@@ -1,0 +1,437 @@
+{
+  "$ref": "#/definitions/ArcDiagramData",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "AnchorPosition": {
+      "enum": [
+        "left",
+        "right",
+        "top",
+        "bottom",
+        "bottomLeft",
+        "bottomRight",
+        "topLeft",
+        "topRight"
+      ],
+      "type": "string"
+    },
+    "ArcDiagramData": {
+      "additionalProperties": false,
+      "properties": {
+        "connectorStyles": {
+          "additionalProperties": {
+            "$ref": "#/definitions/ConnectorStyle"
+          },
+          "type": "object"
+        },
+        "connectors": {
+          "items": {
+            "$ref": "#/definitions/Connector"
+          },
+          "type": "array"
+        },
+        "focusTargets": {
+          "additionalProperties": {
+            "$ref": "#/definitions/FocusTarget"
+          },
+          "type": "object"
+        },
+        "groups": {
+          "items": {
+            "$ref": "#/definitions/GroupShape"
+          },
+          "type": "array"
+        },
+        "id": {
+          "type": "string"
+        },
+        "layout": {
+          "$ref": "#/definitions/DiagramLayout"
+        },
+        "layoutHints": {
+          "$ref": "#/definitions/LayoutHints"
+        },
+        "nodeData": {
+          "additionalProperties": {
+            "$ref": "#/definitions/NodeData"
+          },
+          "type": "object"
+        },
+        "nodes": {
+          "additionalProperties": {
+            "$ref": "#/definitions/NodePosition"
+          },
+          "type": "object"
+        }
+      },
+      "required": [
+        "layout",
+        "nodes",
+        "nodeData",
+        "connectors",
+        "connectorStyles"
+      ],
+      "type": "object"
+    },
+    "Connector": {
+      "additionalProperties": false,
+      "properties": {
+        "curve": {
+          "enum": [
+            "natural",
+            "step"
+          ],
+          "type": "string"
+        },
+        "from": {
+          "type": "string"
+        },
+        "fromAnchor": {
+          "$ref": "#/definitions/AnchorPosition"
+        },
+        "id": {
+          "description": "Stable identity for diffs, deep links, and diagnostics. Without it a connector is only addressable by `from`/`to` pair or array index, which breaks under reordering and parallel edges.",
+          "type": "string"
+        },
+        "style": {
+          "type": "string"
+        },
+        "to": {
+          "type": "string"
+        },
+        "toAnchor": {
+          "$ref": "#/definitions/AnchorPosition"
+        }
+      },
+      "required": [
+        "from",
+        "to",
+        "fromAnchor",
+        "toAnchor",
+        "style"
+      ],
+      "type": "object"
+    },
+    "ConnectorStyle": {
+      "additionalProperties": false,
+      "properties": {
+        "color": {
+          "$ref": "#/definitions/DiagramColor"
+        },
+        "dashed": {
+          "type": "boolean"
+        },
+        "label": {
+          "type": "string"
+        },
+        "strokeWidth": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "color",
+        "strokeWidth"
+      ],
+      "type": "object"
+    },
+    "DiagramColor": {
+      "enum": [
+        "violet",
+        "emerald",
+        "blue",
+        "amber",
+        "sky",
+        "zinc",
+        "rose",
+        "orange"
+      ],
+      "type": "string"
+    },
+    "DiagramLayout": {
+      "additionalProperties": false,
+      "properties": {
+        "height": {
+          "type": "number"
+        },
+        "width": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "width",
+        "height"
+      ],
+      "type": "object"
+    },
+    "FocusConnectorRef": {
+      "additionalProperties": false,
+      "properties": {
+        "from": {
+          "description": "Endpoint-pair matching, used when `id` is absent. Ambiguous on parallel edges.",
+          "type": "string"
+        },
+        "id": {
+          "description": "Pins a specific connector by `Connector.id` — survives reordering and parallel edges.",
+          "type": "string"
+        },
+        "to": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "FocusStep": {
+      "additionalProperties": false,
+      "properties": {
+        "icon": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "icon",
+        "label"
+      ],
+      "type": "object"
+    },
+    "FocusTarget": {
+      "additionalProperties": false,
+      "description": "A declarative highlight story activated by hovering or selecting a node.",
+      "properties": {
+        "caption": {
+          "type": "string"
+        },
+        "connectors": {
+          "items": {
+            "$ref": "#/definitions/FocusConnectorRef"
+          },
+          "type": "array"
+        },
+        "mode": {
+          "description": "`append` includes direct neighbors; `replace` uses only the explicit story.",
+          "enum": [
+            "append",
+            "replace"
+          ],
+          "type": "string"
+        },
+        "nodes": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "steps": {
+          "items": {
+            "$ref": "#/definitions/FocusStep"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "GroupLayoutDirection": {
+      "enum": [
+        "horizontal",
+        "vertical"
+      ],
+      "type": "string"
+    },
+    "GroupLayoutHint": {
+      "additionalProperties": false,
+      "description": "Layout policy for the nodes inside one group frame.",
+      "properties": {
+        "align": {
+          "$ref": "#/definitions/LayoutAlignment"
+        },
+        "direction": {
+          "$ref": "#/definitions/GroupLayoutDirection",
+          "description": "`horizontal` lays layers left-to-right; `vertical` lays them top-to-bottom."
+        },
+        "itemGap": {
+          "type": "number"
+        },
+        "justify": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/LayoutAlignment"
+            },
+            {
+              "const": "space-between",
+              "type": "string"
+            }
+          ]
+        },
+        "layerGap": {
+          "type": "number"
+        },
+        "padding": {
+          "type": "number"
+        }
+      },
+      "type": "object"
+    },
+    "GroupShape": {
+      "additionalProperties": false,
+      "properties": {
+        "color": {
+          "$ref": "#/definitions/DiagramColor"
+        },
+        "dashed": {
+          "type": "boolean"
+        },
+        "height": {
+          "type": "number"
+        },
+        "id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "rect",
+            "circle"
+          ],
+          "type": "string"
+        },
+        "width": {
+          "type": "number"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "x",
+        "y",
+        "width",
+        "height",
+        "type",
+        "color"
+      ],
+      "type": "object"
+    },
+    "LayoutAlignment": {
+      "enum": [
+        "start",
+        "center",
+        "end"
+      ],
+      "type": "string"
+    },
+    "LayoutHints": {
+      "additionalProperties": false,
+      "properties": {
+        "groups": {
+          "additionalProperties": {
+            "$ref": "#/definitions/GroupLayoutHint"
+          },
+          "type": "object"
+        },
+        "nodes": {
+          "additionalProperties": {
+            "$ref": "#/definitions/NodeLayoutHint"
+          },
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
+    "NodeData": {
+      "additionalProperties": false,
+      "properties": {
+        "color": {
+          "$ref": "#/definitions/DiagramColor"
+        },
+        "description": {
+          "type": "string"
+        },
+        "icon": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "shape": {
+          "$ref": "#/definitions/NodeShape",
+          "description": "Per-node silhouette. Omit to follow the theme's own node shape."
+        },
+        "subtitle": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "icon",
+        "name",
+        "color"
+      ],
+      "type": "object"
+    },
+    "NodeLayoutHint": {
+      "additionalProperties": false,
+      "description": "Optional placement hints used by autoLayout when nodes belong to groups.",
+      "properties": {
+        "group": {
+          "description": "ID of the group frame that owns this node.",
+          "type": "string"
+        },
+        "layer": {
+          "description": "Explicit layer within the group. Connected nodes are layered automatically otherwise.",
+          "type": "number"
+        },
+        "order": {
+          "description": "Stable ordering within a layer. Lower values render first.",
+          "type": "number"
+        }
+      },
+      "type": "object"
+    },
+    "NodePosition": {
+      "additionalProperties": false,
+      "properties": {
+        "size": {
+          "$ref": "#/definitions/NodeSize"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y",
+        "size"
+      ],
+      "type": "object"
+    },
+    "NodeShape": {
+      "enum": [
+        "rounded",
+        "square",
+        "chamfer",
+        "notch",
+        "pill"
+      ],
+      "type": "string"
+    },
+    "NodeSize": {
+      "enum": [
+        "xs",
+        "s",
+        "m",
+        "l"
+      ],
+      "type": "string"
+    }
+  }
+}

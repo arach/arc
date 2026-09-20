@@ -6,7 +6,7 @@
   "workspaces": [
     "packages/*"
   ],
-  "description": "Diagrams as code for React \u2014 design, render, and export typed architecture diagrams",
+  "description": "Diagrams as code for React — design, render, and export typed architecture diagrams",
   "author": "Arach Tchoupani",
   "license": "MIT",
   "repository": {
@@ -44,6 +44,7 @@
     "bin/arc-ascii.mjs",
     "bin/arc-mcp.mjs",
     "docs/llm.txt",
+    "schemas/arc-diagram.schema.json",
     "skills/arc-diagrams/SKILL.md",
     "src/types/diagram.ts"
   ],
@@ -69,6 +70,7 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview",
+    "generate:schema": "bun scripts/generate-schema.ts",
     "generate-og": "node scripts/generate-og.js",
     "check:dist": "attw --pack . --ignore-rules cjs-resolves-to-esm unexpected-module-syntax && publint && node scripts/check-packlist.mjs",
     "prepublishOnly": "bun run build:lib && bun run build:mcp && bun run check:dist"
@@ -116,6 +118,7 @@
     "sharp": "^0.34.5",
     "tailwindcss": "^4.1.18",
     "three": "^0.182.0",
+    "ts-json-schema-generator": "2.9.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.67.0",
     "vite": "^7.2.4",
