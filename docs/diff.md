@@ -64,6 +64,16 @@ Matching rules:
 Delta rendering is 2D-only; the `delta` prop is ignored under
 `defaultViewMode="isometric"`. Unset, it renders nothing and costs nothing.
 
+## CLI
+
+```bash
+arc diff base.json head.json            # DiagramDelta JSON
+arc diff base.json head.json --summary  # counts only
+```
+
+The command validates both inputs first; an error-severity diagnostic on either
+side exits non-zero and reports the diagnostics instead of a delta.
+
 ## MCP
 
 `diff_diagram` takes `{ base, head }` (same JSON input as `validate_diagram`)

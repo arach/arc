@@ -34,6 +34,7 @@
     "isometric"
   ],
   "bin": {
+    "arc": "./bin/arc.mjs",
     "arc-ascii": "./bin/arc-ascii.mjs",
     "arc-mcp": "./bin/arc-mcp.mjs"
   },
@@ -41,6 +42,7 @@
     "lib/*.js",
     "lib/*.d.ts",
     "lib/*.css",
+    "bin/arc.mjs",
     "bin/arc-ascii.mjs",
     "bin/arc-mcp.mjs",
     "docs/llm.txt",
@@ -64,6 +66,7 @@
     "build": "tsc && vite build && node scripts/generate-docs-html.js",
     "build:lib": "vite build --config vite.config.lib.js",
     "build:mcp": "bun scripts/build-arc-mcp.mjs",
+    "build:cli": "bun scripts/build-arc-cli.mjs",
     "mcp": "bun scripts/mcp/server.ts",
     "mcp:http": "bun scripts/mcp/http-server.ts",
     "build:iso": "vite build --config vite.config.iso.js && vite build --config vite.config.iso-slim.js",
@@ -73,7 +76,7 @@
     "generate:schema": "bun scripts/generate-schema.ts",
     "generate-og": "node scripts/generate-og.js",
     "check:dist": "attw --pack . --ignore-rules cjs-resolves-to-esm unexpected-module-syntax && publint && node scripts/check-packlist.mjs",
-    "prepublishOnly": "bun run build:lib && bun run build:mcp && bun run check:dist"
+    "prepublishOnly": "bun run build:lib && bun run build:mcp && bun run build:cli && bun run check:dist"
   },
   "peerDependencies": {
     "react": "^18.0.0 || ^19.0.0",

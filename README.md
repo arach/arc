@@ -231,10 +231,16 @@ const narrow = renderAscii(diagram, { maxWidth: 80 })       // Auto-scale to 80 
 ### CLI
 
 ```bash
-bunx tsx bin/arc-ascii.mjs diagram.json
-cat diagram.json | bunx tsx bin/arc-ascii.mjs
-bunx tsx bin/arc-ascii.mjs diagram.json --charset ascii --max-width 80
+arc schema                              # generated draft-07 JSON Schema
+arc check diagram.json                  # coded diagnostics, human-readable
+arc check diagram.json --json --strict  # machine output; fail on warnings too
+arc diff base.json head.json            # structural DiagramDelta JSON
+arc diff base.json head.json --summary  # human-readable counts
+arc-ascii diagram.json --charset ascii --max-width 80
 ```
+
+`arc check` exits non-zero when error-severity diagnostics remain; `--strict`
+also fails on warnings. `arc diff` validates both inputs before diffing.
 
 ## Requirements
 

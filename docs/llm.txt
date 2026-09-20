@@ -11,6 +11,7 @@
 - **Output**: JSON / TypeScript configs (not images) — diffable, versionable
 - **Stack**: React 19, Vite 7, TailwindCSS 4, Hudson shell (editor chrome)
 - **Package manager**: bun (`bun install`, `bun run dev`)
+- **CLI**: `arc` bin — `schema`, `check`, `diff`
 - **MCP**: `arc-mcp` bin — see `docs/agent/mcp.agent.md`
 
 ## Which Package?
@@ -34,6 +35,7 @@ bun run dev          # → http://localhost:5188/editor
 bun run build
 bun run lint
 bun run typecheck
+bun run build:cli    # → bin/arc.mjs
 ```
 
 ## Canonical Diagram Schema
@@ -43,7 +45,7 @@ Generated JSON Schema (draft-07): `schemas/arc-diagram.schema.json` — closed o
 types set `additionalProperties: false` so validators reject invented fields; `Record`
 maps (`nodes`, `nodeData`, `connectorStyles`, `focusTargets`, `layoutHints.*`) keep
 open keys. Regenerate after type changes with `bun run generate:schema`; the MCP
-server also serves it as `arc://schema/diagram`.
+server also serves it as `arc://schema/diagram`; `arc schema` prints it.
 
 ```typescript
 interface ArcDiagramData {
@@ -84,7 +86,7 @@ interface ArcDiagramData {
 **`_meta`** (saved with files, round-trips through sessions):
 `themeId`, `colorMode`, `viewMode`, `isoStyle`, `viewport`
 
-Validate external JSON with `validateDiagramShape()` in `src/utils/diagramValidation.ts`.
+Validate external JSON with `validateDiagram()` in `src/utils/diagramDiagnostics.ts`, or `arc check diagram.json --json` from the CLI. `validateDiagramShape()` in `src/utils/diagramValidation.ts` remains the low-level shape gate.
 
 ## Minimal Example
 
@@ -199,8 +201,8 @@ curl "http://localhost:5188/capture/my-session" > out.png
 
 ## MCP
 
-`arc-mcp` bin on `@arach/arc` (`bun run mcp` in dev, `bun run build:mcp` for publish).
-Tools: validate_diagram, diff_diagram, auto_layout, render_ascii, diagram_to_typescript, editor_handoff.
+`arc` bin on `@arach/arc` (`bun run build:cli` for publish) exposes `schema`, `check`, and `diff`.
+`arc-mcp` bin (`bun run mcp` in dev, `bun run build:mcp` for publish) exposes validate_diagram, diff_diagram, auto_layout, render_ascii, diagram_to_typescript, editor_handoff.
 See docs/agent/mcp.agent.md for coverage gaps (SVG/PNG/Mermaid stay elsewhere).
 
 ## Critical Rules
