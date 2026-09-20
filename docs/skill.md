@@ -74,6 +74,7 @@ Export Arc diagrams to various formats.
 - Export to TypeScript with proper types
 - Generate React component code
 - Render ASCII via `renderAscii()` or `bin/arc-ascii.mjs`
+- Render MCP SVG/PNG via `render_svg` and `render_png` (PNG needs Chrome/Chromium or `ARC_CHROME`)
 - Prepare diagrams for documentation sites
 
 **Example output** (TypeScript):

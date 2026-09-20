@@ -23,13 +23,16 @@ const diagram: ArcDiagramData = { /* … */ }
 
 ## SVG
 
-Vector export — crisp at any size, ideal for docs, decks, and print. Theme and mode
-are baked into the output.
+Vector export — crisp at any size, ideal for docs, decks, and print. The static
+`generateSVG()` path is deterministic; agents can call the same export through
+MCP `render_svg`.
 
 ## PNG
 
-Raster export for places that can't render SVG (READMEs, chat, social cards),
-available from the editor and the `/capture` screenshot endpoint.
+Raster export for places that can't render SVG (READMEs, chat, social cards).
+The editor and `/capture` screenshot endpoint produce PNGs, and MCP `render_png`
+returns image content when a Chrome/Chromium executable is available (`ARC_CHROME`,
+`CHROME_PATH`, `PUPPETEER_EXECUTABLE_PATH`, or a common install/PATH location).
 
 ## ASCII
 

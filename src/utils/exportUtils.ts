@@ -60,6 +60,8 @@ const nodeColors = {
   amber: { bg: '#fbbf24', text: '#1f2937' },
   zinc: { bg: '#71717a', text: '#ffffff' },
   sky: { bg: '#38bdf8', text: '#ffffff' },
+  rose: { bg: '#f43f5e', text: '#ffffff' },
+  orange: { bg: '#f97316', text: '#ffffff' },
 }
 
 const groupColors = {
@@ -69,6 +71,8 @@ const groupColors = {
   amber: { fill: 'rgba(251, 191, 36, 0.1)', stroke: 'rgba(251, 191, 36, 0.5)' },
   zinc: { fill: 'rgba(113, 113, 122, 0.1)', stroke: 'rgba(113, 113, 122, 0.5)' },
   sky: { fill: 'rgba(56, 189, 248, 0.1)', stroke: 'rgba(56, 189, 248, 0.5)' },
+  rose: { fill: 'rgba(244, 63, 94, 0.1)', stroke: 'rgba(244, 63, 94, 0.5)' },
+  orange: { fill: 'rgba(249, 115, 22, 0.1)', stroke: 'rgba(249, 115, 22, 0.5)' },
 }
 
 /**

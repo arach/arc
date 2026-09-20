@@ -27,7 +27,8 @@ Build the bundled bin: `bun run build:mcp` → `bin/arc-mcp.mjs`
       "command": "node",
       "args": ["/absolute/path/to/arc/bin/arc-mcp.mjs"],
       "env": {
-        "ARC_EDITOR_URL": "http://localhost:5188"
+        "ARC_EDITOR_URL": "http://localhost:5188",
+        "ARC_CHROME": "/path/to/chrome-or-chromium"
       }
     }
   }
@@ -46,7 +47,7 @@ From a global install (after publish):
 }
 ```
 
-## Tools (v0 — authoring coverage)
+## Tools (v0.7 — authoring coverage)
 
 | Tool | Description |
 |------|-------------|
@@ -54,8 +55,12 @@ From a global install (after publish):
 | `diff_diagram` | Structural diff `{ base, head }` → `DiagramDelta` |
 | `auto_layout` | Sugiyama layout (full diagram or minimal input) |
 | `render_ascii` | Unicode/ASCII box-drawing output |
+| `render_svg` | Deterministic SVG markup from the static export path |
+| `render_png` | PNG image content via optional Chrome/Chromium rasterization |
 | `diagram_to_typescript` | Emit a typed TS module |
 | `editor_handoff` | Build `#data=` studio URL + session id |
+
+`render_png` returns MCP `image` content (`mimeType: image/png`, base64 `data`) plus text metadata (`width`, `height`, `scale`, `bytes`, `chrome`).
 
 ## Resources
 
@@ -65,19 +70,26 @@ From a global install (after publish):
 | `arc://skill/diagrams` | `skills/arc-diagrams/SKILL.md` |
 | `arc://docs/llm` | `docs/llm.txt` |
 
+## PNG rasterization
+
+`render_png` keeps `@arach/arc` dependency-free by reusing `generateSVG()` and
+launching an installed Chrome/Chromium binary in headless screenshot mode. It
+looks for `ARC_CHROME`, `CHROME_PATH`, `PUPPETEER_EXECUTABLE_PATH`, common OS
+install paths, then `google-chrome`/`chromium` on `PATH`. If none is available,
+the tool returns `render/chrome-unavailable` instead of a broken image.
+
 ## Not in MCP (yet)
 
 These stay CLI/studio/API paths for now:
 
 | Capability | Where |
 |------------|-------|
-| SVG / PNG export | Studio Export, `exportUtils` |
 | Dev PNG capture | `/capture/:sessionId` (dev server) |
 | Mermaid import | `@arach/arc-viewer` |
 | Read-only embed | `@arach/arc-viewer` (`<ArcDiagram />`) |
 | Isometric YAML | `@arach/arc-iso` |
 
-v0 targets the **authoring loop**: validate → layout → preview as text → open in studio. `diff_diagram` covers the review loop: base vs head → render the delta.
+v0 targets the **authoring loop**: validate → layout → preview → open in studio. `diff_diagram` covers the review loop: base vs head → render the delta.
 
 ## Implementation
 

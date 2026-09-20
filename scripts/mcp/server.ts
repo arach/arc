@@ -18,6 +18,7 @@ import { renderAscii } from '../../src/utils/asciiRenderer.ts'
 import { validateDiagramShape, isDiagramShape } from '../../src/utils/diagramValidation.ts'
 import { validateDiagram } from '../../src/utils/diagramDiagnostics.ts'
 import { diffDiagram } from '../../src/utils/diffDiagram.ts'
+import { renderDiagramPng, renderDiagramSvg, RenderError } from '../renderImage.ts'
 import { toTypeScriptSource } from '../../src/types/diagram.ts'
 import type { ArcDiagram, ArcDiagramData } from '../../src/types/diagram.ts'
 // Inlined by `bun run build:mcp` so the published arc-mcp bin serves the schema
@@ -55,7 +56,7 @@ async function readRepoFile(...segments: string[]): Promise<string> {
 export function createArcMcpServer(): McpServer {
   const server = new McpServer({
     name: 'arc',
-    version: '0.6.0',
+    version: '0.7.0',
   })
 
   server.tool(
@@ -169,6 +170,74 @@ export function createArcMcpServer(): McpServer {
         const message = err instanceof Error ? err.message : String(err)
         return {
           content: [{ type: 'text', text: message }],
+          isError: true,
+        }
+      }
+    },
+  )
+
+  server.tool(
+    'render_svg',
+    'Render an Arc diagram as deterministic SVG markup using the package export path.',
+    {
+      diagram: diagramSchema.describe('Valid ArcDiagramData JSON'),
+      backgroundColor: z.string().optional().describe('CSS background color (default: #ffffff)'),
+      includeGrid: z.boolean().optional().describe('Render the diagram grid when present'),
+      padding: z.number().nonnegative().optional().describe('Padding around the export bounds in px (default: 20)'),
+    },
+    async ({ diagram, backgroundColor, includeGrid, padding }) => {
+      try {
+        const data = parseDiagram(diagram)
+        const rendered = renderDiagramSvg(data, { backgroundColor, includeGrid, padding })
+        return { content: [{ type: 'text', text: rendered.svg }] }
+      } catch (err) {
+        const payload = err instanceof RenderError
+          ? { ok: false, error: { code: err.code, message: err.message, supportedFixes: err.supportedFixes } }
+          : { ok: false, error: { code: 'render/internal', message: err instanceof Error ? err.message : String(err) } }
+        return {
+          content: [{ type: 'text', text: JSON.stringify(payload, null, 2) }],
+          isError: true,
+        }
+      }
+    },
+  )
+
+  server.tool(
+    'render_png',
+    'Render an Arc diagram as a PNG via an installed Chrome/Chromium binary. Returns MCP image content plus render metadata. Set ARC_CHROME if Chrome is not on PATH.',
+    {
+      diagram: diagramSchema.describe('Valid ArcDiagramData JSON'),
+      backgroundColor: z.string().optional().describe('CSS background color (default: #ffffff)'),
+      includeGrid: z.boolean().optional().describe('Render the diagram grid when present'),
+      padding: z.number().nonnegative().optional().describe('Padding around the export bounds in px (default: 20)'),
+      scale: z.number().positive().max(4).optional().describe('Raster scale factor (default: 2, max: 4)'),
+    },
+    async ({ diagram, backgroundColor, includeGrid, padding, scale }) => {
+      try {
+        const data = parseDiagram(diagram)
+        const rendered = await renderDiagramPng(data, { backgroundColor, includeGrid, padding, scale })
+        return {
+          content: [
+            { type: 'image', data: rendered.png.toString('base64'), mimeType: 'image/png' },
+            {
+              type: 'text',
+              text: JSON.stringify({
+                ok: true,
+                width: rendered.width,
+                height: rendered.height,
+                scale: rendered.scale,
+                bytes: rendered.png.length,
+                chrome: rendered.chrome,
+              }, null, 2),
+            },
+          ],
+        }
+      } catch (err) {
+        const payload = err instanceof RenderError
+          ? { ok: false, error: { code: err.code, message: err.message, supportedFixes: err.supportedFixes } }
+          : { ok: false, error: { code: 'render/internal', message: err instanceof Error ? err.message : String(err) } }
+        return {
+          content: [{ type: 'text', text: JSON.stringify(payload, null, 2) }],
           isError: true,
         }
       }

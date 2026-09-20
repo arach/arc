@@ -23,7 +23,7 @@ Agents grok arc: diagrams are `ArcDiagramData` JSON — typed, diffable, validat
 2. **Draft** diagram JSON (node sizes: `xs` | `s` | `m` | `l` only).
 3. **Validate** via MCP `validate_diagram` or `bun` + `validateDiagramShape`.
 4. **Layout** with `auto_layout` when positions are rough.
-5. **Preview** with `render_ascii` for a quick sanity check.
+5. **Preview** with `render_ascii` or `render_svg`; use `render_png` when Chrome/Chromium is installed (`ARC_CHROME` overrides lookup).
 6. **Hand off** with `editor_handoff` — give the user the studio URL.
 7. **Report** to Scout `#arc` when you ship something worth tracking.
 
