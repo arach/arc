@@ -23,6 +23,7 @@ Create and modify Arc architecture diagrams.
 ```
 Arc diagram format: JSON with layout, nodes, nodeData, connectors, connectorStyles
 Canonical schema: src/types/diagram.ts
+JSON Schema: schemas/arc-diagram.schema.json (generated, draft-07; closed objects reject invented fields)
 Validation: validateDiagram(value) -> coded Diagnostic[] with supportedFixes; MCP validate_diagram -> {ok, diagnostics}
 Valid colors: violet, emerald, blue, amber, sky, zinc, rose, orange
 Valid sizes: xs, s, m, l  (NOT large/normal/small)

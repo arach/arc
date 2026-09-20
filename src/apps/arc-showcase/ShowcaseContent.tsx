@@ -66,6 +66,7 @@ export default function ShowcaseContent() {
               key={stageKey}
               className="w-full h-full"
               data={s.doc.data}
+              delta={s.doc.delta}
               theme={s.themeId}
               mode={s.mode}
               defaultZoom={s.zoom}
