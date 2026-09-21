@@ -723,9 +723,10 @@ function connectorPathGeometry(
   if (connector.curve === 'natural') {
     const dx = to.x - from.x
     const dy = to.y - from.y
-    const cp1x = from.x + dx * 0.4
+    const tension = ((connector.curveDepth ?? 50) / 50) * 0.4
+    const cp1x = from.x + dx * tension
     const cp1y = from.y + dy * 0.1
-    const cp2x = to.x - dx * 0.4
+    const cp2x = to.x - dx * tension
     const cp2y = to.y - dy * 0.1
     return {
       d: `M ${from.x} ${from.y} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${to.x} ${to.y}`,
