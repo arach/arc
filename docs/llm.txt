@@ -78,7 +78,9 @@ interface ArcDiagramData {
   }>
   groups?: GroupShape[]
   focusTargets?: Record<string, FocusTarget>
-  views?: DiagramView[]                 // ordered guided chapters (docs/views.md)
+  legend?: 'auto' | 'all' | 'hidden'   // key policy; viewer `legend` prop overrides
+  _meta?: FileMeta                    // viewer/editor state saved with the file; locale is BCP-47
+  views?: DiagramView[]               // ordered guided chapters (docs/views.md)
 }
 ```
 
@@ -105,7 +107,8 @@ is the exported resolver.
 **Do not use** legacy Talkie sizes (`large`, `normal`, `small`) — see HANDOFF.md.
 
 **`_meta`** (saved with files, round-trips through sessions):
-`themeId`, `colorMode`, `viewMode`, `isoStyle`, `viewport`
+`themeId`, `colorMode`, `viewMode`, `isoStyle`, `viewport`, `sourceUrl`,
+`locale` (BCP-47 — viewer `lang`/`dir` + Intl formatting; invalid tags fail `arc check` as `semantic/invalid-locale`)
 
 Validate external JSON with `validateDiagram()` in `src/utils/diagramDiagnostics.ts`, or `arc check diagram.json --json` from the CLI. `validateDiagramShape()` in `src/utils/diagramValidation.ts` remains the low-level shape gate.
 `validateDiagram()` also emits `composition/*` advisories for the authoring contract: `composition/too-dense` (>16 nodes without groups/views chaptering) and `composition/label-overflow` (name longer than the node's size budget). The full contract — budgets, one spine, spacing math, autoLayout thresholds, label and routing rules — lives in `skills/arc-diagrams/SKILL.md` under "Layout judgment".

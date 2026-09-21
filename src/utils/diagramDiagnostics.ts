@@ -12,6 +12,7 @@
 // document is still inspected.
 
 import { connectorKey } from '../types/diagram'
+import { isValidLocale } from './locale'
 import type {
   AnchorPosition,
   Connector,
@@ -55,6 +56,8 @@ export type Fix =
   | { kind: 'set-anchor'; field: 'fromAnchor' | 'toAnchor'; anchor: AnchorPosition }
   | { kind: 'remove-ref' }
   | { kind: 'remove-source' }
+  | { kind: 'set-legend'; legend: 'auto' | 'all' | 'hidden' }
+  | { kind: 'remove-meta' }
 
 export interface Diagnostic {
   code: string
@@ -377,6 +380,42 @@ export function validateDiagram(value: unknown): Diagnostic[] {
   })
 
   // -- semantic: references and enums -------------------------------------
+
+  const LEGEND_MODES = ['auto', 'all', 'hidden'] as const
+
+  if (d.legend !== undefined && !LEGEND_MODES.includes(d.legend as (typeof LEGEND_MODES)[number])) {
+    const nearest = typeof d.legend === 'string' ? closest(d.legend, [...LEGEND_MODES]) : undefined
+    push({
+      code: 'semantic/unknown-legend',
+      severity: 'error',
+      subject: { type: 'diagram' },
+      message: `Unknown \`legend\` "${String(d.legend)}" — expected ${LEGEND_MODES.map(m => `'${m}'`).join(', ')}`,
+      evidence: { field: 'legend', value: d.legend, known: LEGEND_MODES },
+      supportedFixes: nearest ? [{ kind: 'set-legend', legend: nearest }] : undefined,
+    })
+  }
+
+  if (d._meta !== undefined) {
+    if (!isObject(d._meta)) {
+      push({
+        code: 'semantic/invalid-meta',
+        severity: 'error',
+        subject: { type: 'diagram' },
+        message: '`_meta` must be an object',
+        evidence: { value: d._meta },
+        supportedFixes: [{ kind: 'remove-meta' }],
+      })
+    } else if (d._meta.locale !== undefined && (typeof d._meta.locale !== 'string' || !isValidLocale(d._meta.locale))) {
+      push({
+        code: 'semantic/invalid-locale',
+        severity: 'error',
+        subject: { type: 'diagram' },
+        message: `\`_meta.locale\` "${String(d._meta.locale)}" is not a valid BCP-47 tag`,
+        evidence: { field: '_meta.locale', value: d._meta.locale },
+        supportedFixes: [{ kind: 'remove-meta' }],
+      })
+    }
+  }
 
   const nodeIds = Object.keys(nodes)
 

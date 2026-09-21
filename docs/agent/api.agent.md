@@ -31,6 +31,8 @@ interface ArcDiagramProps {
 
 ```typescript
 interface ArcDiagramData {
+  legend?: 'auto' | 'all' | 'hidden'  // legend policy; prop overrides
+  _meta?: FileMeta                    // saved viewer/editor state; `locale` is BCP-47
   id?: string
   layout: { width: number; height: number }
   layoutHints?: LayoutHints
