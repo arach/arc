@@ -236,11 +236,15 @@ arc check diagram.json                  # coded diagnostics, human-readable
 arc check diagram.json --json --strict  # machine output; fail on warnings too
 arc diff base.json head.json            # structural DiagramDelta JSON
 arc diff base.json head.json --summary  # human-readable counts
+arc render diagram.json --out diagram.svg --json
 arc-ascii diagram.json --charset ascii --max-width 80
 ```
 
 `arc check` exits non-zero when error-severity diagnostics remain; `--strict`
 also fails on warnings. `arc diff` validates both inputs before diffing.
+`arc render` validates, writes the SVG to a temp file, atomically replaces the
+target, and emits a receipt with source/output SHA-256 hashes; invalid diagrams
+leave an existing artifact untouched.
 
 ## Requirements
 

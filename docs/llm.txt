@@ -11,7 +11,7 @@
 - **Output**: JSON / TypeScript configs (not images) — diffable, versionable
 - **Stack**: React 19, Vite 7, TailwindCSS 4, Hudson shell (editor chrome)
 - **Package manager**: bun (`bun install`, `bun run dev`)
-- **CLI**: `arc` bin — `schema`, `check`, `diff`
+- **CLI**: `arc` bin — `schema`, `check`, `diff`, `render`
 - **MCP**: `arc-mcp` bin — see `docs/agent/mcp.agent.md`
 
 ## Which Package?
@@ -87,6 +87,10 @@ interface ArcDiagramData {
 `themeId`, `colorMode`, `viewMode`, `isoStyle`, `viewport`
 
 Validate external JSON with `validateDiagram()` in `src/utils/diagramDiagnostics.ts`, or `arc check diagram.json --json` from the CLI. `validateDiagramShape()` in `src/utils/diagramValidation.ts` remains the low-level shape gate.
+
+For CI artifacts, `arc render diagram.json --out diagram.svg --json` validates,
+renders to a same-directory temp file, atomically replaces the output, and emits
+a receipt with source/output SHA-256 hashes plus any non-blocking diagnostics.
 
 ## Minimal Example
 

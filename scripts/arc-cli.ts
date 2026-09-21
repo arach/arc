@@ -1,5 +1,8 @@
-import { readFileSync } from 'node:fs'
+import { createHash, randomBytes } from 'node:crypto'
+import { existsSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
+import { basename, dirname, join, resolve } from 'node:path'
 import { validateDiagram } from '../src/utils/diagramDiagnostics.ts'
+import { generateSVG } from '../src/utils/exportUtils.ts'
 import type { Diagnostic, DiagnosticSeverity, Fix } from '../src/utils/diagramDiagnostics.ts'
 import { diffDiagram } from '../src/utils/diffDiagram.ts'
 import type { ArcDiagramData } from '../src/types/diagram.ts'
@@ -10,15 +13,17 @@ const USAGE = `arc — Arc diagram CLI
 Usage:
   arc check <file|-> [--severity error|warning|all] [--format text|json] [--json] [--strict]
   arc diff <base> <head> [--format json|summary] [--json] [--summary]
+  arc render <file|-> --out <file.svg> [--format svg] [--padding <px>] [--background <color>] [--grid] [--strict] [--json]
   arc schema
 
 Commands:
   check    Validate a diagram and print coded diagnostics
   diff     Print the structural DiagramDelta between two diagrams
+  render   Validate, render an SVG, and atomically replace the output
   schema   Print the generated draft-07 JSON Schema
 
 Input:
-  use "-" or pipe JSON on stdin for check; diff expects two file paths
+  use "-" or pipe JSON on stdin for check/render; diff expects two file paths
 
 Exit codes:
   0 success · 1 diagnostics with errors or runtime failure · 2 usage error
@@ -26,7 +31,10 @@ Exit codes:
 
 type CheckFormat = 'text' | 'json'
 type DiffFormat = 'json' | 'summary'
+type RenderFormat = 'svg'
 type SeverityFilter = DiagnosticSeverity | 'all'
+
+type ExportZone = { x: number; y: number; width: number; height: number }
 
 class CliError extends Error {
   constructor(message: string, readonly exitCode = 1) {
@@ -273,6 +281,183 @@ async function diffCommand(args: string[]): Promise<number> {
   return 0
 }
 
+function sha256Hex(data: string | Buffer): string {
+  return createHash('sha256').update(data).digest('hex')
+}
+
+function atomicWriteFile(path: string, contents: string | Buffer): void {
+  const output = resolve(path)
+  const temp = join(dirname(output), `.${basename(output)}.tmp-${process.pid}-${randomBytes(4).toString('hex')}`)
+  try {
+    writeFileSync(temp, contents, { flag: 'wx' })
+    renameSync(temp, output)
+  } finally {
+    if (existsSync(temp)) rmSync(temp, { force: true })
+  }
+}
+
+function renderBounds(diagram: ArcDiagramData): ExportZone {
+  // ArcDiagramData omits exportZone, but saved editor files may still carry it.
+  const zone = (diagram as ArcDiagramData & { exportZone?: ExportZone | null }).exportZone
+  if (zone == null) return { x: 0, y: 0, width: diagram.layout.width, height: diagram.layout.height }
+  if (![zone.x, zone.y, zone.width, zone.height].every(Number.isFinite) || zone.width <= 0 || zone.height <= 0) {
+    fail('render: exportZone must contain finite x, y, width, and height values')
+  }
+  return zone
+}
+
+function emitRenderFailure(code: string, message: string, json: boolean, diagnostics: Diagnostic[] = [], exitCode = 1): number {
+  if (json) {
+    console.log(JSON.stringify({ ok: false, error: { code, message }, diagnostics }, null, 2))
+  } else {
+    console.error(`${code}: ${message}`)
+    printDiagnostics(diagnostics)
+  }
+  return exitCode
+}
+
+function parseRenderArgs(args: string[]): {
+  file?: string
+  out?: string
+  format: RenderFormat
+  padding: number
+  backgroundColor: string
+  includeGrid: boolean
+  strict: boolean
+  json: boolean
+} {
+  let file: string | undefined
+  let out: string | undefined
+  let format: RenderFormat = 'svg'
+  let padding = 20
+  let backgroundColor = '#ffffff'
+  let includeGrid = false
+  let strict = false
+  let json = false
+
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i]
+    if (arg === '--out' || arg === '-o') {
+      out = args[++i]
+      if (!out) fail('--out requires a file path', 2)
+    } else if (arg === '--format') {
+      const value = args[++i]
+      if (value !== 'svg') fail('--format must be svg', 2)
+      format = value
+    } else if (arg === '--padding') {
+      const value = Number(args[++i])
+      if (!Number.isInteger(value) || value < 0) fail('--padding must be a non-negative integer', 2)
+      padding = value
+    } else if (arg === '--background') {
+      backgroundColor = args[++i]
+      if (!backgroundColor) fail('--background requires a color', 2)
+    } else if (arg === '--grid') {
+      includeGrid = true
+    } else if (arg === '--no-grid') {
+      includeGrid = false
+    } else if (arg === '--strict') {
+      strict = true
+    } else if (arg === '--json') {
+      json = true
+    } else if (arg === '--help' || arg === '-h') {
+      console.log(USAGE)
+      process.exit(0)
+    } else if (arg.startsWith('-') && arg !== '-') {
+      fail(`unknown option: ${arg}`, 2)
+    } else if (file !== undefined) {
+      fail(`unexpected argument: ${arg}`, 2)
+    } else {
+      file = arg
+    }
+  }
+
+  if (!out) fail('render requires --out <file.svg>', 2)
+  if (out === '-') fail('render requires a real --out file so the artifact can be replaced atomically', 2)
+  if (!/^(#[0-9a-fA-F]{3,8}|[a-zA-Z]+)$/.test(backgroundColor)) {
+    fail('--background must be a hex or CSS named color', 2)
+  }
+
+  return { file, out, format, padding, backgroundColor, includeGrid, strict, json }
+}
+
+async function renderCommand(args: string[]): Promise<number> {
+  const jsonRequested = args.includes('--json')
+  let parsed: ReturnType<typeof parseRenderArgs>
+  try {
+    parsed = parseRenderArgs(args)
+  } catch (err) {
+    const exitCode = err instanceof CliError ? err.exitCode : 2
+    return emitRenderFailure('cli/usage-error', errorMessage(err), jsonRequested, [], exitCode)
+  }
+
+  let sourceText: string
+  let value: unknown
+  try {
+    sourceText = await readDiagramText(parsed.file, 'render')
+    value = parseJson(sourceText, 'render')
+  } catch (err) {
+    return emitRenderFailure('cli/input-error', errorMessage(err), parsed.json)
+  }
+
+  const sourceHash = sha256Hex(sourceText)
+  const diagnostics = validateDiagram(value)
+  const errors = diagnostics.filter(d => d.severity === 'error')
+  const warnings = diagnostics.filter(d => d.severity === 'warning')
+  if (errors.length || (parsed.strict && warnings.length)) {
+    return emitRenderFailure('validation/failed', 'render: diagram has blocking diagnostics', parsed.json, diagnostics)
+  }
+
+  let svg: string
+  let bounds: ExportZone
+  try {
+    bounds = renderBounds(value as ArcDiagramData)
+    svg = generateSVG(value, {
+      backgroundColor: parsed.backgroundColor,
+      includeGrid: parsed.includeGrid,
+      padding: parsed.padding,
+    })
+  } catch (err) {
+    return emitRenderFailure('render/generate-failed', errorMessage(err), parsed.json, diagnostics)
+  }
+
+  const output = resolve(parsed.out!)
+  const outputBuffer = Buffer.from(svg, 'utf8')
+  try {
+    atomicWriteFile(output, outputBuffer)
+  } catch (err) {
+    return emitRenderFailure('render/write-failed', errorMessage(err), parsed.json, diagnostics)
+  }
+
+  const receipt = {
+    ok: true,
+    command: 'render',
+    input: parsed.file === '-' || parsed.file === undefined ? '-' : resolve(parsed.file),
+    output,
+    format: parsed.format,
+    width: Math.round(bounds.width + parsed.padding * 2),
+    height: Math.round(bounds.height + parsed.padding * 2),
+    bytes: outputBuffer.length,
+    sha256: {
+      source: sourceHash,
+      output: sha256Hex(outputBuffer),
+    },
+    options: {
+      padding: parsed.padding,
+      backgroundColor: parsed.backgroundColor,
+      includeGrid: parsed.includeGrid,
+    },
+    diagnostics,
+  }
+
+  if (parsed.json) {
+    console.log(JSON.stringify(receipt, null, 2))
+  } else {
+    console.log(`rendered ${output} (${receipt.width}x${receipt.height}, ${receipt.bytes} bytes, sha256 ${receipt.sha256.output})`)
+    printDiagnostics(warnings)
+  }
+  return 0
+}
+
 async function main(): Promise<void> {
   const [command, ...args] = process.argv.slice(2)
   let exitCode: number
@@ -283,6 +468,9 @@ async function main(): Promise<void> {
       break
     case 'diff':
       exitCode = await diffCommand(args)
+      break
+    case 'render':
+      exitCode = await renderCommand(args)
       break
     case 'schema':
       if (args.length) fail(`schema takes no arguments`, 2)

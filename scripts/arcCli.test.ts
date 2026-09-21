@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test'
+import { createHash } from 'node:crypto'
 import { spawnSync } from 'node:child_process'
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -164,6 +165,101 @@ describe('arc CLI', () => {
     } finally {
       rmSync(dir, { recursive: true, force: true })
     }
+  })
+
+  test('render writes an SVG atomically and emits a deterministic receipt', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'arc-cli-'))
+    try {
+      const input = join(dir, 'diagram.json')
+      const output = join(dir, 'diagram.svg')
+      const source = JSON.stringify(valid)
+      writeFileSync(input, source)
+
+      const result = run(['render', input, '--out', output, '--json'])
+      expect(result.status).toBe(0)
+      const receipt = JSON.parse(result.stdout)
+      const svg = readFileSync(output, 'utf8')
+      expect(receipt).toMatchObject({
+        ok: true,
+        command: 'render',
+        input,
+        output,
+        format: 'svg',
+        width: 640,
+        height: 340,
+        bytes: Buffer.byteLength(svg),
+      })
+      expect(svg).toContain('<svg xmlns="http://www.w3.org/2000/svg" width="640" height="340"')
+      expect(svg).toContain('A')
+      expect(receipt.sha256.source).toBe(createHash('sha256').update(source).digest('hex'))
+      expect(receipt.sha256.output).toBe(createHash('sha256').update(svg).digest('hex'))
+      expect(readdirSync(dir).filter(name => name.startsWith('.diagram.svg.tmp'))).toEqual([])
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  test('render fails closed and does not overwrite an existing artifact', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'arc-cli-'))
+    try {
+      const input = join(dir, 'bad.json')
+      const output = join(dir, 'diagram.svg')
+      writeFileSync(input, JSON.stringify(invalid))
+      writeFileSync(output, 'keep me')
+
+      const result = run(['render', input, '--out', output, '--json'])
+      expect(result.status).toBe(1)
+      const payload = JSON.parse(result.stdout)
+      expect(payload.ok).toBe(false)
+      expect(payload.error.code).toBe('validation/failed')
+      expect(payload.diagnostics[0].code).toBe('semantic/unknown-color')
+      expect(readFileSync(output, 'utf8')).toBe('keep me')
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  test('render warns by default and --strict blocks the write', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'arc-cli-'))
+    try {
+      const input = join(dir, 'warning.json')
+      const output = join(dir, 'warning.svg')
+      writeFileSync(input, JSON.stringify(warningOnly))
+
+      const allowed = run(['render', input, '--out', output, '--json'])
+      expect(allowed.status).toBe(0)
+      expect(JSON.parse(allowed.stdout).diagnostics[0].severity).toBe('warning')
+      expect(existsSync(output)).toBe(true)
+
+      rmSync(output)
+      const strict = run(['render', input, '--out', output, '--json', '--strict'])
+      expect(strict.status).toBe(1)
+      expect(JSON.parse(strict.stdout).error.code).toBe('validation/failed')
+      expect(existsSync(output)).toBe(false)
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  test('render returns a coded JSON error without writing on malformed input', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'arc-cli-'))
+    try {
+      const output = join(dir, 'bad.svg')
+      const result = run(['render', '-', '--out', output, '--json'], '{')
+      expect(result.status).toBe(1)
+      const payload = JSON.parse(result.stdout)
+      expect(payload.error.code).toBe('cli/input-error')
+      expect(existsSync(output)).toBe(false)
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  test('render usage errors are still structured when --json is present', () => {
+    const result = run(['render', '--json'])
+    expect(result.status).toBe(2)
+    const payload = JSON.parse(result.stdout)
+    expect(payload.error.code).toBe('cli/usage-error')
   })
 
   test('schema prints the generated draft-07 schema', () => {
