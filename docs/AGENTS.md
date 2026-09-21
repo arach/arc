@@ -210,6 +210,8 @@ interface ArcDiagramData {
   nodeData: Record<string, NodeData>
   connectors: Connector[]
   connectorStyles: Record<string, ConnectorStyle>
+  focusTargets?: Record<string, FocusTarget>
+  views?: DiagramView[]              // ordered guided chapters — docs/views.md
 }
 ```
 

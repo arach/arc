@@ -153,6 +153,28 @@ export interface FocusTarget {
   steps?: FocusStep[]
 }
 
+/**
+ * A named stop in a guided tour. `views[]` turns a diagram into a document:
+ * an ordered set of camera/highlight states the reader can step through, and
+ * each `id` is stable enough to deep-link (`/player/<session>?view=<id>`).
+ */
+export interface DiagramView {
+  /** Stable slug — used by deep links and the views rail. */
+  id: string
+  /** Chapter title shown in the rail. */
+  title: string
+  /** Anchor node — behaves like selecting it, including its focusTarget story
+   *  unless the view overrides the highlight set. */
+  node?: string
+  /** `append` adds direct neighbors of `node`; `replace` draws only the
+   *  declared set. Views without `node` always behave as `replace`. */
+  mode?: 'append' | 'replace'
+  nodes?: string[]
+  connectors?: FocusConnectorRef[]
+  caption?: string
+  steps?: FocusStep[]
+}
+
 export type LayoutAlignment = 'start' | 'center' | 'end'
 export type GroupLayoutDirection = 'horizontal' | 'vertical'
 
@@ -211,6 +233,8 @@ export interface ArcDiagram {
   connectorStyles: Record<string, ConnectorStyle>
   groups?: GroupShape[]
   focusTargets?: Record<string, FocusTarget>
+  /** Ordered guided views — the chapter rail in the player. */
+  views?: DiagramView[]
   images?: DiagramImage[]
   exportZone?: ExportZone | null
 }
@@ -225,6 +249,7 @@ export interface ArcDiagramData {
   connectors: Connector[]
   connectorStyles: Record<string, ConnectorStyle>
   focusTargets?: Record<string, FocusTarget>
+  views?: DiagramView[]
   groups?: GroupShape[]
 }
 
@@ -238,6 +263,7 @@ export function toExportFormat(diagram: ArcDiagram): ArcDiagramData {
     connectors: diagram.connectors,
     connectorStyles: diagram.connectorStyles,
     focusTargets: diagram.focusTargets,
+    views: diagram.views,
     groups: diagram.groups,
   }
 }

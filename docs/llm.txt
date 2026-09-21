@@ -77,6 +77,7 @@ interface ArcDiagramData {
   }>
   groups?: GroupShape[]
   focusTargets?: Record<string, FocusTarget>
+  views?: DiagramView[]                 // ordered guided chapters (docs/views.md)
 }
 ```
 
@@ -90,6 +91,12 @@ still override the kind default:
 
 Validation: `validateDiagram` requires `icon`+`color` only when `kind` is
 absent or unknown (`semantic/unknown-kind`, fix `{kind:'set-kind',value}`).
+
+**Guided views**: `views[]` = `{id, title, node?, mode?, nodes?, connectors?, caption?, steps?}`.
+`node` anchors on a node (inherits its focusTarget story unless overridden);
+no `node` highlights exactly the declared set. Render with `showViews`; deep-link
+`/player/<session>?view=<id>`. `resolveViewFocus(view, connectors, focusTargets)`
+is the exported resolver.
 
 **Node sizes** (`src/utils/constants.ts` NODE_SIZES):
 - `xs` 80×36 · `s` 110×48 · `m` 160×75 · `l` 220×90

@@ -651,6 +651,28 @@ the key is capped at `calc(100% - bottom - 8px)` and scrolls. Losing the last
 rows to the frame's `overflow: hidden` reads as a rendering fault; a scrollbar
 reads as "there is more".
 
+### Guided views
+
+`data.views` is an ordered list of `DiagramView` chapters — `{ id, title, node?,
+mode?, nodes?, connectors?, caption?, steps? }` — that turns a diagram into a
+walkthrough. `showViews` draws a rail at the bottom center (the free lane: zoom
+is bottom-right, minimap/legend/label bottom-left) with prev/next, `i / N`, and
+an exit.
+
+- Resolution goes through `resolveViewFocus`, which reuses the focus-story
+  machinery: an anchor `node` inherits that node's `focusTargets` story, and
+  declaring `nodes`/`connectors`/`mode` on the view overrides it. A view with
+  no `node` highlights exactly its declared set.
+- While a view is active the camera frames the resolved highlight set (2D only —
+  iso owns its own pan), and the caption/steps render through `FocusStory`.
+- Clicking a node exits the chapter and locks that node's own focus — the reader
+  always keeps the wheel.
+- Deep links: `/player/<session>?view=<id>`; `view` + `onViewChange` make the
+  chapter id controllable so hosts can keep it in their URL. `editor_handoff`
+  (MCP) takes a `view` arg and returns the matching `playerUrl`.
+- Views are document data: they ride `toExportFormat`, hash handoffs,
+  `diagram/replace`, `arc check`, and the generated schema like everything else.
+
 ## Session Persistence
 
 Diagrams are auto-saved to `localStorage` keyed by session ID (`arc-session-{id}`). Utilities in `src/utils/sessionStorage.ts`.

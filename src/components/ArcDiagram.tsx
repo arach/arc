@@ -129,6 +129,28 @@ export interface FocusTarget {
   steps?: FocusStep[]
 }
 
+/**
+ * A named stop in a guided tour. `views[]` turns a diagram into a document —
+ * an ordered set of camera/highlight states a reader steps through in the
+ * views rail, deep-linkable by `id`.
+ */
+export interface DiagramView {
+  /** Stable slug — used by deep links and the views rail. */
+  id: string
+  /** Chapter title shown in the rail. */
+  title: string
+  /** Anchor node — behaves like selecting it, including its focusTarget story
+   *  unless the view overrides the highlight set. */
+  node?: string
+  /** `append` adds direct neighbors of `node`; `replace` draws only the
+   *  declared set. Views without `node` always behave as `replace`. */
+  mode?: 'append' | 'replace'
+  nodes?: string[]
+  connectors?: FocusConnectorRef[]
+  caption?: string
+  steps?: FocusStep[]
+}
+
 export interface GroupShape {
   id: string
   x: number
@@ -173,6 +195,7 @@ export interface ArcDiagramData {
   connectors: Connector[]
   connectorStyles: Record<string, ConnectorStyle>
   focusTargets?: Record<string, FocusTarget>
+  views?: DiagramView[]
   groups?: GroupShape[]
 }
 
@@ -259,6 +282,47 @@ export function resolveFocusState(
   return { nodeIds, connectorIndexes }
 }
 
+/**
+ * Resolve a DiagramView to the highlight sets the renderer consumes. With an
+ * anchor `node` and no explicit highlight set, the view inherits that node's
+ * focusTarget story; a view that declares `nodes`/`connectors`/`mode`
+ * overrides it. A view without `node` highlights exactly its declared set.
+ */
+export function resolveViewFocus(
+  view: DiagramView | undefined,
+  connectors: Connector[],
+  focusTargets?: Record<string, FocusTarget>,
+) {
+  const nodeIds = new Set<string>()
+  const connectorIndexes = new Set<number>()
+  if (!view) return { nodeIds, connectorIndexes }
+
+  if (!view.node) {
+    for (const id of view.nodes || []) nodeIds.add(id)
+    for (const ref of view.connectors || []) {
+      connectors.forEach((connector, index) => {
+        const matches = ref.id
+          ? connector.id === ref.id
+          : connector.from === ref.from && connector.to === ref.to
+        if (!matches) return
+        connectorIndexes.add(index)
+        nodeIds.add(connector.from)
+        nodeIds.add(connector.to)
+      })
+    }
+    return { nodeIds, connectorIndexes }
+  }
+
+  const overrides = view.nodes != null || view.connectors != null || view.mode != null
+  const targets: Record<string, FocusTarget> | undefined = overrides
+    ? {
+        ...focusTargets,
+        [view.node]: { mode: view.mode, nodes: view.nodes, connectors: view.connectors },
+      }
+    : focusTargets
+  return resolveFocusState(view.node, connectors, targets)
+}
+
 function FocusStory({
   target,
   mode,
@@ -337,6 +401,101 @@ function FocusStory({
             )
           })}
         </div>
+      )}
+    </div>
+  )
+}
+
+/** Bottom-center chapter rail for `data.views` — prev/next, counter, exit. */
+function ViewsRail({
+  views,
+  activeIndex,
+  mode,
+  monoFamily,
+  inset,
+  onStep,
+  onExit,
+}: {
+  views: DiagramView[]
+  activeIndex: number // -1 when exploring freely
+  mode: DiagramMode
+  monoFamily?: string
+  inset: number
+  onStep: (index: number) => void
+  onExit: () => void
+}) {
+  const isLight = mode === 'light'
+  const active = activeIndex >= 0 ? views[activeIndex] : undefined
+  const border = `1px solid ${isLight ? 'rgba(24,24,27,0.14)' : 'rgba(244,244,245,0.14)'}`
+  const ink = isLight ? 'rgba(24,24,27,0.85)' : 'rgba(244,244,245,0.85)'
+  const dim = isLight ? 'rgba(24,24,27,0.45)' : 'rgba(244,244,245,0.45)'
+  const btn = {
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    width: 24, height: 24, borderRadius: 4, border: 'none', cursor: 'pointer',
+    background: 'transparent', color: ink, padding: 0,
+  } as React.CSSProperties
+
+  return (
+    <div
+      data-arc-views
+      className="absolute z-20 pointer-events-auto flex items-center"
+      style={{
+        left: '50%',
+        bottom: inset,
+        transform: 'translateX(-50%)',
+        gap: 2,
+        padding: '3px 4px',
+        border,
+        borderRadius: 8,
+        background: isLight ? 'rgba(255,255,255,0.92)' : 'rgba(9,9,11,0.9)',
+        boxShadow: isLight ? '0 8px 24px rgba(24,24,27,0.08)' : '0 8px 24px rgba(0,0,0,0.24)',
+        backdropFilter: 'blur(10px)',
+        fontFamily: monoFamily || 'ui-monospace, monospace',
+      }}
+    >
+      <button
+        type="button"
+        aria-label="Previous view"
+        disabled={activeIndex <= 0}
+        onClick={() => onStep(activeIndex - 1)}
+        style={{ ...btn, opacity: activeIndex <= 0 ? 0.3 : 1 }}
+      >
+        <LucideIcons.ChevronLeft style={{ width: 14, height: 14 }} strokeWidth={1.8} />
+      </button>
+      <button
+        type="button"
+        onClick={() => onStep(activeIndex < 0 ? 0 : activeIndex)}
+        title={active ? 'Current view' : 'Start the guided views'}
+        style={{
+          border: 'none', background: 'transparent', cursor: 'pointer',
+          color: ink, padding: '2px 8px', fontFamily: 'inherit',
+          fontSize: 9.5, letterSpacing: '0.08em', textTransform: 'uppercase',
+          display: 'flex', alignItems: 'baseline', gap: 7, whiteSpace: 'nowrap',
+        }}
+      >
+        <span style={{ color: dim, fontSize: 8.5 }}>
+          {active ? `${activeIndex + 1} / ${views.length}` : `Views · ${views.length}`}
+        </span>
+        {active && <span>{active.title}</span>}
+      </button>
+      <button
+        type="button"
+        aria-label="Next view"
+        disabled={activeIndex >= views.length - 1}
+        onClick={() => onStep(activeIndex + 1)}
+        style={{ ...btn, opacity: activeIndex >= views.length - 1 ? 0.3 : 1 }}
+      >
+        <LucideIcons.ChevronRight style={{ width: 14, height: 14 }} strokeWidth={1.8} />
+      </button>
+      {active && (
+        <button
+          type="button"
+          aria-label="Exit view"
+          onClick={onExit}
+          style={{ ...btn, borderLeft: `1px solid ${isLight ? 'rgba(24,24,27,0.1)' : 'rgba(244,244,245,0.1)'}`, borderRadius: 0, marginLeft: 2 }}
+        >
+          <LucideIcons.X style={{ width: 12, height: 12 }} strokeWidth={1.8} />
+        </button>
       )}
     </div>
   )
@@ -1606,6 +1765,16 @@ interface ArcDiagramProps {
   showLegend?: boolean
   /** Show the active focus target's caption and steps. Default: false */
   showFocusStory?: boolean
+  /** Show the chapter rail when `data.views` is present, and let a view own
+   *  the camera + highlight state. Default: false */
+  showViews?: boolean
+  /** Controlled active view id — `null` explores freely. Pair with
+   *  `onViewChange`; pass `undefined` to leave it uncontrolled. */
+  view?: string | null
+  /** Initial view id when uncontrolled. */
+  defaultViewId?: string
+  /** Fires when the rail selects or exits a view. */
+  onViewChange?: (viewId: string | null) => void
   /** Override the edge/frame treatment (else the theme's brand.frame). */
   frame?: BrandSpec['frame']
   /** Control hover behavior. true = all effects (default), false = none, object = granular control */
@@ -1640,6 +1809,10 @@ export default function ArcDiagram({
   showMinimap = false,
   showLegend = false,
   showFocusStory = false,
+  showViews = false,
+  view,
+  defaultViewId,
+  onViewChange,
   frame,
   hoverEffects,
   onNodeHover,
@@ -1662,6 +1835,11 @@ export default function ArcDiagram({
   // Active node = locked takes priority over hovered
   const activeNodeId = fx.enabled ? (lockedNodeId ?? hoveredNodeId) : null
 
+  // Guided views — an ordered list of named highlight/camera states the rail
+  // steps through. `view` controlled; `defaultViewId` uncontrolled.
+  const [internalViewId, setInternalViewId] = useState<string | null>(defaultViewId ?? null)
+  const activeViewId = view !== undefined ? view : internalViewId
+
   // Apply auto-layout if toggled
   const activeData = useMemo(
     () => useAutoLayout ? autoLayout(data) : data,
@@ -1669,11 +1847,25 @@ export default function ArcDiagram({
   )
 
   const { id, layout, nodes, nodeData, connectors, connectorStyles, groups = [] } = activeData
+  const views = activeData.views
   const focusTargets = activeData.focusTargets
+  const activeViewIndex = activeViewId ? (views?.findIndex(v => v.id === activeViewId) ?? -1) : -1
+  const activeView = activeViewIndex >= 0 ? views![activeViewIndex] : undefined
+  const setActiveView = useCallback((viewId: string | null) => {
+    if (view === undefined) setInternalViewId(viewId)
+    onViewChange?.(viewId)
+  }, [view, onViewChange])
+
   const activeFocusTarget = activeNodeId ? focusTargets?.[activeNodeId] : undefined
+  const storyTarget: FocusTarget | undefined = activeView
+    ? { caption: activeView.caption, steps: activeView.steps }
+    : activeFocusTarget
+  const hasFocus = activeView != null || activeNodeId != null
   const focusState = useMemo(
-    () => resolveFocusState(activeNodeId, connectors, focusTargets),
-    [activeNodeId, connectors, focusTargets],
+    () => activeView
+      ? resolveViewFocus(activeView, connectors, focusTargets)
+      : resolveFocusState(activeNodeId, connectors, focusTargets),
+    [activeView, activeNodeId, connectors, focusTargets],
   )
 
   // Resolve theme colors based on mode
@@ -1781,6 +1973,43 @@ export default function ArcDiagram({
     })
   }, [isIso, isoBounds, defaultZoom])
 
+  // The camera follows the active view: entering one frames its highlight set;
+  // leaving restores the default framing. 2D only — iso handles its own pan.
+  React.useEffect(() => {
+    if (!initialized || isIso) return
+    const el = containerRef.current
+    if (!el) return
+
+    if (!activeView) return // exiting leaves the camera where the reader put it
+
+    const { nodeIds } = resolveViewFocus(activeView, connectors, focusTargets)
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+    for (const id of nodeIds) {
+      const pos = nodes[id]
+      const size = pos && NODE_SIZES[pos.size]
+      if (!pos || !size) continue
+      minX = Math.min(minX, pos.x)
+      minY = Math.min(minY, pos.y)
+      maxX = Math.max(maxX, pos.x + size.width)
+      maxY = Math.max(maxY, pos.y + size.height)
+    }
+    if (minX === Infinity) return // empty highlight — leave the camera alone
+
+    const PADDING = 88
+    const cw = el.clientWidth
+    const ch = el.clientHeight
+    const z = Math.min(
+      cw / (maxX - minX + PADDING * 2),
+      ch / (maxY - minY + PADDING * 2),
+      1.4, // cap so a single small node doesn't fill the screen
+    )
+    setZoom(z)
+    setPan({
+      x: cw / 2 - ((minX + maxX) / 2) * z,
+      y: ch / 2 - ((minY + maxY) / 2) * z,
+    })
+  }, [activeView, initialized, isIso, nodes, connectors, focusTargets])
+
   // Sorted zoom levels for consistent navigation
   const sortedZoomLevels = React.useMemo(() => [...zoomLevels].sort((a, b) => a - b), [zoomLevels])
 
@@ -1823,12 +2052,13 @@ export default function ArcDiagram({
 
   // Click-to-lock: clicking a node locks the highlight, clicking background or same node unlocks
   const handleNodeClick = useCallback((nodeId: string) => {
+    if (activeView) setActiveView(null)
     setLockedNodeId(prev => {
       const next = prev === nodeId ? null : nodeId
       onNodeHover?.(next)
       return next
     })
-  }, [onNodeHover])
+  }, [activeView, onNodeHover, setActiveView])
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (!interactive) return
@@ -1997,7 +2227,7 @@ export default function ArcDiagram({
               viewBox={`0 0 ${layout.width} ${layout.height}`}
             >
               {connectors.map((conn, i) => {
-                const isConnected = activeNodeId != null && focusState.connectorIndexes.has(i)
+                const isConnected = hasFocus && focusState.connectorIndexes.has(i)
                 return (
                   <ConnectorPath
                     key={i}
@@ -2008,7 +2238,7 @@ export default function ArcDiagram({
                     themeColors={themeColors}
                     brand={brand}
                     highlighted={fx.highlightEdges && isConnected}
-                    dimmed={fx.dim && activeNodeId != null && !isConnected}
+                    dimmed={fx.dim && hasFocus && !isConnected}
                     dimOpacity={fx.connectorDimOpacity}
                   />
                 )
@@ -2030,7 +2260,7 @@ export default function ArcDiagram({
                   themeColors={themeColors}
                   brand={brand}
                   hovered={isActive}
-                  dimmed={fx.dim && activeNodeId != null && !isInFocus}
+                  dimmed={fx.dim && hasFocus && !isInFocus}
                   lift={fx.lift}
                   glow={fx.glow}
                   dimOpacity={fx.dimOpacity}
@@ -2089,12 +2319,25 @@ export default function ArcDiagram({
         <ArcSourceView source={sourceCode} mode={mode} />
       )}
 
-      {!showArc && showFocusStory && activeFocusTarget && (
+      {!showArc && storyTarget && (activeView ? showViews : showFocusStory) && (
         <FocusStory
-          target={activeFocusTarget}
+          target={storyTarget}
           mode={mode}
           inset={chromeInset}
           monoFamily={brand?.monoFamily}
+        />
+      )}
+
+      {/* Guided views rail - bottom center */}
+      {showViews && !showArc && views != null && views.length > 0 && (
+        <ViewsRail
+          views={views}
+          activeIndex={activeViewIndex}
+          mode={mode}
+          monoFamily={brand?.monoFamily}
+          inset={chromeInset}
+          onStep={i => setActiveView(views[i]?.id ?? null)}
+          onExit={() => setActiveView(null)}
         />
       )}
 

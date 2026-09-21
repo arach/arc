@@ -618,6 +618,83 @@ export function validateDiagram(value: unknown): Diagnostic[] {
     }
   }
 
+  // views: ordered guided tour entries; same reference rules as focusTargets.
+  const views = d.views
+  if (views != null && !Array.isArray(views)) {
+    push({ code: 'shape/invalid-views', severity: 'error', subject: { type: 'diagram' }, message: '`views` must be an array' })
+  } else if (Array.isArray(views)) {
+    const seenViewIds = new Set<string>()
+    views.forEach((raw, index) => {
+      if (!isObject(raw)) {
+        push({ code: 'shape/invalid-view', severity: 'error', subject: { type: 'diagram' }, message: `views[${index}] must be an object`, evidence: { index } })
+        return
+      }
+      const viewId = typeof raw.id === 'string' ? raw.id : String(raw.id ?? index)
+      if (typeof raw.id !== 'string' || raw.id.length === 0 || typeof raw.title !== 'string' || raw.title.length === 0) {
+        push({
+          code: 'shape/invalid-view',
+          severity: 'error',
+          subject: { type: 'diagram' },
+          message: `views[${index}] requires non-empty string "id" and "title"`,
+          evidence: { index, id: raw.id, title: raw.title },
+        })
+      } else if (seenViewIds.has(raw.id)) {
+        push({
+          code: 'semantic/duplicate-view-id',
+          severity: 'warning',
+          subject: { type: 'diagram' },
+          message: `views[${index}] duplicates view id "${raw.id}" — deep links and the rail select the first`,
+          evidence: { index, id: raw.id },
+        })
+      } else {
+        seenViewIds.add(raw.id)
+      }
+      if (typeof raw.node === 'string' && !Object.prototype.hasOwnProperty.call(nodes, raw.node)) {
+        push({
+          code: 'semantic/view-missing-node',
+          severity: 'warning',
+          subject: { type: 'node', id: raw.node },
+          message: `views["${viewId}"].node references a node that does not exist`,
+          evidence: { view: viewId, via: 'node', value: raw.node },
+          supportedFixes: [{ kind: 'remove-ref' }],
+        })
+      }
+      if (Array.isArray(raw.nodes)) {
+        for (const ref of raw.nodes) {
+          if (typeof ref === 'string' && !Object.prototype.hasOwnProperty.call(nodes, ref)) {
+            push({
+              code: 'semantic/view-missing-node',
+              severity: 'warning',
+              subject: { type: 'node', id: ref },
+              message: `views["${viewId}"].nodes references missing node "${ref}"`,
+              evidence: { view: viewId, via: 'nodes', value: ref },
+              supportedFixes: [{ kind: 'remove-ref' }],
+            })
+          }
+        }
+      }
+      if (Array.isArray(raw.connectors)) {
+        for (const ref of raw.connectors) {
+          if (!isObject(ref)) continue
+          const matched = validConnectors.some(({ c }) =>
+            typeof ref.id === 'string'
+              ? c.id === ref.id
+              : c.from === ref.from && c.to === ref.to)
+          if (!matched) {
+            push({
+              code: 'semantic/view-missing-connector',
+              severity: 'warning',
+              subject: { type: 'connector', id: typeof ref.id === 'string' ? ref.id : `${String(ref.from)}->${String(ref.to)}` },
+              message: `views["${viewId}"].connectors references a connector that does not exist`,
+              evidence: { view: viewId, ref },
+              supportedFixes: [{ kind: 'remove-ref' }],
+            })
+          }
+        }
+      }
+    })
+  }
+
   // layoutHints: group membership lives on the node hint — a group "owns" the
   // nodes that name it, per docs/group-layout.md.
   const layoutHints = d.layoutHints

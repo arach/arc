@@ -312,12 +312,13 @@ export function createArcMcpServer(): McpServer {
     {
       diagram: diagramSchema.describe('Valid ArcDiagramData JSON'),
       sessionId: z.string().optional().describe('Session id (generated if omitted)'),
+      view: z.string().optional().describe('Guided view id to start on (data.views[].id) — deep-links the player chapter'),
       baseUrl: z.string().url().optional().describe('Studio base URL (default: ARC_EDITOR_URL or http://localhost:5188)'),
     },
-    async ({ diagram, sessionId, baseUrl }) => {
+    async ({ diagram, sessionId, baseUrl, view }) => {
       try {
         const data = parseDiagram(diagram)
-        const handoff = buildEditorHandoff(data, { sessionId, baseUrl })
+        const handoff = buildEditorHandoff(data, { sessionId, baseUrl, view })
 
         return {
           content: [{
@@ -325,8 +326,9 @@ export function createArcMcpServer(): McpServer {
             text: JSON.stringify({
               sessionId: handoff.sessionId,
               editorUrl: handoff.editorUrl,
+              playerUrl: handoff.playerUrl,
               showcaseUrl: handoff.showcaseUrl,
-              note: 'Open editorUrl in a browser with the Arc dev server running (bun run dev). The hash seeds the diagram; the session id is for bookmarking after load.',
+              note: 'Open editorUrl in a browser with the Arc dev server running (bun run dev) — the hash seeds and persists the session; then playerUrl renders it read-only (deep-linked to the view, when given).',
               diagram: data,
             }, null, 2),
           }],

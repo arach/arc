@@ -39,3 +39,5 @@ Use `mode: 'append'` or omit `mode` to keep the selected node's direct connectio
 Connector references are directional. `{ from: 'api', to: 'queue' }` does not match a connector that runs from `queue` to `api`.
 
 The caption and steps are optional. They appear only when `showFocusStory` is enabled, but the declared nodes and connectors still control highlighting without the annotation.
+
+For an authored, ordered walkthrough — named chapters, a previous/next rail, and shareable `?view=<id>` links — see [guided views](/docs/views).
