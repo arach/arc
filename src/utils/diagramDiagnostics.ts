@@ -54,6 +54,7 @@ export type Fix =
   | { kind: 'set-shape'; shape: NodeShape }
   | { kind: 'set-anchor'; field: 'fromAnchor' | 'toAnchor'; anchor: AnchorPosition }
   | { kind: 'remove-ref' }
+  | { kind: 'remove-source' }
 
 export interface Diagnostic {
   code: string
@@ -434,6 +435,39 @@ export function validateDiagram(value: unknown): Diagnostic[] {
           ? [{ kind: 'set-shape', shape: closest(raw.shape, NODE_SHAPE_KEYS)! }]
           : undefined,
       })
+    }
+
+    if (raw.source != null) {
+      const s = raw.source
+      const problems: string[] = []
+      if (!isObject(s)) {
+        problems.push('it must be an object')
+      } else {
+        if (typeof s.path !== 'string' || s.path.length === 0) {
+          problems.push('`path` must be a non-empty string')
+        }
+        for (const field of ['line', 'endLine'] as const) {
+          if (s[field] !== undefined && (!Number.isInteger(s[field]) || (s[field] as number) < 1)) {
+            problems.push(`\`${field}\` must be a positive integer`)
+          }
+        }
+        if (Number.isInteger(s.line) && Number.isInteger(s.endLine) && (s.endLine as number) < (s.line as number)) {
+          problems.push('`endLine` is before `line`')
+        }
+        if (s.commit !== undefined && typeof s.commit !== 'string') {
+          problems.push('`commit` must be a string')
+        }
+      }
+      if (problems.length) {
+        push({
+          code: 'semantic/invalid-source',
+          severity: 'error',
+          subject: { type: 'node', id },
+          message: `Node "${id}" has invalid \`source\` — ${problems.join('; ')}`,
+          evidence: { source: raw.source },
+          supportedFixes: [{ kind: 'remove-source' }],
+        })
+      }
     }
   }
 

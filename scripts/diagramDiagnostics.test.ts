@@ -353,6 +353,43 @@ describe('validateDiagram — geometry layer', () => {
     expect((diag?.evidence?.overflow as { right: number }).right).toBe(50)
     expect(diag?.supportedFixes).toContainEqual({ kind: 'auto-layout' })
   })
+
+  describe('source evidence', () => {
+    const withSource = (source: unknown) => {
+      const d = base()
+      const id = Object.keys(d.nodeData)[0]
+      d.nodeData[id].source = source
+      return { d, id }
+    }
+
+    test('a well-formed source produces no diagnostics', () => {
+      for (const source of [
+        { path: 'src/foo.ts' },
+        { path: 'src/foo.ts', line: 12 },
+        { path: 'src/foo.ts', line: 12, endLine: 20, commit: 'abc123' },
+      ]) {
+        const { d } = withSource(source)
+        expect(validateDiagram(d)).toEqual([])
+      }
+    })
+
+    test.each([
+      ['not an object', 'x'],
+      ['missing path', { line: 3 }],
+      ['empty path', { path: '' }],
+      ['non-string path', { path: 7 }],
+      ['fractional line', { path: 'a.ts', line: 1.5 }],
+      ['zero line', { path: 'a.ts', line: 0 }],
+      ['endLine before line', { path: 'a.ts', line: 20, endLine: 10 }],
+      ['non-string commit', { path: 'a.ts', commit: 42 }],
+    ])('invalid source — %s', (_label, source) => {
+      const { d, id } = withSource(source)
+      const diag = find(validateDiagram(d), 'semantic/invalid-source')
+      expect(diag?.severity).toBe('error')
+      expect(diag?.subject).toEqual({ type: 'node', id })
+      expect(diag?.supportedFixes).toEqual([{ kind: 'remove-source' }])
+    })
+  })
 })
 
 describe('validateDiagram — node kinds', () => {

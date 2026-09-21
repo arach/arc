@@ -62,12 +62,6 @@
             "$ref": "#/definitions/NodePosition"
           },
           "type": "object"
-        },
-        "views": {
-          "items": {
-            "$ref": "#/definitions/DiagramView"
-          },
-          "type": "array"
         }
       },
       "required": [
@@ -194,55 +188,29 @@
       ],
       "type": "object"
     },
-    "DiagramView": {
+    "DiagramSource": {
       "additionalProperties": false,
-      "description": "A named stop in a guided tour. `views[]` turns a diagram into a document: an ordered set of camera/highlight states the reader can step through, and each `id` is stable enough to deep-link (`/player/<session>?view=<id>`).",
+      "description": "A pointer into the codebase this node describes. Lets a diagram cite the code it models, so docs and agents can jump — or check staleness — at the recorded `commit`.",
       "properties": {
-        "caption": {
+        "commit": {
+          "description": "Commit SHA the reference was written against.",
           "type": "string"
         },
-        "connectors": {
-          "items": {
-            "$ref": "#/definitions/FocusConnectorRef"
-          },
-          "type": "array"
+        "endLine": {
+          "description": "1-based last line when the reference spans a range.",
+          "type": "number"
         },
-        "id": {
-          "description": "Stable slug — used by deep links and the views rail.",
-          "type": "string"
+        "line": {
+          "description": "1-based first line.",
+          "type": "number"
         },
-        "mode": {
-          "description": "`append` adds direct neighbors of `node`; `replace` draws only the declared set. Views without `node` always behave as `replace`.",
-          "enum": [
-            "append",
-            "replace"
-          ],
-          "type": "string"
-        },
-        "node": {
-          "description": "Anchor node — behaves like selecting it, including its focusTarget story unless the view overrides the highlight set.",
-          "type": "string"
-        },
-        "nodes": {
-          "items": {
-            "type": "string"
-          },
-          "type": "array"
-        },
-        "steps": {
-          "items": {
-            "$ref": "#/definitions/FocusStep"
-          },
-          "type": "array"
-        },
-        "title": {
-          "description": "Chapter title shown in the rail.",
+        "path": {
+          "description": "Repo-relative path, e.g. `src/auth/session.ts`.",
           "type": "string"
         }
       },
       "required": [
-        "id",
-        "title"
+        "path"
       ],
       "type": "object"
     },
@@ -440,19 +408,13 @@
       "additionalProperties": false,
       "properties": {
         "color": {
-          "$ref": "#/definitions/DiagramColor",
-          "description": "Palette color. Omit when `kind` supplies the default color."
+          "$ref": "#/definitions/DiagramColor"
         },
         "description": {
           "type": "string"
         },
         "icon": {
-          "description": "Lucide icon name. Omit when `kind` supplies the default icon.",
           "type": "string"
-        },
-        "kind": {
-          "$ref": "#/definitions/NodeKind",
-          "description": "Semantic role — supplies default `icon` and `color`; explicit fields still win."
         },
         "name": {
           "type": "string"
@@ -461,32 +423,20 @@
           "$ref": "#/definitions/NodeShape",
           "description": "Per-node silhouette. Omit to follow the theme's own node shape."
         },
+        "source": {
+          "$ref": "#/definitions/DiagramSource",
+          "description": "Code this node describes — see `sourceUrl`/`sourceLabel` in utils/sourceRef."
+        },
         "subtitle": {
           "type": "string"
         }
       },
       "required": [
-        "name"
+        "icon",
+        "name",
+        "color"
       ],
       "type": "object"
-    },
-    "NodeKind": {
-      "description": "Semantic role for a node. When set, `icon` and `color` may be omitted — NODE_KIND_DEFAULTS supplies them — and every renderer resolves the kind through the theme palette the same way an authored `color` resolves.",
-      "enum": [
-        "frontend",
-        "backend",
-        "service",
-        "database",
-        "cache",
-        "queue",
-        "storage",
-        "gateway",
-        "security",
-        "user",
-        "external",
-        "observability"
-      ],
-      "type": "string"
     },
     "NodeLayoutHint": {
       "additionalProperties": false,

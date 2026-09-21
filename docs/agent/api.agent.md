@@ -62,6 +62,7 @@ interface NodeData {
   kind?: NodeKind        // 'frontend'|'backend'|'service'|'database'|'cache'|'queue'|
                          // 'storage'|'gateway'|'security'|'user'|'external'|'observability'
   shape?: NodeShape      // per-node override; omit to follow theme
+  source?: DiagramSource   // code evidence: {path, line?, endLine?, commit?}
 }
 
 type DiagramColor = 'violet' | 'emerald' | 'blue' | 'amber' | 'sky' | 'zinc' | 'rose' | 'orange'
