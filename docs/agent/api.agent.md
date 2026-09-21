@@ -49,11 +49,13 @@ interface NodePosition {
 }
 
 interface NodeData {
-  icon: string           // Lucide icon name (string, not component)
+  icon?: string          // Lucide icon name (string, not component); omit when kind supplies it
   name: string
   subtitle?: string
   description?: string
-  color: DiagramColor
+  color?: DiagramColor   // omit when kind supplies it; overrides the kind default
+  kind?: NodeKind        // 'frontend'|'backend'|'service'|'database'|'cache'|'queue'|
+                         // 'storage'|'gateway'|'security'|'user'|'external'|'observability'
   shape?: NodeShape      // per-node override; omit to follow theme
 }
 

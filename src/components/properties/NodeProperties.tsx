@@ -17,12 +17,14 @@ import {
   InspKv,
   InspPair,
   InspPairButton,
+  InspSelect,
 } from '../editor/inspector-ui'
 import IconPicker from './IconPicker'
 import ColorPicker from './ColorPicker'
 import ShapePicker from './ShapePicker'
 import { resolveNodeRadius } from '../../utils/themes'
 import { resolveNodeShape } from '../../utils/nodeShape'
+import { NODE_KINDS, resolveNodeColor, resolveNodeIcon, type NodeKind } from '../../utils/nodeKinds'
 import { getIsoStyle, materialFor, MATERIAL_LABELS } from '../../utils/isoStyles'
 import { DEFAULT_ISO_HEIGHT, DEFAULT_ISO_DEPTH } from '../../utils/isoBlueprint'
 const ISO_NUDGE = 16
@@ -108,7 +110,7 @@ export default function NodeProperties({ nodeId }: { nodeId: string }) {
   const isoDepth = node.isoDepth ?? DEFAULT_ISO_DEPTH
 
   const hatchName = isIsometric && isoStyle.technical
-    ? MATERIAL_LABELS[materialFor(data.color)]
+    ? MATERIAL_LABELS[materialFor(resolveNodeColor(data))]
     : null
 
   const nudgeFloor = (dir: -1 | 1) => {
@@ -199,8 +201,18 @@ export default function NodeProperties({ nodeId }: { nodeId: string }) {
         </InspField>
       )}
 
+      <InspKv label="Kind">
+        <InspSelect
+          value={data.kind ?? ''}
+          onChange={(e) => handleUpdate('kind', (e.target.value || undefined) as NodeKind | undefined)}
+        >
+          <option value="">—</option>
+          {NODE_KINDS.map((k) => <option key={k} value={k}>{k}</option>)}
+        </InspSelect>
+      </InspKv>
+
       <InspKv label="Color">
-        <ColorPicker value={data.color} onChange={(v) => handleUpdate('color', v)} />
+        <ColorPicker value={resolveNodeColor(data)} onChange={(v) => handleUpdate('color', v)} />
       </InspKv>
       {hatchName && (
         <p className="arc-insp-caption">Plate hatch: {hatchName}</p>
@@ -208,7 +220,7 @@ export default function NodeProperties({ nodeId }: { nodeId: string }) {
 
       <InspField>
         <InspLabel>Icon</InspLabel>
-        <IconPicker value={data.icon} onChange={(v) => handleUpdate('icon', v)} />
+        <IconPicker value={resolveNodeIcon(data)} onChange={(v) => handleUpdate('icon', v)} />
       </InspField>
 
       {isIsometric && (

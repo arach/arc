@@ -55,11 +55,12 @@ interface ArcDiagramData {
   layoutHints?: LayoutHints          // auto-layout inside groups
   nodes: Record<string, { x: number; y: number; size: 'xs' | 's' | 'm' | 'l' }>
   nodeData: Record<string, {
-    icon: string                     // Lucide name as string
+    icon?: string                    // Lucide name as string; omit when kind supplies it
     name: string
     subtitle?: string
     description?: string
-    color: DiagramColor
+    color?: DiagramColor             // omit when kind supplies it; always wins over kind
+    kind?: NodeKind                  // semantic role — supplies default icon + color
     shape?: NodeShape                // per-node silhouette override
   }>
   connectors: Array<{
@@ -78,6 +79,17 @@ interface ArcDiagramData {
   focusTargets?: Record<string, FocusTarget>
 }
 ```
+
+**Node kinds** (`src/utils/nodeKinds.ts` NODE_KINDS / NODE_KIND_DEFAULTS) — set
+`kind` instead of picking `icon`+`color` yourself; explicit `icon`/`color`
+still override the kind default:
+- `frontend`→violet/Monitor · `backend`→blue/Server · `service`→blue/Box
+- `database`→emerald/Database · `cache`→amber/Zap · `queue`→amber/Layers
+- `storage`→emerald/HardDrive · `gateway`→sky/Globe · `security`→rose/Shield
+- `user`→sky/User · `external`→zinc/Cloud · `observability`→orange/Activity
+
+Validation: `validateDiagram` requires `icon`+`color` only when `kind` is
+absent or unknown (`semantic/unknown-kind`, fix `{kind:'set-kind',value}`).
 
 **Node sizes** (`src/utils/constants.ts` NODE_SIZES):
 - `xs` 80×36 · `s` 110×48 · `m` 160×75 · `l` 220×90
@@ -111,8 +123,8 @@ const diagram: ArcDiagramData = {
     backend: { x: 250, y: 100, size: 'm' },
   },
   nodeData: {
-    frontend: { icon: 'Monitor', name: 'Frontend', color: 'violet' },
-    backend: { icon: 'Server', name: 'Backend', color: 'emerald' },
+    frontend: { name: 'Frontend', kind: 'frontend' },
+    backend: { name: 'Backend', kind: 'backend' },
   },
   connectors: [
     { from: 'frontend', to: 'backend', fromAnchor: 'right', toAnchor: 'left', style: 'api' },

@@ -85,7 +85,7 @@ import type { ArcDiagramData } from '@arach/arc'
 export const systemArchitecture: ArcDiagramData = {
   layout: { width: 700, height: 400 },
   nodes: { /* x, y, size: 'm' */ },
-  nodeData: { /* icon: 'Server', name, color */ },
+  nodeData: { /* name, kind: 'backend' — or explicit icon/color overrides */ },
   connectors: [ /* ... */ ],
   connectorStyles: { /* ... */ }
 }
