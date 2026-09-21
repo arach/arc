@@ -27,7 +27,14 @@ export type AnchorPosition =
   | 'bottomLeft'
   | 'bottomRight'
 
-export type EditorMode = 'select' | 'addNode' | 'addConnector' | 'addGroup' | 'pan'
+export type EditorMode =
+  | 'select'
+  | 'addNode'
+  | 'addConnector'
+  | 'addGroup'
+  | 'addRect'
+  | 'addCircle'
+  | 'pan'
 
 export type ViewMode = '2d' | 'isometric'
 
