@@ -107,6 +107,7 @@ is the exported resolver.
 `themeId`, `colorMode`, `viewMode`, `isoStyle`, `viewport`
 
 Validate external JSON with `validateDiagram()` in `src/utils/diagramDiagnostics.ts`, or `arc check diagram.json --json` from the CLI. `validateDiagramShape()` in `src/utils/diagramValidation.ts` remains the low-level shape gate.
+`validateDiagram()` also emits `composition/*` advisories for the authoring contract: `composition/too-dense` (>16 nodes without groups/views chaptering) and `composition/label-overflow` (name longer than the node's size budget). The full contract — budgets, one spine, spacing math, autoLayout thresholds, label and routing rules — lives in `skills/arc-diagrams/SKILL.md` under "Layout judgment".
 
 For CI artifacts, `arc render diagram.json --out diagram.svg --json` validates,
 renders to a same-directory temp file, atomically replaces the output, and emits

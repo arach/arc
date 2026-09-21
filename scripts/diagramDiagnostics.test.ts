@@ -295,6 +295,48 @@ describe('validateDiagram — geometry layer', () => {
     expect(diag?.supportedFixes).toContainEqual({ kind: 'auto-layout' })
   })
 
+  test('composition/too-dense — flat diagram over the node budget warns', () => {
+    const d = base()
+    // 17 nodes, no groups/views/layoutHints
+    for (let i = 0; i < 20; i++) {
+      const id = `n${i}`
+      d.nodes[id] = { x: 40 + (i % 5) * 300, y: 40 + Math.floor(i / 5) * 160, size: 's' }
+      d.nodeData[id] = { icon: 'Box', name: `Node ${i}`, color: 'zinc' }
+    }
+    const diag = find(validateDiagram(d), 'composition/too-dense')
+    expect(diag?.severity).toBe('warning')
+    expect((diag?.evidence as any).nodeCount).toBe(25)
+    expect(diag?.supportedFixes).toContainEqual({ kind: 'auto-layout' })
+  })
+
+  test('composition/too-dense — chaptered diagrams stay quiet', () => {
+    const d = base()
+    for (let i = 0; i < 20; i++) {
+      const id = `n${i}`
+      d.nodes[id] = { x: 40 + (i % 5) * 300, y: 40 + Math.floor(i / 5) * 160, size: 's' }
+      d.nodeData[id] = { icon: 'Box', name: `Node ${i}`, color: 'zinc' }
+    }
+    d.groups = [{ id: 'g', x: 0, y: 0, width: 2000, height: 1000, type: 'rect', color: 'zinc' }]
+    expect(codes(d)).not.toContain('composition/too-dense')
+  })
+
+  test('composition/label-overflow — long names suggest the fitting size', () => {
+    const d = base()
+    d.nodes.puff = { x: 40, y: 600, size: 'xs' }
+    d.nodeData.puff = { icon: 'Box', name: 'Distributed Coordination', color: 'zinc' }
+    const diag = find(validateDiagram(d), 'composition/label-overflow')
+    expect(diag?.subject).toEqual({ type: 'node', id: 'puff' })
+    expect((diag?.evidence as any).size).toBe('xs')
+    expect(diag?.supportedFixes).toContainEqual({ kind: 'set-size', size: 'l' })
+  })
+
+  test('composition/label-overflow — in-budget names stay quiet', () => {
+    const d = base()
+    d.nodes.small = { x: 40, y: 600, size: 'l' }
+    d.nodeData.small = { icon: 'Box', name: 'Reasonable Name', color: 'zinc' }
+    expect(codes(d)).not.toContain('composition/label-overflow')
+  })
+
   test('endpoints and clear routes are not flagged', () => {
     const d = base()
     // no connector in the fixture passes through an unrelated node
