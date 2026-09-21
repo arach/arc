@@ -1396,6 +1396,85 @@ body,
   text-align: right;
 }
 
+/* Title row with a right-aligned kind chip (Vellum's connector header). */
+.arc-insp-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--arc-space-3);
+}
+
+.arc-insp-kindchip {
+  font-family: var(--arc-font-mono);
+  font-size: var(--arc-text-xs);
+  letter-spacing: 0.05em;
+  color: var(--arc-muted);
+  border: 1px solid var(--arc-line);
+  border-radius: var(--arc-radius);
+  padding: 1px var(--arc-space-2);
+}
+
+/* Slider + value/'auto' readout on one row. */
+.arc-insp-range-row {
+  display: flex;
+  align-items: center;
+  gap: var(--arc-space-3);
+  min-width: 0;
+}
+
+.arc-insp-range-row .arc-insp-input[type="range"] {
+  flex: 1;
+  min-width: 0;
+}
+
+.arc-insp-value {
+  flex: 0 0 auto;
+  min-width: calc(34px * var(--arc-ui-scale));
+  padding: 0;
+  border: none;
+  background: transparent;
+  font-family: var(--arc-font-mono);
+  font-size: var(--arc-text-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--arc-ink-2);
+  text-align: right;
+  cursor: pointer;
+}
+
+.arc-insp-value.is-auto {
+  color: var(--arc-faint);
+}
+
+.arc-insp-value.is-chip {
+  border: 1px solid var(--arc-line);
+  border-radius: var(--arc-radius);
+  padding: 1px var(--arc-space-2);
+  text-align: center;
+}
+
+/* Connector end-glyph picker row. */
+.arc-insp-ends {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1px;
+}
+
+.arc-insp-ends .arc-insp-icon-btn {
+  flex: 1;
+  min-width: calc(24px * var(--arc-ui-scale));
+  background: color-mix(in srgb, var(--arc-canvas) 55%, var(--arc-surface));
+  border: 1px solid var(--arc-line);
+  border-radius: 0;
+}
+
+.arc-insp-ends .arc-insp-icon-btn:first-child {
+  border-radius: var(--arc-radius) 0 0 var(--arc-radius);
+}
+
+.arc-insp-ends .arc-insp-icon-btn:last-child {
+  border-radius: 0 var(--arc-radius) var(--arc-radius) 0;
+}
+
 .arc-insp-pair {
   display: flex;
   gap: var(--arc-space-2);
@@ -1953,7 +2032,7 @@ body,
   font-weight: 500;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--arc-acc);
+  color: var(--arc-muted);
 }
 
 .arc-insp-caption {

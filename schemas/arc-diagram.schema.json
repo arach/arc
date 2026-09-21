@@ -73,6 +73,17 @@
       ],
       "type": "object"
     },
+    "ArrowHead": {
+      "enum": [
+        "none",
+        "arrow",
+        "open",
+        "dot",
+        "diamond",
+        "bar"
+      ],
+      "type": "string"
+    },
     "Connector": {
       "additionalProperties": false,
       "properties": {
@@ -89,8 +100,20 @@
         "fromAnchor": {
           "$ref": "#/definitions/AnchorPosition"
         },
+        "fromRole": {
+          "description": "Role annotation drawn near the `from` end, e.g. \"owner 1\".",
+          "type": "string"
+        },
         "id": {
           "description": "Stable identity for diffs, deep links, and diagnostics. Without it a connector is only addressable by `from`/`to` pair or array index, which breaks under reordering and parallel edges.",
+          "type": "string"
+        },
+        "kind": {
+          "description": "Relationship kind ('custom' by default). Inspector metadata.",
+          "type": "string"
+        },
+        "label": {
+          "description": "Label drawn beside this connector; overrides the style's `label`.",
           "type": "string"
         },
         "style": {
@@ -101,6 +124,10 @@
         },
         "toAnchor": {
           "$ref": "#/definitions/AnchorPosition"
+        },
+        "toRole": {
+          "description": "Role annotation drawn near the `to` end, e.g. \"items 0..*\".",
+          "type": "string"
         }
       },
       "required": [
@@ -117,7 +144,16 @@
         "natural",
         "down",
         "up",
-        "step"
+        "step",
+        "direct"
+      ],
+      "type": "string"
+    },
+    "ConnectorLineStyle": {
+      "enum": [
+        "solid",
+        "dashed",
+        "dotted"
       ],
       "type": "string"
     },
@@ -127,14 +163,31 @@
         "animated": {
           "type": "boolean"
         },
+        "arrowScale": {
+          "description": "When true, arrowhead size scales with `strokeWidth` (\"sizes follow .width\").",
+          "type": "boolean"
+        },
+        "arrowSize": {
+          "description": "Arrowhead length in px. Omit = auto.",
+          "type": "number"
+        },
         "bidirectional": {
           "type": "boolean"
         },
         "color": {
-          "$ref": "#/definitions/DiagramColor"
+          "$ref": "#/definitions/DiagramColor",
+          "description": "Omit for 'auto' — renderers fall back to the theme's neutral stroke."
         },
         "dashed": {
           "type": "boolean"
+        },
+        "fromArrow": {
+          "$ref": "#/definitions/ArrowHead",
+          "description": "Arrowhead at the `from` end. Omit = `bidirectional ? 'arrow' : 'none'`."
+        },
+        "fromArrowSize": {
+          "description": "Per-end size overrides; omit = `arrowSize` then auto.",
+          "type": "number"
         },
         "label": {
           "type": "string"
@@ -143,6 +196,14 @@
           "$ref": "#/definitions/LabelAlign",
           "description": "For vertical connectors, `right`/`left` places the label beside the line."
         },
+        "lineStyle": {
+          "$ref": "#/definitions/ConnectorLineStyle",
+          "description": "Stroke pattern; when set it takes precedence over `dashed`."
+        },
+        "opacity": {
+          "description": "Stroke opacity 0–1.",
+          "type": "number"
+        },
         "showArrow": {
           "type": "boolean"
         },
@@ -150,13 +211,17 @@
           "type": "boolean"
         },
         "strokeWidth": {
+          "description": "Omit for 'auto' — renderers use a 2px stroke.",
+          "type": "number"
+        },
+        "toArrow": {
+          "$ref": "#/definitions/ArrowHead",
+          "description": "Arrowhead at the `to` end. Omit = `showArrow === false ? 'none' : 'arrow'`."
+        },
+        "toArrowSize": {
           "type": "number"
         }
       },
-      "required": [
-        "color",
-        "strokeWidth"
-      ],
       "type": "object"
     },
     "DiagramColor": {
