@@ -1,0 +1,28 @@
+{
+  "layout": { "width": 860, "height": 400 },
+  "nodes": {
+    "services": { "x": 40, "y": 160, "size": "m" },
+    "kafka": { "x": 260, "y": 160, "size": "m" },
+    "workers": { "x": 480, "y": 160, "size": "m" },
+    "warehouse": { "x": 700, "y": 160, "size": "m" },
+    "monitoring": { "x": 260, "y": 300, "size": "m" }
+  },
+  "nodeData": {
+    "services": { "icon": "Layers", "name": "App Services", "color": "blue" },
+    "kafka": { "icon": "Activity", "name": "Kafka", "color": "violet" },
+    "workers": { "icon": "Cpu", "name": "Stream Workers", "color": "emerald" },
+    "warehouse": { "icon": "Database", "name": "Warehouse", "color": "amber" },
+    "monitoring": { "icon": "Activity", "name": "Monitoring", "color": "rose" }
+  },
+  "connectors": [
+    { "id": "services-kafka", "from": "services", "to": "kafka", "fromAnchor": "right", "toAnchor": "left", "style": "events" },
+    { "id": "kafka-workers", "from": "kafka", "to": "workers", "fromAnchor": "right", "toAnchor": "left", "style": "events" },
+    { "id": "workers-warehouse", "from": "workers", "to": "warehouse", "fromAnchor": "right", "toAnchor": "left", "style": "writes" },
+    { "id": "monitoring-kafka", "from": "monitoring", "to": "kafka", "fromAnchor": "top", "toAnchor": "bottom", "style": "watch" }
+  ],
+  "connectorStyles": {
+    "events": { "color": "violet", "strokeWidth": 2, "label": "events" },
+    "writes": { "color": "emerald", "strokeWidth": 2, "label": "aggregates" },
+    "watch": { "color": "rose", "strokeWidth": 2, "dashed": true, "label": "lag" }
+  }
+}

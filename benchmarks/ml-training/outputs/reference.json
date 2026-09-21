@@ -1,0 +1,25 @@
+{
+  "layout": { "width": 860, "height": 300 },
+  "nodes": {
+    "lake": { "x": 40, "y": 110, "size": "m" },
+    "training": { "x": 260, "y": 110, "size": "m" },
+    "registry": { "x": 480, "y": 110, "size": "m" },
+    "serving": { "x": 700, "y": 110, "size": "m" }
+  },
+  "nodeData": {
+    "lake": { "icon": "Database", "name": "Data Lake", "color": "sky" },
+    "training": { "icon": "Cpu", "name": "Training Cluster", "color": "violet" },
+    "registry": { "icon": "Package", "name": "Model Registry", "color": "emerald" },
+    "serving": { "icon": "Server", "name": "Serving Endpoint", "color": "blue" }
+  },
+  "connectors": [
+    { "id": "lake-training", "from": "lake", "to": "training", "fromAnchor": "right", "toAnchor": "left", "style": "reads" },
+    { "id": "training-registry", "from": "training", "to": "registry", "fromAnchor": "right", "toAnchor": "left", "style": "push" },
+    { "id": "registry-serving", "from": "registry", "to": "serving", "fromAnchor": "right", "toAnchor": "left", "style": "pull" }
+  ],
+  "connectorStyles": {
+    "reads": { "color": "sky", "strokeWidth": 2, "label": "reads" },
+    "push": { "color": "violet", "strokeWidth": 2, "label": "push" },
+    "pull": { "color": "emerald", "strokeWidth": 2, "label": "pull", "dashed": true }
+  }
+}

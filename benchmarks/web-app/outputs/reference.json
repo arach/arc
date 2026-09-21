@@ -1,0 +1,25 @@
+{
+  "layout": { "width": 720, "height": 360 },
+  "nodes": {
+    "frontend": { "x": 40, "y": 140, "size": "m" },
+    "api": { "x": 280, "y": 140, "size": "m" },
+    "postgres": { "x": 520, "y": 60, "size": "m" },
+    "redis": { "x": 520, "y": 220, "size": "m" }
+  },
+  "nodeData": {
+    "frontend": { "icon": "Monitor", "name": "Frontend", "color": "violet" },
+    "api": { "icon": "Server", "name": "API Server", "color": "blue" },
+    "postgres": { "icon": "Database", "name": "Postgres", "color": "emerald" },
+    "redis": { "icon": "Zap", "name": "Redis Cache", "color": "amber" }
+  },
+  "connectors": [
+    { "id": "frontend-api", "from": "frontend", "to": "api", "fromAnchor": "right", "toAnchor": "left", "style": "http" },
+    { "id": "api-postgres", "from": "api", "to": "postgres", "fromAnchor": "right", "toAnchor": "left", "style": "sql" },
+    { "id": "api-redis", "from": "api", "to": "redis", "fromAnchor": "right", "toAnchor": "left", "style": "cache" }
+  ],
+  "connectorStyles": {
+    "http": { "color": "blue", "strokeWidth": 2, "label": "REST" },
+    "sql": { "color": "emerald", "strokeWidth": 2 },
+    "cache": { "color": "amber", "strokeWidth": 2, "dashed": true }
+  }
+}

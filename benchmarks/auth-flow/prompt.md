@@ -1,0 +1,1 @@
+Produce an ArcDiagramData JSON document for an auth flow: a web client calls an API gateway, the gateway delegates to an auth service which looks users up in a user database, and the gateway checks a token cache before delegating.

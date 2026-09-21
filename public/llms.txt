@@ -39,7 +39,8 @@ bun install && bun run dev    # → http://localhost:5188/editor
 - skills/arc-diagrams/SKILL.md — diagram generation
 - CLAUDE.md — editor contributor guide
 
-## MCP
+## CLI + MCP
 
+`arc` on `@arach/arc` — `arc check`, `arc diff`, `arc render`, `arc bench`, `arc schema` (`bun run build:cli` for the published bin).
 `arc-mcp` on `@arach/arc` — `bun run mcp` locally, `bun run build:mcp` for the published bin.
 See docs/agent/mcp.agent.md.

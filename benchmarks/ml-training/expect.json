@@ -1,0 +1,6 @@
+{
+  "nodes": ["lake", "training", "registry", "serving"],
+  "edges": [["lake", "training"], ["training", "registry"], ["registry", "serving"]],
+  "minNodes": 4,
+  "maxNodes": 8
+}

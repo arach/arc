@@ -10,6 +10,7 @@
 - Stack: React 19, Vite 7, TailwindCSS 4, Hudson shell
 - State: `useReducer` + Context in `EditorProvider`
 - Best doc: `CLAUDE.md` (repo root)
+- CLI: `arc` bin — `arc check`, `arc diff`, `arc render`, `arc bench`, `arc schema`
 - MCP: `arc-mcp` bin on `@arach/arc` — see `docs/agent/mcp.agent.md`
 
 ## Which Package?

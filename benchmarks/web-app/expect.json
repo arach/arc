@@ -1,0 +1,6 @@
+{
+  "nodes": ["frontend", "api", "postgres", "redis"],
+  "edges": [["frontend", "api"], ["api", "postgres"], ["api", "redis"]],
+  "minNodes": 4,
+  "maxNodes": 8
+}

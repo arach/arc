@@ -1,0 +1,6 @@
+{
+  "nodes": ["services", "kafka", "worker", "warehouse", "monitor"],
+  "edges": [["services", "kafka"], ["kafka", "worker"], ["worker", "warehouse"], ["monitor", "kafka"]],
+  "minNodes": 5,
+  "maxNodes": 9
+}
