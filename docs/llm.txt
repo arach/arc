@@ -8,7 +8,7 @@
 ## Quick Facts
 
 - **What**: Drag-and-drop studio + `<ArcDiagram />` player for typed architecture diagrams
-- **Output**: JSON / TypeScript configs (not images) — diffable, versionable
+- **Output**: JSON / TypeScript configs plus SVG/PNG/ASCII exports — diffable source first
 - **Stack**: React 19, Vite 7, TailwindCSS 4, Hudson shell (editor chrome)
 - **Package manager**: bun (`bun install`, `bun run dev`)
 - **CLI**: `arc` bin — `schema`, `check`, `diff`, `render`, `bench`
@@ -183,8 +183,9 @@ Reducer actions: see `docs/agent/editor-actions.agent.md`
 
 ## Themes
 
-Diagram themes (8): `default`, `warm`, `cool`, `mono`, `engineering`, `workbench`, `tactical`, `command`
-Chrome skins (shell only): `console`, `graphite`, `amber`, `viridian`, `paper`
+Diagram themes (11): `default`, `warm`, `cool`, `mono`, `engineering`, `workbench`, `tactical`, `command`, `spacex`, `claude`, `codex`
+Chrome skins (shell only): `console`, `graphite`, `amber`, `viridian`, `paper`, `spacex`, `claude`, `codex`
+Brand pairings: `spacex` = mission plate/telemetry cyan, `claude` = parchment/clay/serif, `codex` = graphite console/mint signal
 
 ## Visual Verification
 
@@ -210,9 +211,11 @@ curl "http://localhost:5188/capture/my-session" > out.png
 
 ## MCP
 
-`arc` bin on `@arach/arc` (`bun run build:cli` for publish) exposes `schema`, `check`, and `diff`.
-`arc-mcp` bin (`bun run mcp` in dev, `bun run build:mcp` for publish) exposes validate_diagram, diff_diagram, auto_layout, render_ascii, diagram_to_typescript, editor_handoff.
-See docs/agent/mcp.agent.md for coverage gaps (SVG/PNG/Mermaid stay elsewhere).
+`arc` bin on `@arach/arc` (`bun run build:cli` for publish) exposes `schema`, `check`, `diff`, `render`, and `bench`.
+`arc-mcp` bin (`bun run mcp` in dev, `bun run build:mcp` for publish).
+Tools: validate_diagram, diff_diagram, auto_layout, render_ascii, render_svg, render_png, render_html, diagram_to_typescript, editor_handoff.
+`render_svg`/`render_png`/`render_html` accept `theme` and `mode`; omitted modes use the theme default. `render_png` uses an installed Chrome/Chromium binary (`ARC_CHROME` overrides lookup); `render_html` emits component/iframe/html text.
+See docs/agent/mcp.agent.md for remaining coverage gaps (Mermaid stays elsewhere).
 
 ## Critical Rules
 

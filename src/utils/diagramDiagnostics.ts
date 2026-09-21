@@ -14,6 +14,7 @@
 import { connectorKey } from '../types/diagram'
 import type {
   AnchorPosition,
+  Connector,
   DiagramColor,
   NodePosition,
   NodeShape,
@@ -21,7 +22,7 @@ import type {
 } from '../types/diagram'
 import { NODE_SIZES } from './constants'
 import { NODE_SHAPES } from './nodeShape'
-import { anchor } from './diagramHelpers'
+import { anchor, connectorControlPoints } from './diagramHelpers'
 import { validateDiagramShape } from './diagramValidation'
 
 export type DiagnosticSeverity = 'error' | 'warning'
@@ -169,55 +170,18 @@ interface Pt {
   y: number
 }
 
-// Mirrors ConnectorLayer.getControlOffset / generatePath so the checked path is
-// the path actually drawn — a cubic bezier, sampled into a polyline.
-function controlOffset(anchorPos: string, distance: number): Pt {
-  const d = Math.abs(distance) * 0.5
-  switch (anchorPos) {
-    case 'top': return { x: 0, y: -d }
-    case 'bottom': return { x: 0, y: d }
-    case 'left': return { x: -d, y: 0 }
-    case 'right': return { x: d, y: 0 }
-    case 'bottomRight': return { x: d * 0.7, y: d * 0.7 }
-    case 'bottomLeft': return { x: -d * 0.7, y: d * 0.7 }
-    default: return { x: 0, y: 0 }
-  }
-}
-
+// Uses the shared connector geometry so the checked path is the path actually
+// drawn — a cubic bezier, sampled into a polyline.
 function connectorCurve(c: Rec, nodes: Record<string, NodePosition>): [Pt, Pt, Pt, Pt] {
   const from = anchor(nodes, c.from as string, c.fromAnchor as AnchorPosition)
   const to = anchor(nodes, c.to as string, c.toAnchor as AnchorPosition)
-  const distance = Math.hypot(to.x - from.x, to.y - from.y)
-
-  if (c.curve === 'natural' || c.curve === 'down' || c.curve === 'up') {
-    const scale = (typeof c.curveDepth === 'number' ? c.curveDepth : 40) / 50
-    const fo = controlOffset(c.fromAnchor as string, distance)
-    const to_ = controlOffset(c.toAnchor as string, distance)
-    return [
-      from,
-      { x: from.x + fo.x * scale, y: from.y + fo.y * scale },
-      { x: to.x + to_.x * scale, y: to.y + to_.y * scale },
-      to,
-    ]
-  }
-
-  const pair = `${c.fromAnchor}->${c.toAnchor}`
-  if (pair === 'right->left' || pair === 'left->right') {
-    const midX = (from.x + to.x) / 2
-    return [from, { x: midX, y: from.y }, { x: midX, y: to.y }, to]
-  }
-  if (pair === 'bottom->top' || pair === 'top->bottom') {
-    const midY = (from.y + to.y) / 2
-    return [from, { x: from.x, y: midY }, { x: to.x, y: midY }, to]
-  }
-  const fo = controlOffset(c.fromAnchor as string, distance)
-  const to_ = controlOffset(c.toAnchor as string, distance)
-  return [
-    from,
-    { x: from.x + fo.x, y: from.y + fo.y },
-    { x: to.x + to_.x, y: to.y + to_.y },
-    to,
-  ]
+  const { cp1, cp2 } = connectorControlPoints(
+    from, to,
+    c.fromAnchor as AnchorPosition, c.toAnchor as AnchorPosition,
+    c.curve as Connector['curve'] | undefined,
+    typeof c.curveDepth === 'number' ? c.curveDepth : 40,
+  )
+  return [from, cp1, cp2, to]
 }
 
 const SAMPLES = 24

@@ -32,8 +32,12 @@ Repo: `~/arc` (bun, React 19, Vite 7).
 Connect to `http://127.0.0.1:5190/mcp` or the public URL. Tools:
 
 - `validate_diagram` — schema check
+- `diff_diagram` — structural delta
 - `auto_layout` — Sugiyama layout
 - `render_ascii` — terminal preview
+- `render_svg` — deterministic SVG export
+- `render_png` — PNG image when Chrome/Chromium is installed (`ARC_CHROME` overrides lookup)
+- `render_html` — React component, iframe embed, or standalone HTML
 - `diagram_to_typescript` — TS module export
 - `editor_handoff` — `#data=` studio URL
 

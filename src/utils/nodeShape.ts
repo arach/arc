@@ -50,6 +50,35 @@ export function shapeClipPath(shape: NodeShape, cut: number): string | undefined
   }
 }
 
+/** Fill path for a cut silhouette, without the half-pixel outline inset. */
+export function shapeFillPath(shape: NodeShape, w: number, h: number, cut: number): string | undefined {
+  switch (shape) {
+    case 'chamfer':
+      return [
+        `M ${cut} 0`,
+        `L ${w - cut} 0`,
+        `L ${w} ${cut}`,
+        `L ${w} ${h - cut}`,
+        `L ${w - cut} ${h}`,
+        `L ${cut} ${h}`,
+        `L 0 ${h - cut}`,
+        `L 0 ${cut}`,
+        'Z',
+      ].join(' ')
+    case 'notch':
+      return [
+        'M 0 0',
+        `L ${w - cut} 0`,
+        `L ${w} ${cut}`,
+        `L ${w} ${h}`,
+        `L 0 ${h}`,
+        'Z',
+      ].join(' ')
+    default:
+      return undefined
+  }
+}
+
 /**
  * Stroked outline for a cut silhouette, as an SVG path. A clipped element eats
  * its own border, so cut shapes draw their edge here instead. Half-pixel

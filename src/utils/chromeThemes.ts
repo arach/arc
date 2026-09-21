@@ -19,6 +19,9 @@ export const CHROME_THEMES: ChromeTheme[] = [
   { id: 'amber', name: 'Amber', description: 'Warm terminal', swatch: ['#a86a12', '#ffb534'] },
   { id: 'viridian', name: 'Viridian', description: 'Phosphor green', swatch: ['#12795d', '#45e0a8'] },
   { id: 'paper', name: 'Paper', description: 'Drafting table', swatch: ['#7a4a24', '#d9b184'] },
+  { id: 'spacex', name: 'SpaceX', description: 'Mission console, telemetry cyan', swatch: ['#005288', '#67e8f9'] },
+  { id: 'claude', name: 'Claude', description: 'Warm parchment and clay', swatch: ['#c96442', '#f0a88f'] },
+  { id: 'codex', name: 'Codex', description: 'Graphite console, mint signal', swatch: ['#0f9d6e', '#34d399'] },
 ]
 
 export const DEFAULT_CHROME_THEME = 'console'

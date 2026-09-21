@@ -17,6 +17,7 @@ import { autoLayout } from '../utils/autoLayout'
 import { getIsoStyle, type IsoStyleId } from '../utils/isoStyles'
 import { isoContentBounds, isoPlateBounds, buildNodeIndex } from '../utils/isoBlueprint'
 import IsometricNodeLayer from './editor/IsometricNodeLayer'
+import { anchorOnNode, connectorEndAngle, connectorPath, connectorStartAngle } from '../utils/diagramHelpers'
 import IsometricConnectorLayer from './editor/IsometricConnectorLayer'
 import TechnicalBackdrop from './technical/TechnicalBackdrop'
 import TechnicalPlate from './technical/TechnicalPlate'
@@ -634,6 +635,9 @@ export function Node({ node, data, mode, themeColors, brand, hovered, dimmed, li
         ...placement,
         borderRadius: nodeRadius,
         borderWidth,
+        // Clip decor to the silhouette — a bar painted corner-to-corner
+        // otherwise pokes past the rounded edge like the export's used to.
+        overflow: 'hidden',
         boxShadow: hovered && glow ? `${glowShadow}, ${innerHighlight}` : innerHighlight,
       }}
       data-arc-node
@@ -644,42 +648,16 @@ export function Node({ node, data, mode, themeColors, brand, hovered, dimmed, li
   )
 }
 
-function getAnchorPoint(node: NodePosition, anchor: AnchorPosition): { x: number; y: number } {
-  const size = NODE_SIZES[node.size]
-  const gap = 6
-
-  const anchors: Record<AnchorPosition, { x: number; y: number }> = {
-    left:        { x: node.x - gap,              y: node.y + size.height / 2 },
-    right:       { x: node.x + size.width + gap, y: node.y + size.height / 2 },
-    top:         { x: node.x + size.width / 2,   y: node.y - gap },
-    bottom:      { x: node.x + size.width / 2,   y: node.y + size.height + gap },
-    bottomRight: { x: node.x + size.width + gap, y: node.y + size.height - 12 },
-    bottomLeft:  { x: node.x - gap,              y: node.y + size.height - 12 },
-    topRight:    { x: node.x + size.width + gap, y: node.y + 12 },
-    topLeft:     { x: node.x - gap,              y: node.y + 12 },
-  }
-
-  return anchors[anchor]
-}
-
-// Calculate angle between two points for arrow rotation
-function getAngle(from: { x: number; y: number }, to: { x: number; y: number }): number {
-  return Math.atan2(to.y - from.y, to.x - from.x) * (180 / Math.PI)
+function getAnchorPoint(node: NodePosition, position: AnchorPosition): { x: number; y: number } {
+  const size = NODE_SIZES[node.size] ?? NODE_SIZES.m
+  return anchorOnNode({ x: node.x, y: node.y, width: size.width, height: size.height }, position)
 }
 
 // Path string between resolved anchor points — shared by ConnectorPath and the
-// delta overlay's ghost/halo strokes.
+// delta overlay's ghost/halo strokes. Same bezier the editor draws and the
+// static export emits.
 function connectorPathD(connector: Connector, from: { x: number; y: number }, to: { x: number; y: number }): string {
-  if (connector.curve === 'natural') {
-    const dx = to.x - from.x
-    const dy = to.y - from.y
-    const cp1x = from.x + dx * 0.4
-    const cp1y = from.y + dy * 0.1
-    const cp2x = to.x - dx * 0.4
-    const cp2y = to.y - dy * 0.1
-    return `M ${from.x} ${from.y} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${to.x} ${to.y}`
-  }
-  return `M ${from.x} ${from.y} L ${to.x} ${to.y}`
+  return connectorPath(from, to, connector.fromAnchor, connector.toAnchor, connector.curve, connector.curveDepth ?? 40)
 }
 
 interface ConnectorProps {
@@ -755,8 +733,11 @@ function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors, 
     }
   }
 
-  // Calculate arrow angle at endpoint
-  const angle = getAngle(from, to)
+  // Arrow heads rotate to the path's end tangent (and start tangent for
+  // bidirectional runs), not the endpoint secant — on a bezier the approach
+  // differs from the chord.
+  const angle = connectorEndAngle(from, to, connector.fromAnchor, connector.toAnchor, connector.curve, connector.curveDepth ?? 40)
+  const startAngle = connectorStartAngle(from, to, connector.fromAnchor, connector.toAnchor, connector.curve, connector.curveDepth ?? 40)
   const arrowSize = 8
 
   return (
@@ -804,25 +785,47 @@ function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors, 
         style={{ transition: 'stroke-width 200ms ease-out' }}
       />
 
-      {/* Arrow head — chevron (brand) or filled triangle */}
-      <g transform={`translate(${to.x}, ${to.y}) rotate(${angle})`}>
-        {brand?.arrowhead === 'chevron' ? (
-          <polyline
-            points={`${-arrowSize},${-arrowSize / 2.4} 0,0 ${-arrowSize},${arrowSize / 2.4}`}
-            fill="none"
-            stroke={color}
-            strokeWidth={Math.max(1, style.strokeWidth * 0.85)}
-            strokeOpacity={0.9}
-            strokeLinecap="square"
-            strokeLinejoin="miter"
-          />
-        ) : (
-          <polygon
-            points={`0,0 ${-arrowSize},-${arrowSize / 2.5} ${-arrowSize},${arrowSize / 2.5}`}
-            fill={color}
-          />
-        )}
-      </g>
+      {/* Arrow heads — chevron (brand) or filled triangle, tip on the anchor */}
+      {style.showArrow !== false && (
+        <g transform={`translate(${to.x}, ${to.y}) rotate(${angle})`}>
+          {brand?.arrowhead === 'chevron' ? (
+            <polyline
+              points={`${-arrowSize},${-arrowSize / 2.4} 0,0 ${-arrowSize},${arrowSize / 2.4}`}
+              fill="none"
+              stroke={color}
+              strokeWidth={Math.max(1, style.strokeWidth * 0.85)}
+              strokeOpacity={0.9}
+              strokeLinecap="square"
+              strokeLinejoin="miter"
+            />
+          ) : (
+            <polygon
+              points={`0,0 ${-arrowSize},-${arrowSize / 2.5} ${-arrowSize},${arrowSize / 2.5}`}
+              fill={color}
+            />
+          )}
+        </g>
+      )}
+      {style.bidirectional && (
+        <g transform={`translate(${from.x}, ${from.y}) rotate(${startAngle})`}>
+          {brand?.arrowhead === 'chevron' ? (
+            <polyline
+              points={`${-arrowSize},${-arrowSize / 2.4} 0,0 ${-arrowSize},${arrowSize / 2.4}`}
+              fill="none"
+              stroke={color}
+              strokeWidth={Math.max(1, style.strokeWidth * 0.85)}
+              strokeOpacity={0.9}
+              strokeLinecap="square"
+              strokeLinejoin="miter"
+            />
+          ) : (
+            <polygon
+              points={`0,0 ${-arrowSize},-${arrowSize / 2.5} ${-arrowSize},${arrowSize / 2.5}`}
+              fill={color}
+            />
+          )}
+        </g>
+      )}
 
       {/* Label */}
       {style.label && (

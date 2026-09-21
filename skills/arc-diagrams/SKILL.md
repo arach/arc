@@ -216,6 +216,13 @@ Common codes:
 - `semantic/unknown-*` and `semantic/duplicate-connector-id` — use the suggested valid value or unique connector `id`.
 - `geometry/node-overlap`, `geometry/connector-through-node`, `geometry/node-outside-layout` — move nodes or run `autoLayout()`.
 
+## Preview and export
+
+- `render_ascii` previews a diagram in plain text without external dependencies.
+- `render_svg` returns deterministic SVG markup from the static export path.
+- `render_png` returns MCP image content when Chrome/Chromium is installed; set `ARC_CHROME` when it is not on `PATH`. If it returns `render/chrome-unavailable`, continue with ASCII/SVG or ask the user to install Chrome/Chromium.
+- `render_html` emits paste-ready output: `format=component` for a React TSX component, `format=iframe` for a studio embed tag, or `format=html` for a standalone SVG page.
+
 ## Output
 
 When generating a diagram, output:

@@ -1,7 +1,7 @@
 // Diagram color themes - palettes and background treatments
 // Separate from templates (structural) - themes handle colors only
 
-export type ThemeId = 'default' | 'warm' | 'cool' | 'mono' | 'engineering' | 'workbench' | 'tactical' | 'command'
+export type ThemeId = 'default' | 'warm' | 'cool' | 'mono' | 'engineering' | 'workbench' | 'tactical' | 'command' | 'spacex' | 'claude' | 'codex'
 
 export interface ColorPalette {
   violet:  { border: string; bg: string; icon: string; stroke: string }
@@ -16,6 +16,7 @@ export interface ColorPalette {
 
 export interface ThemeBackground {
   container: string        // Container background + border classes
+  canvas?: string          // Actual CSS surface color for deterministic SVG/HTML exports
   grid: {
     color: string          // Dot grid color (CSS color value)
     opacity: number        // Grid opacity
@@ -78,6 +79,8 @@ export interface Theme {
   id: ThemeId
   name: string
   description: string
+  /** Preferred mode when a render caller does not specify one. */
+  defaultMode?: 'light' | 'dark'
   light: {
     palette: ColorPalette
     background: ThemeBackground
@@ -285,6 +288,7 @@ const engineeringTheme: Theme = {
   id: 'engineering',
   name: 'Engineering',
   description: 'Graph grid, technical mono',
+  defaultMode: 'dark',
   light: {
     palette: {
       violet:  { border: 'border-[#4589ff]', bg: 'bg-[#4589ff]/10', icon: 'text-[#4589ff]', stroke: '#4589ff' },
@@ -329,6 +333,7 @@ const workbenchTheme: Theme = {
   id: 'workbench',
   name: 'Workbench',
   description: 'Slate workbench, intent colors',
+  defaultMode: 'dark',
   light: {
     palette: {
       violet:  { border: 'border-[#634dbf]', bg: 'bg-[#634dbf]/10', icon: 'text-[#634dbf]', stroke: '#634dbf' },
@@ -373,6 +378,7 @@ const tacticalTheme: Theme = {
   id: 'tactical',
   name: 'Tactical',
   description: 'Tactical black, signature amber',
+  defaultMode: 'dark',
   light: {
     palette: {
       violet:  { border: 'border-[#6b6b73]', bg: 'bg-[#6b6b73]/[0.07]', icon: 'text-[#6b6b73]', stroke: '#6b6b73' },
@@ -417,6 +423,7 @@ const commandTheme: Theme = {
   id: 'command',
   name: 'Command',
   description: 'HUD console, cyan glass, crosshair grid',
+  defaultMode: 'dark',
   light: {
     palette: {
       violet:  { border: 'border-[#6e7cff]/60', bg: 'bg-[#6e7cff]/[0.07]', icon: 'text-[#5a68e8]', stroke: '#5a68e8' },
@@ -467,6 +474,182 @@ const commandTheme: Theme = {
   },
 }
 
+// SpaceX/xAI — mission plate: monochrome hardware, telemetry cyan, cut corners
+const spacexTheme: Theme = {
+  id: 'spacex',
+  name: 'SpaceX',
+  description: 'Mission plate, telemetry cyan',
+  defaultMode: 'dark',
+  light: {
+    palette: {
+      violet:  { border: 'border-[#4f5d75]', bg: 'bg-[#4f5d75]/[0.08]', icon: 'text-[#4f5d75]', stroke: '#4f5d75' },
+      emerald: { border: 'border-[#1f6f5f]', bg: 'bg-[#1f6f5f]/[0.08]', icon: 'text-[#1f6f5f]', stroke: '#1f6f5f' },
+      blue:    { border: 'border-[#005288]', bg: 'bg-[#005288]/[0.08]', icon: 'text-[#005288]', stroke: '#005288' },
+      amber:   { border: 'border-[#9a6b12]', bg: 'bg-[#9a6b12]/[0.10]', icon: 'text-[#7a5300]', stroke: '#9a6b12' },
+      sky:     { border: 'border-[#0284c7]', bg: 'bg-[#0284c7]/[0.08]', icon: 'text-[#0284c7]', stroke: '#0284c7' },
+      zinc:    { border: 'border-[#52525b]', bg: 'bg-[#52525b]/[0.07]', icon: 'text-[#52525b]', stroke: '#52525b' },
+      rose:    { border: 'border-[#a82032]', bg: 'bg-[#a82032]/[0.08]', icon: 'text-[#a82032]', stroke: '#a82032' },
+      orange:  { border: 'border-[#b45309]', bg: 'bg-[#b45309]/[0.09]', icon: 'text-[#b45309]', stroke: '#b45309' },
+    },
+    background: {
+      container: 'bg-[#f4f4f1] border border-[#c8c9c4] shadow-sm',
+      canvas: '#f4f4f1',
+      grid: { color: 'rgba(17, 24, 39, 0.13)', opacity: 0.75, size: 20 },
+    },
+    text: { primary: 'text-[#111318]', secondary: 'text-[#4b5563]', muted: 'text-[#8a919c]' },
+  },
+  dark: {
+    palette: {
+      violet:  { border: 'border-[#a7b0bd]/60', bg: 'bg-[#a7b0bd]/[0.08]', icon: 'text-[#a7b0bd]', stroke: '#a7b0bd' },
+      emerald: { border: 'border-[#5eead4]/60', bg: 'bg-[#5eead4]/[0.08]', icon: 'text-[#5eead4]', stroke: '#5eead4' },
+      blue:    { border: 'border-[#67e8f9]/60', bg: 'bg-[#67e8f9]/[0.08]', icon: 'text-[#67e8f9]', stroke: '#67e8f9' },
+      amber:   { border: 'border-[#fbbf24]/60', bg: 'bg-[#fbbf24]/[0.08]', icon: 'text-[#fbbf24]', stroke: '#fbbf24' },
+      sky:     { border: 'border-[#22d3ee]/65', bg: 'bg-[#22d3ee]/[0.09]', icon: 'text-[#22d3ee]', stroke: '#22d3ee' },
+      zinc:    { border: 'border-[#a1a1aa]/55', bg: 'bg-[#a1a1aa]/[0.07]', icon: 'text-[#a1a1aa]', stroke: '#a1a1aa' },
+      rose:    { border: 'border-[#fb7185]/55', bg: 'bg-[#fb7185]/[0.08]', icon: 'text-[#fb7185]', stroke: '#fb7185' },
+      orange:  { border: 'border-[#fdba74]/55', bg: 'bg-[#fdba74]/[0.08]', icon: 'text-[#fdba74]', stroke: '#fdba74' },
+    },
+    background: {
+      container: 'bg-[#050608] border border-[#2b2f36]',
+      canvas: '#050608',
+      grid: { color: 'rgba(125, 211, 252, 0.18)', opacity: 1, size: 24 },
+    },
+    text: { primary: 'text-[#f4f4f5]', secondary: 'text-[#b6bdc8]', muted: 'text-[#737b86]' },
+  },
+  brand: {
+    fontFamily: "'Inter Tight', 'Arial Narrow', system-ui, sans-serif",
+    monoFamily: "'IBM Plex Mono', 'JetBrains Mono', ui-monospace, monospace",
+    fontImport: 'https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap',
+    nodeShape: 'chamfer',
+    nodeDecor: 'ticks',
+    nodeBorderWidth: '1px',
+    nodeOpacity: 0.96,
+    upperLabels: true,
+    arrowhead: 'chevron',
+    gridType: 'crosshair',
+    frame: 'reticle',
+    titleBlock: true,
+  },
+}
+
+// Claude — warm editorial parchment with a clay signature
+const claudeTheme: Theme = {
+  id: 'claude',
+  name: 'Claude',
+  description: 'Warm parchment, clay accents',
+  defaultMode: 'light',
+  light: {
+    palette: {
+      violet:  { border: 'border-[#7c5cbf]', bg: 'bg-[#7c5cbf]/[0.08]', icon: 'text-[#6546a8]', stroke: '#7c5cbf' },
+      emerald: { border: 'border-[#5f7f4f]', bg: 'bg-[#5f7f4f]/[0.09]', icon: 'text-[#4f6d42]', stroke: '#5f7f4f' },
+      blue:    { border: 'border-[#4f6f8f]', bg: 'bg-[#4f6f8f]/[0.08]', icon: 'text-[#405f7d]', stroke: '#4f6f8f' },
+      amber:   { border: 'border-[#c47a2c]', bg: 'bg-[#c47a2c]/[0.10]', icon: 'text-[#9a5f1d]', stroke: '#c47a2c' },
+      sky:     { border: 'border-[#5b8fa8]', bg: 'bg-[#5b8fa8]/[0.09]', icon: 'text-[#4b748c]', stroke: '#5b8fa8' },
+      zinc:    { border: 'border-[#6f6a61]', bg: 'bg-[#6f6a61]/[0.08]', icon: 'text-[#5b564e]', stroke: '#6f6a61' },
+      rose:    { border: 'border-[#c45a4a]', bg: 'bg-[#c45a4a]/[0.09]', icon: 'text-[#a84435]', stroke: '#c45a4a' },
+      orange:  { border: 'border-[#d97757]', bg: 'bg-[#d97757]/[0.11]', icon: 'text-[#b85c3d]', stroke: '#d97757' },
+    },
+    background: {
+      container: 'bg-[#f6f1e8] border border-[#e4d7c4] shadow-lg',
+      canvas: '#f6f1e8',
+      grid: { color: 'rgba(141, 115, 85, 0.16)', opacity: 0.55, size: 24 },
+    },
+    text: { primary: 'text-[#211a15]', secondary: 'text-[#5f544a]', muted: 'text-[#8d8174]' },
+  },
+  dark: {
+    palette: {
+      violet:  { border: 'border-[#b8a1e6]/55', bg: 'bg-[#b8a1e6]/[0.08]', icon: 'text-[#b8a1e6]', stroke: '#b8a1e6' },
+      emerald: { border: 'border-[#a3b18a]/55', bg: 'bg-[#a3b18a]/[0.08]', icon: 'text-[#a3b18a]', stroke: '#a3b18a' },
+      blue:    { border: 'border-[#8fb0c9]/55', bg: 'bg-[#8fb0c9]/[0.08]', icon: 'text-[#8fb0c9]', stroke: '#8fb0c9' },
+      amber:   { border: 'border-[#e0a458]/55', bg: 'bg-[#e0a458]/[0.10]', icon: 'text-[#e0a458]', stroke: '#e0a458' },
+      sky:     { border: 'border-[#8fc1d4]/55', bg: 'bg-[#8fc1d4]/[0.08]', icon: 'text-[#8fc1d4]', stroke: '#8fc1d4' },
+      zinc:    { border: 'border-[#a39e93]/50', bg: 'bg-[#a39e93]/[0.07]', icon: 'text-[#a39e93]', stroke: '#a39e93' },
+      rose:    { border: 'border-[#e09084]/55', bg: 'bg-[#e09084]/[0.08]', icon: 'text-[#e09084]', stroke: '#e09084' },
+      orange:  { border: 'border-[#f0a88f]/60', bg: 'bg-[#f0a88f]/[0.10]', icon: 'text-[#f0a88f]', stroke: '#f0a88f' },
+    },
+    background: {
+      container: 'bg-[#211c18] border border-[#4a3f35]',
+      canvas: '#211c18',
+      grid: { color: 'rgba(240, 168, 143, 0.12)', opacity: 0.6, size: 24 },
+    },
+    text: { primary: 'text-[#f4efe8]', secondary: 'text-[#d0c6b8]', muted: 'text-[#96897b]' },
+  },
+  brand: {
+    fontFamily: "'Source Serif 4', Georgia, 'Times New Roman', serif",
+    monoFamily: "'IBM Plex Mono', 'JetBrains Mono', ui-monospace, monospace",
+    fontImport: 'https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&display=swap',
+    nodeShape: 'rounded',
+    nodeRadius: '14px',
+    nodeDecor: 'bar-left',
+    nodeBorderWidth: '1px',
+    nodeOpacity: 0.98,
+    upperLabels: false,
+    arrowhead: 'triangle',
+    gridType: 'dots',
+    frame: 'inset',
+  },
+}
+
+// Codex — OpenAI-style console: quiet graphite, mint signal, dense mono labels
+const codexTheme: Theme = {
+  id: 'codex',
+  name: 'Codex',
+  description: 'Graphite console, mint signal',
+  defaultMode: 'dark',
+  light: {
+    palette: {
+      violet:  { border: 'border-[#6d28d9]', bg: 'bg-[#6d28d9]/[0.08]', icon: 'text-[#6d28d9]', stroke: '#6d28d9' },
+      emerald: { border: 'border-[#0f9d6e]', bg: 'bg-[#0f9d6e]/[0.09]', icon: 'text-[#0f9d6e]', stroke: '#0f9d6e' },
+      blue:    { border: 'border-[#2563eb]', bg: 'bg-[#2563eb]/[0.08]', icon: 'text-[#2563eb]', stroke: '#2563eb' },
+      amber:   { border: 'border-[#b45309]', bg: 'bg-[#b45309]/[0.09]', icon: 'text-[#92400e]', stroke: '#b45309' },
+      sky:     { border: 'border-[#0891b2]', bg: 'bg-[#0891b2]/[0.08]', icon: 'text-[#0e7490]', stroke: '#0891b2' },
+      zinc:    { border: 'border-[#52525b]', bg: 'bg-[#52525b]/[0.07]', icon: 'text-[#52525b]', stroke: '#52525b' },
+      rose:    { border: 'border-[#e11d48]', bg: 'bg-[#e11d48]/[0.08]', icon: 'text-[#be123c]', stroke: '#e11d48' },
+      orange:  { border: 'border-[#ea580c]', bg: 'bg-[#ea580c]/[0.09]', icon: 'text-[#c2410c]', stroke: '#ea580c' },
+    },
+    background: {
+      container: 'bg-[#f7f7f8] border border-[#d9dbe0] shadow-sm',
+      canvas: '#f7f7f8',
+      grid: { color: 'rgba(15, 23, 42, 0.09)', opacity: 0.5, size: 20 },
+    },
+    text: { primary: 'text-[#111318]', secondary: 'text-[#4b5563]', muted: 'text-[#8a919c]' },
+  },
+  dark: {
+    palette: {
+      violet:  { border: 'border-[#a5b4fc]/55', bg: 'bg-[#a5b4fc]/[0.08]', icon: 'text-[#a5b4fc]', stroke: '#a5b4fc' },
+      emerald: { border: 'border-[#34d399]/60', bg: 'bg-[#34d399]/[0.09]', icon: 'text-[#34d399]', stroke: '#34d399' },
+      blue:    { border: 'border-[#93c5fd]/55', bg: 'bg-[#93c5fd]/[0.08]', icon: 'text-[#93c5fd]', stroke: '#93c5fd' },
+      amber:   { border: 'border-[#fbbf24]/55', bg: 'bg-[#fbbf24]/[0.08]', icon: 'text-[#fbbf24]', stroke: '#fbbf24' },
+      sky:     { border: 'border-[#67e8f9]/55', bg: 'bg-[#67e8f9]/[0.08]', icon: 'text-[#67e8f9]', stroke: '#67e8f9' },
+      zinc:    { border: 'border-[#a1a1aa]/50', bg: 'bg-[#a1a1aa]/[0.07]', icon: 'text-[#a1a1aa]', stroke: '#a1a1aa' },
+      rose:    { border: 'border-[#fb7185]/55', bg: 'bg-[#fb7185]/[0.08]', icon: 'text-[#fb7185]', stroke: '#fb7185' },
+      orange:  { border: 'border-[#fdba74]/55', bg: 'bg-[#fdba74]/[0.08]', icon: 'text-[#fdba74]', stroke: '#fdba74' },
+    },
+    background: {
+      container: 'bg-[#0b0d10] border border-[#263238]',
+      canvas: '#0b0d10',
+      grid: { color: 'rgba(52, 211, 153, 0.11)', opacity: 0.7, size: 20 },
+    },
+    text: { primary: 'text-[#f3f4f6]', secondary: 'text-[#b6bec9]', muted: 'text-[#7d8791]' },
+  },
+  brand: {
+    fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
+    monoFamily: "'Geist Mono', 'JetBrains Mono', ui-monospace, monospace",
+    fontImport: 'https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap',
+    nodeShape: 'rounded',
+    nodeRadius: '12px',
+    nodeDecor: 'rule',
+    nodeBorderWidth: '1px',
+    nodeOpacity: 0.95,
+    nodeGlass: true,
+    upperLabels: false,
+    arrowhead: 'triangle',
+    gridType: 'dots',
+    frame: 'inset',
+    connectorGlow: true,
+  },
+}
+
 export const THEMES: Record<ThemeId, Theme> = {
   default: defaultTheme,
   warm: warmTheme,
@@ -476,12 +659,21 @@ export const THEMES: Record<ThemeId, Theme> = {
   workbench: workbenchTheme,
   tactical: tacticalTheme,
   command: commandTheme,
+  spacex: spacexTheme,
+  claude: claudeTheme,
+  codex: codexTheme,
 }
 
 export const DEFAULT_THEME: ThemeId = 'command'
 
 export function getTheme(id: ThemeId): Theme {
   return THEMES[id] || THEMES[DEFAULT_THEME]
+}
+
+/** CSS surface color for deterministic exports; falls back to the container color. */
+export function themeCanvas(id: ThemeId, mode: 'light' | 'dark'): string {
+  const background = THEMES[id][mode].background
+  return background.canvas || background.container.match(/#[0-9a-fA-F]{6}|#[0-9a-fA-F]{3}/)?.[0] || (mode === 'dark' ? '#0a0a0c' : '#ffffff')
 }
 
 export function getThemeList() {

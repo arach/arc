@@ -39,7 +39,7 @@ export function DiagramStudio() {
 // Design-language diagram versions — the canonical Arc architecture diagram
 // rendered in each design-language theme. Each is its OWN export so it becomes a distinct
 // card/tile in the design pane (not just a cell inside the ArcDiagram card).
-function BrandDiagram({ theme, mode }: { theme: 'engineering' | 'workbench' | 'tactical'; mode: 'light' | 'dark' }) {
+function BrandDiagram({ theme, mode }: { theme: 'engineering' | 'workbench' | 'tactical' | 'spacex' | 'claude' | 'codex'; mode: 'light' | 'dark' }) {
   return (
     <div style={{ width: 860, height: 420 }}>
       <ArcDiagram data={architectureDiagram} mode={mode} theme={theme} interactive={false} defaultZoom="fit" showControls showMinimap />
@@ -53,3 +53,9 @@ export function ArcDiagramEngineering() { return <BrandDiagram theme="engineerin
 export function ArcDiagramWorkbench() { return <BrandDiagram theme="workbench" mode="dark" /> }
 /** Arc architecture diagram in the Tactical theme (tactical black + amber). */
 export function ArcDiagramTactical() { return <BrandDiagram theme="tactical" mode="dark" /> }
+/** Arc architecture diagram in the SpaceX theme (mission plate + telemetry cyan). */
+export function ArcDiagramSpaceX() { return <BrandDiagram theme="spacex" mode="dark" /> }
+/** Arc architecture diagram in the Claude theme (parchment + clay accents). */
+export function ArcDiagramClaude() { return <BrandDiagram theme="claude" mode="light" /> }
+/** Arc architecture diagram in the Codex theme (graphite console + mint signal). */
+export function ArcDiagramCodex() { return <BrandDiagram theme="codex" mode="dark" /> }

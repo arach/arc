@@ -264,7 +264,7 @@ export default function ShareSheet({ diagram, onClose }: {
   const handleDownloadSVG = async () => {
     setGeneratingSVG(true)
     try {
-      downloadFile(generateSVG(croppedDiagram, { backgroundColor: '#ffffff' }), 'diagram.svg', 'image/svg+xml')
+      downloadFile(generateSVG(croppedDiagram, { theme: themeId || 'command', mode: editor.colorMode }), 'diagram.svg', 'image/svg+xml')
       flash(setSvgDone)
     } finally {
       setGeneratingSVG(false)
@@ -273,7 +273,7 @@ export default function ShareSheet({ diagram, onClose }: {
   const handleDownloadPNG = async () => {
     setGeneratingPNG(true)
     try {
-      const pngBlob = await generatePNG(croppedDiagram, { scale: 2, backgroundColor: '#ffffff' })
+      const pngBlob = await generatePNG(croppedDiagram, { scale: 2, theme: themeId || 'command', mode: editor.colorMode })
       downloadFile(pngBlob, 'diagram.png', 'image/png')
       flash(setPngDone)
     } catch (err) {

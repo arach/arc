@@ -30,8 +30,8 @@ See `docs/agent/packages.agent.md`. Short version:
 |---------|------------|
 | **Nodes** | Boxes with icon, name, color, position (`nodes` + `nodeData`) |
 | **Connectors** | Lines between nodes, styled by named `connectorStyles` |
-| **Themes** | Diagram palettes: default, warm, cool, mono, engineering, workbench, tactical, command |
-| **Chrome** | Shell skin (separate from diagram theme): console, graphite, amber, viridian, paper |
+| **Themes** | Diagram palettes: default, warm, cool, mono, engineering, workbench, tactical, command, spacex, claude, codex |
+| **Chrome** | Shell skin (separate from diagram theme): console, graphite, amber, viridian, paper, spacex, claude, codex |
 | **Groups** | Labeled frames; use `layoutHints` + `autoLayout` for placement |
 
 ## Quick Start

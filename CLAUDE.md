@@ -83,7 +83,7 @@ Uses `useReducer` + Context for diagram state:
 
 ### Theme System
 
-Eight themes (`default`, `warm`, `cool`, `mono`, plus the branded `engineering`, `workbench`, `tactical`, `command`) defined in `src/utils/themes.ts`. Each has light/dark palettes that remap logical colors (violet, emerald, etc.) to different Tailwind classes and hex stroke values, and an optional `brand` spec (fonts, node shape, grid, frame, title block).
+Eleven themes (`default`, `warm`, `cool`, `mono`, plus the branded `engineering`, `workbench`, `tactical`, `command`, `spacex`, `claude`, `codex`) defined in `src/utils/themes.ts`. Each has light/dark palettes that remap logical colors (violet, emerald, etc.) to different Tailwind classes and hex stroke values, and an optional `brand` spec (fonts, node shape, grid, frame, title block).
 
 - `useResolvedTheme()` hook returns the current theme palette
 - `EditableNode` and `ConnectorLayer` resolve colors through the theme palette
@@ -115,7 +115,8 @@ drawn in `src/utils/nodeShape.ts` and applied by `Node` in `components/ArcDiagra
 
 Current assignment: engineering `square` + `ticks`, workbench `rule`,
 tactical `notch` + `stripe`, command `chamfer` + `dot`, mono `square` + `rule`,
-warm `bar-left`, cool `dot`, default plain.
+warm `bar-left`, cool `dot`, spacex `chamfer` + `ticks`, claude `bar-left`,
+codex `rule`, default plain.
 
 **Per-node override.** Shape is normally the theme's business — it is part of
 what makes `engineering` look unlike `command` — but one box sometimes needs to
@@ -243,6 +244,9 @@ independent of the diagram theme, which colors the drawing.
 | `amber` | Warm terminal |
 | `viridian` | Phosphor green |
 | `paper` | Drafting table, warm neutral |
+| `spacex` | Mission console, telemetry cyan |
+| `claude` | Warm parchment and clay |
+| `codex` | Graphite console, mint signal |
 
 Each skin lives in `src/chrome-themes.css` as a set of token overrides keyed by
 `data-arc-chrome` on `<html>`; `src/utils/chromeThemes.ts` is the registry and

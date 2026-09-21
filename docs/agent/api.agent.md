@@ -145,7 +145,7 @@ const theme = getTheme('engineering')
 const palette = theme.light.palette.violet
 ```
 
-Theme IDs: `default`, `warm`, `cool`, `mono`, `engineering`, `workbench`, `tactical`, `command`
+Theme IDs: `default`, `warm`, `cool`, `mono`, `engineering`, `workbench`, `tactical`, `command`, `spacex`, `claude`, `codex`
 
 ## Valid Values Quick Reference
 
@@ -153,7 +153,7 @@ Theme IDs: `default`, `warm`, `cool`, `mono`, `engineering`, `workbench`, `tacti
 |----------|-------------|
 | `size` | `'xs'`, `'s'`, `'m'`, `'l'` |
 | `color` | `'violet'`, `'emerald'`, `'blue'`, `'amber'`, `'sky'`, `'zinc'`, `'rose'`, `'orange'` |
-| `theme` | eight ThemeIds above |
+| `theme` | eleven ThemeIds above |
 | `mode` | `'light'`, `'dark'` |
 | `anchor` | `'left'`, `'right'`, `'top'`, `'bottom'`, corner variants |
 | `curve` | `'natural'`, `'step'` |
