@@ -85,7 +85,9 @@ export type { ViewMode, EmbedConfig, NodePosition, ConnectorStyle, DiagramMeta }
 // =============================================================================
 export { validateDiagramShape, isDiagramShape } from './utils/diagramValidation'
 export { validateDiagram, type Diagnostic, type DiagnosticSeverity, type DiagnosticSubject, type Fix } from './utils/diagramDiagnostics'
+export { NODE_KINDS, NODE_KIND_DEFAULTS, isNodeKind, resolveNodeColor, resolveNodeIcon, suggestKind } from './utils/nodeKinds'
 export { toTypeScriptSource, toExportFormat, connectorKey } from './types/diagram'
+export type { NodeKind } from './types/diagram'
 export { diffDiagram } from './utils/diffDiagram'
 export type { DiagramDelta, RemovedNode, MovedNode, ChangedNode, ConnectorDelta, ChangedConnector, ChangedKeys, ChangedIds } from './utils/diffDiagram'
 

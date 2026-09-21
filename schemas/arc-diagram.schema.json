@@ -382,13 +382,19 @@
       "additionalProperties": false,
       "properties": {
         "color": {
-          "$ref": "#/definitions/DiagramColor"
+          "$ref": "#/definitions/DiagramColor",
+          "description": "Palette color. Omit when `kind` supplies the default color."
         },
         "description": {
           "type": "string"
         },
         "icon": {
+          "description": "Lucide icon name. Omit when `kind` supplies the default icon.",
           "type": "string"
+        },
+        "kind": {
+          "$ref": "#/definitions/NodeKind",
+          "description": "Semantic role — supplies default `icon` and `color`; explicit fields still win."
         },
         "name": {
           "type": "string"
@@ -402,11 +408,27 @@
         }
       },
       "required": [
-        "icon",
-        "name",
-        "color"
+        "name"
       ],
       "type": "object"
+    },
+    "NodeKind": {
+      "description": "Semantic role for a node. When set, `icon` and `color` may be omitted — NODE_KIND_DEFAULTS supplies them — and every renderer resolves the kind through the theme palette the same way an authored `color` resolves.",
+      "enum": [
+        "frontend",
+        "backend",
+        "service",
+        "database",
+        "cache",
+        "queue",
+        "storage",
+        "gateway",
+        "security",
+        "user",
+        "external",
+        "observability"
+      ],
+      "type": "string"
     },
     "NodeLayoutHint": {
       "additionalProperties": false,

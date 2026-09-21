@@ -145,6 +145,23 @@ Three things to know before adding a cut shape:
   real dimensions — which also aligns the drawn box with the geometry connector
   anchors already assume.
 
+### Semantic Node Kinds
+
+`nodeData` accepts an optional `kind` (`frontend`, `backend`, `service`,
+`database`, `cache`, `queue`, `storage`, `gateway`, `security`, `user`,
+`external`, `observability` — `src/utils/nodeKinds.ts`). A kind supplies the
+node's default `icon` and `color` from `NODE_KIND_DEFAULTS`, so generated
+diagrams describe *what a box is* instead of picking an icon and palette entry
+by hand. Explicit `icon`/`color` remain the override — the resolution order is
+`resolveNodeColor`/`resolveNodeIcon`: authored field → kind default →
+`zinc`/`Box`.
+
+Every consumption site resolves through those helpers — never read
+`data.color`/`data.icon` raw. `validateDiagram` only requires `icon`+`color`
+when `kind` is absent or unknown, and reports `semantic/unknown-kind` with a
+`set-kind` fix; a misspelled kind does not waive the `icon`/`color`
+requirement.
+
 ### Chrome Scale
 
 Application chrome — the editor shell, the showcase, dialogs — is sized from one

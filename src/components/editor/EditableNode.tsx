@@ -1,5 +1,6 @@
 import { memo } from 'react'
 import { getIconComponent } from '../../utils/iconRegistry'
+import { resolveNodeColor, resolveNodeIcon } from '../../utils/nodeKinds'
 import { NODE_SIZES } from '../../utils/constants'
 import { Node as PlayerNode } from '../ArcDiagram'
 import { radiusForShape, resolveNodeShape, shapeCut, shapeOutlinePath, type NodeShape } from '../../utils/nodeShape'
@@ -91,7 +92,7 @@ const subtitleColorMap = {
 interface EditableNodeProps {
   nodeId: string
   node: { x: number; y: number; size?: string; width?: number; height?: number }
-  data: { icon: string; name: string; subtitle?: string; description?: string; color?: string; shape?: NodeShape }
+  data: { icon?: string; name: string; subtitle?: string; description?: string; color?: string; kind?: string; shape?: NodeShape }
   layout: { width: number; height: number }
   template: {
     node?: Record<string, unknown>
@@ -153,9 +154,9 @@ const EditableNode = memo(function EditableNode({
   themeColors,
   brand,
 }: EditableNodeProps) {
-  const Icon = getIconComponent(data.icon)
+  const Icon = getIconComponent(resolveNodeIcon(data))
   const size = node.size || 'm'
-  const color = data.color || 'violet'
+  const color = resolveNodeColor(data)
   // Custom dimensions override preset sizes
   const presetSize = NODE_SIZES[size] || NODE_SIZES.m
   const width = node.width || presetSize.width
@@ -205,7 +206,7 @@ const EditableNode = memo(function EditableNode({
           // Spread, don't cherry-pick: the fields this used to drop
           // (description, and now shape) are exactly the ones that made the
           // editor disagree with what the player renders.
-          data={{ ...data, color: (data.color || 'violet') as any }}
+          data={{ ...data, color: resolveNodeColor(data) } as any}
           mode={colorMode as any}
           themeColors={themeColors!}
           brand={brand}

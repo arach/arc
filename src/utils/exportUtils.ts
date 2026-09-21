@@ -1,6 +1,7 @@
 import { NODE_SIZES } from './constants'
 import type { AnchorPosition } from '../types/editor'
 import { anchorOnNode, connectorEndAngle, connectorPath, connectorStartAngle } from './diagramHelpers'
+import { resolveNodeColor, resolveNodeIcon } from './nodeKinds'
 import { resolveNodeDecor, resolveNodeShape, shapeCut, shapeFillPath } from './nodeShape'
 import { getTheme, resolveNodeRadius, themeCanvas, type BrandSpec, type Theme, type ThemeId } from './themes'
 
@@ -365,8 +366,9 @@ export function generateSVG(diagram: any, options: any = {}) {
     const size = NODE_SIZES[node.size] || NODE_SIZES.m
     const width = node.width || size.width
     const height = node.height || size.height
-    const colors = nodeColors[data.color] || nodeColors.zinc
-    const tone = themeColors?.palette[data.color]
+    const resolvedColor = resolveNodeColor(data)
+    const colors = nodeColors[resolvedColor] || nodeColors.zinc
+    const tone = themeColors?.palette[resolvedColor]
     const nodeAccent = tone?.stroke || colors.bg
     const nodeFill = themeColors
       ? hexWithAlpha(nodeAccent, brand?.nodeGlass ? 0.10 : mode === 'dark' ? 0.12 : 0.08)
@@ -609,11 +611,12 @@ export function generateTypeScript(diagram: any) {
         size: node.size || 'm',
       }
       visibleNodeData[id] = {
-        icon: data.icon || 'Box',
+        icon: resolveNodeIcon(data),
         name: data.name || 'Node',
         ...(data.subtitle && { subtitle: data.subtitle }),
         ...(data.description && { description: data.description }),
-        color: data.color || 'zinc',
+        color: resolveNodeColor(data),
+        ...(data.kind && { kind: data.kind }),
       }
     }
   }

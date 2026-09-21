@@ -16,12 +16,14 @@ import type {
   AnchorPosition,
   Connector,
   DiagramColor,
+  NodeKind,
   NodePosition,
   NodeShape,
   NodeSize,
 } from '../types/diagram'
 import { NODE_SIZES } from './constants'
 import { NODE_SHAPES } from './nodeShape'
+import { NODE_KINDS, isNodeKind, suggestKind } from './nodeKinds'
 import { anchor, connectorControlPoints } from './diagramHelpers'
 import { validateDiagramShape } from './diagramValidation'
 
@@ -47,6 +49,7 @@ export type Fix =
   | { kind: 'set-style'; style: string }
   | { kind: 'remove-style' }
   | { kind: 'set-color'; color: DiagramColor }
+  | { kind: 'set-kind'; value: NodeKind }
   | { kind: 'set-size'; size: NodeSize }
   | { kind: 'set-shape'; shape: NodeShape }
   | { kind: 'set-anchor'; field: 'fromAnchor' | 'toAnchor'; anchor: AnchorPosition }
@@ -290,9 +293,21 @@ export function validateDiagram(value: unknown): Diagnostic[] {
       push({ code: 'shape/invalid-node-data', severity: 'error', subject: { type: 'node', id }, message: `nodeData["${id}"] is not an object`, evidence: { value: raw } })
       continue
     }
-    const missing = missingFields(raw, [['icon', 'string'], ['name', 'string'], ['color', 'string']])
+    // `kind` supplies default icon and color, so a valid kind waives those
+    // requirements; a missing or misspelled kind gets no such waiver.
+    const missing = missingFields(raw, isNodeKind(raw.kind)
+      ? [['name', 'string']]
+      : [['icon', 'string'], ['name', 'string'], ['color', 'string']])
     if (missing.length) {
-      push({ code: 'shape/invalid-node-data', severity: 'error', subject: { type: 'node', id }, message: `nodeData["${id}"] is missing ${missing.map(f => `\`${f}\``).join(', ')}`, evidence: { missing } })
+      const suggestion = suggestKind(raw.name)
+      push({
+        code: 'shape/invalid-node-data',
+        severity: 'error',
+        subject: { type: 'node', id },
+        message: `nodeData["${id}"] is missing ${missing.map(f => `\`${f}\``).join(', ')}`,
+        evidence: { missing },
+        supportedFixes: suggestion ? [{ kind: 'set-kind', value: suggestion }] : undefined,
+      })
     }
   }
 
@@ -387,6 +402,25 @@ export function validateDiagram(value: unknown): Diagnostic[] {
         supportedFixes: closest(raw.color, DIAGRAM_COLORS)
           ? [{ kind: 'set-color', color: closest(raw.color, DIAGRAM_COLORS)! }]
           : undefined,
+      })
+    }
+    if (raw.kind != null && !isNodeKind(raw.kind)) {
+      const fixes: Fix[] = []
+      if (typeof raw.kind === 'string') {
+        const near = closest(raw.kind, NODE_KINDS)
+        if (near) fixes.push({ kind: 'set-kind', value: near })
+      }
+      const suggestion = suggestKind(raw.name)
+      if (suggestion && !fixes.some(f => f.kind === 'set-kind' && f.value === suggestion)) {
+        fixes.push({ kind: 'set-kind', value: suggestion })
+      }
+      push({
+        code: 'semantic/unknown-kind',
+        severity: 'error',
+        subject: { type: 'node', id },
+        message: `Node "${id}" uses unknown kind "${String(raw.kind)}"`,
+        evidence: { field: 'kind', value: raw.kind, known: NODE_KINDS },
+        supportedFixes: fixes.length ? fixes : undefined,
       })
     }
     if (raw.shape != null && !NODE_SHAPE_KEYS.includes(raw.shape as NodeShape)) {

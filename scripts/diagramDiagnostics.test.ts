@@ -312,3 +312,55 @@ describe('validateDiagram — geometry layer', () => {
     expect(diag?.supportedFixes).toContainEqual({ kind: 'auto-layout' })
   })
 })
+
+describe('validateDiagram — node kinds', () => {
+  test('kind supplies icon and color', () => {
+    const d = base()
+    const id = Object.keys(d.nodeData)[0]
+    d.nodeData[id] = { name: 'API Gateway', kind: 'gateway' }
+    expect(validateDiagram(d)).toEqual([])
+  })
+
+  test('explicit icon/color still win and validate', () => {
+    const d = base()
+    const id = Object.keys(d.nodeData)[0]
+    d.nodeData[id] = { name: 'Cache', kind: 'database', icon: 'Zap', color: 'amber' }
+    expect(validateDiagram(d)).toEqual([])
+  })
+
+  test('unknown kind is an error with a set-kind fix', () => {
+    const d = base()
+    const id = Object.keys(d.nodeData)[0]
+    d.nodeData[id] = { name: 'Postgres', icon: 'Database', color: 'emerald', kind: 'databse' }
+    const diag = find(validateDiagram(d), 'semantic/unknown-kind')
+    expect(diag?.severity).toBe('error')
+    expect(diag?.subject).toEqual({ type: 'node', id })
+    expect(diag?.supportedFixes).toContainEqual({ kind: 'set-kind', value: 'database' })
+  })
+
+  test('an invalid kind does not waive the icon/color requirement', () => {
+    const d = base()
+    const id = Object.keys(d.nodeData)[0]
+    d.nodeData[id] = { name: 'Postgres', kind: 'databse' }
+    const diags = validateDiagram(d)
+    const shape = find(diags, 'shape/invalid-node-data')
+    expect((shape?.evidence?.missing as string[]).sort()).toEqual(['color', 'icon'])
+    expect(find(diags, 'semantic/unknown-kind')).toBeTruthy()
+  })
+
+  test('missing icon/color suggests a kind inferred from the name', () => {
+    const d = base()
+    const id = Object.keys(d.nodeData)[0]
+    d.nodeData[id] = { name: 'Postgres Primary' }
+    const diag = find(validateDiagram(d), 'shape/invalid-node-data')
+    expect(diag?.supportedFixes).toContainEqual({ kind: 'set-kind', value: 'database' })
+  })
+
+  test('missing icon/color without a guessable kind has no fix', () => {
+    const d = base()
+    const id = Object.keys(d.nodeData)[0]
+    d.nodeData[id] = { name: 'Widget Co.' }
+    const diag = find(validateDiagram(d), 'shape/invalid-node-data')
+    expect(diag?.supportedFixes).toBeUndefined()
+  })
+})

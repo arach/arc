@@ -1,4 +1,5 @@
 import type { IsoStyleId } from '../utils/isoStyles'
+import type { NodeKind } from './diagram'
 
 export interface Point {
   x: number
@@ -77,11 +78,13 @@ export interface NodePosition {
 }
 
 export interface NodeData {
-  icon: string
+  icon?: string
   name: string
   subtitle?: string
   description?: string
-  color: string
+  color?: string
+  /** Semantic role — supplies default icon and color. */
+  kind?: NodeKind
   /** Per-node silhouette. Omit to follow the theme. 2D only — iso boxes ignore it. */
   shape?: string
 }

@@ -15,6 +15,17 @@ export type DiagramColor =
   | 'violet' | 'emerald' | 'blue' | 'amber'
   | 'sky' | 'zinc' | 'rose' | 'orange'
 
+/**
+ * Semantic role for a node. When set, `icon` and `color` may be omitted —
+ * NODE_KIND_DEFAULTS supplies them — and every renderer resolves the kind
+ * through the theme palette the same way an authored `color` resolves.
+ */
+export type NodeKind =
+  | 'frontend' | 'backend' | 'service'
+  | 'database' | 'cache' | 'queue' | 'storage'
+  | 'gateway' | 'security' | 'user'
+  | 'external' | 'observability'
+
 export interface NodePosition {
   x: number
   y: number
@@ -39,11 +50,15 @@ export interface NodePosition {
 }
 
 export interface NodeData {
-  icon: string
+  /** Lucide icon name. Omit when `kind` supplies the default icon. */
+  icon?: string
   name: string
   subtitle?: string
   description?: string
-  color: DiagramColor
+  /** Palette color. Omit when `kind` supplies the default color. */
+  color?: DiagramColor
+  /** Semantic role — supplies default `icon` and `color`; explicit fields still win. */
+  kind?: NodeKind
   /** Per-node silhouette. Omit to follow the theme's own node shape. */
   shape?: NodeShape
 }

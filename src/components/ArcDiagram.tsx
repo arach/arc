@@ -22,6 +22,8 @@ import IsometricConnectorLayer from './editor/IsometricConnectorLayer'
 import TechnicalBackdrop from './technical/TechnicalBackdrop'
 import TechnicalPlate from './technical/TechnicalPlate'
 import type { Connector as EditorConnector } from '../types/editor'
+import type { NodeKind } from '../types/diagram'
+import { resolveNodeColor, resolveNodeIcon } from '../utils/nodeKinds'
 import type { DiagramDelta } from '../utils/diffDiagram'
 
 // ============================================
@@ -58,11 +60,15 @@ export interface NodePosition {
 }
 
 export interface NodeData {
-  icon: string
+  /** Lucide icon name. Omit when `kind` supplies the default icon. */
+  icon?: string
   name: string
   subtitle?: string
   description?: string
-  color: DiagramColor
+  /** Palette color. Omit when `kind` supplies the default color. */
+  color?: DiagramColor
+  /** Semantic role — supplies default `icon` and `color`; explicit fields still win. */
+  kind?: NodeKind
   /** Per-node silhouette. Omit to follow the theme's own node shape. */
   shape?: NodeShape
 }
@@ -484,8 +490,8 @@ function NodeDecoration({ decor, stroke, cut }: { decor: NodeDecor; stroke: stri
 
 export function Node({ node, data, mode, themeColors, brand, hovered, dimmed, lift = true, glow = true, dimOpacity = 0.45, onMouseEnter, onMouseLeave, onClick }: NodeProps) {
   const size = NODE_SIZES[node.size]
-  const color = themeColors.palette[data.color] || themeColors.palette.zinc
-  const Icon = (LucideIcons as unknown as Record<string, LucideIcon>)[data.icon] || LucideIcons.Box
+  const color = themeColors.palette[resolveNodeColor(data)] || themeColors.palette.zinc
+  const Icon = (LucideIcons as unknown as Record<string, LucideIcon>)[resolveNodeIcon(data)] || LucideIcons.Box
 
   const isLarge = node.size === 'l'
   const isSmall = node.size === 's'
@@ -928,7 +934,7 @@ function DeltaOverlay({ delta, nodes, nodeData, styles, themeColors, layout, mod
     const pos = nodes[id]
     const sz = pos && NODE_SIZES[pos.size]
     if (!pos || !sz) return null
-    const color = themeColors.palette[nodeData[id]?.color ?? 'zinc']?.stroke ?? ghost
+    const color = themeColors.palette[resolveNodeColor(nodeData[id])]?.stroke ?? ghost
     const inset = 4
     const dashed = kind === 'changed'
     return (
@@ -1120,7 +1126,7 @@ function MiniMap({ nodes, nodeData, layout, themeColors, brand, mode, inset = 12
         {Object.entries(nodes).map(([id, n]) => {
           const sz = NODE_SIZES[n.size]
           if (!sz) return null
-          const stroke = themeColors.palette[nodeData[id]?.color]?.stroke || themeColors.palette.zinc.stroke
+          const stroke = themeColors.palette[resolveNodeColor(nodeData[id])]?.stroke || themeColors.palette.zinc.stroke
           return (
             <rect
               key={id}
@@ -1949,7 +1955,7 @@ export default function ArcDiagram({
                     n: n as number,
                     name: nodeData[nodeId]?.name || nodeId,
                     subtitle: nodeData[nodeId]?.subtitle,
-                    color: nodeData[nodeId]?.color,
+                    color: resolveNodeColor(nodeData[nodeId]),
                   }))}
                 title={titleBlock?.title ?? displayLabel}
                 tally={`${String(Object.keys(nodeData).length).padStart(2, '0')} CMP / ${String(connectors.length).padStart(2, '0')} LNK`}
