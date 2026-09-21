@@ -36,6 +36,7 @@ bun run build
 bun run lint
 bun run typecheck
 bun run build:cli    # → bin/arc.mjs
+bun run visual       # golden-render regression (visual/manifest.json); --update rewrites
 ```
 
 ## Canonical Diagram Schema

@@ -1,0 +1,28 @@
+{
+  "layout": { "width": 760, "height": 320 },
+  "nodes": {
+    "client": { "x": 40, "y": 120, "size": "m" },
+    "gateway": { "x": 300, "y": 120, "size": "m" },
+    "api": { "x": 560, "y": 40, "size": "m" },
+    "db": { "x": 560, "y": 200, "size": "m" }
+  },
+  "nodeData": {
+    "client": { "icon": "Monitor", "name": "Client", "subtitle": "React", "color": "violet" },
+    "gateway": { "icon": "Shield", "name": "Gateway", "subtitle": "Edge", "color": "blue", "shape": "chamfer" },
+    "api": { "icon": "Server", "name": "API", "subtitle": "Node", "color": "emerald" },
+    "db": { "icon": "Database", "name": "Postgres", "subtitle": "Primary", "color": "amber" }
+  },
+  "connectors": [
+    { "id": "c1", "from": "client", "to": "gateway", "fromAnchor": "right", "toAnchor": "left", "style": "https" },
+    { "id": "c2", "from": "gateway", "to": "api", "fromAnchor": "right", "toAnchor": "left", "style": "api" },
+    { "id": "c3", "from": "gateway", "to": "db", "fromAnchor": "right", "toAnchor": "left", "style": "sql", "curve": "step" }
+  ],
+  "connectorStyles": {
+    "https": { "color": "blue", "strokeWidth": 2, "label": "HTTPS" },
+    "api": { "color": "emerald", "strokeWidth": 2, "label": "REST" },
+    "sql": { "color": "amber", "strokeWidth": 2, "label": "SQL", "dashed": true }
+  },
+  "groups": [
+    { "id": "edge", "x": 280, "y": 95, "width": 200, "height": 130, "type": "rect", "color": "zinc", "label": "Edge" }
+  ]
+}
