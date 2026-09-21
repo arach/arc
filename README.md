@@ -237,6 +237,7 @@ arc check diagram.json --json --strict  # machine output; fail on warnings too
 arc diff base.json head.json            # structural DiagramDelta JSON
 arc diff base.json head.json --summary  # human-readable counts
 arc render diagram.json --out diagram.svg --json
+arc bench benchmarks/                     # score outputs/ against each case's expect.json
 arc-ascii diagram.json --charset ascii --max-width 80
 ```
 
@@ -244,7 +245,10 @@ arc-ascii diagram.json --charset ascii --max-width 80
 also fails on warnings. `arc diff` validates both inputs before diffing.
 `arc render` validates, writes the SVG to a temp file, atomically replaces the
 target, and emits a receipt with source/output SHA-256 hashes; invalid diagrams
-leave an existing artifact untouched.
+leave an existing artifact untouched. `arc bench` is the first-pass benchmark —
+see `benchmarks/README.md`; each case is a plain-language `prompt.md` plus an
+`expect.json` of required nodes/edges, and candidates are scored on validity,
+semantic coverage, direction, size, and renderability.
 
 ## Requirements
 

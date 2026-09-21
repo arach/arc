@@ -1,0 +1,29 @@
+{
+  "layout": { "width": 860, "height": 400 },
+  "nodes": {
+    "client": { "x": 40, "y": 160, "size": "m" },
+    "gateway": { "x": 260, "y": 160, "size": "m" },
+    "auth": { "x": 480, "y": 160, "size": "m" },
+    "users": { "x": 700, "y": 160, "size": "m" },
+    "tokenCache": { "x": 260, "y": 300, "size": "m" }
+  },
+  "nodeData": {
+    "client": { "icon": "Globe", "name": "Web Client", "color": "blue" },
+    "gateway": { "icon": "Shield", "name": "API Gateway", "color": "violet" },
+    "auth": { "icon": "Lock", "name": "Auth Service", "color": "emerald" },
+    "users": { "icon": "Database", "name": "User Database", "color": "amber" },
+    "tokenCache": { "icon": "Key", "name": "Token Cache", "color": "rose" }
+  },
+  "connectors": [
+    { "id": "client-gateway", "from": "client", "to": "gateway", "fromAnchor": "right", "toAnchor": "left", "style": "https" },
+    { "id": "gateway-auth", "from": "gateway", "to": "auth", "fromAnchor": "right", "toAnchor": "left", "style": "internal" },
+    { "id": "auth-users", "from": "auth", "to": "users", "fromAnchor": "right", "toAnchor": "left", "style": "sql" },
+    { "id": "gateway-cache", "from": "gateway", "to": "tokenCache", "fromAnchor": "bottom", "toAnchor": "top", "style": "cache" }
+  ],
+  "connectorStyles": {
+    "https": { "color": "blue", "strokeWidth": 2, "label": "HTTPS" },
+    "internal": { "color": "violet", "strokeWidth": 2 },
+    "sql": { "color": "amber", "strokeWidth": 2 },
+    "cache": { "color": "rose", "strokeWidth": 2, "dashed": true }
+  }
+}

@@ -11,7 +11,7 @@
 - **Output**: JSON / TypeScript configs (not images) — diffable, versionable
 - **Stack**: React 19, Vite 7, TailwindCSS 4, Hudson shell (editor chrome)
 - **Package manager**: bun (`bun install`, `bun run dev`)
-- **CLI**: `arc` bin — `schema`, `check`, `diff`, `render`
+- **CLI**: `arc` bin — `schema`, `check`, `diff`, `render`, `bench`
 - **MCP**: `arc-mcp` bin — see `docs/agent/mcp.agent.md`
 
 ## Which Package?
@@ -91,6 +91,11 @@ Validate external JSON with `validateDiagram()` in `src/utils/diagramDiagnostics
 For CI artifacts, `arc render diagram.json --out diagram.svg --json` validates,
 renders to a same-directory temp file, atomically replaces the output, and emits
 a receipt with source/output SHA-256 hashes plus any non-blocking diagnostics.
+
+`arc bench` scores agent-produced diagrams against benchmark cases in
+`benchmarks/` (prompt + expect.json of required nodes/edges + outputs/ dir);
+a pass requires zero error diagnostics, all required nodes, all required edges
+in the right direction, size bounds, and a successful render.
 
 ## Minimal Example
 

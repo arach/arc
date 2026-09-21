@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { createHash } from 'node:crypto'
 import { spawnSync } from 'node:child_process'
-import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -260,6 +260,94 @@ describe('arc CLI', () => {
     expect(result.status).toBe(2)
     const payload = JSON.parse(result.stdout)
     expect(payload.error.code).toBe('cli/usage-error')
+  })
+
+  test('bench scores the committed reference suite and passes', () => {
+    const result = run(['bench', join(import.meta.dir, '..', 'benchmarks'), '--json'])
+    expect(result.status).toBe(0)
+    const report = JSON.parse(result.stdout)
+    expect(report.ok).toBe(true)
+    expect(report.totals.cases).toBe(4)
+    expect(report.totals.passed).toBe(report.totals.candidates)
+    expect(report.cases.map((c: { case: string }) => c.case).sort()).toEqual(['auth-flow', 'event-pipeline', 'ml-training', 'web-app'])
+  })
+
+  test('bench reports missing nodes, missing edges, and reversed edges', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'arc-bench-'))
+    try {
+      writeFileSync(join(dir, 'expect.json'), JSON.stringify({
+        nodes: ['frontend', 'api', 'missing-db'],
+        edges: [['frontend', 'api'], ['api', 'frontend'], ['frontend', 'nowhere']],
+      }))
+      const candidate = join(dir, 'candidate.json')
+      writeFileSync(candidate, JSON.stringify({
+        ...head,
+        nodeData: { a: { icon: 'Monitor', name: 'Frontend', color: 'blue' }, b: { icon: 'Server', name: 'API', color: 'violet' } },
+      }))
+
+      const result = run(['bench', dir, candidate, '--json'])
+      expect(result.status).toBe(1)
+      const report = JSON.parse(result.stdout)
+      const scored = report.cases[0].candidates[0]
+      expect(scored.pass).toBe(false)
+      expect(scored.nodes.missing).toEqual(['missing-db'])
+      expect(scored.edges.missing).toEqual([['frontend', 'nowhere']])
+      expect(scored.edges.reversed).toEqual([['api', 'frontend']])
+      expect(scored.edges.found).toBe(1)
+      expect(report.ok).toBe(false)
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  test('bench flags a reversed edge instead of counting it as found', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'arc-bench-'))
+    try {
+      writeFileSync(join(dir, 'expect.json'), JSON.stringify({ nodes: [], edges: [['a', 'b']] }))
+      const candidate = join(dir, 'reversed.json')
+      writeFileSync(candidate, JSON.stringify({
+        ...head,
+        connectors: [{ id: 'b-to-a', from: 'b', to: 'a', fromAnchor: 'left', toAnchor: 'right', style: 'api' }],
+      }))
+
+      const result = run(['bench', dir, candidate, '--json'])
+      expect(result.status).toBe(1)
+      const scored = JSON.parse(result.stdout).cases[0].candidates[0]
+      expect(scored.edges.found).toBe(0)
+      expect(scored.edges.reversed).toEqual([['a', 'b']])
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  test('bench treats unparseable candidates as failures and empty outputs as skipped', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'arc-bench-'))
+    try {
+      writeFileSync(join(dir, 'expect.json'), JSON.stringify({ nodes: ['a'] }))
+      const bad = join(dir, 'broken.json')
+      writeFileSync(bad, '{')
+      const result = run(['bench', dir, bad, '--json'])
+      expect(result.status).toBe(1)
+      expect(JSON.parse(result.stdout).cases[0].candidates[0].inputError).toContain('JSON')
+
+      // an outputs-less case dir inside a suite reports as skipped
+      const emptyCase = join(dir, 'suite', 'no-outputs')
+      mkdirSync(emptyCase, { recursive: true })
+      writeFileSync(join(emptyCase, 'expect.json'), JSON.stringify({ nodes: [] }))
+      const skipped = run(['bench', join(dir, 'suite')])
+      expect(skipped.status).toBe(1)
+      expect(skipped.stdout).toContain('no candidates')
+      expect(skipped.stdout).toContain('skipped')
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  test('bench usage errors exit 2', () => {
+    expect(run(['bench']).status).toBe(2)
+    expect(run(['bench', '--bogus']).status).toBe(2)
+    const missing = run(['bench', '/does/not/exist'])
+    expect(missing.status).toBe(1)
   })
 
   test('schema prints the generated draft-07 schema', () => {

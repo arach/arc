@@ -6,6 +6,8 @@ import { generateSVG } from '../src/utils/exportUtils.ts'
 import type { Diagnostic, DiagnosticSeverity, Fix } from '../src/utils/diagramDiagnostics.ts'
 import { diffDiagram } from '../src/utils/diffDiagram.ts'
 import type { ArcDiagramData } from '../src/types/diagram.ts'
+import { runBench } from './arcBench.ts'
+import type { BenchCandidateResult } from './arcBench.ts'
 import diagramSchemaJson from '../schemas/arc-diagram.schema.json'
 
 const USAGE = `arc — Arc diagram CLI
@@ -14,12 +16,14 @@ Usage:
   arc check <file|-> [--severity error|warning|all] [--format text|json] [--json] [--strict]
   arc diff <base> <head> [--format json|summary] [--json] [--summary]
   arc render <file|-> --out <file.svg> [--format svg] [--padding <px>] [--background <color>] [--grid] [--strict] [--json]
+  arc bench <case-dir|suite-dir> [candidate.json ...] [--strict] [--json]
   arc schema
 
 Commands:
   check    Validate a diagram and print coded diagnostics
   diff     Print the structural DiagramDelta between two diagrams
   render   Validate, render an SVG, and atomically replace the output
+  bench    Score diagram candidates against a benchmark case or suite
   schema   Print the generated draft-07 JSON Schema
 
 Input:
@@ -458,6 +462,63 @@ async function renderCommand(args: string[]): Promise<number> {
   return 0
 }
 
+function benchLine(result: BenchCandidateResult): string {
+  if (result.inputError) return `fail ${result.candidate} — input error: ${result.inputError}`
+  const parts = [`nodes ${result.nodes.found}/${result.nodes.expected}`, `edges ${result.edges.found}/${result.edges.expected}`]
+  if (result.renderBytes !== undefined) parts.push(`render ${result.renderBytes}b`)
+  if (!result.valid) parts.push(`${result.errors} error${result.errors === 1 ? '' : 's'}`)
+  if (result.warnings) parts.push(`${result.warnings} warning${result.warnings === 1 ? '' : 's'}`)
+  const detail: string[] = []
+  if (result.nodes.missing.length) detail.push(`missing nodes: ${result.nodes.missing.join(', ')}`)
+  for (const [from, to] of result.edges.missing) detail.push(`missing edge: ${from}→${to}`)
+  for (const [from, to] of result.edges.reversed) detail.push(`reversed edge: ${from}→${to}`)
+  if (!result.size.ok) detail.push(`node count ${result.size.count} outside ${result.size.min ?? 0}–${result.size.max ?? '∞'}`)
+  if (!result.rendered) detail.push('render failed')
+  return `${result.pass ? 'pass' : 'fail'} ${result.candidate} (${parts.join(', ')})${detail.length ? ` — ${detail.join('; ')}` : ''}`
+}
+
+async function benchCommand(args: string[]): Promise<number> {
+  let json = false
+  let strict = false
+  const positional: string[] = []
+  for (const arg of args) {
+    if (arg === '--json') json = true
+    else if (arg === '--strict') strict = true
+    else if (arg === '--help' || arg === '-h') {
+      console.log(USAGE)
+      return 0
+    } else if (arg.startsWith('-')) {
+      fail(`unknown option: ${arg}`, 2)
+    } else {
+      positional.push(arg)
+    }
+  }
+  const [dir, ...candidates] = positional
+  if (!dir) fail('bench requires a case or suite directory', 2)
+
+  let report: ReturnType<typeof runBench>
+  try {
+    report = runBench(dir, candidates, { strict })
+  } catch (err) {
+    if (json) console.log(JSON.stringify({ ok: false, error: { code: 'cli/input-error', message: errorMessage(err) } }, null, 2))
+    else console.error(errorMessage(err))
+    return 1
+  }
+
+  if (json) {
+    console.log(JSON.stringify(report, null, 2))
+  } else {
+    for (const benchCase of report.cases) {
+      console.log(`${benchCase.case}:`)
+      if (!benchCase.candidates.length) console.log('  (no candidates in outputs/)')
+      for (const candidate of benchCase.candidates) console.log(`  ${benchLine(candidate)}`)
+    }
+    const { totals } = report
+    console.log(`${totals.passed}/${totals.candidates} candidates passed across ${totals.cases} case${totals.cases === 1 ? '' : 's'}${totals.skipped ? `, ${totals.skipped} skipped (no outputs)` : ''}`)
+  }
+  return report.ok && report.totals.candidates > 0 ? 0 : 1
+}
+
 async function main(): Promise<void> {
   const [command, ...args] = process.argv.slice(2)
   let exitCode: number
@@ -471,6 +532,9 @@ async function main(): Promise<void> {
       break
     case 'render':
       exitCode = await renderCommand(args)
+      break
+    case 'bench':
+      exitCode = await benchCommand(args)
       break
     case 'schema':
       if (args.length) fail(`schema takes no arguments`, 2)

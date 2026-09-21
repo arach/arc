@@ -1,0 +1,1 @@
+Produce an ArcDiagramData JSON document for an ML training platform: raw data lands in a data lake, a training cluster reads it to train models, trained models are pushed to a model registry, and a serving endpoint pulls models from the registry to answer requests.

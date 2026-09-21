@@ -25,7 +25,7 @@ Arc diagram format: JSON with layout, nodes, nodeData, connectors, connectorStyl
 Canonical schema: src/types/diagram.ts
 JSON Schema: schemas/arc-diagram.schema.json (generated, draft-07; closed objects reject invented fields)
 Validation: validateDiagram(value) -> coded Diagnostic[] with supportedFixes; MCP validate_diagram -> {ok, diagnostics}
-CLI: arc check file.json --json; arc diff base.json head.json; arc render file.json --out diagram.svg --json; arc schema
+CLI: arc check file.json --json; arc diff base.json head.json; arc render file.json --out diagram.svg --json; arc bench benchmarks/; arc schema
 Valid colors: violet, emerald, blue, amber, sky, zinc, rose, orange
 Valid sizes: xs, s, m, l  (NOT large/normal/small)
 Valid anchors: left, right, top, bottom, topLeft, topRight, bottomLeft, bottomRight

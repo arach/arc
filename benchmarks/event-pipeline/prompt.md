@@ -1,0 +1,1 @@
+Produce an ArcDiagramData JSON document for an event pipeline: app services publish events to a Kafka topic, stream workers consume them and write aggregates to a warehouse, and a monitoring service watches consumer lag.
