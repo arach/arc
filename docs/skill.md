@@ -4,76 +4,49 @@
 
 ## Available Skills
 
-### arc-diagram
+### arc-diagrams
 
-Create and modify Arc architecture diagrams.
+Create architecture diagrams using Arc's JSON format. This is the skill that ships in
+this repo at `skills/arc-diagrams/SKILL.md`.
 
-**Trigger**: When user asks to create, edit, or work with architecture diagrams
+**Trigger**: When the user asks to "create an architecture diagram", "draw a system
+diagram", "visualize the architecture", or "make a diagram of" something
 
 **Capabilities**:
-- Generate ArcDiagramData from natural language descriptions
-- Add/remove/modify nodes and connectors
-- Apply themes and styling
-- Convert between JSON and TypeScript formats
+- Generate ArcDiagramData configs from natural language descriptions
+- Position nodes on a clean grid with valid sizes and anchors
+- Apply the 8 logical colors and named connector styles
+- Output the config as JSON or as a typed TypeScript export for React projects
 
 **Context to provide**:
 ```
 Arc diagram format: JSON with layout, nodes, nodeData, connectors, connectorStyles
 Valid colors: violet, emerald, blue, amber, sky, zinc, rose, orange
-Valid sizes: s, m, l
+Valid sizes: xs, s, m, l
 Valid anchors: left, right, top, bottom, topLeft, topRight, bottomLeft, bottomRight
-Icons: Any Lucide icon name (Server, Database, Monitor, Cloud, etc.)
+Icons: curated Lucide set (see src/utils/iconRegistry.ts)
 ```
 
 ---
 
-### arc-editor-dev
+## Editor Development Context
 
-Develop and debug the Arc editor codebase.
+When working on the Arc editor source code itself, provide this context:
 
-**Trigger**: When working on Arc editor source code
-
-**Context to provide**:
 ```
-Arc Editor Structure:
-- Entry: src/main.jsx → App.jsx
-- Editor: src/components/editor/DiagramEditor.jsx
-- State: EditorProvider.jsx + editorReducer.js (useReducer pattern)
-- Canvas: DiagramCanvas.jsx (pointer events)
-- Nodes: EditableNode.jsx (drag with pointer capture)
-- Connectors: ConnectorLayer.jsx (SVG paths)
-- Icons: src/utils/iconRegistry.js
-- Constants: src/utils/constants.js (COLORS, NODE_SIZES)
+Arc editor structure:
+- Entry: src/main.tsx -> src/App.tsx
+- Editor: src/components/editor/DiagramEditor.tsx
+- State: EditorProvider.tsx + editorReducer.ts (useReducer pattern)
+- Canvas: DiagramCanvas.tsx (pointer events)
+- Nodes: EditableNode.tsx (drag with pointer capture)
+- Connectors: ConnectorLayer.tsx (SVG paths)
+- Inspector: InspectorPanel.tsx
+- Icons: src/utils/iconRegistry.ts
+- Constants: src/utils/constants.ts (COLORS, NODE_SIZES)
 
-Commands: pnpm dev | pnpm build | pnpm lint
+Commands: bun run dev | bun run build | bun run lint
 Stack: React 19, Vite 7, TailwindCSS 4, Lucide icons
-```
-
----
-
-### arc-export
-
-Export Arc diagrams to various formats.
-
-**Trigger**: When user wants to export or integrate Arc diagrams
-
-**Capabilities**:
-- Export to TypeScript with proper types
-- Generate React component code
-- Create vanilla JS integration code
-- Prepare diagrams for documentation sites
-
-**Example output** (TypeScript):
-```typescript
-import type { ArcDiagramData } from '@arach/arc'
-
-export const systemArchitecture: ArcDiagramData = {
-  layout: { width: 700, height: 400 },
-  nodes: { /* ... */ },
-  nodeData: { /* ... */ },
-  connectors: [ /* ... */ ],
-  connectorStyles: { /* ... */ }
-}
 ```
 
 ---
@@ -90,14 +63,14 @@ Add to your project's `CLAUDE.md`:
 When working with Arc diagrams:
 - Format: JSON with layout, nodes, nodeData, connectors, connectorStyles
 - Colors: violet, emerald, blue, amber, sky, zinc, rose, orange
-- Sizes: s, m, l
+- Sizes: xs, s, m, l
 - Anchors: left, right, top, bottom, topLeft, topRight, bottomLeft, bottomRight
-- Icons: Lucide icon names (Server, Database, Monitor, etc.)
+- Icons: curated Lucide icon set (see src/utils/iconRegistry.ts)
 
 Key files:
 - Editor: src/components/editor/
-- State: EditorProvider.jsx + editorReducer.js
-- Utils: src/utils/constants.js, iconRegistry.js
+- State: EditorProvider.tsx + editorReducer.ts
+- Utils: src/utils/constants.ts, src/utils/iconRegistry.ts
 ```
 
 ### Cursor / Windsurf
@@ -117,7 +90,7 @@ Use @arach/arc for React, @arach/arc-iso for isometric rendering.
 
 ### Generic LLM
 
-Copy the contents of `/llm.txt` into your conversation context.
+Copy the contents of `docs/llm.txt` into your conversation context.
 
 ---
 
@@ -140,6 +113,6 @@ Return the complete updated config.
 ### Debug Editor
 ```
 Debug Arc editor issue: [PROBLEM]
-Check these files: EditorProvider.jsx, editorReducer.js, [RELEVANT_FILE]
+Check these files: EditorProvider.tsx, editorReducer.ts, [RELEVANT_FILE]
 The state shape is: { diagram, editor, meta, history }
 ```

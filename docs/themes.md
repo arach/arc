@@ -1,7 +1,7 @@
 # Color Themes
 
-Themes remap Arc's six **logical node colors** to a coordinated palette. You set
-`theme` and `mode` on the diagram — the node `color` values never change, so one
+Themes remap Arc's eight **logical node colors** to a coordinated palette. You set
+`theme` and `mode` on the diagram. The node `color` values never change, so one
 diagram renders in every theme.
 
 ```tsx
@@ -10,7 +10,7 @@ diagram renders in every theme.
 
 ## Logical colors
 
-Every node uses one of six logical colors. The active theme decides how each renders:
+Every node uses one of eight logical colors. The active theme decides how each renders:
 
 | Color | Typical meaning |
 |-------|-----------------|
@@ -20,6 +20,8 @@ Every node uses one of six logical colors. The active theme decides how each ren
 | `amber` | Warnings |
 | `sky` | External / cloud |
 | `zinc` | Neutral / infra |
+| `rose` | Errors / alerts |
+| `orange` | Accents / highlights |
 
 Use 2–3 colors per diagram for cohesion, applied semantically (e.g. `emerald` for
 data, `amber` for warnings) or aesthetically.
@@ -37,6 +39,7 @@ Each theme ships **light and dark** modes:
 | `engineering` | Systematic enterprise blue on a graph grid |
 | `workbench` | Dark slate with intent colors |
 | `tactical` | Near-black with signature amber |
+| `command` | HUD console, cyan glass, crosshair grid (Arc editor default) |
 
 ## Applying a theme
 

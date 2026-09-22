@@ -38,17 +38,17 @@ const archDiagram: ArcDiagramData = {
 }
 
 const features = [
-  { n: '01', h: 'Design with confidence', p: 'A real canvas for nodes, connections, groups, and images.' },
+  { n: '01', h: 'A real canvas', p: 'Nodes, connectors, groups, and images, edited directly.' },
   { n: '02', h: 'Ship declarative outputs', p: 'Export configs you can lint, review, and run in CI.' },
-  { n: '03', h: 'Templates that scale', p: 'Curated themes and consistent styling across teams.' },
-  { n: '04', h: 'Share the story', p: 'SVG / PNG exports for decks and living docs.' },
+  { n: '03', h: 'Themes that scale', p: '8 curated themes in light and dark, consistent across teams.' },
+  { n: '04', h: 'Share the story', p: 'SVG, PNG, and ASCII exports for decks and living docs.' },
 ]
 
 const docs = [
   { n: 'DOC.01', h: 'Introduction to Arc', p: 'What it is and the problem it solves.', to: '/docs/overview' },
   { n: 'DOC.02', h: 'Get up and running', p: 'Install, import, render your first diagram.', to: '/docs/quickstart' },
   { n: 'DOC.03', h: 'Data structure reference', p: 'Nodes, connectors, layout, and theming.', to: '/docs/diagram-format' },
-  { n: 'DOC.04', h: 'Color palettes', p: 'default · warm · cool · mono, light & dark.', to: '/docs/themes' },
+  { n: 'DOC.04', h: 'Themes', p: '8 themes in light and dark: default, warm, cool, mono, engineering, workbench, tactical, command.', to: '/docs/themes' },
 ]
 
 type LandingPageProps = { onLaunchEditor: () => void }
@@ -74,7 +74,7 @@ export default function LandingPage({ onLaunchEditor }: LandingPageProps) {
                 <span className="tl-brand-descriptor">diagrams as code</span>
               </span>
             </Link>
-            <span className="tl-brand-ver">v0.4.1</span>
+            <span className="tl-brand-ver">v0.4.5</span>
           </div>
           <nav className="tl-nav">
             <a href="#why">WHY ARC</a>
@@ -99,10 +99,10 @@ export default function LandingPage({ onLaunchEditor }: LandingPageProps) {
               <Link className="tl-btn tl-btn-ghost" to="/docs">Read the docs</Link>
             </div>
             <div className="tl-specbar">
-              <span>REACT</span>
-              <span>TYPESCRIPT</span>
-              <span>SVG / PNG EXPORT</span>
-              <span>ZERO RUNTIME DEPS</span>
+              <span>REACT + TYPESCRIPT</span>
+              <span>8 THEMES · LIGHT / DARK</span>
+              <span>PAN · ZOOM · HOVER</span>
+              <span>SVG / PNG / ASCII EXPORT</span>
             </div>
           </div>
 
@@ -136,7 +136,7 @@ export default function LandingPage({ onLaunchEditor }: LandingPageProps) {
             <div className="tl-tag">// 01 — WHY ARC EXISTS</div>
             <h2 className="tl-h2" style={{ marginBottom: 18 }}>Architecture diagrams usually die in slide decks.</h2>
             <p className="tl-section-p">
-              Arc keeps the diagram in the same place as the product: in code, in docs, and in the repo —
+              Arc keeps the diagram in the same place as the product: in code, in docs, and in the repo,
               so it stays true as the system changes.
             </p>
           </div>
@@ -183,8 +183,8 @@ export default function LandingPage({ onLaunchEditor }: LandingPageProps) {
               <div className="tl-tag">// 03 — NATIVE MERMAID</div>
               <h2 className="tl-h2">Interaction, rendered in sequence.</h2>
               <p className="tl-section-p">
-                Keep Mermaid as the reviewable source while Arc owns the typed interaction model,
-                theme, renderer, and playback controls.
+                Keep Mermaid as the reviewable source while @arach/arc-viewer owns the typed model,
+                theme, native renderer, and playback controls.
               </p>
             </div>
             <div className="tl-pipeline-id">MERMAID.SEQUENCE.001<br />source → model → player</div>
@@ -199,7 +199,7 @@ export default function LandingPage({ onLaunchEditor }: LandingPageProps) {
         {/* DOCS */}
         <section id="docs" className="tl-section">
           <div className="tl-tag">// 04 — DOCUMENTATION</div>
-          <h2 className="tl-h2" style={{ marginBottom: 28 }}>Start reading.</h2>
+          <h2 className="tl-h2" style={{ marginBottom: 28 }}>Read the manual.</h2>
           <div className="tl-doc-grid">
             {docs.map((d) => (
               <Link className="tl-doc" to={d.to} key={d.n}>
@@ -229,17 +229,17 @@ export default function LandingPage({ onLaunchEditor }: LandingPageProps) {
             <div className="tl-specs">
               <div className="tl-specs-h">SPECS</div>
               <div>install&nbsp;&nbsp;<b>npm i @arach/arc</b></div>
-              <div>bundle&nbsp;&nbsp;<b>~28kb gz</b></div>
               <div>render&nbsp;&nbsp;<b>SSR · client</b></div>
-              <div>export&nbsp;&nbsp;<b>SVG · PNG</b></div>
+              <div>themes&nbsp;&nbsp;<b>8 · light + dark</b></div>
+              <div>export&nbsp;&nbsp;<b>SVG · PNG · ASCII</b></div>
             </div>
           </div>
         </section>
 
         {/* FOOTER */}
         <footer className="tl-footer">
-          <span className="tl-footer-brand"><ArcMark />Arc — diagrams as code.</span>
-          <span>Designed for Git-friendly, declarative diagrams · v0.4.1</span>
+          <span className="tl-footer-brand"><ArcMark />Arc · diagrams as code.</span>
+          <span>Designed for Git-friendly, declarative diagrams · v0.4.5</span>
         </footer>
       </div>
     </div>

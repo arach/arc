@@ -43,7 +43,7 @@ export function Architecture() {
   return (
     <ArcDiagram
       data={diagram}      // your ArcDiagramData (see below)
-      theme="default"     // seven themes, each with light & dark
+      theme="default"     // eight themes, each with light & dark
       mode="dark"         // light · dark
       defaultZoom="fit"   // auto-fit to the container
     />
@@ -51,55 +51,56 @@ export function Architecture() {
 }
 ```
 
-You get pan/zoom, hover highlighting, light/dark modes, and seven color themes
+You get pan/zoom, hover highlighting, light/dark modes, and eight color themes
 out of the box.
 
 ### Key props
 
 | Prop | Type | Notes |
 |------|------|-------|
-| `data` | `ArcDiagramData` | The diagram config (required) — see [Example Output](#example-output). |
-| `theme` | `'default' \| 'warm' \| 'cool' \| 'mono' \| 'engineering' \| 'workbench' \| 'tactical'` | Palette + drafting grammar (grid, frame, type). |
+| `data` | `ArcDiagramData` | The diagram config (required); see [Example Output](#example-output). |
+| `theme` | `'default' \| 'warm' \| 'cool' \| 'mono' \| 'engineering' \| 'workbench' \| 'tactical' \| 'command'` | Palette + drafting grammar (grid, frame, type). Falls back to `'default'`; the Arc editor session default is `'command'`. |
 | `mode` | `'light' \| 'dark'` | Appearance. |
-| `frame` | `'hairline' \| 'inset' \| 'brackets' \| 'ticks' \| 'cropmarks' \| 'corners' \| 'sheet' \| 'none'` | Override the theme's edge treatment. |
+| `frame` | `'hairline' \| 'inset' \| 'brackets' \| 'ticks' \| 'cropmarks' \| 'corners' \| 'sheet' \| 'reticle' \| 'none'` | Override the theme's edge treatment. |
 | `interactive` | `boolean` | Pan/zoom controls. |
 | `defaultZoom` | `number \| 'fit'` | Initial zoom, or `'fit'` to auto-fit (`maxFitZoom` caps it). |
 | `showControls` / `showMinimap` | `boolean` | Zoom controls / minimap for read-only chrome. |
 | `hoverEffects` | `boolean \| { dim, lift, glow, highlightEdges }` | Hover highlighting (granular). |
 | `label` | `string` | Override the bottom-left label. |
 
-## The Studio
+## The Arc editor
 
-Prefer to design visually? Arc ships a full drag-and-drop **studio** — infinite
+Prefer to design visually? Arc ships a full drag-and-drop editor: infinite
 canvas, floating toolbar, reusable connector styles, live properties panel, and
 a minimap. Clone the repo and open it:
 
 ```bash
 git clone https://github.com/arach/arc && cd arc
-bun install && bun dev      # → http://localhost:5188/editor
+bun install && bun run dev  # → http://localhost:5188/editor
 ```
 
-![The Arc Studio — a drag-and-drop editor for architecture diagrams](https://raw.githubusercontent.com/arach/arc/master/public/studio.png)
+![The Arc editor, a drag-and-drop editor for architecture diagrams](https://raw.githubusercontent.com/arach/arc/master/public/studio.png)
 
 Design on the canvas, then **Export** to TypeScript, JSON, SVG, PNG, or a
-shareable link — and drop the result straight into `<ArcDiagram />`.
+shareable link, and drop the result straight into `<ArcDiagram />`.
 
 ## Features
 
-- **Visual Editor** - Drag-and-drop nodes, connect with arrows
-- **Multiple Node Sizes** - Large, medium, small
-- **Color Themes** - Violet, emerald, blue, amber, sky, zinc, rose, orange
+- **Arc editor** - Drag-and-drop nodes, connect with arrows
+- **Node Sizes** - Four sizes: `xs`, `s`, `m`, `l`
+- **Color Themes** - Eight themes, each with light and dark modes
+- **Node Colors** - Violet, emerald, blue, amber, sky, zinc, rose, orange
 - **Connector Styles** - Solid/dashed lines, labels, curved paths
 - **Export Options** - TypeScript, JSON, SVG, PNG, ASCII, shareable links
-- **Interactive Canvas** - Infinite pan/zoom, grid snapping
+- **Interactive Canvas** - Infinite pan/zoom
 - **Groups & Images** - Visual grouping, background images
 - **Templates** - Quick-start layouts
 
 ## Native Mermaid Sequences
 
 `@arach/arc-viewer` turns canonical Mermaid `sequenceDiagram` source into a
-typed Arc document and a native, interactive React player—without embedding the
-generic Mermaid runtime.
+typed Arc document and a native, interactive React player, without embedding
+the generic Mermaid runtime.
 
 ```bash
 npm install @arach/arc-viewer
@@ -153,11 +154,11 @@ Arc's own architecture rendered three ways:
   <sub><strong>Tactical</strong> — crosshair grid, corner brackets, hard edges</sub>
 </div>
 
-Plus `default`, `warm`, `cool`, and `mono` — seven in all, each with light and dark modes.
+Plus `default`, `warm`, `cool`, `mono`, and `command`: eight in all, each with light and dark modes.
 
 ## Example Output
 
-Arc stores diagrams as plain, typed data — the same config that renders the
+Arc stores diagrams as plain, typed data: the same config that renders the
 diagram at the top of this README:
 
 ```typescript
@@ -197,7 +198,7 @@ const diagram: ArcDiagramData = {
 
 ## ASCII Renderer
 
-The same diagram renders as precise monospace text — for READMEs, CLI output, or anywhere you can't embed a React component:
+The same diagram renders as precise monospace text, for READMEs, CLI output, or anywhere you can't embed a React component:
 
 ```
                                                      ┌──────────────────┐
@@ -230,19 +231,14 @@ const narrow = renderAscii(diagram, { maxWidth: 80 })       // Auto-scale to 80 
 ### CLI
 
 ```bash
-bunx tsx bin/arc-ascii.mjs diagram.json
-cat diagram.json | bunx tsx bin/arc-ascii.mjs
-bunx tsx bin/arc-ascii.mjs diagram.json --charset ascii --max-width 80
+npx arc-ascii diagram.json
+cat diagram.json | npx arc-ascii
+npx arc-ascii diagram.json --charset ascii --max-width 80
 ```
 
 ## Requirements
 
-The `ArcDiagram` player component requires:
-
-- **Tailwind CSS v3+** - Component uses Tailwind utility classes for styling
-- **Default color palette** - The following colors must be available: `violet`, `emerald`, `blue`, `amber`, `sky`, `zinc`, `rose`, `orange`
-
-If you're using a custom Tailwind config that restricts the color palette, ensure these colors are included.
+`react` and `react-dom` (^18 or ^19) and `lucide-react` (>=0.400.0) are peer dependencies, covered under [Install](#install). The library ships compiled CSS, so consumers do not need to install or configure Tailwind.
 
 ## Tech Stack
 

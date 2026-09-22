@@ -2,7 +2,7 @@
 
 > Visual diagram editor outputting declarative JSON/TypeScript configs
 > Source: https://github.com/arach/arc
-> Docs: https://arc.arach.dev/docs
+> Docs: https://arc.jdi.sh/docs
 
 ## Quick Facts
 
@@ -10,6 +10,7 @@
 - **Output**: JSON/TypeScript configs (not images)
 - **Stack**: React 19, Vite 7, TailwindCSS 4
 - **Packages**: @arach/arc (full), @arach/arc-viewer (viewer), @arach/arc-iso (isometric)
+- **Peer deps**: react, react-dom, lucide-react
 
 ## Installation
 
@@ -50,10 +51,13 @@ const diagram = {
 interface ArcDiagramData {
   id?: string
   layout: { width: number; height: number }
-  nodes: Record<string, { x: number; y: number; size: 's' | 'm' | 'l' }>
+  layoutHints?: LayoutHints
+  nodes: Record<string, { x: number; y: number; size: 'xs' | 's' | 'm' | 'l' }>
   nodeData: Record<string, { icon: string; name: string; color: DiagramColor; subtitle?: string }>
   connectors: Array<{ from: string; to: string; fromAnchor: AnchorPosition; toAnchor: AnchorPosition; style: string }>
   connectorStyles: Record<string, { color: DiagramColor; strokeWidth: number; label?: string; dashed?: boolean }>
+  focusTargets?: Record<string, FocusTarget>
+  groups?: GroupShape[]
 }
 
 type DiagramColor = 'violet' | 'emerald' | 'blue' | 'amber' | 'sky' | 'zinc' | 'rose' | 'orange'
@@ -65,31 +69,49 @@ type AnchorPosition = 'left' | 'right' | 'top' | 'bottom' | 'topLeft' | 'topRigh
 | Prop | Type | Default |
 |------|------|---------|
 | data | ArcDiagramData | required |
-| mode | 'light' \| 'dark' | 'light' |
-| theme | 'default' \| 'warm' \| 'cool' \| 'mono' | 'default' |
+| mode | 'light' \| 'dark' | 'dark' |
+| theme | 'default' \| 'warm' \| 'cool' \| 'mono' \| 'engineering' \| 'workbench' \| 'tactical' \| 'command' | 'default' |
 | interactive | boolean | true |
+| label | string | data.id |
+| defaultZoom | number \| 'fit' | 1 |
+| maxFitZoom | number | 1 |
+| showControls | boolean | follows `interactive` |
+| showMinimap | boolean | false |
+| showFocusStory | boolean | false |
+| frame | hairline, inset, brackets, ticks, cropmarks, corners, sheet, reticle, none | theme default |
+| hoverEffects | boolean \| HoverEffectsConfig | true |
+
+Note: `ArcDiagram`'s `theme` prop falls back to `'default'`; the Arc editor session default is `'command'`.
 
 ## Available Icons (Lucide)
 
+Curated set of 45 icons registered in src/utils/iconRegistry.ts, including:
 Server, Database, Cloud, CloudCog, Monitor, Smartphone, Laptop, Globe, Terminal, MessageSquare, Mail, Bell, Shield, Lock, Key, FileText, Folder, Package, Layers, Wifi, Radio, Plug, RefreshCw, Download, Upload, Send, Zap, HardDrive, Network, Cpu, Archive, Cable, Router
+
+## Recent Capabilities
+
+- **Native Mermaid sequences**: `@arach/arc-viewer` parses and renders Mermaid sequenceDiagram natively (`parseMermaid`, `ArcMermaid`, `ArcMermaidPlayer`). No `mermaid` dependency. Details: https://arc.jdi.sh/docs/mermaid-sequences
+- **Mermaid import**: `importMermaid` in `@arach/arc-viewer` converts Mermaid flowchart/state diagrams into ArcDiagramData. Intentionally lossy adapter with warnings/unsupported diagnostics. Details: https://arc.jdi.sh/docs/mermaid-import
+- **Group layout**: declarative `GroupLayoutHint` via `layoutHints` (direction, padding, layerGap, itemGap, align, justify). Details: https://arc.jdi.sh/docs/group-layout
+- **Focus stories**: guided walkthroughs via `FocusStep`, `focusTargets`, `showFocusStory`, `resolveFocusState`. Details: https://arc.jdi.sh/docs/focus-stories
 
 ## Project Structure
 
 ```
 src/components/editor/
-├── DiagramEditor.jsx     # Main layout
-├── EditorProvider.jsx    # State (useReducer + Context)
-├── editorReducer.js      # State logic
-├── DiagramCanvas.jsx     # Interactive canvas
-├── EditableNode.jsx      # Draggable nodes
-├── ConnectorLayer.jsx    # SVG connectors
-└── PropertiesPanel.jsx   # Editing sidebar
+├── DiagramEditor.tsx     # Main layout
+├── EditorProvider.tsx    # State (useReducer + Context)
+├── editorReducer.ts      # State logic
+├── DiagramCanvas.tsx     # Interactive canvas
+├── EditableNode.tsx      # Draggable nodes
+├── ConnectorLayer.tsx    # SVG connectors
+└── InspectorPanel.tsx    # Editing sidebar
 
 src/utils/
-├── constants.js          # Colors, sizes
-├── iconRegistry.js       # Icon mapping
-├── diagramHelpers.js     # Geometry utils
-└── fileOperations.js     # Save/load/export
+├── constants.ts          # Colors, sizes
+├── iconRegistry.ts       # Icon mapping
+├── diagramHelpers.ts     # Geometry utils
+└── fileOperations.ts     # Save/load/export
 ```
 
 ## State Shape
@@ -107,18 +129,19 @@ src/utils/
 
 | Task | File |
 |------|------|
-| Add icon | src/utils/iconRegistry.js |
-| Add color | src/utils/constants.js COLORS |
-| Edit drag | src/components/editor/EditableNode.jsx |
-| Edit paths | src/components/editor/ConnectorLayer.jsx |
-| New export | src/utils/fileOperations.js |
+| Add icon | src/utils/iconRegistry.ts |
+| Add color | src/utils/constants.ts COLORS |
+| Edit drag | src/components/editor/EditableNode.tsx |
+| Edit paths | src/components/editor/ConnectorLayer.tsx |
+| New export | src/utils/fileOperations.ts |
 
 ## Commands
 
 ```bash
-pnpm dev      # Start dev server
-pnpm build    # Production build
-pnpm lint     # ESLint
+bun run dev       # Start dev server (port 5188)
+bun run build     # Production build
+bun run lint      # ESLint
+bun run typecheck # TypeScript check
 ```
 
 ## Critical Rules
@@ -126,5 +149,5 @@ pnpm lint     # ESLint
 1. Diagrams are JSON data, not images - maintain declarative format
 2. State is immutable - always return new objects from reducer
 3. History is capped at 50 states
-4. Icons must be registered in iconRegistry.js before use
+4. Icons must be registered in iconRegistry.ts before use
 5. Exports should be deterministic (same input = same output)

@@ -4,7 +4,9 @@ This file provides guidance to Claude Code when working with this repository.
 
 ## Project Overview
 
-**Arc** is a visual diagram editor for creating architecture diagrams. It provides a drag-and-drop interface for designing system architectures that can be exported to Talkie landing pages.
+**Arc** is diagrams as code: typed, diffable config rendered as clean, themeable architecture diagrams. This repo contains the Arc editor (visual editor app), the `ArcDiagram` renderer, the isometric renderer, and the arc.jdi.sh site.
+
+Workspace packages: `@arach/arc` (root, renderer + editor components), `@arach/arc-editor` (`packages/arc-editor`, editor app), `@arach/arc-iso` (`packages/iso`, isometric renderer), `@arach/arc-viewer` (`packages/viewer`, native React renderers including Mermaid).
 
 ## Tech Stack
 
@@ -13,14 +15,17 @@ This file provides guidance to Claude Code when working with this repository.
 - **TailwindCSS 4** - Utility-first styling
 - **Lucide React** - SVG icon library
 - **TypeScript** - Full type support
+- **Bun** - Package manager and script runner
 
 ## Build Commands
 
 ```bash
-bun run dev      # Start dev server with HMR
-bun run build    # Production build to dist/
-bun run preview  # Preview production build
-bun run lint     # Run ESLint
+bun run dev        # Start dev server with HMR (port 5188)
+bun run build      # Production build to dist/
+bun run preview    # Preview production build
+bun run lint       # Run ESLint
+bun run typecheck  # Type-check without emitting
+bun run build:lib  # Build the publishable library to lib/
 ```
 
 ## Architecture
@@ -29,35 +34,58 @@ bun run lint     # Run ESLint
 
 ```
 src/
-├── main.jsx                        # React DOM entry point
-├── App.jsx                         # Root with theme toggle
+├── main.tsx                        # React DOM entry point
+├── App.tsx                         # Root component + routes
+├── index.ts                        # Public package API
 ├── index.css                       # Tailwind imports
+├── apps/
+│   └── arc-editor/                 # Editor app shell (context, chrome)
 ├── components/
-│   ├── ArchitectureDiagram.jsx     # Legacy static renderer (kept for reference)
 │   ├── editor/
-│   │   ├── DiagramEditor.jsx       # Main editor layout
-│   │   ├── EditorProvider.jsx      # Context + state management
-│   │   ├── editorReducer.js        # useReducer logic
-│   │   ├── Toolbar.jsx             # File/mode/history controls
-│   │   ├── DiagramCanvas.jsx       # Interactive canvas with drag-and-drop
-│   │   ├── EditableNode.jsx        # Draggable node component
-│   │   ├── ConnectorLayer.jsx      # SVG connectors
-│   │   ├── AnchorPoints.jsx        # Connection point indicators
-│   │   └── PropertiesPanel.jsx     # Right sidebar for editing
+│   │   ├── DiagramEditor.tsx       # Main editor layout
+│   │   ├── EditorProvider.tsx      # Context + state management
+│   │   ├── editorReducer.ts        # useReducer logic
+│   │   ├── TopBar.tsx              # File/mode/history controls
+│   │   ├── FloatingToolbar.tsx     # Canvas tool palette
+│   │   ├── DiagramCanvas.tsx       # Interactive canvas with drag-and-drop
+│   │   ├── EditableNode.tsx        # Draggable node component
+│   │   ├── ConnectorLayer.tsx      # SVG connectors
+│   │   ├── AnchorPoints.tsx        # Connection point indicators
+│   │   ├── InspectorPanel.tsx      # Right sidebar for editing
+│   │   ├── GroupLayer.tsx          # Group shapes
+│   │   ├── ImageLayer.tsx          # Image nodes
+│   │   ├── MiniMap.tsx             # Canvas overview
+│   │   ├── TemplateSelector.tsx    # Style template picker
+│   │   ├── ViewModeToggle.tsx      # 2D / isometric switch
+│   │   └── ZoomControls.tsx        # Zoom UI
 │   ├── properties/
-│   │   ├── NodeProperties.jsx      # Node editing form
-│   │   ├── ConnectorProperties.jsx # Connector editing form
-│   │   ├── IconPicker.jsx          # Icon selection grid
-│   │   └── ColorPicker.jsx         # Color swatches
-│   └── dialogs/
-│       └── ExportDialog.jsx        # Export preview + copy
+│   │   ├── NodeProperties.tsx      # Node editing form
+│   │   ├── ConnectorProperties.tsx # Connector editing form
+│   │   ├── ConnectorStylesPanel.tsx# Connector style editor
+│   │   ├── GroupProperties.tsx     # Group editing form
+│   │   ├── ImageProperties.tsx     # Image editing form
+│   │   ├── GridSettings.tsx        # Canvas grid settings
+│   │   ├── IconPicker.tsx          # Icon selection grid
+│   │   └── ColorPicker.tsx         # Color swatches
+│   ├── dialogs/
+│   │   ├── ExportDialog.tsx        # Export preview + copy
+│   │   └── ShareSheet.tsx          # Share/embed dialog
+│   └── diagrams/                   # Static diagram data (site pages)
 ├── utils/
-│   ├── constants.js                # Colors, sizes, anchors
-│   ├── diagramHelpers.js           # Position/path calculations
-│   ├── iconRegistry.js             # Icon name ↔ component mapping
-│   └── fileOperations.js           # Save/load/export functions
+│   ├── constants.ts                # Colors, sizes, anchors
+│   ├── themes.ts                   # Theme definitions
+│   ├── templates.ts                # Canvas style templates
+│   ├── diagramHelpers.ts           # Position/path calculations
+│   ├── iconRegistry.ts             # Icon name ↔ component mapping
+│   ├── fileOperations.ts           # Save/load/export functions
+│   ├── sessionStorage.ts           # localStorage session persistence
+│   ├── autoLayout.ts               # Automatic layout
+│   ├── yamlConfig.ts               # YAML config parse/serialize
+│   └── asciiRenderer.ts            # ASCII diagram output
 └── hooks/
-    └── useKeyboardShortcuts.js     # Keyboard handler
+    ├── useKeyboardShortcuts.ts     # Keyboard handler
+    ├── useCanvasTransform.ts       # Pan/zoom transform
+    └── useMeta.ts                  # Page metadata
 ```
 
 ### State Management
@@ -67,7 +95,9 @@ Uses `useReducer` + Context for diagram state:
 ```javascript
 {
   diagram: { layout, nodes, nodeData, connectors, connectorStyles, groups, images },
-  editor: { selectedNodeIds, selectedConnectorIndex, mode, pendingConnector, isDragging, themeId, colorMode },
+  editor: { selectedNodeIds, selectedConnectorIndex, selectedGroupId, selectedImageId,
+            mode, pendingConnector, pendingGroup, isDragging, template, zoom, viewMode,
+            themeId, colorMode },
   meta: { filename, isDirty, lastSaved, diagramMeta },
   history: { past, future }
 }
@@ -75,24 +105,26 @@ Uses `useReducer` + Context for diagram state:
 
 ### Theme System
 
-Seven themes (`default`, `warm`, `cool`, `mono`, plus company-aligned `ibm`, `palantir`, `anduril`) defined in `src/utils/themes.ts`. Each has light/dark palettes that remap logical colors (violet, emerald, etc.) to different Tailwind classes and hex stroke values.
+Eight themes (`default`, `warm`, `cool`, `mono`, `engineering`, `workbench`, `tactical`, `command`) defined in `src/utils/themes.ts`. Each has light/dark palettes that remap the eight logical node colors (violet, emerald, blue, amber, sky, zinc, rose, orange) to different Tailwind classes and hex stroke values.
 
 - `useResolvedTheme()` hook returns the current theme palette
 - `EditableNode` and `ConnectorLayer` resolve colors through the theme palette
 - Theme ID and color mode are persisted in editor state and saved with diagrams
+- The editor session default theme is `command`
 
 ### Editor Modes
 
 - **select** - Default mode. Click to select, drag to move nodes
+- **pan** - Drag to pan the canvas
 - **addNode** - Click on canvas to place a new node
 - **addConnector** - Click source anchor → click target anchor to connect
+- **addGroup** - Drag to draw a group shape
 
 ## Using the Editor
 
-### Toolbar
+### Top Bar
 - **New/Open/Save** - File operations (uses File System Access API)
-- **Export** - Generate handoff format for Talkie
-- **Select/+Node/+Line** - Mode selection
+- **Export** - Copy the diagram config for `ArcDiagram`
 - **Undo/Redo** - History navigation
 - **Delete** - Remove selected item
 
@@ -101,11 +133,11 @@ Seven themes (`default`, `warm`, `cool`, `mono`, plus company-aligned `ibm`, `pa
 - **Click node** to select and edit properties
 - **Click connector** to select and edit properties
 
-### Properties Panel
+### Inspector Panel
 - Edit name, subtitle, description
-- Change icon (from Lucide set)
-- Change color theme
-- Change size (large/normal/small)
+- Change icon (from the curated Lucide set in `iconRegistry.ts`)
+- Change node color
+- Change size (`xs` / `s` / `m` / `l`)
 - Edit connector anchors and styles
 
 ### Keyboard Shortcuts
@@ -115,6 +147,7 @@ Seven themes (`default`, `warm`, `cool`, `mono`, plus company-aligned `ibm`, `pa
 - `Cmd+Shift+Z` - Redo
 - `Cmd+S` - Save
 - `Cmd+N` - New diagram
+- `V` / `H` / `N` / `C` - Select / pan / add-node / add-connector modes
 
 ### Zoom Controls
 - **Scroll wheel** - Pan the canvas
@@ -159,13 +192,13 @@ interface ZoomConfig {
 
 ## Node Hover Interactivity
 
-Nodes respond to hover and click with visual feedback — enabled by default:
+Nodes respond to hover and click with visual feedback, enabled by default:
 
 - **Hovered node** lifts up 2px with a colored glow shadow
 - **Other nodes** dim to 45% opacity
 - **Connected connectors** get a thicker stroke and bolder labels
 - **Unconnected connectors** dim to 25% opacity
-- **Click-to-lock** — click a node to lock the highlight state (works on touch devices), click again or click background to release
+- **Click-to-lock**: click a node to lock the highlight state (works on touch devices), click again or click background to release
 - All transitions animate at 200ms ease-out
 
 ### `hoverEffects` Prop
@@ -180,7 +213,7 @@ Nodes respond to hover and click with visual feedback — enabled by default:
 // Granular control
 <ArcDiagram data={diagram} hoverEffects={{
   dim: true,            // dim unrelated nodes/connectors (default: true)
-  dimOpacity: 0.45,     // 0–1 for dimmed nodes, connectors get ~56% of this (default: 0.45)
+  dimOpacity: 0.45,     // 0-1 for dimmed nodes, connectors get ~56% of this (default: 0.45)
   lift: true,           // translateY(-2px) on hover (default: true)
   glow: true,           // colored shadow on hover (default: true)
   highlightEdges: true, // thicken connected edges (default: true)
@@ -216,17 +249,19 @@ When using `defaultZoom="fit"`, caps the calculated zoom level:
 
 ## Diagram Config Format
 
-Diagrams are stored as JSON:
+Diagrams are stored as JSON (the `ArcDiagramData` type):
 
 ```json
 {
   "layout": { "width": 700, "height": 340 },
-  "nodes": { "nodeId": { "x": 25, "y": 15, "size": "large" } },
+  "nodes": { "nodeId": { "x": 25, "y": 15, "size": "m" } },
   "nodeData": { "nodeId": { "icon": "Monitor", "name": "...", "color": "violet" } },
   "connectors": [{ "from": "a", "to": "b", "fromAnchor": "right", "toAnchor": "left", "style": "http" }],
   "connectorStyles": { "http": { "color": "amber", "strokeWidth": 2, "label": "HTTP" } }
 }
 ```
+
+Node sizes are `xs | s | m | l`. Anchors: left, right, top, bottom, bottomLeft, bottomRight, topLeft, topRight.
 
 ## Routes
 
@@ -236,8 +271,12 @@ Diagrams are stored as JSON:
 | `/editor` | New diagram (generates session ID) |
 | `/editor/:sessionId` | Edit diagram with auto-save to localStorage |
 | `/player/*` | Read-only rendering with full theme fidelity |
-| `/capture/:sessionId` | PNG screenshot endpoint (Puppeteer middleware) |
-| `/docs` | Documentation |
+| `/docs` | Documentation index |
+| `/docs/:page` | Individual documentation pages |
+| `/blog/native-mermaid-sequences` | Blog post |
+| `/iso-demo`, `/iso-examples`, `/iso-interactive` | Isometric renderer demos |
+| `/inspiration` | Example diagrams |
+| `/capture/:sessionId` | PNG screenshot endpoint (dev only, Puppeteer middleware) |
 
 ## Session Persistence
 
@@ -271,16 +310,15 @@ curl "http://localhost:5188/capture/my-diagram?width=1200&height=600" > out.png
 
 There is also `scripts/preview.mjs` for CLI-based iteration.
 
-## Handoff to Talkie Docs
+## Exporting Diagrams
 
-Arc diagrams are consumed by the Talkie landing pages at `~/dev/TALKIE`.
+The Export dialog generates the diagram config for use with the `ArcDiagram` renderer's `data` prop:
 
-**Export workflow:**
-1. Click "Export" in toolbar
+1. Click **Export** in the top bar
 2. Copy the generated config
-3. Paste into Talkie's ArchitectureDiagram.jsx
+3. Pass it to `<ArcDiagram data={...} />`
 
-See `handoff.md` for the full export format spec.
+See `docs/exports.md` for the full export format reference (JSON, YAML, SVG, PNG, ASCII).
 
 ## Development Notes
 

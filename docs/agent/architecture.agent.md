@@ -4,33 +4,33 @@
 
 ```
 src/
-├── main.jsx                    # Entry point
-├── App.jsx                     # Root component
+├── main.tsx                    # Entry point
+├── App.tsx                     # Root component + routes
 ├── components/
 │   ├── editor/
-│   │   ├── DiagramEditor.jsx   # Main editor layout
-│   │   ├── EditorProvider.jsx  # State context + reducer
-│   │   ├── editorReducer.js    # State logic
-│   │   ├── Toolbar.jsx         # File/mode controls
-│   │   ├── DiagramCanvas.jsx   # Interactive canvas
-│   │   ├── EditableNode.jsx    # Draggable nodes
-│   │   ├── ConnectorLayer.jsx  # SVG connectors
-│   │   ├── AnchorPoints.jsx    # Connection points
-│   │   └── PropertiesPanel.jsx # Right sidebar
+│   │   ├── DiagramEditor.tsx   # Main editor layout
+│   │   ├── EditorProvider.tsx  # State context + reducer
+│   │   ├── editorReducer.ts    # State logic
+│   │   ├── TopBar.tsx          # File/mode controls
+│   │   ├── DiagramCanvas.tsx   # Interactive canvas
+│   │   ├── EditableNode.tsx    # Draggable nodes
+│   │   ├── ConnectorLayer.tsx  # SVG connectors
+│   │   ├── AnchorPoints.tsx    # Connection points
+│   │   └── InspectorPanel.tsx  # Right sidebar
 │   ├── properties/
-│   │   ├── NodeProperties.jsx
-│   │   ├── ConnectorProperties.jsx
-│   │   ├── IconPicker.jsx
-│   │   └── ColorPicker.jsx
+│   │   ├── NodeProperties.tsx
+│   │   ├── ConnectorProperties.tsx
+│   │   ├── IconPicker.tsx
+│   │   └── ColorPicker.tsx
 │   └── dialogs/
-│       └── ExportDialog.jsx
+│       └── ExportDialog.tsx
 ├── utils/
-│   ├── constants.js            # Colors, sizes, anchors
-│   ├── diagramHelpers.js       # Position/path calcs
-│   ├── iconRegistry.js         # Icon name → component
-│   └── fileOperations.js       # Save/load/export
+│   ├── constants.ts            # Colors, sizes, anchors
+│   ├── diagramHelpers.ts       # Position/path calcs
+│   ├── iconRegistry.ts         # Icon name → component
+│   └── fileOperations.ts       # Save/load/export
 └── hooks/
-    └── useKeyboardShortcuts.js
+    └── useKeyboardShortcuts.ts
 ```
 
 ## State Shape
@@ -73,13 +73,13 @@ User Action → dispatch(action) → editorReducer → new state → Context →
 
 | Task | File(s) |
 |------|---------|
-| Add icon | `src/utils/iconRegistry.js` |
-| Add color | `src/utils/constants.js` → `COLORS` |
-| Change node size | `src/utils/constants.js` → `NODE_SIZES` |
-| Edit drag behavior | `src/components/editor/EditableNode.jsx` |
-| Edit connector paths | `src/components/editor/ConnectorLayer.jsx` |
-| Add toolbar action | `src/components/editor/Toolbar.jsx` |
-| New export format | `src/utils/fileOperations.js` |
+| Add icon | `src/utils/iconRegistry.ts` |
+| Add color | `src/utils/constants.ts` → `COLORS` |
+| Change node size | `src/utils/constants.ts` → `NODE_SIZES` |
+| Edit drag behavior | `src/components/editor/EditableNode.tsx` |
+| Edit connector paths | `src/components/editor/ConnectorLayer.tsx` |
+| Add toolbar action | `src/components/editor/TopBar.tsx` |
+| New export format | `src/utils/fileOperations.ts` |
 
 ## Editor Modes
 
@@ -92,8 +92,8 @@ User Action → dispatch(action) → editorReducer → new state → Context →
 ## Commands
 
 ```bash
-pnpm dev      # Dev server with HMR
-pnpm build    # Production build
-pnpm lint     # ESLint check
-pnpm preview  # Preview production build
+bun run dev       # Dev server with HMR (port 5188)
+bun run build     # Production build
+bun run lint      # ESLint check
+bun run preview   # Preview production build
 ```

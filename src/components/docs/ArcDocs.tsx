@@ -415,7 +415,7 @@ const docsDiagrams: Record<string, ArcDiagramData> = {
     },
   },
 
-  // Themes: Show all 6 colors
+  // Themes: Node color showcase
   themes: {
     id: 'DOCS.THEMES',
     layout: { width: 850, height: 300 },
@@ -540,6 +540,10 @@ import agentsMd from '../../../docs/AGENTS.md?raw'
 import themesMd from '../../../docs/themes.md?raw'
 import exportsMd from '../../../docs/exports.md?raw'
 import mermaidSequencesMd from '../../../docs/mermaid-sequences.md?raw'
+import focusStoriesMd from '../../../docs/focus-stories.md?raw'
+import groupLayoutMd from '../../../docs/group-layout.md?raw'
+import mermaidImportMd from '../../../docs/mermaid-import.md?raw'
+import skillMd from '../../../docs/skill.md?raw'
 
 // Import agent-optimized markdown files
 import overviewAgentMd from '../../../docs/agent/overview.agent.md?raw'
@@ -578,6 +582,8 @@ const pageTree: PageNode[] = [
     children: [
       { type: 'page', id: 'diagram-format', name: 'Diagram Format', icon: 'FileCode', description: 'Data structure & schema' },
       { type: 'page', id: 'architecture', name: 'Architecture', icon: 'Boxes', description: 'Templates & themes' },
+      { type: 'page', id: 'group-layout', name: 'Group Layout', icon: 'LayoutGrid', description: 'Declarative group arrangement' },
+      { type: 'page', id: 'focus-stories', name: 'Focus Stories', icon: 'Crosshair', description: 'Guided architecture paths' },
     ],
   },
   {
@@ -585,6 +591,7 @@ const pageTree: PageNode[] = [
     name: 'Rendering Engines',
     children: [
       { type: 'page', id: 'mermaid-sequences', name: 'Mermaid Sequences', icon: 'GitBranch', description: 'Native sequence renderer & player' },
+      { type: 'page', id: 'mermaid-import', name: 'Mermaid Import', icon: 'FileInput', description: 'Project Mermaid diagrams into Arc' },
     ],
   },
   {
@@ -643,6 +650,12 @@ const pages: Record<string, PageData> = {
     content: stripFrontmatter(mermaidSequencesMd),
     title: 'Native Mermaid Sequences',
     description: 'Parse canonical Mermaid sequence source into a typed Arc document and interactive player.',
+    badge: 'Rendering Engines',
+  },
+  'mermaid-import': {
+    content: stripFrontmatter(mermaidImportMd),
+    title: 'Mermaid Import',
+    description: 'Project Mermaid flowcharts and state diagrams into positioned Arc diagram data.',
     badge: 'Rendering Engines',
   },
   overview: {
@@ -710,8 +723,8 @@ Requirements:
 Return complete JSON. Before responding, verify:
 1. All four keys present: layout, nodes, nodeData, connectors
 2. Node IDs match exactly between "nodes" and "nodeData"
-3. Icons from valid set: Monitor, Server, Cloud, Database, Lock, User, Users, Globe, Code, Terminal, Zap, Settings, Mail, Package, Box, Layers (48 total)
-4. Colors: violet, emerald, blue, amber, zinc, sky
+3. Icons from valid set: Monitor, Server, Cloud, Database, Lock, User, Users, Globe, Code, Terminal, Zap, Settings, Mail, Package, Box, Layers (45 total)
+4. Colors: violet, emerald, blue, amber, sky, zinc, rose, orange
 5. Sizes: xs, s, m, l
 6. Anchors: top, right, bottom, left, bottomRight, bottomLeft
 7. Spacing: ~200px between nodes, canvas fits content`,
@@ -726,7 +739,7 @@ Return complete JSON. Before responding, verify:
     prompt: {
       title: 'Set Up Arc',
       description: 'Add Arc diagrams to your React project',
-      info: 'Arc is a React component that renders diagrams from JSON configs. Install the package, import ArchitectureDiagram, and pass your config as a prop. Works with Next.js, Vite, CRA, and any React setup.',
+      info: 'Arc is a React component that renders diagrams from JSON configs. Install the package, import ArcDiagram, and pass your diagram data as a prop. Works with Next.js, Vite, CRA, and any React setup.',
       params: [
         { name: 'FRAMEWORK', description: 'Your React setup', example: 'Next.js 14 with App Router' },
         { name: 'PACKAGE_MANAGER', description: 'npm, yarn, pnpm, or bun', example: 'pnpm' },
@@ -748,9 +761,9 @@ pnpm add @arach/arc
 yarn add @arach/arc
 
 // BASIC USAGE - React component
-import { ArchitectureDiagram } from '@arach/arc'
+import { ArcDiagram, type ArcDiagramData } from '@arach/arc'
 
-const config = {
+const diagram: ArcDiagramData = {
   layout: { width: 600, height: 300 },
   nodes: {
     client: { x: 50, y: 100, size: "m" },
@@ -766,13 +779,13 @@ const config = {
 }
 
 export default function Page() {
-  return <ArchitectureDiagram config={config} />
+  return <ArcDiagram data={diagram} />
 }
 
 // NEXT.JS APP ROUTER - app/architecture/page.tsx
 // WHY: Use 'use client' because Arc uses browser APIs
 'use client'
-import { ArchitectureDiagram } from '@arach/arc'
+import { ArcDiagram } from '@arach/arc'
 // ... rest of component
 
 // STORING CONFIGS - recommended pattern
@@ -847,15 +860,15 @@ If creating from scratch, describe the architecture you want to visualize.`,
 }
 
 // VALID VALUES:
-// Icons (48): Monitor, Server, Smartphone, Cloud, Cpu, Database, HardDrive, Wifi, Globe, User, Users, Lock, Key, Shield, Code, Terminal, FileCode, Folder, Zap, Activity, BarChart, PieChart, Box, Package, Layers, Grid, Settings, Bell, Mail, MessageSquare, Search, Filter, Download, Upload, Play, Pause, Square, Circle...
-// Colors (6): violet, emerald, blue, amber, zinc, sky
+// Icons (45): Monitor, Server, Smartphone, Cloud, Cpu, Database, HardDrive, Wifi, Globe, User, Users, Lock, Key, Shield, Code, Terminal, FileCode, Folder, Zap, Activity, BarChart, PieChart, Box, Package, Layers, Grid, Settings, Bell, Mail, MessageSquare, Search, Filter, Download, Upload, Play, Pause, Square, Circle...
+// Colors (8): violet, emerald, blue, amber, sky, zinc, rose, orange
 // Sizes: xs, s, m, l
 // Anchors: top, right, bottom, left, bottomRight, bottomLeft`,
       expectedOutput: `Return complete, valid JSON. Before responding, verify:
 1. All node IDs in "nodes" match entries in "nodeData"
 2. All connector "from"/"to" values reference existing node IDs
-3. Icons are from the 48 valid Lucide icons
-4. Colors: violet, emerald, blue, amber, zinc, sky
+3. Icons are from the 45 valid Lucide icons
+4. Colors: violet, emerald, blue, amber, sky, zinc, rose, orange
 5. Sizes: xs, s, m, l
 6. Anchors: top, right, bottom, left, bottomRight, bottomLeft`,
     },
@@ -953,9 +966,20 @@ Provide:
     description: 'How the Arc editor is built.',
     badge: 'Core Concepts',
   },
+  'group-layout': {
+    content: stripFrontmatter(groupLayoutMd),
+    title: 'Declarative Group Layout',
+    description: 'Keep architecture nodes aligned inside explicit system boundaries.',
+    badge: 'Core Concepts',
+  },
+  'focus-stories': {
+    content: stripFrontmatter(focusStoriesMd),
+    title: 'Focus Stories',
+    description: 'Explain an architecture path when a reader explores a node.',
+    badge: 'Core Concepts',
+  },
   templates: {
     content: stripFrontmatter(examplesMd),
-    agentContent: stripFrontmatter(apiAgentMd),
     prompt: {
       title: 'Apply Structural Styling',
       description: 'Change node sizes, spacing, and layout structure',
@@ -1027,11 +1051,10 @@ Return the complete config with:
   },
   themes: {
     content: stripFrontmatter(themesMd),
-    agentContent: stripFrontmatter(apiAgentMd),
     prompt: {
       title: 'Apply Color Theme',
       description: 'Change colors for visual cohesion or meaning',
-      info: 'Arc has 6 theme colors: violet, emerald, blue, amber, sky, zinc. Apply colors semantically (violet for primary, emerald for data, amber for warnings) or aesthetically (warm palette, cool palette). Use 2-3 colors per diagram for cohesion.',
+      info: 'Arc has 8 node colors: violet, emerald, blue, amber, sky, zinc, rose, orange. Apply colors semantically (violet for primary, emerald for data, amber for warnings) or aesthetically (warm palette, cool palette). Use 2-3 colors per diagram for cohesion.',
       params: [
         { name: 'CONFIG', description: 'Your diagram config (paste JSON)', example: '' },
         { name: 'THEME', description: 'Color scheme or semantic mapping', example: 'cool corporate look' },
@@ -1098,7 +1121,7 @@ Theme: {THEME}`,
     "c": { "color": "blue" },
     "d": { "color": "amber" },
     "e": { "color": "sky" },
-    "f": { "color": "zinc" }  // WHY BAD: 6 colors = visual chaos, pick 2-3
+    "f": { "color": "zinc" }  // WHY BAD: one color per node = visual chaos, pick 2-3
   }
 }`,
       expectedOutput: `// expected-output.md
@@ -1146,9 +1169,9 @@ Arc configs have four required keys:
 
 ## Valid Values
 
-Icons (48): Monitor, Server, Smartphone, Cloud, Cpu, Database, HardDrive, Wifi, Globe, User, Users, Lock, Key, Shield, Code, Terminal, FileCode, Folder, Zap, Activity, BarChart, Box, Package, Layers, Settings, Bell, Mail, MessageSquare, Search, Filter, Download, Upload, Play, GitBranch, Workflow...
+Icons (45): Monitor, Server, Smartphone, Cloud, Cpu, Database, HardDrive, Wifi, Globe, User, Users, Lock, Key, Shield, Code, Terminal, FileCode, Folder, Zap, Activity, BarChart, Box, Package, Layers, Settings, Bell, Mail, MessageSquare, Search, Filter, Download, Upload, Play, GitBranch, Workflow...
 
-Colors (6): violet, emerald, blue, amber, sky, zinc
+Colors (8): violet, emerald, blue, amber, sky, zinc, rose, orange
 
 Sizes: xs (60px), s (80px), m (120px), l (160px)
 
@@ -1200,7 +1223,7 @@ The AI should return:
     badge: 'Agents',
   },
   skills: {
-    content: stripFrontmatter(agentsMd),
+    content: stripFrontmatter(skillMd),
     agentContent: llmTxt,
     prompt: {
       title: 'Arc Skills Library',
@@ -1253,7 +1276,7 @@ Debug this Arc config (it's not rendering correctly):
 Check for:
 1. Missing keys (layout, nodes, nodeData, connectors)
 2. ID mismatches between nodes and nodeData
-3. Invalid values (colors must be: violet, emerald, blue, amber, sky, zinc)
+3. Invalid values (colors must be: violet, emerald, blue, amber, sky, zinc, rose, orange)
 4. Invalid sizes (must be: xs, s, m, l)
 5. Invalid anchors (must be: top, right, bottom, left, bottomRight, bottomLeft)
 

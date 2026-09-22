@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { X, Copy, Check, Download } from 'lucide-react'
-import { exportForTalkie, copyToClipboard } from '../../utils/fileOperations'
+import { exportDiagramConfig, copyToClipboard } from '../../utils/fileOperations'
 
 export default function ExportDialog({ diagram, onClose }) {
   const [copied, setCopied] = useState(false)
-  const exportContent = exportForTalkie(diagram)
+  const exportContent = exportDiagramConfig(diagram)
 
   const handleCopy = async () => {
     const success = await copyToClipboard(exportContent)
@@ -32,7 +32,7 @@ export default function ExportDialog({ diagram, onClose }) {
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-200 dark:border-zinc-800">
           <h2 className="text-lg font-semibold text-zinc-900 dark:text-white">
-            Export for Talkie
+            Export diagram config
           </h2>
           <button
             onClick={onClose}
@@ -45,7 +45,7 @@ export default function ExportDialog({ diagram, onClose }) {
         {/* Content */}
         <div className="p-4">
           <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-3">
-            Copy this config and paste it into your Talkie docs ArchitectureDiagram.jsx:
+            Copy this config and pass it to {'<ArcDiagram data={...} />'}:
           </p>
 
           <pre className="p-4 bg-zinc-100 dark:bg-zinc-800 rounded-lg text-xs font-mono overflow-auto max-h-80 text-zinc-800 dark:text-zinc-200">

@@ -6,7 +6,7 @@ order: 2
 
 ## Installation
 
-Install the Arc player from npm. It's a lightweight React component with no external dependencies besides Lucide icons.
+Install the Arc package from npm. `react`, `react-dom`, and `lucide-react` are peer dependencies; everything else installs with the package.
 
 ```bash
 # Install the Arc player

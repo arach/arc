@@ -1,10 +1,10 @@
 // Diagram style templates
 
 export const TEMPLATES = {
-  talkie: {
-    id: 'talkie',
-    name: 'Talkie Docs',
-    description: 'Dark theme matching Talkie documentation',
+  'arc-starter': {
+    id: 'arc-starter',
+    name: 'Arc Starter',
+    description: 'Dark canvas with left-accent nodes and dashed connectors',
     canvas: {
       background: 'bg-zinc-950',
       border: 'border-zinc-800',
@@ -138,7 +138,7 @@ export const TEMPLATES = {
   },
 }
 
-export const DEFAULT_TEMPLATE = 'talkie'
+export const DEFAULT_TEMPLATE = 'arc-starter'
 
 export function getTemplate(id) {
   return TEMPLATES[id] || TEMPLATES[DEFAULT_TEMPLATE]

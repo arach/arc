@@ -1,7 +1,7 @@
 # Export Formats
 
 An Arc diagram is just data, so it leaves the editor in whatever shape your pipeline
-needs — versionable source, typed code, or rendered images.
+needs: versionable source, typed code, or rendered images.
 
 ## JSON
 
@@ -11,7 +11,7 @@ next to the system it describes.
 
 ## TypeScript
 
-The same config as a typed `ArcDiagramData` object — drop it into a React app and
+The same config as a typed `ArcDiagramData` object. Drop it into a React app and
 render with the component:
 
 ```tsx
@@ -23,7 +23,7 @@ const diagram: ArcDiagramData = { /* … */ }
 
 ## SVG
 
-Vector export — crisp at any size, ideal for docs, decks, and print. Theme and mode
+Vector export, crisp at any size, ideal for docs, decks, and print. Theme and mode
 are baked into the output.
 
 ## PNG
@@ -33,7 +33,7 @@ available from the editor and the `/capture` screenshot endpoint.
 
 ## ASCII
 
-A Unicode/ASCII box-drawing render via `renderAscii()` — for terminals, code
+A Unicode/ASCII box-drawing render via `renderAscii()`, for terminals, code
 comments, and plain-text READMEs.
 
 ```ts
@@ -42,4 +42,4 @@ import { renderAscii } from '@arach/arc'
 console.log(renderAscii(diagram))
 ```
 
-All formats come from the **same** declarative source — design once, render anywhere.
+All formats come from the **same** declarative source: design once, render anywhere.

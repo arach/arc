@@ -1,5 +1,5 @@
 // Arc Diagram Types
-// Shared format for Arc editor and consumers (Talkie docs, etc.)
+// Shared format for the Arc editor and diagram consumers
 
 export type NodeSize = 'xs' | 's' | 'm' | 'l'
 

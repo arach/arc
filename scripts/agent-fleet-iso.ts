@@ -41,8 +41,8 @@ const PROJECTS: Project[] = [
     ],
   },
   {
-    key: 'talkie', label: 'TALKIE', cell: { x: 345, y: 30, w: 120, d: 115 }, cols: 2,
-    agents: [ { label: 'TALKIE', harness: 'claude' }, { label: 'TLK-MKUP', harness: 'codex' } ],
+    key: 'arc', label: 'ARC', cell: { x: 345, y: 30, w: 120, d: 115 }, cols: 2,
+    agents: [ { label: 'ARC', harness: 'claude' }, { label: 'ARC-DOCS', harness: 'codex' } ],
   },
   { key: 'pomo', label: 'POMO', cell: { x: 205, y: 165, w: 115, d: 75 }, cols: 2,
     agents: [ { label: 'POMO', harness: 'codex' }, { label: 'LANDING', harness: 'codex' } ] },

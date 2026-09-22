@@ -1,36 +1,53 @@
-# Arc (LLM Guide)
+# Arc
 
-Arc is a visual editor for building architecture diagrams that stay in code. The editor outputs a
-clean, declarative model (JSON/TypeScript) that can be committed, diffed, and reused in docs.
+> Diagrams as code. Arc turns typed, diffable config (JSON/TypeScript) into clean, themeable architecture diagrams.
+> Canonical site: https://arc.jdi.sh · Docs: https://arc.jdi.sh/docs · Source: https://github.com/arach/arc
 
-Quickstart (bun):
-- bun install
-- bun run dev
-- bun run build
-- bun run lint
-- bun run typecheck
+## Packages
 
-Key entry points:
-- src/App.tsx (landing vs editor via hash; #editor opens the editor)
-- src/main.tsx (React entry)
-- src/landing.css (landing page styles)
+- @arach/arc: full editor + ArcDiagram renderer (React). Peers: react, react-dom, lucide-react
+- @arach/arc-viewer: native renderers: ArcMermaidPlayer, ArcMermaid, parseMermaid, importMermaid
+- @arach/arc-iso: isometric renderer (React, plus vanilla renderToElement/renderToString)
+- @arach/arc-editor: editor app (npx @arach/arc-editor)
 
-Editor architecture:
-- src/components/editor/ (canvas, panels, toolbar, reducer)
-- src/components/editor/editorReducer.ts (state + history)
-- src/components/properties/ (editing forms)
-- src/utils/ (diagram helpers, templates, export utilities, file operations)
+## Docs
 
-Landing page diagrams:
-- src/components/ArcDiagram.tsx (Talkie-style diagram renderer)
-- src/components/diagrams/architecture.diagram.ts (Arc diagram data)
-- src/components/ArcArchitectureNext.tsx (complementary blueprint diagram)
+- Overview: https://arc.jdi.sh/docs/overview
+- Quickstart: https://arc.jdi.sh/docs/quickstart
+- API reference / diagram format: https://arc.jdi.sh/docs/diagram-format
+- Architecture: https://arc.jdi.sh/docs/architecture
+- Themes: https://arc.jdi.sh/docs/themes
+- Export formats: https://arc.jdi.sh/docs/exports
+- Group layout: https://arc.jdi.sh/docs/group-layout
+- Focus stories: https://arc.jdi.sh/docs/focus-stories
+- Mermaid sequences: https://arc.jdi.sh/docs/mermaid-sequences
+- Mermaid import: https://arc.jdi.sh/docs/mermaid-import
+- AI agents: https://arc.jdi.sh/docs/agents
+- Skills: https://arc.jdi.sh/docs/skills
 
-Docs (Markdown):
-- docs/intro.md (intro + quickstart)
-- docs/architecture.md (architecture overview)
-- public/docs/ (same docs for GitHub Pages)
+## Key Facts
 
-Diagram model shape:
-- layout, nodes, nodeData, connectors, connectorStyles
-- See docs/architecture.md for examples.
+- Diagram model: ArcDiagramData (layout, nodes, nodeData, connectors, connectorStyles)
+- Renderer: ArcDiagram component, prop `data`
+- 8 themes: default, warm, cool, mono, engineering, workbench, tactical, command (command is the Arc editor default; the component prop falls back to default)
+- 8 logical node colors: violet, emerald, blue, amber, sky, zinc, rose, orange
+- Node sizes: xs, s, m, l
+- Editor route: /editor (React Router; /editor/:sessionId for saved sessions). The #data= hash is only for embed payloads, not the editor
+- Player/embed route: /player/*
+- Toolchain: bun (bun run dev, bun run build, bun run lint, bun run typecheck)
+
+## Recent Capabilities
+
+- Native Mermaid sequenceDiagram rendering in @arach/arc-viewer (no mermaid dependency)
+- importMermaid: lossy Mermaid flowchart/state import with warnings/unsupported diagnostics
+- Declarative group layout via layoutHints (GroupLayoutHint)
+- Focus stories: guided diagram walkthroughs (FocusStep, focusTargets, showFocusStory)
+
+## Repo Entry Points
+
+- src/main.tsx: React entry
+- src/App.tsx: routes (/, /editor, /player/*, /docs, /blog/native-mermaid-sequences, /iso-demo, /iso-examples, /iso-interactive, /inspiration)
+- src/components/ArcDiagram.tsx: ArcDiagram renderer
+- src/components/editor/: editor (DiagramEditor.tsx, EditorProvider.tsx, editorReducer.ts, InspectorPanel.tsx)
+- src/utils/: themes.ts, constants.ts, iconRegistry.ts, fileOperations.ts
+- docs/: Markdown source for the docs pages above

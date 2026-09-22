@@ -10,13 +10,31 @@ order: 3
 
 ```tsx
 interface ArcDiagramProps {
-  data: ArcDiagramData     // Diagram configuration
-  mode?: 'light' | 'dark'  // Color mode (default: 'light')
-  theme?: ThemeId          // Theme preset (default: 'default')
-  interactive?: boolean    // Enable zoom/pan (default: true)
-  className?: string       // Additional CSS classes
+  data: ArcDiagramData              // Diagram configuration (required)
+  className?: string                // Additional CSS classes
+  interactive?: boolean             // Enable zoom/pan (default: true)
+  mode?: 'light' | 'dark'           // Color mode (default: 'dark')
+  theme?: ThemeId                   // Theme preset (default: 'default')
+  label?: string                    // Diagram label (default: data.id)
+  labelPosition?: LabelCorner       // Label corner (default: 'top-left')
+  defaultZoom?: number | 'fit'      // Initial zoom (default: 1; 'fit' auto-fits content)
+  maxFitZoom?: number               // Max zoom when defaultZoom is 'fit' (default: 1)
+  zoomLevels?: number[]             // Zoom steps (default: [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2])
+  showArcToggle?: boolean           // Show .arc source toggle (default: true)
+  showAutoLayout?: boolean          // Show auto-layout button (default: false)
+  showControls?: boolean            // Zoom controls (default: follows `interactive`)
+  showMinimap?: boolean             // Minimap overview (default: false)
+  showFocusStory?: boolean          // Show active focus target caption and steps (default: false)
+  frame?: BrandSpec['frame']        // Override the theme's frame treatment:
+                                    // hairline, inset, brackets, ticks, cropmarks,
+                                    // corners, sheet, reticle, none
+  hoverEffects?: boolean | HoverEffectsConfig  // Hover behavior (default: true)
+  onNodeHover?: (nodeId: string | null) => void  // Node hover/click callback
+  titleBlock?: TitleBlockInfo       // Override engineering title-block fields
 }
 ```
+
+The `theme` prop falls back to `'default'` when omitted. The Arc editor is a separate default: new editor sessions start in `'command'`.
 
 ## ArcDiagramData Schema
 
@@ -24,10 +42,13 @@ interface ArcDiagramProps {
 interface ArcDiagramData {
   id?: string                                    // Optional diagram identifier
   layout: { width: number; height: number }     // Canvas dimensions
+  layoutHints?: LayoutHints                     // Optional group/auto-layout hints
   nodes: Record<string, NodePosition>           // Node positions by ID
   nodeData: Record<string, NodeData>            // Node display data by ID
   connectors: Connector[]                       // Connection definitions
   connectorStyles: Record<string, ConnectorStyle> // Style definitions
+  focusTargets?: Record<string, FocusTarget>    // Optional focus story targets
+  groups?: GroupShape[]                         // Optional group shapes
 }
 ```
 
@@ -37,7 +58,7 @@ interface ArcDiagramData {
 interface NodePosition {
   x: number           // X coordinate
   y: number           // Y coordinate
-  size: 's' | 'm' | 'l'  // Node size (small, medium, large)
+  size: 'xs' | 's' | 'm' | 'l'  // Node size (extra small, small, medium, large)
 }
 
 interface NodeData {
@@ -77,7 +98,7 @@ interface ConnectorStyle {
 
 ## Themes
 
-Arc includes 4 built-in themes:
+Arc includes 8 built-in themes, each with light and dark modes:
 
 | Theme ID | Name | Description |
 |----------|------|-------------|
@@ -85,6 +106,10 @@ Arc includes 4 built-in themes:
 | warm | Warm | Editorial, earth tones |
 | cool | Cool | Technical, blue-focused |
 | mono | Mono | Grayscale for print |
+| engineering | Engineering | Systematic enterprise blue on a graph grid |
+| workbench | Workbench | Dark slate with intent colors |
+| tactical | Tactical | Near-black with signature amber |
+| command | Command | HUD console, cyan glass, crosshair grid (Arc editor default) |
 
 ### Theme API
 

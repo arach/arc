@@ -44,8 +44,8 @@ function App() {
 
 ```html
 <script type="module">
-  import { renderDiagram } from '@arach/arc-iso'
-  renderDiagram(document.getElementById('diagram'), diagramConfig)
+  import { renderToElement } from '@arach/arc-iso'
+  renderToElement(document.getElementById('diagram'), diagramConfig)
 </script>
 ```
 
@@ -54,7 +54,7 @@ function App() {
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
 | `data` | `ArcDiagramData` | required | Diagram config |
-| `mode` | `'light' \| 'dark'` | `'light'` | Color mode |
+| `mode` | `'light' \| 'dark'` | `'dark'` | Color mode |
 | `theme` | `ThemeId` | `'default'` | Color theme |
 | `interactive` | `boolean` | `true` | Enable zoom/pan |
 

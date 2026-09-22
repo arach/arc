@@ -37,6 +37,8 @@ export interface DiagramConfig {
   title: string
   description?: string
   theme: 'dark' | 'light'
+  /** Flat mineral inks and deterministic stipple; defaults to the existing material. */
+  material?: 'standard' | 'retro-print'
   canvas: { width: number; height: number }
   origin: { x: number; y: number }
   cornerRadius?: number

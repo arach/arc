@@ -6,7 +6,7 @@
 interface ArcDiagramProps {
   data: ArcDiagramData
   mode?: 'light' | 'dark'
-  theme?: 'default' | 'warm' | 'cool' | 'mono'
+  theme?: 'default' | 'warm' | 'cool' | 'mono' | 'engineering' | 'workbench' | 'tactical' | 'command'
   interactive?: boolean
   className?: string
 }
@@ -31,7 +31,7 @@ interface ArcDiagramData {
 interface NodePosition {
   x: number
   y: number
-  size: 's' | 'm' | 'l'
+  size: 'xs' | 's' | 'm' | 'l'
 }
 
 interface NodeData {
@@ -92,9 +92,9 @@ const palette = theme.light.palette.violet
 
 | Property | Valid Values |
 |----------|-------------|
-| `size` | `'s'`, `'m'`, `'l'` |
+| `size` | `'xs'`, `'s'`, `'m'`, `'l'` |
 | `color` | `'violet'`, `'emerald'`, `'blue'`, `'amber'`, `'sky'`, `'zinc'`, `'rose'`, `'orange'` |
-| `theme` | `'default'`, `'warm'`, `'cool'`, `'mono'` |
+| `theme` | `'default'`, `'warm'`, `'cool'`, `'mono'`, `'engineering'`, `'workbench'`, `'tactical'`, `'command'` |
 | `mode` | `'light'`, `'dark'` |
 | `anchor` | `'left'`, `'right'`, `'top'`, `'bottom'`, `'topLeft'`, `'topRight'`, `'bottomLeft'`, `'bottomRight'` |
 | `curve` | `'natural'`, `'step'` |

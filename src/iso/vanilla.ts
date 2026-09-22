@@ -1,3 +1,4 @@
+import { PRINT_COLORS, PRINT_DOTS } from './materials'
 /**
  * Vanilla JS renderer for non-React environments
  * Renders diagram to static SVG string or DOM element
@@ -49,10 +50,11 @@ function interpolateColor(darkColor: string, lightColor: string, intensity: numb
  */
 export function renderToString(config: DiagramConfig): string {
   const { theme, canvas, origin, tiers, floorSize, nodes, cornerRadius = 0 } = config
-  const colors = theme === 'dark' ? DARK_COLORS : LIGHT_COLORS
-  const bgColor = theme === 'dark' ? '#0f172a' : '#fafafa'
-  const textColor = theme === 'dark' ? '#e2e8f0' : '#1e293b'
-  const labelColor = theme === 'dark' ? '#64748b' : '#94a3b8'
+  const print = config.material === 'retro-print'
+  const colors = print ? PRINT_COLORS : theme === 'dark' ? DARK_COLORS : LIGHT_COLORS
+  const bgColor = print ? (theme === 'dark' ? '#202624' : '#f4efe6') : theme === 'dark' ? '#0f172a' : '#fafafa'
+  const textColor = print ? '#202a29' : theme === 'dark' ? '#e2e8f0' : '#1e293b'
+  const labelColor = print ? (theme === 'dark' ? '#c5c4b7' : '#505b56') : theme === 'dark' ? '#64748b' : '#94a3b8'
 
   // Sort nodes back-to-front
   const sortedNodes = [...nodes].sort((a, b) => {
@@ -65,7 +67,7 @@ export function renderToString(config: DiagramConfig): string {
   let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${canvas.width}" height="${canvas.height}" style="background:${bgColor}">`
 
   // Defs
-  svg += `<defs>
+  svg += `<defs>${print ? `<pattern id="print" width="64" height="64" patternUnits="userSpaceOnUse">${PRINT_DOTS.map(dot => `<circle cx="${dot.x}" cy="${dot.y}" r="${dot.r}" fill="#26362e" opacity="0.32"/>`).join('')}</pattern>` : ''}
     <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse">
       <circle cx="12" cy="12" r="0.5" fill="${theme === 'dark' ? '#1e293b' : '#e2e8f0'}"/>
     </pattern>
@@ -80,7 +82,7 @@ export function renderToString(config: DiagramConfig): string {
     <filter id="labelshadow" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy="0.5" stdDeviation="0.7" flood-color="#000000" flood-opacity="0.7"/></filter>
   </defs>`
 
-  svg += `<rect width="100%" height="100%" fill="url(#bg)"/>`
+  svg += `<rect width="100%" height="100%" fill="${print ? bgColor : 'url(#bg)'}"/>`
   svg += `<rect width="100%" height="100%" fill="url(#grid)" opacity="0.5"/>`
   svg += `<g transform="translate(${origin.x},${origin.y})">`
 
@@ -141,9 +143,9 @@ export function renderToString(config: DiagramConfig): string {
 
       // Faces
       svg += `<path d="${box.left}" fill="${nodeColors.side}"/>`
-      svg += `<path d="${box.left}" fill="url(#shade)"/>`
+      svg += `<path d="${box.left}" fill="url(#${print ? 'print' : 'shade'})"/>`
       svg += `<path d="${box.right}" fill="${nodeColors.front}"/>`
-      svg += `<path d="${box.right}" fill="url(#shade)"/>`
+      svg += `<path d="${box.right}" fill="url(#${print ? 'print' : 'shade'})"/>`
 
       if (box.cornerFrontRight) {
         for (const seg of box.cornerFrontRight) {
@@ -157,14 +159,14 @@ export function renderToString(config: DiagramConfig): string {
       }
 
       svg += `<path d="${box.top}" fill="${nodeColors.top}"/>`
-      svg += `<path d="${box.top}" fill="url(#sheen)"/>`
+      svg += `<path d="${box.top}" fill="url(#${print ? 'print' : 'sheen'})"/>`
       svg += `<path d="${box.top}" fill="none" stroke="rgba(255,255,255,0.28)" stroke-width="0.75" stroke-linejoin="round"/>`
 
       // Label
       if (node.label) {
         const labelPos = isoToScreen(node.x + node.width / 2, node.y + node.depth / 2, nodeElevation + node.height + 2)
         const fontSize = node.width > 70 ? 9 : 8
-        svg += `<g transform="translate(${labelPos.screenX},${labelPos.screenY})" filter="url(#labelshadow)">`
+        svg += `<g transform="translate(${labelPos.screenX},${labelPos.screenY})" filter="${print ? 'none' : 'url(#labelshadow)'}">`
         svg += `<g transform="matrix(0.866,-0.5,0.866,0.5,0,0)">`
         svg += `<text x="0" y="0" text-anchor="middle" fill="${textColor}" font-size="${fontSize}" font-weight="600" font-family='${MONO_FONT}' style="text-transform:uppercase;letter-spacing:0.06em">${node.label}</text>`
         svg += `</g></g>`

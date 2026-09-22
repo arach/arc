@@ -101,15 +101,15 @@ export async function loadDiagram() {
   })
 }
 
-// Export diagram in HANDOFF.md format for Talkie
-export function exportForTalkie(diagram) {
+// Export diagram config for the ArcDiagram data prop
+export function exportDiagramConfig(diagram) {
   // Convert nodeData to have unquoted icon references (as comments indicate)
   const nodeDataStr = JSON.stringify(diagram.nodeData, null, 2)
     .replace(/"icon": "(\w+)"/g, 'icon: $1')
 
   return `## Diagram Config Update
 
-Here are the updated values to paste into ArchitectureDiagram.jsx:
+Here are the updated values to pass to <ArcDiagram data={...} />:
 
 ### nodes
 \`\`\`js

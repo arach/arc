@@ -28,7 +28,7 @@
 | **Nodes** | Boxes with icon, name, color, position |
 | **Connectors** | Lines between nodes with labels |
 | **Templates** | Structural presets (shapes, layouts) |
-| **Themes** | Color palettes (default, warm, cool, mono) |
+| **Themes** | 8 color palettes (default, warm, cool, mono, engineering, workbench, tactical, command) |
 
 ## Quick Start
 
@@ -46,8 +46,8 @@ import { ArcDiagram } from '@arach/arc'
 
 | What | Where |
 |------|-------|
-| Editor entry | `src/components/editor/DiagramEditor.jsx` |
-| State management | `src/components/editor/EditorProvider.jsx` |
-| Canvas rendering | `src/components/editor/DiagramCanvas.jsx` |
-| Icon registry | `src/utils/iconRegistry.js` |
-| Colors/constants | `src/utils/constants.js` |
+| Editor entry | `src/components/editor/DiagramEditor.tsx` |
+| State management | `src/components/editor/EditorProvider.tsx` |
+| Canvas rendering | `src/components/editor/DiagramCanvas.tsx` |
+| Icon registry | `src/utils/iconRegistry.ts` |
+| Colors/constants | `src/utils/constants.ts` |

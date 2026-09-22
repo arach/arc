@@ -31,10 +31,10 @@ order: 6
 
 ## Quick Navigation
 
-- Entry point: `src/main.jsx`
-- Main editor: `src/components/editor/DiagramEditor.jsx`
-- State management: `src/components/editor/EditorProvider.jsx`
-- Canvas rendering: `src/components/editor/DiagramCanvas.jsx`
+- Entry point: `src/main.tsx`
+- Main editor: `src/components/editor/DiagramEditor.tsx`
+- State management: `src/components/editor/EditorProvider.tsx` + `src/components/editor/editorReducer.ts`
+- Canvas rendering: `src/components/editor/DiagramCanvas.tsx`
 
 ## Overview
 
@@ -60,7 +60,7 @@ Architecture diagrams typically live in design tools, disconnected from the code
 
 - **Declarative Format** - Diagrams are data structures
 - **Templates** - Structural presets for layout
-- **Themes** - Color palettes (default, warm, cool, mono)
+- **Themes** - 8 color palettes (default, warm, cool, mono, engineering, workbench, tactical, command)
 - **Export** - SVG, PNG, JSON, TypeScript
 
 ## Links
@@ -114,17 +114,17 @@ function App() {
 
 ```html
 <script type="module">
-  import { renderDiagram } from '@arach/arc-iso'
-  renderDiagram(document.getElementById('diagram'), diagramConfig)
+  import { renderToElement } from '@arach/arc-iso'
+  renderToElement(document.getElementById('diagram'), diagramConfig)
 </script>
 ```
 
 ## Development
 
 ```bash
-pnpm dev      # Start dev server
-pnpm build    # Production build
-pnpm lint     # Run ESLint
+bun run dev       # Start dev server (port 5188)
+bun run build     # Production build
+bun run lint      # Run ESLint
 ```
 
 ## Architecture
@@ -160,7 +160,7 @@ pnpm lint     # Run ESLint
 ```json
 {
   "layout": { "width": 700, "height": 340 },
-  "nodes": { "nodeId": { "x": 25, "y": 15, "size": "large" } },
+  "nodes": { "nodeId": { "x": 25, "y": 15, "size": "m" } },
   "nodeData": { "nodeId": { "icon": "Monitor", "name": "...", "color": "violet" } },
   "connectors": [{ "from": "a", "to": "b", "fromAnchor": "right", "toAnchor": "left", "style": "http" }],
   "connectorStyles": { "http": { "color": "amber", "strokeWidth": 2, "label": "HTTP" } }
@@ -174,7 +174,7 @@ pnpm lint     # Run ESLint
 ```tsx
 interface ArcDiagramProps {
   data: ArcDiagramData     // Diagram configuration
-  mode?: 'light' | 'dark'  // Color mode (default: 'light')
+  mode?: 'light' | 'dark'  // Color mode (default: 'dark')
   theme?: ThemeId          // Theme preset (default: 'default')
   interactive?: boolean    // Enable zoom/pan (default: true)
   className?: string       // Additional CSS classes
@@ -200,7 +200,7 @@ interface ArcDiagramData {
 interface NodePosition {
   x: number
   y: number
-  size: 's' | 'm' | 'l'
+  size: 'xs' | 's' | 'm' | 'l'
 }
 
 interface NodeData {
@@ -246,6 +246,10 @@ interface ConnectorStyle {
 | warm | Warm | Editorial, earth tones |
 | cool | Cool | Technical, blue-focused |
 | mono | Mono | Grayscale for print |
+| engineering | Engineering | Systematic enterprise blue on a graph grid |
+| workbench | Workbench | Dark slate with intent colors |
+| tactical | Tactical | Near-black with signature amber |
+| command | Command | HUD console, cyan glass, crosshair grid (Arc editor default) |
 
 ### Theme API
 
