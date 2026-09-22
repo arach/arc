@@ -14,7 +14,14 @@ import {
   type NodeDecor,
 } from '../utils/nodeShape'
 import { autoLayout } from '../utils/autoLayout'
-import { getContentBounds } from '../utils/diagramHelpers'
+import {
+  arrowShape,
+  connectorArrowAt,
+  connectorArrowSize,
+  connectorLineStyle,
+  elbowPolyline,
+  roundedPolylineD,
+} from '../utils/diagramHelpers'
 import { getIsoStyle, type IsoStyleId } from '../utils/isoStyles'
 import { isoContentBounds, isoPlateBounds, buildNodeIndex } from '../utils/isoBlueprint'
 import IsometricNodeLayer from './editor/IsometricNodeLayer'
@@ -67,7 +74,11 @@ export interface NodeData {
   shape?: NodeShape
 }
 
-export type ConnectorCurve = 'natural' | 'down' | 'up' | 'step'
+export type ConnectorCurve = 'natural' | 'down' | 'up' | 'step' | 'direct'
+
+export type ArrowHead = 'none' | 'arrow' | 'open' | 'dot' | 'diamond' | 'bar'
+
+export type ConnectorLineStyle = 'solid' | 'dashed' | 'dotted'
 
 export interface Connector {
   /** Stable identity for diffs, deep links, and diagnostics. Without it a
@@ -81,20 +92,45 @@ export interface Connector {
   curve?: ConnectorCurve
   /** Bezier control-point scale for curved connectors (percent of distance). */
   curveDepth?: number
+  /** Label drawn beside this connector; overrides the style's `label`. */
+  label?: string
+  /** Relationship kind ('custom' by default). Inspector metadata. */
+  kind?: string
+  /** Role annotation drawn near the `from` end. */
+  fromRole?: string
+  /** Role annotation drawn near the `to` end. */
+  toRole?: string
 }
 
 export type LabelAlign = 'left' | 'right' | 'center'
 
 export interface ConnectorStyle {
-  color: DiagramColor
-  strokeWidth: number
+  /** Omit for 'auto' — falls back to the theme's neutral stroke. */
+  color?: DiagramColor
+  /** Omit for 'auto' — renderers use a 2px stroke. */
+  strokeWidth?: number
   label?: string
   labelAlign?: LabelAlign  // For vertical: 'right' = right of line, 'left' = left of line. Default: 'right'
   dashed?: boolean
+  /** Stroke pattern; when set it takes precedence over `dashed`. */
+  lineStyle?: ConnectorLineStyle
+  /** Stroke opacity 0–1. */
+  opacity?: number
   bidirectional?: boolean
   animated?: boolean
   showArrow?: boolean
   showEndpoints?: boolean
+  /** Arrowhead at the `from` end. Omit = `bidirectional ? 'arrow' : 'none'`. */
+  fromArrow?: ArrowHead
+  /** Arrowhead at the `to` end. Omit = `showArrow === false ? 'none' : 'arrow'`. */
+  toArrow?: ArrowHead
+  /** Arrowhead length in px. Omit = auto. */
+  arrowSize?: number
+  /** Per-end size overrides; omit = `arrowSize` then auto. */
+  fromArrowSize?: number
+  toArrowSize?: number
+  /** When true, arrowhead size scales with `strokeWidth`. */
+  arrowScale?: boolean
 }
 
 export interface DiagramLayout {
@@ -668,19 +704,42 @@ function getAngle(from: { x: number; y: number }, to: { x: number; y: number }):
   return Math.atan2(to.y - from.y, to.x - from.x) * (180 / Math.PI)
 }
 
-// Path string between resolved anchor points — shared by ConnectorPath and the
-// delta overlay's ghost/halo strokes.
-function connectorPathD(connector: Connector, from: { x: number; y: number }, to: { x: number; y: number }): string {
+// Path geometry between resolved anchor points — shared by ConnectorPath and
+// the delta overlay's ghost/halo strokes. Tangent angles at each end orient
+// the inline arrowheads on curves and elbows.
+function connectorPathGeometry(
+  connector: Connector,
+  from: { x: number; y: number },
+  to: { x: number; y: number },
+): { d: string; startAngle: number; endAngle: number } {
+  if (connector.curve === 'step') {
+    const pts = elbowPolyline(from, to, connector.fromAnchor, connector.toAnchor)
+    return {
+      d: roundedPolylineD(pts),
+      startAngle: getAngle(pts[0], pts[1]),
+      endAngle: getAngle(pts[pts.length - 2], pts[pts.length - 1]),
+    }
+  }
   if (connector.curve === 'natural') {
     const dx = to.x - from.x
     const dy = to.y - from.y
-    const cp1x = from.x + dx * 0.4
+    const tension = ((connector.curveDepth ?? 50) / 50) * 0.4
+    const cp1x = from.x + dx * tension
     const cp1y = from.y + dy * 0.1
-    const cp2x = to.x - dx * 0.4
+    const cp2x = to.x - dx * tension
     const cp2y = to.y - dy * 0.1
-    return `M ${from.x} ${from.y} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${to.x} ${to.y}`
+    return {
+      d: `M ${from.x} ${from.y} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${to.x} ${to.y}`,
+      startAngle: getAngle(from, { x: cp1x, y: cp1y }),
+      endAngle: getAngle({ x: cp2x, y: cp2y }, to),
+    }
   }
-  return `M ${from.x} ${from.y} L ${to.x} ${to.y}`
+  const a = getAngle(from, to)
+  return { d: `M ${from.x} ${from.y} L ${to.x} ${to.y}`, startAngle: a, endAngle: a }
+}
+
+function connectorPathD(connector: Connector, from: { x: number; y: number }, to: { x: number; y: number }): string {
+  return connectorPathGeometry(connector, from, to).d
 }
 
 interface ConnectorProps {
@@ -706,7 +765,12 @@ function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors, 
     return null
   }
 
-  const style = styles[connector.style] || { color: 'zinc', strokeWidth: 2 }
+  const style = styles[connector.style] || { color: 'zinc' as const }
+  const strokeWidth = style.strokeWidth ?? 2
+  const styleColor = style.color ?? 'zinc'
+  const styleOpacity = style.opacity ?? 1
+  const lineStyle = connectorLineStyle(style)
+  const labelText = connector.label ?? style.label
 
   // Safely get anchor points
   let from: { x: number; y: number }
@@ -719,10 +783,10 @@ function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors, 
     return null
   }
 
-  const color = themeColors.palette[style.color]?.stroke || themeColors.palette.zinc.stroke
+  const color = themeColors.palette[styleColor]?.stroke || themeColors.palette.zinc.stroke
   const gradientId = `connector-gradient-${connectorIndex}`
 
-  const path = connectorPathD(connector, from, to)
+  const { d: path, startAngle, endAngle } = connectorPathGeometry(connector, from, to)
   const isVertical = Math.abs(to.y - from.y) > Math.abs(to.x - from.x)
   const labelAlign = style.labelAlign || (isVertical ? 'right' : 'center')
 
@@ -756,13 +820,48 @@ function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors, 
     }
   }
 
-  // Calculate arrow angle at endpoint
-  const angle = getAngle(from, to)
-  const arrowSize = 8
+  // Arrowheads at each end (explicit fromArrow/toArrow win over legacy flags)
+  const fromArrow = connectorArrowAt(style, 'from')
+  const toArrow = connectorArrowAt(style, 'to')
+
+  const renderEnd = (kind: ArrowHead, x: number, y: number, angle: number, arrowSize: number) => {
+    // 'chevron' brand turns the filled 'arrow' into an open chevron
+    const resolved = kind === 'arrow' && brand?.arrowhead === 'chevron' ? 'open' : kind
+    const shape = arrowShape(resolved, arrowSize)
+    if (!shape) return null
+    if (shape.circle) {
+      return (
+        <g transform={`translate(${x}, ${y}) rotate(${angle})`}>
+          <circle cx={shape.circle.cx} cy={0} r={shape.circle.r} fill={color} />
+        </g>
+      )
+    }
+    return (
+      <g transform={`translate(${x}, ${y}) rotate(${angle})`}>
+        <path
+          d={shape.d!}
+          fill={shape.filled ? color : 'none'}
+          stroke={shape.filled ? undefined : color}
+          strokeWidth={Math.max(1, strokeWidth * 0.85)}
+          strokeOpacity={0.9}
+          strokeLinecap="square"
+          strokeLinejoin="miter"
+        />
+      </g>
+    )
+  }
+
+  // Role annotation positions — a short way into the line from each end
+  const rolePos = (p: { x: number; y: number }, angle: number, inward: boolean) => {
+    const a = ((inward ? angle : angle + 180) * Math.PI) / 180
+    return { x: p.x + Math.cos(a) * 20, y: p.y + Math.sin(a) * 20 + 10 }
+  }
+
+  const dashArray = lineStyle === 'dashed' ? '6 3' : lineStyle === 'dotted' ? '0.1 6' : undefined
 
   return (
     <g style={{
-      opacity: dimmed ? dimOpacity : 1,
+      opacity: (dimmed ? dimOpacity : 1) * styleOpacity,
       transition: 'opacity 200ms ease-out',
     }}>
       {/* Gradient definition - fades at both ends */}
@@ -787,9 +886,9 @@ function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors, 
           d={path}
           fill="none"
           stroke={color}
-          strokeWidth={(highlighted ? style.strokeWidth + 1 : style.strokeWidth) + 4}
+          strokeWidth={(highlighted ? strokeWidth + 1 : strokeWidth) + 4}
           strokeOpacity={0.18}
-          strokeDasharray={style.dashed ? '6 3' : undefined}
+          strokeDasharray={dashArray}
           style={{ filter: 'blur(3px)', transition: 'stroke-width 200ms ease-out' }}
         />
       )}
@@ -799,34 +898,26 @@ function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors, 
         d={path}
         fill="none"
         stroke={`url(#${gradientId})`}
-        strokeWidth={highlighted ? style.strokeWidth + 1 : style.strokeWidth}
-        strokeDasharray={style.dashed ? '6 3' : undefined}
+        strokeWidth={highlighted ? strokeWidth + 1 : strokeWidth}
+        strokeDasharray={dashArray}
         strokeLinecap="round"
         style={{ transition: 'stroke-width 200ms ease-out' }}
       />
 
-      {/* Arrow head — chevron (brand) or filled triangle */}
-      <g transform={`translate(${to.x}, ${to.y}) rotate(${angle})`}>
-        {brand?.arrowhead === 'chevron' ? (
-          <polyline
-            points={`${-arrowSize},${-arrowSize / 2.4} 0,0 ${-arrowSize},${arrowSize / 2.4}`}
-            fill="none"
-            stroke={color}
-            strokeWidth={Math.max(1, style.strokeWidth * 0.85)}
-            strokeOpacity={0.9}
-            strokeLinecap="square"
-            strokeLinejoin="miter"
-          />
-        ) : (
-          <polygon
-            points={`0,0 ${-arrowSize},-${arrowSize / 2.5} ${-arrowSize},${arrowSize / 2.5}`}
-            fill={color}
-          />
-        )}
-      </g>
+      {/* End glyphs — arrow/open/dot/diamond/bar at each end */}
+      {renderEnd(fromArrow, from.x, from.y, startAngle + 180, connectorArrowSize(style, 'from'))}
+      {renderEnd(toArrow, to.x, to.y, endAngle, connectorArrowSize(style, 'to'))}
+
+      {/* Endpoint dots (matches the editor's showEndpoints) */}
+      {style.showEndpoints === true && (
+        <>
+          <circle cx={from.x} cy={from.y} r={2.6} fill={color} fillOpacity={0.75} />
+          <circle cx={to.x} cy={to.y} r={2.6} fill={color} fillOpacity={0.75} />
+        </>
+      )}
 
       {/* Label */}
-      {style.label && (
+      {labelText && (
         <text
           x={labelPos.x + labelOffset.x}
           y={labelPos.y + labelOffset.y}
@@ -843,7 +934,35 @@ function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors, 
             transition: 'font-weight 200ms ease-out',
           }}
         >
-          {style.label}
+          {labelText}
+        </text>
+      )}
+
+      {/* Relationship role annotations near each end */}
+      {connector.fromRole && (
+        <text
+          x={rolePos(from, startAngle, true).x}
+          y={rolePos(from, startAngle, true).y}
+          textAnchor="middle"
+          fill={color}
+          fontSize="7.5"
+          fontFamily={brand?.monoFamily || 'ui-monospace, monospace'}
+          opacity={0.6}
+        >
+          {connector.fromRole}
+        </text>
+      )}
+      {connector.toRole && (
+        <text
+          x={rolePos(to, endAngle, false).x}
+          y={rolePos(to, endAngle, false).y}
+          textAnchor="middle"
+          fill={color}
+          fontSize="7.5"
+          fontFamily={brand?.monoFamily || 'ui-monospace, monospace'}
+          opacity={0.6}
+        >
+          {connector.toRole}
         </text>
       )}
     </g>

@@ -27,23 +27,56 @@ export interface NodeData {
   color: DiagramColor
 }
 
+export type ArrowHead = 'none' | 'arrow' | 'open' | 'dot' | 'diamond' | 'bar'
+
+export type ConnectorLineStyle = 'solid' | 'dashed' | 'dotted'
+
 export interface Connector {
   from: string
   to: string
   fromAnchor: AnchorPosition
   toAnchor: AnchorPosition
   style: string
-  curve?: 'natural' | 'step'
+  curve?: 'natural' | 'step' | 'direct' | 'down' | 'up'
+  /** Label drawn beside this connector; overrides the style's `label`. */
+  label?: string
+  /** Relationship kind ('custom' by default). Inspector metadata. */
+  kind?: string
+  /** Role annotation drawn near the `from` end. */
+  fromRole?: string
+  /** Role annotation drawn near the `to` end. */
+  toRole?: string
 }
 
 export type LabelAlign = 'left' | 'right' | 'center'
 
 export interface ConnectorStyle {
-  color: DiagramColor
-  strokeWidth: number
+  /** Omit for 'auto' — falls back to the theme's neutral stroke. */
+  color?: DiagramColor
+  /** Omit for 'auto' — renderers use a 2px stroke. */
+  strokeWidth?: number
   label?: string
   labelAlign?: LabelAlign  // For vertical: 'right' = right of line, 'left' = left of line. Default: 'right'
   dashed?: boolean
+  /** Stroke pattern; when set it takes precedence over `dashed`. */
+  lineStyle?: ConnectorLineStyle
+  /** Stroke opacity 0–1. */
+  opacity?: number
+  bidirectional?: boolean
+  animated?: boolean
+  showArrow?: boolean
+  showEndpoints?: boolean
+  /** Arrowhead at the `from` end. Omit = `bidirectional ? 'arrow' : 'none'`. */
+  fromArrow?: ArrowHead
+  /** Arrowhead at the `to` end. Omit = `showArrow === false ? 'none' : 'arrow'`. */
+  toArrow?: ArrowHead
+  /** Arrowhead length in px. Omit = auto. */
+  arrowSize?: number
+  /** Per-end size overrides; omit = `arrowSize` then auto. */
+  fromArrowSize?: number
+  toArrowSize?: number
+  /** When true, arrowhead size scales with `strokeWidth`. */
+  arrowScale?: boolean
 }
 
 export interface DiagramLayout {
@@ -278,6 +311,33 @@ function getAngle(from: { x: number; y: number }, to: { x: number; y: number }):
   return Math.atan2(to.y - from.y, to.x - from.x) * (180 / Math.PI)
 }
 
+// Arrowhead geometry in local coords: +x is travel direction, origin at tip.
+function arrowShapeFor(kind: ArrowHead, size: number): { d?: string; circle?: { cx: number; r: number }; filled: boolean } | null {
+  const s = size
+  switch (kind) {
+    case 'arrow':   return { d: `M 0 0 L ${-s} ${-s / 2.6} L ${-s} ${s / 2.6} Z`, filled: true }
+    case 'open':    return { d: `M ${-s} ${-s / 2.4} L 0 0 L ${-s} ${s / 2.4}`, filled: false }
+    case 'dot':     return { circle: { cx: -s / 2, r: s / 2.8 }, filled: true }
+    case 'diamond': return { d: `M 0 0 L ${-s * 0.5} ${-s * 0.3} L ${-s} 0 L ${-s * 0.5} ${s * 0.3} Z`, filled: true }
+    case 'bar':     return { d: `M ${-s * 0.15} ${-s * 0.5} L ${-s * 0.15} ${s * 0.5}`, filled: false }
+    default:        return null
+  }
+}
+
+function arrowAtEnd(style: ConnectorStyle, end: 'from' | 'to'): ArrowHead {
+  const explicit = end === 'from' ? style.fromArrow : style.toArrow
+  if (explicit) return explicit
+  if (end === 'to') return style.showArrow === false ? 'none' : 'arrow'
+  return style.bidirectional ? 'arrow' : 'none'
+}
+
+function arrowSizeFor(style: ConnectorStyle, end: 'from' | 'to'): number {
+  const size = (end === 'from' ? style.fromArrowSize : style.toArrowSize) ?? style.arrowSize
+  if (size != null) return size
+  if (style.arrowScale) return Math.max(4, (style.strokeWidth ?? 2) * 4)
+  return 6
+}
+
 interface ConnectorProps {
   connector: Connector
   connectorIndex: number
@@ -294,10 +354,14 @@ function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors, 
   const toNode = nodes[connector.to]
   if (!fromNode || !toNode) return null
 
-  const style = styles[connector.style] || { color: 'zinc', strokeWidth: 2 }
+  const style = styles[connector.style] || { color: 'zinc' as const }
   const from = getAnchorPoint(fromNode, connector.fromAnchor)
   const to = getAnchorPoint(toNode, connector.toAnchor)
-  const color = themeColors.palette[style.color]?.stroke || themeColors.palette.zinc.stroke
+  const color = themeColors.palette[style.color ?? 'zinc']?.stroke || themeColors.palette.zinc.stroke
+  const strokeWidth = style.strokeWidth ?? 2
+  const styleOpacity = style.opacity ?? 1
+  const lineStyle = style.lineStyle ?? (style.dashed ? 'dashed' : 'solid')
+  const labelText = connector.label ?? style.label
   const gradientId = `connector-gradient-${connectorIndex}`
 
   // Calculate path
@@ -318,6 +382,8 @@ function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors, 
     // Orthogonal step path
     const midX = from.x + dx / 2
     path = `M ${from.x} ${from.y} L ${midX} ${from.y} L ${midX} ${to.y} L ${to.x} ${to.y}`
+  } else if (connector.curve === 'direct') {
+    path = `M ${from.x} ${from.y} L ${to.x} ${to.y}`
   } else {
     // Smooth bezier — control points follow the dominant axis
     const tension = 0.5
@@ -348,13 +414,36 @@ function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors, 
     textAnchor = 'middle'
   }
 
-  // Calculate arrow angle at endpoint
+  // Arrow angle at each endpoint
   const angle = getAngle(from, to)
-  const arrowSize = 6
+  const fromArrow = arrowAtEnd(style, 'from')
+  const toArrow = arrowAtEnd(style, 'to')
+
+  const renderEnd = (kind: ArrowHead, x: number, y: number, deg: number, end: 'from' | 'to') => {
+    const shape = arrowShapeFor(kind, arrowSizeFor(style, end))
+    if (!shape) return null
+    return (
+      <g transform={`translate(${x}, ${y}) rotate(${deg})`}>
+        {shape.circle ? (
+          <circle cx={shape.circle.cx} cy={0} r={shape.circle.r} fill={color} />
+        ) : (
+          <path
+            d={shape.d!}
+            fill={shape.filled ? color : 'none'}
+            stroke={shape.filled ? undefined : color}
+            strokeWidth={Math.max(1, strokeWidth * 0.85)}
+            strokeOpacity={0.9}
+            strokeLinecap="square"
+            strokeLinejoin="miter"
+          />
+        )}
+      </g>
+    )
+  }
 
   return (
     <g style={{
-      opacity: dimmed ? dimOpacity : 1,
+      opacity: (dimmed ? dimOpacity : 1) * styleOpacity,
       transition: 'opacity 200ms ease-out',
     }}>
       {/* Gradient definition - fades at both ends */}
@@ -379,26 +468,23 @@ function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors, 
         d={path}
         fill="none"
         stroke={`url(#${gradientId})`}
-        strokeWidth={highlighted ? style.strokeWidth + 1 : style.strokeWidth}
-        strokeDasharray={style.dashed ? '6 3' : undefined}
+        strokeWidth={highlighted ? strokeWidth + 1 : strokeWidth}
+        strokeDasharray={lineStyle === 'dashed' ? '6 3' : lineStyle === 'dotted' ? '0.1 6' : undefined}
+        strokeLinecap="round"
         style={{ transition: 'stroke-width 200ms ease-out' }}
       />
 
-      {/* Arrow head - triangle at end point */}
-      <g transform={`translate(${to.x}, ${to.y}) rotate(${angle})`}>
-        <polygon
-          points={`0,0 ${-arrowSize},-${arrowSize/2.5} ${-arrowSize},${arrowSize/2.5}`}
-          fill={color}
-        />
-      </g>
+      {/* End glyphs — arrow/open/dot/diamond/bar at each end */}
+      {renderEnd(fromArrow, from.x, from.y, angle + 180, 'from')}
+      {renderEnd(toArrow, to.x, to.y, angle, 'to')}
 
       {/* Label with background pill */}
-      {style.label && (
+      {labelText && (
         <g style={{ transition: 'opacity 200ms ease-out' }}>
           <rect
-            x={labelPos.x + labelOffset.x - (textAnchor === 'middle' ? style.label.length * 3.2 : textAnchor === 'end' ? style.label.length * 6.4 : 0) - 4}
+            x={labelPos.x + labelOffset.x - (textAnchor === 'middle' ? labelText.length * 3.2 : textAnchor === 'end' ? labelText.length * 6.4 : 0) - 4}
             y={labelPos.y + labelOffset.y - 10}
-            width={style.label.length * 6.4 + 8}
+            width={labelText.length * 6.4 + 8}
             height={14}
             rx={4}
             fill={color}
@@ -412,9 +498,21 @@ function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors, 
             className="text-[9px] font-mono"
             style={{ fontFamily: 'ui-monospace, monospace', fontWeight: highlighted ? 700 : 500 }}
           >
-            {style.label}
+            {labelText}
           </text>
         </g>
+      )}
+
+      {/* Relationship role annotations near each end */}
+      {connector.fromRole && (
+        <text x={from.x + Math.cos(((angle + 0) * Math.PI) / 180) * 20} y={from.y + Math.sin((angle * Math.PI) / 180) * 20 + 10} textAnchor="middle" fill={color} fontSize="7.5" fontFamily="ui-monospace, monospace" opacity={0.6}>
+          {connector.fromRole}
+        </text>
+      )}
+      {connector.toRole && (
+        <text x={to.x - Math.cos((angle * Math.PI) / 180) * 20} y={to.y - Math.sin((angle * Math.PI) / 180) * 20 + 10} textAnchor="middle" fill={color} fontSize="7.5" fontFamily="ui-monospace, monospace" opacity={0.6}>
+          {connector.toRole}
+        </text>
       )}
     </g>
   )

@@ -1,4 +1,4 @@
-import type { AnchorPosition, NodePosition, DiagramLayout, Point } from '../types/editor'
+import type { AnchorPosition, ArrowHead, NodePosition, DiagramLayout, Point } from '../types/editor'
 import { NODE_SIZES, NodeSizeKey, NodeDimensions } from './constants'
 
 // Distance from box edge to arrow start/end (minimal gap for tight alignment)
@@ -166,4 +166,129 @@ export function getContentBounds(
   }
 
   return found ? { minX, minY, maxX, maxY } : null
+}
+
+// ============================================
+// Connector appearance & routing
+// ============================================
+
+export interface ConnectorEndStyle {
+  dashed?: boolean
+  lineStyle?: 'solid' | 'dashed' | 'dotted'
+  opacity?: number
+  bidirectional?: boolean
+  animated?: boolean
+  showArrow?: boolean
+  showEndpoints?: boolean
+  fromArrow?: ArrowHead
+  toArrow?: ArrowHead
+  arrowSize?: number
+  fromArrowSize?: number
+  toArrowSize?: number
+  arrowScale?: boolean
+  strokeWidth?: number
+}
+
+/** Resolved stroke pattern — `lineStyle` wins over the legacy `dashed` flag. */
+export function connectorLineStyle(style: ConnectorEndStyle): 'solid' | 'dashed' | 'dotted' {
+  return style.lineStyle ?? (style.dashed ? 'dashed' : 'solid')
+}
+
+/** Arrowhead drawn at one end of a connector, honouring the legacy flags. */
+export function connectorArrowAt(style: ConnectorEndStyle, end: 'from' | 'to'): ArrowHead {
+  const explicit = end === 'from' ? style.fromArrow : style.toArrow
+  if (explicit) return explicit
+  if (end === 'to') return style.showArrow === false ? 'none' : 'arrow'
+  return style.bidirectional ? 'arrow' : 'none'
+}
+
+/** Arrowhead length in px at one end. `arrowScale` makes it follow the
+ *  stroke width; per-end overrides win over `arrowSize`. */
+export function connectorArrowSize(style: ConnectorEndStyle, end: 'from' | 'to'): number {
+  const size = (end === 'from' ? style.fromArrowSize : style.toArrowSize) ?? style.arrowSize
+  if (size != null) return size
+  if (style.arrowScale) return Math.max(4, (style.strokeWidth ?? 2) * 4)
+  return 8
+}
+
+export interface ArrowShape {
+  /** Path 'd' in local coords — +x is the direction of travel, origin at the tip. */
+  d?: string
+  /** Circle for the 'dot' end. */
+  circle?: { cx: number; r: number }
+  /** Filled polygon vs stroked path. */
+  filled: boolean
+}
+
+/** Geometry for an arrowhead kind at a given size. */
+export function arrowShape(kind: ArrowHead, size: number): ArrowShape | null {
+  const s = size
+  switch (kind) {
+    case 'arrow':
+      return { d: `M 0 0 L ${-s} ${-s / 2.6} L ${-s} ${s / 2.6} Z`, filled: true }
+    case 'open':
+      return { d: `M ${-s} ${-s / 2.4} L 0 0 L ${-s} ${s / 2.4}`, filled: false }
+    case 'dot':
+      return { circle: { cx: -s / 2, r: s / 2.8 }, filled: true }
+    case 'diamond':
+      return { d: `M 0 0 L ${-s * 0.5} ${-s * 0.3} L ${-s} 0 L ${-s * 0.5} ${s * 0.3} Z`, filled: true }
+    case 'bar':
+      return { d: `M ${-s * 0.15} ${-s * 0.5} L ${-s * 0.15} ${s * 0.5}`, filled: false }
+    default:
+      return null
+  }
+}
+
+/** Degrees of a → b. */
+export function angleBetween(a: Point, b: Point): number {
+  return (Math.atan2(b.y - a.y, b.x - a.x) * 180) / Math.PI
+}
+
+function horizontalAnchor(a?: AnchorPosition): boolean {
+  return a === 'left' || a === 'right'
+}
+
+/** Polyline points for an orthogonal route ('step' curve). Corner anchors
+ *  (topLeft, bottomRight…) exit vertically. */
+export function elbowPolyline(
+  from: Point,
+  to: Point,
+  fromAnchor?: AnchorPosition,
+  toAnchor?: AnchorPosition,
+): Point[] {
+  const midX = (from.x + to.x) / 2
+  const midY = (from.y + to.y) / 2
+  const fH = horizontalAnchor(fromAnchor)
+  const tH = horizontalAnchor(toAnchor)
+  if (fH && tH) return [from, { x: midX, y: from.y }, { x: midX, y: to.y }, to]
+  if (!fH && !tH) return [from, { x: from.x, y: midY }, { x: to.x, y: midY }, to]
+  if (fH) return [from, { x: to.x, y: from.y }, to]
+  return [from, { x: from.x, y: to.y }, to]
+}
+
+/** SVG path through polyline points, corners rounded by `radius`. */
+export function roundedPolylineD(pts: Point[], radius = 10): string {
+  if (pts.length < 2) return ''
+  if (pts.length === 2) return straightPath(pts[0], pts[1])
+  let d = `M ${pts[0].x} ${pts[0].y}`
+  for (let i = 1; i < pts.length - 1; i++) {
+    const prev = pts[i - 1]
+    const cur = pts[i]
+    const next = pts[i + 1]
+    const lenIn = Math.hypot(cur.x - prev.x, cur.y - prev.y)
+    const lenOut = Math.hypot(next.x - cur.x, next.y - cur.y)
+    const r = Math.min(radius, lenIn / 2, lenOut / 2)
+    if (r < 0.5 || lenIn === 0 || lenOut === 0) {
+      d += ` L ${cur.x} ${cur.y}`
+      continue
+    }
+    const inX = cur.x - ((cur.x - prev.x) / lenIn) * r
+    const inY = cur.y - ((cur.y - prev.y) / lenIn) * r
+    const outX = cur.x + ((next.x - cur.x) / lenOut) * r
+    const outY = cur.y + ((next.y - cur.y) / lenOut) * r
+    d += ` L ${inX} ${inY} Q ${cur.x} ${cur.y} ${outX} ${outY}`
+  }
+  const last = pts[pts.length - 1]
+  d += ` L ${last.x} ${last.y}`
+  return d
 }

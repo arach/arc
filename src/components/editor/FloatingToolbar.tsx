@@ -15,9 +15,10 @@ interface ToolButtonProps {
   onClick: () => void
   active?: boolean
   disabled?: boolean
+  hotkey?: string
 }
 
-function ToolButton({ icon: Icon, label, onClick, active = false, disabled = false }: ToolButtonProps) {
+function ToolButton({ icon: Icon, label, onClick, active = false, disabled = false, hotkey }: ToolButtonProps) {
   return (
     <button
       type="button"
@@ -29,6 +30,7 @@ function ToolButton({ icon: Icon, label, onClick, active = false, disabled = fal
       className={`arc-editor-tool-btn${active ? ' is-active' : ''}`}
     >
       <Icon className="w-3.5 h-3.5" strokeWidth={1.75} />
+      <span className="arc-editor-tool-key" aria-hidden="true">{hotkey ?? ''}</span>
     </button>
   )
 }
@@ -232,12 +234,14 @@ export default function FloatingToolbar() {
           label="Select (V)"
           onClick={() => actions.setMode('select')}
           active={editor.mode === 'select'}
+          hotkey="V"
         />
         <ToolButton
           icon={Move}
           label="Pan (H / Space)"
           onClick={() => actions.setMode('pan')}
           active={editor.mode === 'pan'}
+          hotkey="H"
         />
 
         <Divider />
@@ -248,24 +252,28 @@ export default function FloatingToolbar() {
           label="Add node (N)"
           onClick={() => actions.setMode('addNode')}
           active={editor.mode === 'addNode'}
+          hotkey="N"
         />
         <ToolButton
           icon={Link2}
           label="Add connector (C)"
           onClick={() => actions.setMode('addConnector')}
           active={editor.mode === 'addConnector'}
+          hotkey="C"
         />
         <ToolButton
           icon={Square}
           label="Rectangle group (R)"
           onClick={() => actions.setMode('addRect')}
           active={editor.mode === 'addRect'}
+          hotkey="R"
         />
         <ToolButton
           icon={Circle}
           label="Circle group (O)"
           onClick={() => actions.setMode('addCircle')}
           active={editor.mode === 'addCircle'}
+          hotkey="O"
         />
 
         <Divider />
