@@ -115,6 +115,14 @@ export default function useKeyboardShortcuts({
           e.preventDefault()
           onSetMode?.('addConnector')
           return
+        case 'r':
+          e.preventDefault()
+          onSetMode?.('addRect')
+          return
+        case 'o':
+          e.preventDefault()
+          onSetMode?.('addCircle')
+          return
       }
     }
   }, [onDelete, onUndo, onRedo, onSave, onNew, onEscape, onSetMode])

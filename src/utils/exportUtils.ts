@@ -143,8 +143,11 @@ export function generateSVG(diagram: any, options: any = {}) {
     const fromSize = NODE_SIZES[fromNode.size] || NODE_SIZES.m
     const toSize = NODE_SIZES[toNode.size] || NODE_SIZES.m
 
-    const style = diagram.connectorStyles?.[connector.style] || { color: 'zinc', strokeWidth: 2 }
-    const strokeColor = nodeColors[style.color]?.bg || '#71717a'
+    const style = diagram.connectorStyles?.[connector.style] || { color: 'zinc' as const }
+    const strokeColor = nodeColors[style.color ?? 'zinc']?.bg || '#71717a'
+    const lineStyle = style.lineStyle ?? (style.dashed ? 'dashed' : 'solid')
+    const dashAttr = lineStyle === 'dashed' ? ' stroke-dasharray="6 3"' : lineStyle === 'dotted' ? ' stroke-dasharray="0.1 6" stroke-linecap="round"' : ''
+    const opacityAttr = style.opacity != null ? ` stroke-opacity="${style.opacity}"` : ''
 
     const fromPos = getAnchorPosition(
       fromNode.x,
@@ -163,7 +166,7 @@ export function generateSVG(diagram: any, options: any = {}) {
 
     const path = getConnectorPath(fromPos, toPos, connector.fromAnchor, connector.toAnchor)
 
-    svg += `  <path d="${path}" fill="none" stroke="${strokeColor}" stroke-width="${style.strokeWidth || 2}"${style.dashed ? ' stroke-dasharray="6 3"' : ''}/>\n`
+    svg += `  <path d="${path}" fill="none" stroke="${strokeColor}" stroke-width="${style.strokeWidth || 2}"${dashAttr}${opacityAttr}/>\n`
 
     // Arrow head
     svg += `  <circle cx="${toPos.x}" cy="${toPos.y}" r="4" fill="${strokeColor}"/>\n`
