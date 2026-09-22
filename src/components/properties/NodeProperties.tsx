@@ -145,6 +145,44 @@ export default function NodeProperties({ nodeId }: { nodeId: string }) {
       <KvInput label="Desc" value={data.description ?? ''} onChange={(v) => handleUpdate('description', v)} placeholder="Brief description" />
 
       <InspField>
+        <InspLabel>Source</InspLabel>
+        <InspGrid2>
+          <InspField>
+            <InspLabel>Path</InspLabel>
+            <InspInput
+              value={data.source?.path ?? ''}
+              onChange={(e) => {
+                const path = e.target.value
+                if (!path) handleUpdate('source', undefined)
+                else handleUpdate('source', { ...data.source, path })
+              }}
+              placeholder="src/foo.ts"
+            />
+          </InspField>
+          <InspField>
+            <InspLabel>Line</InspLabel>
+            <InspInput
+              type="number"
+              min={1}
+              value={data.source?.line ?? ''}
+              onChange={(e) => {
+                if (!data.source?.path) return
+                const next = { ...data.source }
+                const line = parseInt(e.target.value, 10)
+                if (Number.isInteger(line) && line > 0) next.line = line
+                else delete next.line
+                handleUpdate('source', next)
+              }}
+              placeholder="12"
+            />
+          </InspField>
+        </InspGrid2>
+        {data.source?.path && (
+          <p className="arc-insp-caption">Shown on node hover; embedders can link it via <code>sourceUrl</code>.</p>
+        )}
+      </InspField>
+
+      <InspField>
         <InspLabel>Size</InspLabel>
         <InspSegmented
           value={node.size || 'm'}

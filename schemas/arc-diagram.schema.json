@@ -194,6 +194,32 @@
       ],
       "type": "object"
     },
+    "DiagramSource": {
+      "additionalProperties": false,
+      "description": "A pointer into the codebase this node describes. Lets a diagram cite the code it models, so docs and agents can jump — or check staleness — at the recorded `commit`.",
+      "properties": {
+        "commit": {
+          "description": "Commit SHA the reference was written against.",
+          "type": "string"
+        },
+        "endLine": {
+          "description": "1-based last line when the reference spans a range.",
+          "type": "number"
+        },
+        "line": {
+          "description": "1-based first line.",
+          "type": "number"
+        },
+        "path": {
+          "description": "Repo-relative path, e.g. `src/auth/session.ts`.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path"
+      ],
+      "type": "object"
+    },
     "DiagramView": {
       "additionalProperties": false,
       "description": "A named stop in a guided tour. `views[]` turns a diagram into a document: an ordered set of camera/highlight states the reader can step through, and each `id` is stable enough to deep-link (`/player/<session>?view=<id>`).",
@@ -460,6 +486,10 @@
         "shape": {
           "$ref": "#/definitions/NodeShape",
           "description": "Per-node silhouette. Omit to follow the theme's own node shape."
+        },
+        "source": {
+          "$ref": "#/definitions/DiagramSource",
+          "description": "Code this node describes — see `sourceUrl`/`sourceLabel` in utils/sourceRef."
         },
         "subtitle": {
           "type": "string"

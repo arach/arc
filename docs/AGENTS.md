@@ -232,6 +232,7 @@ interface NodeData {
   color?: DiagramColor   // omit when `kind` supplies it; overrides the kind default
   kind?: NodeKind        // semantic role — supplies default icon + color
   shape?: NodeShape      // per-node silhouette override
+  source?: DiagramSource // { path, line?, endLine?, commit? } — code evidence link
 }
 
 type DiagramColor = 'violet' | 'emerald' | 'blue' | 'amber' | 'sky' | 'zinc' | 'rose' | 'orange'

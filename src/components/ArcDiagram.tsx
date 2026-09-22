@@ -25,6 +25,8 @@ import type { Connector as EditorConnector } from '../types/editor'
 import type { NodeKind } from '../types/diagram'
 import { resolveNodeColor, resolveNodeIcon } from '../utils/nodeKinds'
 import type { DiagramDelta } from '../utils/diffDiagram'
+import type { DiagramSource } from '../types/diagram'
+import { sourceLabel } from '../utils/sourceRef'
 
 // ============================================
 // Types
@@ -71,6 +73,8 @@ export interface NodeData {
   kind?: NodeKind
   /** Per-node silhouette. Omit to follow the theme's own node shape. */
   shape?: NodeShape
+  /** Code this node describes (path + optional line range/commit). */
+  source?: DiagramSource
 }
 
 export type ConnectorCurve = 'natural' | 'down' | 'up' | 'step'
@@ -746,6 +750,10 @@ export function Node({ node, data, mode, themeColors, brand, hovered, dimmed, li
 
   const handlers = { onMouseEnter, onMouseLeave, onClick }
 
+  // Evidence link — hover shows where the node lives in the codebase; the
+  // attribute lets embedders/tooling wire a click-through.
+  const sourceAttr = data.source ? { title: sourceLabel(data.source), 'data-arc-source': data.source.path } : {}
+
   // Cut silhouettes clip their own border and box-shadow: the edge is stroked
   // as an SVG overlay, and the glow becomes a drop-shadow, which follows the
   // clip path. The shell takes the nominal height so the outline matches the
@@ -761,6 +769,7 @@ export function Node({ node, data, mode, themeColors, brand, hovered, dimmed, li
           filter: hovered && glow ? `drop-shadow(0 4px 12px ${color.stroke}55)` : undefined,
         }}
         data-arc-node
+        {...sourceAttr}
         {...handlers}
       >
         <div
@@ -806,6 +815,7 @@ export function Node({ node, data, mode, themeColors, brand, hovered, dimmed, li
         boxShadow: hovered && glow ? `${glowShadow}, ${innerHighlight}` : innerHighlight,
       }}
       data-arc-node
+      {...sourceAttr}
       {...handlers}
     >
       {body}

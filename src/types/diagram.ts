@@ -49,6 +49,22 @@ export interface NodePosition {
   isoLabelFont?: 'theme' | 'ui' | 'mono'
 }
 
+/**
+ * A pointer into the codebase this node describes. Lets a diagram cite the
+ * code it models, so docs and agents can jump — or check staleness — at the
+ * recorded `commit`.
+ */
+export interface DiagramSource {
+  /** Repo-relative path, e.g. `src/auth/session.ts`. */
+  path: string
+  /** 1-based first line. */
+  line?: number
+  /** 1-based last line when the reference spans a range. */
+  endLine?: number
+  /** Commit SHA the reference was written against. */
+  commit?: string
+}
+
 export interface NodeData {
   /** Lucide icon name. Omit when `kind` supplies the default icon. */
   icon?: string
@@ -61,6 +77,8 @@ export interface NodeData {
   kind?: NodeKind
   /** Per-node silhouette. Omit to follow the theme's own node shape. */
   shape?: NodeShape
+  /** Code this node describes — see `sourceUrl`/`sourceLabel` in utils/sourceRef. */
+  source?: DiagramSource
 }
 
 export type ConnectorCurve = 'natural' | 'down' | 'up' | 'step'

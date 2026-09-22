@@ -62,6 +62,7 @@ interface ArcDiagramData {
     color?: DiagramColor             // omit when kind supplies it; always wins over kind
     kind?: NodeKind                  // semantic role — supplies default icon + color
     shape?: NodeShape                // per-node silhouette override
+    source?: DiagramSource             // {path, line?, endLine?, commit?} evidence link
   }>
   connectors: Array<{
     from: string; to: string
