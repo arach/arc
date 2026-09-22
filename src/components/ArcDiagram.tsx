@@ -1811,6 +1811,21 @@ export default function ArcDiagram({
     return { minX: bounds.minX - pad, minY: bounds.minY - pad, maxX: bounds.maxX + pad, maxY: bounds.maxY + pad }
   }, [isIso, isoStyle.technical, nodes, nodeData, isoOriginX, isoOriginY, layout])
 
+  // 2D drawings are positioned in canvas coordinates and can spill outside the
+  // layout rect (negative or oversized node coords). Fit and centre the union
+  // of the layout rect and the real content bounds so nothing clips at the
+  // edges — the iso path above already does this for the projected drawing.
+  const contentBounds = useMemo(() => {
+    const pad = 60
+    const content = getContentBounds(nodes, groups)
+    return {
+      minX: Math.min(0, (content?.minX ?? 0) - pad),
+      minY: Math.min(0, (content?.minY ?? 0) - pad),
+      maxX: Math.max(layout.width, (content?.maxX ?? layout.width) + pad),
+      maxY: Math.max(layout.height, (content?.maxY ?? layout.height) + pad),
+    }
+  }, [nodes, groups, layout.width, layout.height])
+
   // Inject the brand font stylesheet once (only for themes that set a fontImport).
   React.useEffect(() => {
     const href = brand?.fontImport
@@ -1842,11 +1857,11 @@ export default function ArcDiagram({
         return Math.min((containerWidth - padding) / boundsWidth, (containerHeight - padding) / boundsHeight, maxFitZoom)
       }
     }
-    const fitX = (containerWidth - padding) / layout.width
-    const fitY = (containerHeight - padding) / layout.height
+    const fitX = (containerWidth - padding) / (contentBounds.maxX - contentBounds.minX)
+    const fitY = (containerHeight - padding) / (contentBounds.maxY - contentBounds.minY)
     // Use the smaller ratio to fit both dimensions, cap at maxFitZoom
     return Math.min(fitX, fitY, maxFitZoom)
-  }, [isIso, isoBounds, layout.width, layout.height, maxFitZoom])
+  }, [isIso, isoBounds, contentBounds, maxFitZoom])
 
   // Determine initial zoom
   const getInitialZoom = useCallback(() => {
@@ -1863,34 +1878,36 @@ export default function ArcDiagram({
   const [panStart, setPanStart] = useState({ x: 0, y: 0 })
   const [initialized, setInitialized] = useState(typeof defaultZoom === 'number')
 
+  const centreOnBounds = useCallback(
+    (b: { minX: number; minY: number; maxX: number; maxY: number }, z: number) => {
+      const rect = containerRef.current?.getBoundingClientRect()
+      if (!rect) return
+      setPan({
+        x: rect.width / 2 - ((b.minX + b.maxX) / 2) * z,
+        y: rect.height / 2 - ((b.minY + b.maxY) / 2) * z,
+      })
+    },
+    [],
+  )
+
   // Set initial zoom after mount (needed for 'fit' to measure container)
   React.useEffect(() => {
     if (!initialized) {
       const nextZoom = getInitialZoom()
       setZoom(nextZoom)
-      // Centre the isometric drawing in its container once the fit zoom is known.
-      if (isIso && isoBounds && containerRef.current) {
-        const rect = containerRef.current.getBoundingClientRect()
-        setPan({
-          x: rect.width / 2 - ((isoBounds.minX + isoBounds.maxX) / 2) * nextZoom,
-          y: rect.height / 2 - ((isoBounds.minY + isoBounds.maxY) / 2) * nextZoom,
-        })
-      }
+      // Centre the drawing in its container once the fit zoom is known.
+      centreOnBounds(isIso && isoBounds ? isoBounds : contentBounds, nextZoom)
       setInitialized(true)
     }
-  }, [initialized, getInitialZoom, isIso, isoBounds])
+  }, [initialized, getInitialZoom, isIso, isoBounds, contentBounds, centreOnBounds])
 
-  // Numeric defaultZoom skips the init effect above, so centre the isometric
-  // drawing separately (2D content sits at the origin; the iso projection
-  // spreads around the bottom-centre origin and can spill outside the rect).
+  // Numeric defaultZoom skips the init effect above, so centre the drawing
+  // separately (the iso projection spreads around the bottom-centre origin
+  // and 2D content can sit anywhere relative to the layout rect).
   React.useEffect(() => {
-    if (!isIso || !isoBounds || typeof defaultZoom !== 'number' || !containerRef.current) return
-    const rect = containerRef.current.getBoundingClientRect()
-    setPan({
-      x: rect.width / 2 - ((isoBounds.minX + isoBounds.maxX) / 2) * defaultZoom,
-      y: rect.height / 2 - ((isoBounds.minY + isoBounds.maxY) / 2) * defaultZoom,
-    })
-  }, [isIso, isoBounds, defaultZoom])
+    if (typeof defaultZoom !== 'number' || !containerRef.current) return
+    centreOnBounds(isIso && isoBounds ? isoBounds : contentBounds, defaultZoom)
+  }, [isIso, isoBounds, contentBounds, defaultZoom, centreOnBounds])
 
   // Sorted zoom levels for consistent navigation
   const sortedZoomLevels = React.useMemo(() => [...zoomLevels].sort((a, b) => a - b), [zoomLevels])
@@ -1912,16 +1929,8 @@ export default function ArcDiagram({
   const handleReset = useCallback(() => {
     const nextZoom = getInitialZoom()
     setZoom(nextZoom)
-    if (isIso && isoBounds && containerRef.current) {
-      const rect = containerRef.current.getBoundingClientRect()
-      setPan({
-        x: rect.width / 2 - ((isoBounds.minX + isoBounds.maxX) / 2) * nextZoom,
-        y: rect.height / 2 - ((isoBounds.minY + isoBounds.maxY) / 2) * nextZoom,
-      })
-    } else {
-      setPan({ x: 0, y: 0 })
-    }
-  }, [getInitialZoom, isIso, isoBounds])
+    centreOnBounds(isIso && isoBounds ? isoBounds : contentBounds, nextZoom)
+  }, [getInitialZoom, isIso, isoBounds, contentBounds, centreOnBounds])
 
   const handleWheel = useCallback((e: React.WheelEvent) => {
     if (!interactive) return
