@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Link, useNavigate, useParams, useSearchPa
 import DiagramEditor from './components/editor/DiagramEditor'
 import LandingPage from './components/LandingPage'
 import ArcDocs from './components/docs/ArcDocs'
+import AgentSharePage from './components/AgentSharePage'
 import ArcDiagram from './components/ArcDiagram'
 import IsometricDemo from './components/IsometricDemo'
 import IsometricExamples from './components/IsometricExamples'
@@ -456,6 +457,8 @@ function App() {
         <Route path="/player/*" element={<PlayerPage />} />
         <Route path="/docs" element={<DocsWrapper />} />
         <Route path="/docs/:page" element={<DocsWrapper />} />
+        <Route path="/mcp" element={<AgentSharePage kind="mcp" />} />
+        <Route path="/skills" element={<AgentSharePage kind="skills" />} />
         <Route path="/blog/native-mermaid-sequences" element={<NativeMermaidSequencesPost />} />
         <Route path="/iso-demo" element={<IsometricDemo />} />
         <Route path="/iso-examples" element={<IsometricExamples />} />
