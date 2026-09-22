@@ -826,5 +826,45 @@ export function validateDiagram(value: unknown): Diagnostic[] {
     }
   }
 
+  // Composition — advisory readings of the authoring contract (see
+  // skills/arc-diagrams/SKILL.md "Layout judgment"): budgets, not faults.
+  const nodeCount = Object.keys(nodes).length
+  const groupHints = isObject(d.layoutHints) ? (d.layoutHints as Rec).groups : undefined
+  const chaptered =
+    (Array.isArray(d.views) && d.views.length > 0) ||
+    (Array.isArray(d.groups) && d.groups.length > 0) ||
+    (isObject(groupHints) && Object.keys(groupHints).length > 0)
+  if (nodeCount > 16 && !chaptered) {
+    push({
+      code: 'composition/too-dense',
+      severity: 'warning',
+      subject: { type: 'diagram' },
+      message: `${nodeCount} nodes in one flat view — chapter it with views[] or group frames`,
+      evidence: { nodeCount, budget: 16 },
+      supportedFixes: [{ kind: 'auto-layout' }],
+    })
+  }
+
+  // Label budget: the name row is the node's header — icon + padding leave
+  // roughly (width − 48)px of text; ~6.5px/char at the 10–11px name size.
+  const LABEL_BUDGET: Record<string, number> = { xs: 5, s: 9, m: 17, l: 26 }
+  for (const [id, raw] of Object.entries(nodeData)) {
+    if (!isObject(raw) || typeof raw.name !== 'string') continue
+    const name = raw.name
+    const pos = nodes[id]
+    const size = isObject(pos) && typeof pos.size === 'string' ? pos.size : 'm'
+    const budget = LABEL_BUDGET[size] ?? LABEL_BUDGET.m
+    if (name.length <= budget) continue
+    const fits = (NODE_SIZE_KEYS as string[]).find(s => (LABEL_BUDGET[s] ?? 0) >= name.length)
+    push({
+      code: 'composition/label-overflow',
+      severity: 'warning',
+      subject: { type: 'node', id },
+      message: `Node "${id}" name "${name}" (${name.length} chars) overflows its ${size} box (~${budget} char budget)`,
+      evidence: { name, length: name.length, size, budget },
+      supportedFixes: fits ? [{ kind: 'set-size', size: fits as NodeSize }] : undefined,
+    })
+  }
+
   return diagnostics
 }

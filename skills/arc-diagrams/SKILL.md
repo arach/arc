@@ -184,15 +184,21 @@ Here's a full diagram for a typical web application:
 }
 ```
 
-## Layout Tips
+## Layout judgment
 
-1. **Prefer auto-layout** — use `autoLayout()` from `@arach/arc` when you don't need pixel-perfect placement
-2. **Grid alignment:** Position nodes on a ~50px grid for clean manual layouts
-3. **Spacing:** Leave ~150–200px between connected nodes horizontally
-4. **Flow direction:** Left-to-right or top-to-bottom for data flow
-5. **Grouping:** Use `groups` + `layoutHints` for framed sections (see `docs/group-layout.md`)
-6. **Large nodes:** Use `l` size for primary/entry-point components
-7. **Connectors:** Match connector colors to the source or destination node
+The contract past "does it validate": a good Arc diagram reads top-to-bottom or left-to-right in one glance. These are the composition rules `validateDiagram` partially enforces (`composition/*` warnings) and the rest is on you.
+
+**Budget.** ≤12 nodes per flat view. Past ~16 without `groups`/`layoutHints`/`views`, `composition/too-dense` warns — the fix is chaptering, not a bigger canvas: split into `groups` + `layoutHints` for regions, or `views[]` for a walkthrough.
+
+**One spine.** Pick one dominant flow direction and hold it: left→right for request/data paths, top→bottom for stacks and pipelines. Everything not on the spine (replicas, sidecars, observability taps) sits on a parallel lane — above/below for a horizontal spine — and reads as secondary: `zinc` color, `dashed`, thinner `strokeWidth`.
+
+**Spacing math.** `NODE_SIZES` are xs 80×36, s 110×48, m 160×75, l 220×90. Budget ~150–200px of horizontal pitch between connected nodes (edge gap ≈ 40–80px of clear channel for the stroke + label), ~60–100px vertically. Keep sibling nodes on one baseline and aligned to a ~50px grid when hand-placing.
+
+**When to autoLayout.** Call `autoLayout()` (or the editor's auto-layout) when node count exceeds ~8, when groups own their members via `layoutHints`, or when the graph is dense and any hand order will cross edges. Hand-place only when the shape itself carries meaning (a ring, a hub-and-spoke) and the node count is small.
+
+**Labels.** The name row is what scans. Budget by size: xs ~5, s ~9, m ~17, l ~26 chars (`composition/label-overflow` warns past it, and suggests the next size up). Prefer `subtitle` for the qualifier instead of a long name — "API" + subtitle "Express" beats "Express API Server".
+
+**Routing.** Anchors take the direction of travel: `right→left` on a horizontal spine, `bottom→top` on a vertical one. Never route a connector through an unrelated node (`geometry/connector-through-node` is an error). Diagonal corner anchors (`bottomRight` etc.) are for fan-out, not the spine. Give an `id` to any connector a focus story or view will reference, and to parallel edges sharing `from`/`to`.
 
 ## Validation and repair
 
@@ -217,6 +223,7 @@ Common codes:
 - `semantic/dangling-connector-endpoint` — retarget `from`/`to` or remove the connector.
 - `semantic/unknown-*` and `semantic/duplicate-connector-id` — use the suggested valid value or unique connector `id`.
 - `geometry/node-overlap`, `geometry/connector-through-node`, `geometry/node-outside-layout` — move nodes or run `autoLayout()`.
+- `composition/too-dense`, `composition/label-overflow` — advisory budget warnings: chapter the diagram, or resize the node.
 
 ## Preview and export
 
