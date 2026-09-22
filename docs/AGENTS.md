@@ -78,7 +78,7 @@ Architecture diagrams typically live in design tools, disconnected from the code
 
 - **Declarative Format** - Diagrams are data structures
 - **Templates** - Structural presets for layout
-- **Themes** - Color palettes (default, warm, cool, mono)
+- **Themes** - Color and decor palettes (default, warm, cool, mono, engineering, workbench, tactical, command, spacex, claude, codex)
 - **Export** - SVG, PNG, JSON, TypeScript
 
 ## Links
@@ -206,10 +206,14 @@ interface ArcDiagramProps {
 interface ArcDiagramData {
   id?: string
   layout: { width: number; height: number }
+  legend?: 'auto' | 'all' | 'hidden'  // authored legend policy
+  _meta?: FileMeta                    // viewer/editor state; `locale` is BCP-47
   nodes: Record<string, NodePosition>
   nodeData: Record<string, NodeData>
   connectors: Connector[]
   connectorStyles: Record<string, ConnectorStyle>
+  focusTargets?: Record<string, FocusTarget>
+  views?: DiagramView[]              // ordered guided chapters — docs/views.md
 }
 ```
 
@@ -223,14 +227,22 @@ interface NodePosition {
 }
 
 interface NodeData {
-  icon: string
+  icon?: string          // Lucide name; omit when `kind` supplies it
   name: string
   subtitle?: string
   description?: string
-  color: DiagramColor
+  color?: DiagramColor   // omit when `kind` supplies it; overrides the kind default
+  kind?: NodeKind        // semantic role — supplies default icon + color
+  shape?: NodeShape      // per-node silhouette override
+  source?: DiagramSource // { path, line?, endLine?, commit? } — code evidence link
 }
 
 type DiagramColor = 'violet' | 'emerald' | 'blue' | 'amber' | 'sky' | 'zinc' | 'rose' | 'orange'
+
+// Semantic roles — `src/utils/nodeKinds.ts` maps each to a default palette
+// color + Lucide icon, resolved at render time.
+type NodeKind = 'frontend' | 'backend' | 'service' | 'database' | 'cache' | 'queue' |
+                'storage' | 'gateway' | 'security' | 'user' | 'external' | 'observability'
 ```
 
 ### Connector Types
@@ -265,6 +277,13 @@ interface ConnectorStyle {
 | warm | Warm | Editorial, earth tones |
 | cool | Cool | Technical, blue-focused |
 | mono | Mono | Grayscale for print |
+| engineering | Engineering | Structured blueprint plate |
+| workbench | Workbench | Quiet hardware/drafting bench |
+| tactical | Tactical | Hard-edged field diagram |
+| command | Command | Glass mission console |
+| spacex | SpaceX | Mission plate, telemetry cyan |
+| claude | Claude | Warm parchment, clay accents |
+| codex | Codex | Graphite console, mint signal |
 
 ### Theme API
 

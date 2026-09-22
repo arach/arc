@@ -1,4 +1,5 @@
 import type { IsoStyleId } from '../utils/isoStyles'
+import type { NodeKind } from './diagram'
 
 export interface Point {
   x: number
@@ -84,11 +85,13 @@ export interface NodePosition {
 }
 
 export interface NodeData {
-  icon: string
+  icon?: string
   name: string
   subtitle?: string
   description?: string
-  color: string
+  color?: string
+  /** Semantic role — supplies default icon and color. */
+  kind?: NodeKind
   /** Per-node silhouette. Omit to follow the theme. 2D only — iso boxes ignore it. */
   shape?: string
 }
@@ -201,6 +204,8 @@ export interface DiagramMeta {
   colorMode?: 'light' | 'dark'
   viewport?: { width: number; height: number }
   sourceUrl?: string  // e.g. 'operate/control-plane' — where this diagram came from
+  /** BCP-47 locale — viewer `lang`/`dir` + Intl formatting. Viewer-only. */
+  locale?: string
 }
 
 export interface MetaState {

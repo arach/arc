@@ -30,6 +30,7 @@ export {
   type FocusConnectorRef,
   type FocusStep,
   type FocusTarget,
+  type DiagramView,
   type GroupShape,
   type LayoutAlignment,
   type GroupLayoutDirection,
@@ -38,6 +39,7 @@ export {
   type LayoutHints,
   type ThemeId,
   resolveFocusState,
+  resolveViewFocus,
 } from './components/ArcDiagram'
 
 // Theme utilities
@@ -85,7 +87,11 @@ export type { ViewMode, EmbedConfig, NodePosition, ConnectorStyle, DiagramMeta }
 // =============================================================================
 export { validateDiagramShape, isDiagramShape } from './utils/diagramValidation'
 export { validateDiagram, type Diagnostic, type DiagnosticSeverity, type DiagnosticSubject, type Fix } from './utils/diagramDiagnostics'
+export { NODE_KINDS, NODE_KIND_DEFAULTS, isNodeKind, resolveNodeColor, resolveNodeIcon, suggestKind } from './utils/nodeKinds'
 export { toTypeScriptSource, toExportFormat, connectorKey } from './types/diagram'
+export type { NodeKind, DiagramSource, LegendMode, FileMeta } from './types/diagram'
+export { sourceUrl, sourceLabel } from './utils/sourceRef'
+export { isValidLocale, isRtlLocale } from './utils/locale'
 export { diffDiagram } from './utils/diffDiagram'
 export type { DiagramDelta, RemovedNode, MovedNode, ChangedNode, ConnectorDelta, ChangedConnector, ChangedKeys, ChangedIds } from './utils/diffDiagram'
 

@@ -295,6 +295,48 @@ describe('validateDiagram — geometry layer', () => {
     expect(diag?.supportedFixes).toContainEqual({ kind: 'auto-layout' })
   })
 
+  test('composition/too-dense — flat diagram over the node budget warns', () => {
+    const d = base()
+    // 17 nodes, no groups/views/layoutHints
+    for (let i = 0; i < 20; i++) {
+      const id = `n${i}`
+      d.nodes[id] = { x: 40 + (i % 5) * 300, y: 40 + Math.floor(i / 5) * 160, size: 's' }
+      d.nodeData[id] = { icon: 'Box', name: `Node ${i}`, color: 'zinc' }
+    }
+    const diag = find(validateDiagram(d), 'composition/too-dense')
+    expect(diag?.severity).toBe('warning')
+    expect((diag?.evidence as any).nodeCount).toBe(25)
+    expect(diag?.supportedFixes).toContainEqual({ kind: 'auto-layout' })
+  })
+
+  test('composition/too-dense — chaptered diagrams stay quiet', () => {
+    const d = base()
+    for (let i = 0; i < 20; i++) {
+      const id = `n${i}`
+      d.nodes[id] = { x: 40 + (i % 5) * 300, y: 40 + Math.floor(i / 5) * 160, size: 's' }
+      d.nodeData[id] = { icon: 'Box', name: `Node ${i}`, color: 'zinc' }
+    }
+    d.groups = [{ id: 'g', x: 0, y: 0, width: 2000, height: 1000, type: 'rect', color: 'zinc' }]
+    expect(codes(d)).not.toContain('composition/too-dense')
+  })
+
+  test('composition/label-overflow — long names suggest the fitting size', () => {
+    const d = base()
+    d.nodes.puff = { x: 40, y: 600, size: 'xs' }
+    d.nodeData.puff = { icon: 'Box', name: 'Distributed Coordination', color: 'zinc' }
+    const diag = find(validateDiagram(d), 'composition/label-overflow')
+    expect(diag?.subject).toEqual({ type: 'node', id: 'puff' })
+    expect((diag?.evidence as any).size).toBe('xs')
+    expect(diag?.supportedFixes).toContainEqual({ kind: 'set-size', size: 'l' })
+  })
+
+  test('composition/label-overflow — in-budget names stay quiet', () => {
+    const d = base()
+    d.nodes.small = { x: 40, y: 600, size: 'l' }
+    d.nodeData.small = { icon: 'Box', name: 'Reasonable Name', color: 'zinc' }
+    expect(codes(d)).not.toContain('composition/label-overflow')
+  })
+
   test('endpoints and clear routes are not flagged', () => {
     const d = base()
     // no connector in the fixture passes through an unrelated node
@@ -310,5 +352,127 @@ describe('validateDiagram — geometry layer', () => {
     expect(diag?.subject).toEqual({ type: 'node', id: 'docs' })
     expect((diag?.evidence?.overflow as { right: number }).right).toBe(50)
     expect(diag?.supportedFixes).toContainEqual({ kind: 'auto-layout' })
+  })
+
+  describe('source evidence', () => {
+    const withSource = (source: unknown) => {
+      const d = base()
+      const id = Object.keys(d.nodeData)[0]
+      d.nodeData[id].source = source
+      return { d, id }
+    }
+
+    test('a well-formed source produces no diagnostics', () => {
+      for (const source of [
+        { path: 'src/foo.ts' },
+        { path: 'src/foo.ts', line: 12 },
+        { path: 'src/foo.ts', line: 12, endLine: 20, commit: 'abc123' },
+      ]) {
+        const { d } = withSource(source)
+        expect(validateDiagram(d)).toEqual([])
+      }
+    })
+
+    test.each([
+      ['not an object', 'x'],
+      ['missing path', { line: 3 }],
+      ['empty path', { path: '' }],
+      ['non-string path', { path: 7 }],
+      ['fractional line', { path: 'a.ts', line: 1.5 }],
+      ['zero line', { path: 'a.ts', line: 0 }],
+      ['endLine before line', { path: 'a.ts', line: 20, endLine: 10 }],
+      ['non-string commit', { path: 'a.ts', commit: 42 }],
+    ])('invalid source — %s', (_label, source) => {
+      const { d, id } = withSource(source)
+      const diag = find(validateDiagram(d), 'semantic/invalid-source')
+      expect(diag?.severity).toBe('error')
+      expect(diag?.subject).toEqual({ type: 'node', id })
+      expect(diag?.supportedFixes).toEqual([{ kind: 'remove-source' }])
+    })
+  })
+})
+
+describe('validateDiagram — node kinds', () => {
+  test('kind supplies icon and color', () => {
+    const d = base()
+    const id = Object.keys(d.nodeData)[0]
+    d.nodeData[id] = { name: 'API Gateway', kind: 'gateway' }
+    expect(validateDiagram(d)).toEqual([])
+  })
+
+  test('explicit icon/color still win and validate', () => {
+    const d = base()
+    const id = Object.keys(d.nodeData)[0]
+    d.nodeData[id] = { name: 'Cache', kind: 'database', icon: 'Zap', color: 'amber' }
+    expect(validateDiagram(d)).toEqual([])
+  })
+
+  test('unknown kind is an error with a set-kind fix', () => {
+    const d = base()
+    const id = Object.keys(d.nodeData)[0]
+    d.nodeData[id] = { name: 'Postgres', icon: 'Database', color: 'emerald', kind: 'databse' }
+    const diag = find(validateDiagram(d), 'semantic/unknown-kind')
+    expect(diag?.severity).toBe('error')
+    expect(diag?.subject).toEqual({ type: 'node', id })
+    expect(diag?.supportedFixes).toContainEqual({ kind: 'set-kind', value: 'database' })
+  })
+
+  test('an invalid kind does not waive the icon/color requirement', () => {
+    const d = base()
+    const id = Object.keys(d.nodeData)[0]
+    d.nodeData[id] = { name: 'Postgres', kind: 'databse' }
+    const diags = validateDiagram(d)
+    const shape = find(diags, 'shape/invalid-node-data')
+    expect((shape?.evidence?.missing as string[]).sort()).toEqual(['color', 'icon'])
+    expect(find(diags, 'semantic/unknown-kind')).toBeTruthy()
+  })
+
+  test('missing icon/color suggests a kind inferred from the name', () => {
+    const d = base()
+    const id = Object.keys(d.nodeData)[0]
+    d.nodeData[id] = { name: 'Postgres Primary' }
+    const diag = find(validateDiagram(d), 'shape/invalid-node-data')
+    expect(diag?.supportedFixes).toContainEqual({ kind: 'set-kind', value: 'database' })
+  })
+
+  test('missing icon/color without a guessable kind has no fix', () => {
+    const d = base()
+    const id = Object.keys(d.nodeData)[0]
+    d.nodeData[id] = { name: 'Widget Co.' }
+    const diag = find(validateDiagram(d), 'shape/invalid-node-data')
+    expect(diag?.supportedFixes).toBeUndefined()
+  })
+
+  describe('legend + locale contracts', () => {
+    test.each([
+      [{ legend: 'auto' }],
+      [{ legend: 'all' }],
+      [{ legend: 'hidden' }],
+      [{ _meta: { locale: 'en' } }],
+      [{ _meta: { locale: 'ar-EG' } }],
+      [{ _meta: {} }],
+      [{ _meta: { themeId: 'command', colorMode: 'dark' } }],
+    ])('valid doc-level field %s', (patch) => {
+      expect(validateDiagram({ ...base(), ...patch })).toEqual([])
+    })
+
+    test('unknown legend value proposes the nearest mode', () => {
+      const d = { ...base(), legend: 'aut' }
+      const diag = find(validateDiagram(d), 'semantic/unknown-legend')
+      expect(diag?.severity).toBe('error')
+      expect(diag?.subject).toEqual({ type: 'diagram' })
+      expect(diag?.supportedFixes).toEqual([{ kind: 'set-legend', legend: 'auto' }])
+    })
+
+    test('non-object _meta is an error with a remove fix', () => {
+      const diag = find(validateDiagram({ ...base(), _meta: 'en' }), 'semantic/invalid-meta')
+      expect(diag?.supportedFixes).toEqual([{ kind: 'remove-meta' }])
+    })
+
+    test.each([['en_US'], ['not a locale'], [42]])('invalid locale %s', (locale) => {
+      const diag = find(validateDiagram({ ...base(), _meta: { locale } }), 'semantic/invalid-locale')
+      expect(diag?.severity).toBe('error')
+      expect(diag?.supportedFixes).toEqual([{ kind: 'remove-meta' }])
+    })
   })
 })

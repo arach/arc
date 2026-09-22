@@ -1,4 +1,4 @@
-import type { AnchorPosition, ArrowHead, NodePosition, DiagramLayout, Point } from '../types/editor'
+import type { AnchorPosition, ArrowHead, Connector, NodePosition, DiagramLayout, Point } from '../types/editor'
 import { NODE_SIZES, NodeSizeKey, NodeDimensions } from './constants'
 
 // Distance from box edge to arrow start/end (minimal gap for tight alignment)
@@ -18,18 +18,17 @@ export function getNode(
   const node = nodes[id]
   if (!node) return null
   const size: NodeDimensions = NODE_SIZES[node.size as NodeSizeKey] || NODE_SIZES.m
-  return { ...node, ...size }
+  // Custom width/height on the node override the size preset.
+  return { ...size, ...node }
 }
 
-// Calculate anchor point coordinates for a node
-export function anchor(
-  nodes: Record<string, NodePosition>,
-  nodeId: string,
+// Anchor point on an already-resolved node box. Shared by the editor canvas,
+// the player, and the static export so the same anchor name lands on the same
+// pixel everywhere.
+export function anchorOnNode(
+  n: { x: number; y: number; width: number; height: number },
   position: AnchorPosition
 ): Point {
-  const n = getNode(nodes, nodeId)
-  if (!n) return { x: 0, y: 0 }
-
   switch (position) {
     case 'left':
       return { x: n.x - GAP, y: n.y + n.height / 2 }
@@ -50,6 +49,17 @@ export function anchor(
     default:
       return { x: n.x + n.width / 2, y: n.y + n.height / 2 }
   }
+}
+
+// Calculate anchor point coordinates for a node
+export function anchor(
+  nodes: Record<string, NodePosition>,
+  nodeId: string,
+  position: AnchorPosition
+): Point {
+  const n = getNode(nodes, nodeId)
+  if (!n) return { x: 0, y: 0 }
+  return anchorOnNode(n, position)
 }
 
 const MAIN_ANCHORS: AnchorPosition[] = ['top', 'right', 'bottom', 'left']
@@ -96,6 +106,103 @@ export function hitTestNode(
 // Calculate midpoint between two coordinates
 export function midPoint(p1: Point, p2: Point): Point {
   return { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 }
+}
+
+// Connector geometry — shared by the editor canvas and the static SVG export
+// so both draw the same curve for the same connector.
+
+/** Control-point offset along an anchor's natural direction: side anchors exit
+ *  orthogonal to the node edge, corner anchors cut a 45° diagonal toward their
+ *  corner. */
+export function getConnectorControlOffset(anchor: AnchorPosition, distance: number): Point {
+  const d = Math.abs(distance) * 0.5
+  switch (anchor) {
+    case 'top': return { x: 0, y: -d }
+    case 'bottom': return { x: 0, y: d }
+    case 'left': return { x: -d, y: 0 }
+    case 'right': return { x: d, y: 0 }
+    case 'topLeft': return { x: -d * 0.7, y: -d * 0.7 }
+    case 'topRight': return { x: d * 0.7, y: -d * 0.7 }
+    case 'bottomLeft': return { x: -d * 0.7, y: d * 0.7 }
+    case 'bottomRight': return { x: d * 0.7, y: d * 0.7 }
+    default: return { x: 0, y: 0 }
+  }
+}
+
+/** Bezier control points for a connector (see generatePath semantics below). */
+export function connectorControlPoints(
+  from: Point, to: Point, fromAnchor: AnchorPosition, toAnchor: AnchorPosition,
+  curve?: Connector['curve'], curveDepth = 40,
+): { cp1: Point; cp2: Point } {
+  const dx = to.x - from.x
+  const dy = to.y - from.y
+  const distance = Math.sqrt(dx * dx + dy * dy)
+
+  // Natural bezier - control points extend from anchors in their natural direction,
+  // scaled by curveDepth (50 = 50% of the endpoint distance).
+  if (curve === 'natural' || curve === 'down' || curve === 'up') {
+    const scale = curveDepth / 50
+    const fromOffset = getConnectorControlOffset(fromAnchor, distance)
+    const toOffset = getConnectorControlOffset(toAnchor, distance)
+    return {
+      cp1: { x: from.x + fromOffset.x * scale, y: from.y + fromOffset.y * scale },
+      cp2: { x: to.x + toOffset.x * scale, y: to.y + toOffset.y * scale },
+    }
+  }
+
+  // Horizontal connections (right->left or left->right) pass through midX
+  if ((fromAnchor === 'right' && toAnchor === 'left') || (fromAnchor === 'left' && toAnchor === 'right')) {
+    const midX = (from.x + to.x) / 2
+    return { cp1: { x: midX, y: from.y }, cp2: { x: midX, y: to.y } }
+  }
+
+  // Vertical connections (top->bottom or bottom->top) pass through midY
+  if ((fromAnchor === 'bottom' && toAnchor === 'top') || (fromAnchor === 'top' && toAnchor === 'bottom')) {
+    const midY = (from.y + to.y) / 2
+    return { cp1: { x: from.x, y: midY }, cp2: { x: to.x, y: midY } }
+  }
+
+  // Any other pairing: gentle curve along both anchors' directions
+  const fromOffset = getConnectorControlOffset(fromAnchor, distance)
+  const toOffset = getConnectorControlOffset(toAnchor, distance)
+  return {
+    cp1: { x: from.x + fromOffset.x, y: from.y + fromOffset.y },
+    cp2: { x: to.x + toOffset.x, y: to.y + toOffset.y },
+  }
+}
+
+/** Smooth curved path between two anchor points. */
+export function connectorPath(
+  from: Point, to: Point, fromAnchor: AnchorPosition, toAnchor: AnchorPosition,
+  curve?: Connector['curve'], curveDepth = 40,
+): string {
+  const { cp1, cp2 } = connectorControlPoints(from, to, fromAnchor, toAnchor, curve, curveDepth)
+  return `M ${from.x} ${from.y} C ${cp1.x} ${cp1.y}, ${cp2.x} ${cp2.y}, ${to.x} ${to.y}`
+}
+
+/** Degrees the path arrives at `to` — the bezier's end tangent, for arrowhead
+ *  orientation (the endpoint secant mis-rotates heads on curved paths). */
+export function connectorEndAngle(
+  from: Point, to: Point, fromAnchor: AnchorPosition, toAnchor: AnchorPosition,
+  curve?: Connector['curve'], curveDepth = 40,
+): number {
+  const { cp2 } = connectorControlPoints(from, to, fromAnchor, toAnchor, curve, curveDepth)
+  const vx = to.x - cp2.x
+  const vy = to.y - cp2.y
+  if (vx === 0 && vy === 0) return Math.atan2(to.y - from.y, to.x - from.x) * (180 / Math.PI)
+  return Math.atan2(vy, vx) * (180 / Math.PI)
+}
+
+/** Degrees a bidirectional arrow at `from` points back into its node. */
+export function connectorStartAngle(
+  from: Point, to: Point, fromAnchor: AnchorPosition, toAnchor: AnchorPosition,
+  curve?: Connector['curve'], curveDepth = 40,
+): number {
+  const { cp1 } = connectorControlPoints(from, to, fromAnchor, toAnchor, curve, curveDepth)
+  const vx = from.x - cp1.x
+  const vy = from.y - cp1.y
+  if (vx === 0 && vy === 0) return Math.atan2(from.y - to.y, from.x - to.x) * (180 / Math.PI)
+  return Math.atan2(vy, vx) * (180 / Math.PI)
 }
 
 // Generate SVG path for straight line

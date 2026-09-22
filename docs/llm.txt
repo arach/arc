@@ -8,7 +8,7 @@
 ## Quick Facts
 
 - **What**: Drag-and-drop studio + `<ArcDiagram />` player for typed architecture diagrams
-- **Output**: JSON / TypeScript configs (not images) — diffable, versionable
+- **Output**: JSON / TypeScript configs plus SVG/PNG/ASCII exports — diffable source first
 - **Stack**: React 19, Vite 7, TailwindCSS 4, Hudson shell (editor chrome)
 - **Package manager**: bun (`bun install`, `bun run dev`)
 - **CLI**: `arc` bin — `schema`, `check`, `diff`, `render`, `bench`
@@ -36,6 +36,7 @@ bun run build
 bun run lint
 bun run typecheck
 bun run build:cli    # → bin/arc.mjs
+bun run visual       # golden-render regression (visual/manifest.json); --update rewrites
 ```
 
 ## Canonical Diagram Schema
@@ -54,12 +55,14 @@ interface ArcDiagramData {
   layoutHints?: LayoutHints          // auto-layout inside groups
   nodes: Record<string, { x: number; y: number; size: 'xs' | 's' | 'm' | 'l' }>
   nodeData: Record<string, {
-    icon: string                     // Lucide name as string
+    icon?: string                    // Lucide name as string; omit when kind supplies it
     name: string
     subtitle?: string
     description?: string
-    color: DiagramColor
+    color?: DiagramColor             // omit when kind supplies it; always wins over kind
+    kind?: NodeKind                  // semantic role — supplies default icon + color
     shape?: NodeShape                // per-node silhouette override
+    source?: DiagramSource             // {path, line?, endLine?, commit?} evidence link
   }>
   connectors: Array<{
     from: string; to: string
@@ -75,8 +78,28 @@ interface ArcDiagramData {
   }>
   groups?: GroupShape[]
   focusTargets?: Record<string, FocusTarget>
+  legend?: 'auto' | 'all' | 'hidden'   // key policy; viewer `legend` prop overrides
+  _meta?: FileMeta                    // viewer/editor state saved with the file; locale is BCP-47
+  views?: DiagramView[]               // ordered guided chapters (docs/views.md)
 }
 ```
+
+**Node kinds** (`src/utils/nodeKinds.ts` NODE_KINDS / NODE_KIND_DEFAULTS) — set
+`kind` instead of picking `icon`+`color` yourself; explicit `icon`/`color`
+still override the kind default:
+- `frontend`→violet/Monitor · `backend`→blue/Server · `service`→blue/Box
+- `database`→emerald/Database · `cache`→amber/Zap · `queue`→amber/Layers
+- `storage`→emerald/HardDrive · `gateway`→sky/Globe · `security`→rose/Shield
+- `user`→sky/User · `external`→zinc/Cloud · `observability`→orange/Activity
+
+Validation: `validateDiagram` requires `icon`+`color` only when `kind` is
+absent or unknown (`semantic/unknown-kind`, fix `{kind:'set-kind',value}`).
+
+**Guided views**: `views[]` = `{id, title, node?, mode?, nodes?, connectors?, caption?, steps?}`.
+`node` anchors on a node (inherits its focusTarget story unless overridden);
+no `node` highlights exactly the declared set. Render with `showViews`; deep-link
+`/player/<session>?view=<id>`. `resolveViewFocus(view, connectors, focusTargets)`
+is the exported resolver.
 
 **Node sizes** (`src/utils/constants.ts` NODE_SIZES):
 - `xs` 80×36 · `s` 110×48 · `m` 160×75 · `l` 220×90
@@ -84,9 +107,11 @@ interface ArcDiagramData {
 **Do not use** legacy Talkie sizes (`large`, `normal`, `small`) — see HANDOFF.md.
 
 **`_meta`** (saved with files, round-trips through sessions):
-`themeId`, `colorMode`, `viewMode`, `isoStyle`, `viewport`
+`themeId`, `colorMode`, `viewMode`, `isoStyle`, `viewport`, `sourceUrl`,
+`locale` (BCP-47 — viewer `lang`/`dir` + Intl formatting; invalid tags fail `arc check` as `semantic/invalid-locale`)
 
 Validate external JSON with `validateDiagram()` in `src/utils/diagramDiagnostics.ts`, or `arc check diagram.json --json` from the CLI. `validateDiagramShape()` in `src/utils/diagramValidation.ts` remains the low-level shape gate.
+`validateDiagram()` also emits `composition/*` advisories for the authoring contract: `composition/too-dense` (>16 nodes without groups/views chaptering) and `composition/label-overflow` (name longer than the node's size budget). The full contract — budgets, one spine, spacing math, autoLayout thresholds, label and routing rules — lives in `skills/arc-diagrams/SKILL.md` under "Layout judgment".
 
 For CI artifacts, `arc render diagram.json --out diagram.svg --json` validates,
 renders to a same-directory temp file, atomically replaces the output, and emits
@@ -110,8 +135,8 @@ const diagram: ArcDiagramData = {
     backend: { x: 250, y: 100, size: 'm' },
   },
   nodeData: {
-    frontend: { icon: 'Monitor', name: 'Frontend', color: 'violet' },
-    backend: { icon: 'Server', name: 'Backend', color: 'emerald' },
+    frontend: { name: 'Frontend', kind: 'frontend' },
+    backend: { name: 'Backend', kind: 'backend' },
   },
   connectors: [
     { from: 'frontend', to: 'backend', fromAnchor: 'right', toAnchor: 'left', style: 'api' },
@@ -183,8 +208,9 @@ Reducer actions: see `docs/agent/editor-actions.agent.md`
 
 ## Themes
 
-Diagram themes (8): `default`, `warm`, `cool`, `mono`, `engineering`, `workbench`, `tactical`, `command`
-Chrome skins (shell only): `console`, `graphite`, `amber`, `viridian`, `paper`
+Diagram themes (11): `default`, `warm`, `cool`, `mono`, `engineering`, `workbench`, `tactical`, `command`, `spacex`, `claude`, `codex`
+Chrome skins (shell only): `console`, `graphite`, `amber`, `viridian`, `paper`, `spacex`, `claude`, `codex`
+Brand pairings: `spacex` = mission plate/telemetry cyan, `claude` = parchment/clay/serif, `codex` = graphite console/mint signal
 
 ## Visual Verification
 
@@ -210,9 +236,11 @@ curl "http://localhost:5188/capture/my-session" > out.png
 
 ## MCP
 
-`arc` bin on `@arach/arc` (`bun run build:cli` for publish) exposes `schema`, `check`, and `diff`.
-`arc-mcp` bin (`bun run mcp` in dev, `bun run build:mcp` for publish) exposes validate_diagram, diff_diagram, auto_layout, render_ascii, diagram_to_typescript, editor_handoff.
-See docs/agent/mcp.agent.md for coverage gaps (SVG/PNG/Mermaid stay elsewhere).
+`arc` bin on `@arach/arc` (`bun run build:cli` for publish) exposes `schema`, `check`, `diff`, `render`, and `bench`.
+`arc-mcp` bin (`bun run mcp` in dev, `bun run build:mcp` for publish).
+Tools: validate_diagram, diff_diagram, auto_layout, render_ascii, render_svg, render_png, render_html, diagram_to_typescript, editor_handoff.
+`render_svg`/`render_png`/`render_html` accept `theme` and `mode`; omitted modes use the theme default. `render_png` uses an installed Chrome/Chromium binary (`ARC_CHROME` overrides lookup); `render_html` emits component/iframe/html text.
+See docs/agent/mcp.agent.md for remaining coverage gaps (Mermaid stays elsewhere).
 
 ## Critical Rules
 

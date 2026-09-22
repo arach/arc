@@ -83,7 +83,7 @@ Uses `useReducer` + Context for diagram state:
 
 ### Theme System
 
-Eight themes (`default`, `warm`, `cool`, `mono`, plus the branded `engineering`, `workbench`, `tactical`, `command`) defined in `src/utils/themes.ts`. Each has light/dark palettes that remap logical colors (violet, emerald, etc.) to different Tailwind classes and hex stroke values, and an optional `brand` spec (fonts, node shape, grid, frame, title block).
+Eleven themes (`default`, `warm`, `cool`, `mono`, plus the branded `engineering`, `workbench`, `tactical`, `command`, `spacex`, `claude`, `codex`) defined in `src/utils/themes.ts`. Each has light/dark palettes that remap logical colors (violet, emerald, etc.) to different Tailwind classes and hex stroke values, and an optional `brand` spec (fonts, node shape, grid, frame, title block).
 
 - `useResolvedTheme()` hook returns the current theme palette
 - `EditableNode` and `ConnectorLayer` resolve colors through the theme palette
@@ -115,7 +115,8 @@ drawn in `src/utils/nodeShape.ts` and applied by `Node` in `components/ArcDiagra
 
 Current assignment: engineering `square` + `ticks`, workbench `rule`,
 tactical `notch` + `stripe`, command `chamfer` + `dot`, mono `square` + `rule`,
-warm `bar-left`, cool `dot`, default plain.
+warm `bar-left`, cool `dot`, spacex `chamfer` + `ticks`, claude `bar-left`,
+codex `rule`, default plain.
 
 **Per-node override.** Shape is normally the theme's business — it is part of
 what makes `engineering` look unlike `command` — but one box sometimes needs to
@@ -143,6 +144,23 @@ Three things to know before adding a cut shape:
 - Cut shells take the nominal `NODE_SIZES` height, since the SVG outline needs
   real dimensions — which also aligns the drawn box with the geometry connector
   anchors already assume.
+
+### Semantic Node Kinds
+
+`nodeData` accepts an optional `kind` (`frontend`, `backend`, `service`,
+`database`, `cache`, `queue`, `storage`, `gateway`, `security`, `user`,
+`external`, `observability` — `src/utils/nodeKinds.ts`). A kind supplies the
+node's default `icon` and `color` from `NODE_KIND_DEFAULTS`, so generated
+diagrams describe *what a box is* instead of picking an icon and palette entry
+by hand. Explicit `icon`/`color` remain the override — the resolution order is
+`resolveNodeColor`/`resolveNodeIcon`: authored field → kind default →
+`zinc`/`Box`.
+
+Every consumption site resolves through those helpers — never read
+`data.color`/`data.icon` raw. `validateDiagram` only requires `icon`+`color`
+when `kind` is absent or unknown, and reports `semantic/unknown-kind` with a
+`set-kind` fix; a misspelled kind does not waive the `icon`/`color`
+requirement.
 
 ### Chrome Scale
 
@@ -243,6 +261,9 @@ independent of the diagram theme, which colors the drawing.
 | `amber` | Warm terminal |
 | `viridian` | Phosphor green |
 | `paper` | Drafting table, warm neutral |
+| `spacex` | Mission console, telemetry cyan |
+| `claude` | Warm parchment and clay |
+| `codex` | Graphite console, mint signal |
 
 Each skin lives in `src/chrome-themes.css` as a set of token overrides keyed by
 `data-arc-chrome` on `<html>`; `src/utils/chromeThemes.ts` is the registry and
@@ -629,6 +650,28 @@ A dense diagram in a short frame can want more rows than there is room for, so
 the key is capped at `calc(100% - bottom - 8px)` and scrolls. Losing the last
 rows to the frame's `overflow: hidden` reads as a rendering fault; a scrollbar
 reads as "there is more".
+
+### Guided views
+
+`data.views` is an ordered list of `DiagramView` chapters — `{ id, title, node?,
+mode?, nodes?, connectors?, caption?, steps? }` — that turns a diagram into a
+walkthrough. `showViews` draws a rail at the bottom center (the free lane: zoom
+is bottom-right, minimap/legend/label bottom-left) with prev/next, `i / N`, and
+an exit.
+
+- Resolution goes through `resolveViewFocus`, which reuses the focus-story
+  machinery: an anchor `node` inherits that node's `focusTargets` story, and
+  declaring `nodes`/`connectors`/`mode` on the view overrides it. A view with
+  no `node` highlights exactly its declared set.
+- While a view is active the camera frames the resolved highlight set (2D only —
+  iso owns its own pan), and the caption/steps render through `FocusStory`.
+- Clicking a node exits the chapter and locks that node's own focus — the reader
+  always keeps the wheel.
+- Deep links: `/player/<session>?view=<id>`; `view` + `onViewChange` make the
+  chapter id controllable so hosts can keep it in their URL. `editor_handoff`
+  (MCP) takes a `view` arg and returns the matching `playerUrl`.
+- Views are document data: they ride `toExportFormat`, hash handoffs,
+  `diagram/replace`, `arc check`, and the generated schema like everything else.
 
 ## Session Persistence
 

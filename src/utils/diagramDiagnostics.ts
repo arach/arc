@@ -12,16 +12,20 @@
 // document is still inspected.
 
 import { connectorKey } from '../types/diagram'
+import { isValidLocale } from './locale'
 import type {
   AnchorPosition,
+  Connector,
   DiagramColor,
+  NodeKind,
   NodePosition,
   NodeShape,
   NodeSize,
 } from '../types/diagram'
 import { NODE_SIZES } from './constants'
 import { NODE_SHAPES } from './nodeShape'
-import { anchor } from './diagramHelpers'
+import { NODE_KINDS, isNodeKind, suggestKind } from './nodeKinds'
+import { anchor, connectorControlPoints } from './diagramHelpers'
 import { validateDiagramShape } from './diagramValidation'
 
 export type DiagnosticSeverity = 'error' | 'warning'
@@ -46,10 +50,14 @@ export type Fix =
   | { kind: 'set-style'; style: string }
   | { kind: 'remove-style' }
   | { kind: 'set-color'; color: DiagramColor }
+  | { kind: 'set-kind'; value: NodeKind }
   | { kind: 'set-size'; size: NodeSize }
   | { kind: 'set-shape'; shape: NodeShape }
   | { kind: 'set-anchor'; field: 'fromAnchor' | 'toAnchor'; anchor: AnchorPosition }
   | { kind: 'remove-ref' }
+  | { kind: 'remove-source' }
+  | { kind: 'set-legend'; legend: 'auto' | 'all' | 'hidden' }
+  | { kind: 'remove-meta' }
 
 export interface Diagnostic {
   code: string
@@ -169,55 +177,18 @@ interface Pt {
   y: number
 }
 
-// Mirrors ConnectorLayer.getControlOffset / generatePath so the checked path is
-// the path actually drawn — a cubic bezier, sampled into a polyline.
-function controlOffset(anchorPos: string, distance: number): Pt {
-  const d = Math.abs(distance) * 0.5
-  switch (anchorPos) {
-    case 'top': return { x: 0, y: -d }
-    case 'bottom': return { x: 0, y: d }
-    case 'left': return { x: -d, y: 0 }
-    case 'right': return { x: d, y: 0 }
-    case 'bottomRight': return { x: d * 0.7, y: d * 0.7 }
-    case 'bottomLeft': return { x: -d * 0.7, y: d * 0.7 }
-    default: return { x: 0, y: 0 }
-  }
-}
-
+// Uses the shared connector geometry so the checked path is the path actually
+// drawn — a cubic bezier, sampled into a polyline.
 function connectorCurve(c: Rec, nodes: Record<string, NodePosition>): [Pt, Pt, Pt, Pt] {
   const from = anchor(nodes, c.from as string, c.fromAnchor as AnchorPosition)
   const to = anchor(nodes, c.to as string, c.toAnchor as AnchorPosition)
-  const distance = Math.hypot(to.x - from.x, to.y - from.y)
-
-  if (c.curve === 'natural' || c.curve === 'down' || c.curve === 'up') {
-    const scale = (typeof c.curveDepth === 'number' ? c.curveDepth : 40) / 50
-    const fo = controlOffset(c.fromAnchor as string, distance)
-    const to_ = controlOffset(c.toAnchor as string, distance)
-    return [
-      from,
-      { x: from.x + fo.x * scale, y: from.y + fo.y * scale },
-      { x: to.x + to_.x * scale, y: to.y + to_.y * scale },
-      to,
-    ]
-  }
-
-  const pair = `${c.fromAnchor}->${c.toAnchor}`
-  if (pair === 'right->left' || pair === 'left->right') {
-    const midX = (from.x + to.x) / 2
-    return [from, { x: midX, y: from.y }, { x: midX, y: to.y }, to]
-  }
-  if (pair === 'bottom->top' || pair === 'top->bottom') {
-    const midY = (from.y + to.y) / 2
-    return [from, { x: from.x, y: midY }, { x: to.x, y: midY }, to]
-  }
-  const fo = controlOffset(c.fromAnchor as string, distance)
-  const to_ = controlOffset(c.toAnchor as string, distance)
-  return [
-    from,
-    { x: from.x + fo.x, y: from.y + fo.y },
-    { x: to.x + to_.x, y: to.y + to_.y },
-    to,
-  ]
+  const { cp1, cp2 } = connectorControlPoints(
+    from, to,
+    c.fromAnchor as AnchorPosition, c.toAnchor as AnchorPosition,
+    c.curve as Connector['curve'] | undefined,
+    typeof c.curveDepth === 'number' ? c.curveDepth : 40,
+  )
+  return [from, cp1, cp2, to]
 }
 
 const SAMPLES = 24
@@ -326,9 +297,21 @@ export function validateDiagram(value: unknown): Diagnostic[] {
       push({ code: 'shape/invalid-node-data', severity: 'error', subject: { type: 'node', id }, message: `nodeData["${id}"] is not an object`, evidence: { value: raw } })
       continue
     }
-    const missing = missingFields(raw, [['icon', 'string'], ['name', 'string'], ['color', 'string']])
+    // `kind` supplies default icon and color, so a valid kind waives those
+    // requirements; a missing or misspelled kind gets no such waiver.
+    const missing = missingFields(raw, isNodeKind(raw.kind)
+      ? [['name', 'string']]
+      : [['icon', 'string'], ['name', 'string'], ['color', 'string']])
     if (missing.length) {
-      push({ code: 'shape/invalid-node-data', severity: 'error', subject: { type: 'node', id }, message: `nodeData["${id}"] is missing ${missing.map(f => `\`${f}\``).join(', ')}`, evidence: { missing } })
+      const suggestion = suggestKind(raw.name)
+      push({
+        code: 'shape/invalid-node-data',
+        severity: 'error',
+        subject: { type: 'node', id },
+        message: `nodeData["${id}"] is missing ${missing.map(f => `\`${f}\``).join(', ')}`,
+        evidence: { missing },
+        supportedFixes: suggestion ? [{ kind: 'set-kind', value: suggestion }] : undefined,
+      })
     }
   }
 
@@ -398,6 +381,42 @@ export function validateDiagram(value: unknown): Diagnostic[] {
 
   // -- semantic: references and enums -------------------------------------
 
+  const LEGEND_MODES = ['auto', 'all', 'hidden'] as const
+
+  if (d.legend !== undefined && !LEGEND_MODES.includes(d.legend as (typeof LEGEND_MODES)[number])) {
+    const nearest = typeof d.legend === 'string' ? closest(d.legend, [...LEGEND_MODES]) : undefined
+    push({
+      code: 'semantic/unknown-legend',
+      severity: 'error',
+      subject: { type: 'diagram' },
+      message: `Unknown \`legend\` "${String(d.legend)}" — expected ${LEGEND_MODES.map(m => `'${m}'`).join(', ')}`,
+      evidence: { field: 'legend', value: d.legend, known: LEGEND_MODES },
+      supportedFixes: nearest ? [{ kind: 'set-legend', legend: nearest }] : undefined,
+    })
+  }
+
+  if (d._meta !== undefined) {
+    if (!isObject(d._meta)) {
+      push({
+        code: 'semantic/invalid-meta',
+        severity: 'error',
+        subject: { type: 'diagram' },
+        message: '`_meta` must be an object',
+        evidence: { value: d._meta },
+        supportedFixes: [{ kind: 'remove-meta' }],
+      })
+    } else if (d._meta.locale !== undefined && (typeof d._meta.locale !== 'string' || !isValidLocale(d._meta.locale))) {
+      push({
+        code: 'semantic/invalid-locale',
+        severity: 'error',
+        subject: { type: 'diagram' },
+        message: `\`_meta.locale\` "${String(d._meta.locale)}" is not a valid BCP-47 tag`,
+        evidence: { field: '_meta.locale', value: d._meta.locale },
+        supportedFixes: [{ kind: 'remove-meta' }],
+      })
+    }
+  }
+
   const nodeIds = Object.keys(nodes)
 
   for (const [id, raw] of Object.entries(nodeData)) {
@@ -425,6 +444,25 @@ export function validateDiagram(value: unknown): Diagnostic[] {
           : undefined,
       })
     }
+    if (raw.kind != null && !isNodeKind(raw.kind)) {
+      const fixes: Fix[] = []
+      if (typeof raw.kind === 'string') {
+        const near = closest(raw.kind, NODE_KINDS)
+        if (near) fixes.push({ kind: 'set-kind', value: near })
+      }
+      const suggestion = suggestKind(raw.name)
+      if (suggestion && !fixes.some(f => f.kind === 'set-kind' && f.value === suggestion)) {
+        fixes.push({ kind: 'set-kind', value: suggestion })
+      }
+      push({
+        code: 'semantic/unknown-kind',
+        severity: 'error',
+        subject: { type: 'node', id },
+        message: `Node "${id}" uses unknown kind "${String(raw.kind)}"`,
+        evidence: { field: 'kind', value: raw.kind, known: NODE_KINDS },
+        supportedFixes: fixes.length ? fixes : undefined,
+      })
+    }
     if (raw.shape != null && !NODE_SHAPE_KEYS.includes(raw.shape as NodeShape)) {
       push({
         code: 'semantic/unknown-node-shape',
@@ -436,6 +474,39 @@ export function validateDiagram(value: unknown): Diagnostic[] {
           ? [{ kind: 'set-shape', shape: closest(raw.shape, NODE_SHAPE_KEYS)! }]
           : undefined,
       })
+    }
+
+    if (raw.source != null) {
+      const s = raw.source
+      const problems: string[] = []
+      if (!isObject(s)) {
+        problems.push('it must be an object')
+      } else {
+        if (typeof s.path !== 'string' || s.path.length === 0) {
+          problems.push('`path` must be a non-empty string')
+        }
+        for (const field of ['line', 'endLine'] as const) {
+          if (s[field] !== undefined && (!Number.isInteger(s[field]) || (s[field] as number) < 1)) {
+            problems.push(`\`${field}\` must be a positive integer`)
+          }
+        }
+        if (Number.isInteger(s.line) && Number.isInteger(s.endLine) && (s.endLine as number) < (s.line as number)) {
+          problems.push('`endLine` is before `line`')
+        }
+        if (s.commit !== undefined && typeof s.commit !== 'string') {
+          problems.push('`commit` must be a string')
+        }
+      }
+      if (problems.length) {
+        push({
+          code: 'semantic/invalid-source',
+          severity: 'error',
+          subject: { type: 'node', id },
+          message: `Node "${id}" has invalid \`source\` — ${problems.join('; ')}`,
+          evidence: { source: raw.source },
+          supportedFixes: [{ kind: 'remove-source' }],
+        })
+      }
     }
   }
 
@@ -620,6 +691,83 @@ export function validateDiagram(value: unknown): Diagnostic[] {
     }
   }
 
+  // views: ordered guided tour entries; same reference rules as focusTargets.
+  const views = d.views
+  if (views != null && !Array.isArray(views)) {
+    push({ code: 'shape/invalid-views', severity: 'error', subject: { type: 'diagram' }, message: '`views` must be an array' })
+  } else if (Array.isArray(views)) {
+    const seenViewIds = new Set<string>()
+    views.forEach((raw, index) => {
+      if (!isObject(raw)) {
+        push({ code: 'shape/invalid-view', severity: 'error', subject: { type: 'diagram' }, message: `views[${index}] must be an object`, evidence: { index } })
+        return
+      }
+      const viewId = typeof raw.id === 'string' ? raw.id : String(raw.id ?? index)
+      if (typeof raw.id !== 'string' || raw.id.length === 0 || typeof raw.title !== 'string' || raw.title.length === 0) {
+        push({
+          code: 'shape/invalid-view',
+          severity: 'error',
+          subject: { type: 'diagram' },
+          message: `views[${index}] requires non-empty string "id" and "title"`,
+          evidence: { index, id: raw.id, title: raw.title },
+        })
+      } else if (seenViewIds.has(raw.id)) {
+        push({
+          code: 'semantic/duplicate-view-id',
+          severity: 'warning',
+          subject: { type: 'diagram' },
+          message: `views[${index}] duplicates view id "${raw.id}" — deep links and the rail select the first`,
+          evidence: { index, id: raw.id },
+        })
+      } else {
+        seenViewIds.add(raw.id)
+      }
+      if (typeof raw.node === 'string' && !Object.prototype.hasOwnProperty.call(nodes, raw.node)) {
+        push({
+          code: 'semantic/view-missing-node',
+          severity: 'warning',
+          subject: { type: 'node', id: raw.node },
+          message: `views["${viewId}"].node references a node that does not exist`,
+          evidence: { view: viewId, via: 'node', value: raw.node },
+          supportedFixes: [{ kind: 'remove-ref' }],
+        })
+      }
+      if (Array.isArray(raw.nodes)) {
+        for (const ref of raw.nodes) {
+          if (typeof ref === 'string' && !Object.prototype.hasOwnProperty.call(nodes, ref)) {
+            push({
+              code: 'semantic/view-missing-node',
+              severity: 'warning',
+              subject: { type: 'node', id: ref },
+              message: `views["${viewId}"].nodes references missing node "${ref}"`,
+              evidence: { view: viewId, via: 'nodes', value: ref },
+              supportedFixes: [{ kind: 'remove-ref' }],
+            })
+          }
+        }
+      }
+      if (Array.isArray(raw.connectors)) {
+        for (const ref of raw.connectors) {
+          if (!isObject(ref)) continue
+          const matched = validConnectors.some(({ c }) =>
+            typeof ref.id === 'string'
+              ? c.id === ref.id
+              : c.from === ref.from && c.to === ref.to)
+          if (!matched) {
+            push({
+              code: 'semantic/view-missing-connector',
+              severity: 'warning',
+              subject: { type: 'connector', id: typeof ref.id === 'string' ? ref.id : `${String(ref.from)}->${String(ref.to)}` },
+              message: `views["${viewId}"].connectors references a connector that does not exist`,
+              evidence: { view: viewId, ref },
+              supportedFixes: [{ kind: 'remove-ref' }],
+            })
+          }
+        }
+      }
+    })
+  }
+
   // layoutHints: group membership lives on the node hint — a group "owns" the
   // nodes that name it, per docs/group-layout.md.
   const layoutHints = d.layoutHints
@@ -749,6 +897,46 @@ export function validateDiagram(value: unknown): Diagnostic[] {
         }
       }
     }
+  }
+
+  // Composition — advisory readings of the authoring contract (see
+  // skills/arc-diagrams/SKILL.md "Layout judgment"): budgets, not faults.
+  const nodeCount = Object.keys(nodes).length
+  const groupHints = isObject(d.layoutHints) ? (d.layoutHints as Rec).groups : undefined
+  const chaptered =
+    (Array.isArray(d.views) && d.views.length > 0) ||
+    (Array.isArray(d.groups) && d.groups.length > 0) ||
+    (isObject(groupHints) && Object.keys(groupHints).length > 0)
+  if (nodeCount > 16 && !chaptered) {
+    push({
+      code: 'composition/too-dense',
+      severity: 'warning',
+      subject: { type: 'diagram' },
+      message: `${nodeCount} nodes in one flat view — chapter it with views[] or group frames`,
+      evidence: { nodeCount, budget: 16 },
+      supportedFixes: [{ kind: 'auto-layout' }],
+    })
+  }
+
+  // Label budget: the name row is the node's header — icon + padding leave
+  // roughly (width − 48)px of text; ~6.5px/char at the 10–11px name size.
+  const LABEL_BUDGET: Record<string, number> = { xs: 5, s: 9, m: 17, l: 26 }
+  for (const [id, raw] of Object.entries(nodeData)) {
+    if (!isObject(raw) || typeof raw.name !== 'string') continue
+    const name = raw.name
+    const pos = nodes[id]
+    const size = isObject(pos) && typeof pos.size === 'string' ? pos.size : 'm'
+    const budget = LABEL_BUDGET[size] ?? LABEL_BUDGET.m
+    if (name.length <= budget) continue
+    const fits = (NODE_SIZE_KEYS as string[]).find(s => (LABEL_BUDGET[s] ?? 0) >= name.length)
+    push({
+      code: 'composition/label-overflow',
+      severity: 'warning',
+      subject: { type: 'node', id },
+      message: `Node "${id}" name "${name}" (${name.length} chars) overflows its ${size} box (~${budget} char budget)`,
+      evidence: { name, length: name.length, size, budget },
+      supportedFixes: fits ? [{ kind: 'set-size', size: fits as NodeSize }] : undefined,
+    })
   }
 
   return diagnostics

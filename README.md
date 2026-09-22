@@ -250,6 +250,16 @@ see `benchmarks/README.md`; each case is a plain-language `prompt.md` plus an
 `expect.json` of required nodes/edges, and candidates are scored on validity,
 semantic coverage, direction, size, and renderability.
 
+### Visual regression
+
+```bash
+bun run visual              # compare renders to visual/golden/ (exit 1 on diff)
+bun run visual:update       # rewrite goldens after an intentional render change
+bun run visual -- --png     # also compare Chrome-rasterized PNGs (non-strict)
+```
+
+Cases and variants live in `visual/manifest.json` — see `visual/README.md`.
+
 ## Requirements
 
 The `ArcDiagram` player component requires:

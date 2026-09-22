@@ -26,7 +26,7 @@ bun install && bun run dev    # → http://localhost:5188/editor
 {
   "layout": { "width": 700, "height": 300 },
   "nodes": { "api": { "x": 100, "y": 100, "size": "m" } },
-  "nodeData": { "api": { "icon": "Server", "name": "API", "color": "emerald" } },
+  "nodeData": { "api": { "name": "API", "kind": "backend" } },
   "connectors": [{ "from": "a", "to": "b", "fromAnchor": "right", "toAnchor": "left", "style": "http" }],
   "connectorStyles": { "http": { "color": "amber", "strokeWidth": 2, "label": "HTTP" } }
 }
@@ -43,4 +43,5 @@ bun install && bun run dev    # → http://localhost:5188/editor
 
 `arc` on `@arach/arc` — `arc check`, `arc diff`, `arc render`, `arc bench`, `arc schema` (`bun run build:cli` for the published bin).
 `arc-mcp` on `@arach/arc` — `bun run mcp` locally, `bun run build:mcp` for the published bin.
+Tools include validate/diff/layout plus ASCII, SVG, component/iframe/HTML, and optional Chrome-backed PNG rendering.
 See docs/agent/mcp.agent.md.

@@ -1,4 +1,5 @@
 import { useCallback, useRef } from 'react'
+import { resolveNodeColor } from '../../utils/nodeKinds'
 
 // Colors for mini map node representation
 const nodeColors = {
@@ -125,7 +126,7 @@ export default function MiniMap({
         {Object.entries(diagram.nodes as Record<string, any>).map(([nodeId, node]) => {
           const data = diagram.nodeData[nodeId]
           if (!data) return null
-          const color = nodeColors[data.color] || nodeColors.zinc
+          const color = nodeColors[resolveNodeColor(data)] || nodeColors.zinc
           const size = node.size || 'm'
           const w = size === 'l' ? 210 : size === 's' ? 95 : size === 'xs' ? 80 : 145
           const h = size === 'l' ? 85 : size === 's' ? 42 : size === 'xs' ? 36 : 68

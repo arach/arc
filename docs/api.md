@@ -76,6 +76,7 @@ interface NodeData {
   subtitle?: string   // Optional subtitle
   description?: string // Optional description
   color: DiagramColor // Color theme for this node
+  source?: DiagramSource // Code this node describes: { path, line?, endLine?, commit? }
 }
 
 type DiagramColor = 'violet' | 'emerald' | 'blue' | 'amber' | 'sky' | 'zinc' | 'rose' | 'orange'
@@ -107,7 +108,7 @@ interface ConnectorStyle {
 
 ## Themes
 
-Arc includes 4 built-in themes:
+Arc includes 11 built-in themes:
 
 | Theme ID | Name | Description |
 |----------|------|-------------|
@@ -115,6 +116,13 @@ Arc includes 4 built-in themes:
 | warm | Warm | Editorial, earth tones |
 | cool | Cool | Technical, blue-focused |
 | mono | Mono | Grayscale for print |
+| engineering | Engineering | Structured blueprint plate |
+| workbench | Workbench | Quiet hardware/drafting bench |
+| tactical | Tactical | Hard-edged field diagram |
+| command | Command | Glass mission console |
+| spacex | SpaceX | Mission plate, telemetry cyan |
+| claude | Claude | Warm parchment, clay accents |
+| codex | Codex | Graphite console, mint signal |
 
 ### Theme API
 
@@ -142,6 +150,19 @@ Arc uses Lucide React icons. Common architecture icons:
 - **Data**: FileText, Folder, Package, Archive, Layers
 - **Connectivity**: Wifi, Radio, Plug, Cable, Router
 - **Actions**: RefreshCw, Download, Upload, Send, Zap
+
+## Source Links
+
+`nodeData[<id>].source` lets a node cite the code it describes:
+
+```json
+{ "source": { "path": "src/auth/session.ts", "line": 12, "endLine": 40, "commit": "a1b2c3" } }
+```
+
+- `sourceLabel(source)` → `src/auth/session.ts:12-40` (shown on node hover)
+- `sourceUrl(source, { repo: 'owner/name' })` → GitHub blob URL pinned at `ref` ?? `source.commit` ?? 'HEAD'; without `repo` returns `path#L<line>` for local tooling
+- Nodes carry `data-arc-source="<path>"` so embedders can attach click-throughs
+- `validateDiagram` flags malformed refs as `semantic/invalid-source` (fixable via `remove-source`)
 
 ## Export Formats
 

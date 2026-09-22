@@ -17,12 +17,14 @@ import {
   InspKv,
   InspPair,
   InspPairButton,
+  InspSelect,
 } from '../editor/inspector-ui'
 import IconPicker from './IconPicker'
 import ColorPicker from './ColorPicker'
 import ShapePicker from './ShapePicker'
 import { resolveNodeRadius } from '../../utils/themes'
 import { resolveNodeShape } from '../../utils/nodeShape'
+import { NODE_KINDS, resolveNodeColor, resolveNodeIcon, type NodeKind } from '../../utils/nodeKinds'
 import { getIsoStyle, materialFor, MATERIAL_LABELS } from '../../utils/isoStyles'
 import { DEFAULT_ISO_HEIGHT, DEFAULT_ISO_DEPTH } from '../../utils/isoBlueprint'
 const ISO_NUDGE = 16
@@ -108,7 +110,7 @@ export default function NodeProperties({ nodeId }: { nodeId: string }) {
   const isoDepth = node.isoDepth ?? DEFAULT_ISO_DEPTH
 
   const hatchName = isIsometric && isoStyle.technical
-    ? MATERIAL_LABELS[materialFor(data.color)]
+    ? MATERIAL_LABELS[materialFor(resolveNodeColor(data))]
     : null
 
   const nudgeFloor = (dir: -1 | 1) => {
@@ -141,6 +143,44 @@ export default function NodeProperties({ nodeId }: { nodeId: string }) {
       <KvInput label="Name" value={data.name} onChange={(v) => handleUpdate('name', v)} placeholder="Node name" />
       <KvInput label="Sub" value={data.subtitle ?? ''} onChange={(v) => handleUpdate('subtitle', v)} placeholder="e.g. Swift" />
       <KvInput label="Desc" value={data.description ?? ''} onChange={(v) => handleUpdate('description', v)} placeholder="Brief description" />
+
+      <InspField>
+        <InspLabel>Source</InspLabel>
+        <InspGrid2>
+          <InspField>
+            <InspLabel>Path</InspLabel>
+            <InspInput
+              value={data.source?.path ?? ''}
+              onChange={(e) => {
+                const path = e.target.value
+                if (!path) handleUpdate('source', undefined)
+                else handleUpdate('source', { ...data.source, path })
+              }}
+              placeholder="src/foo.ts"
+            />
+          </InspField>
+          <InspField>
+            <InspLabel>Line</InspLabel>
+            <InspInput
+              type="number"
+              min={1}
+              value={data.source?.line ?? ''}
+              onChange={(e) => {
+                if (!data.source?.path) return
+                const next = { ...data.source }
+                const line = parseInt(e.target.value, 10)
+                if (Number.isInteger(line) && line > 0) next.line = line
+                else delete next.line
+                handleUpdate('source', next)
+              }}
+              placeholder="12"
+            />
+          </InspField>
+        </InspGrid2>
+        {data.source?.path && (
+          <p className="arc-insp-caption">Shown on node hover; embedders can link it via <code>sourceUrl</code>.</p>
+        )}
+      </InspField>
 
       <InspField>
         <InspLabel>Size</InspLabel>
@@ -199,8 +239,18 @@ export default function NodeProperties({ nodeId }: { nodeId: string }) {
         </InspField>
       )}
 
+      <InspKv label="Kind">
+        <InspSelect
+          value={data.kind ?? ''}
+          onChange={(e) => handleUpdate('kind', (e.target.value || undefined) as NodeKind | undefined)}
+        >
+          <option value="">—</option>
+          {NODE_KINDS.map((k) => <option key={k} value={k}>{k}</option>)}
+        </InspSelect>
+      </InspKv>
+
       <InspKv label="Color">
-        <ColorPicker value={data.color} onChange={(v) => handleUpdate('color', v)} />
+        <ColorPicker value={resolveNodeColor(data)} onChange={(v) => handleUpdate('color', v)} />
       </InspKv>
       {hatchName && (
         <p className="arc-insp-caption">Plate hatch: {hatchName}</p>
@@ -208,7 +258,7 @@ export default function NodeProperties({ nodeId }: { nodeId: string }) {
 
       <InspField>
         <InspLabel>Icon</InspLabel>
-        <IconPicker value={data.icon} onChange={(v) => handleUpdate('icon', v)} />
+        <IconPicker value={resolveNodeIcon(data)} onChange={(v) => handleUpdate('icon', v)} />
       </InspField>
 
       {isIsometric && (

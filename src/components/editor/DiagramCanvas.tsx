@@ -22,6 +22,7 @@ import IsometricConnectorLayer from './IsometricConnectorLayer'
 import TechnicalBackdrop from '../technical/TechnicalBackdrop'
 import TechnicalPlate from '../technical/TechnicalPlate'
 import { getIsoStyle } from '../../utils/isoStyles'
+import { resolveNodeColor } from '../../utils/nodeKinds'
 import { isoContentBounds, isoPlateBounds, buildNodeIndex, isoNodeDims, nearestIsoAnchor, isoNodeScreenBounds, hitTestIsoNode, isoNodeAnchor } from '../../utils/isoBlueprint'
 import type { EmbedConfig, ZoomConfig, NodePosition } from '../../types/editor'
 import { CanvasContextMenu, type CtxMenuState, type CtxTarget } from './CanvasContextMenu'
@@ -1063,7 +1064,7 @@ export default function DiagramCanvas({ onViewportChange, embedConfig, zoomConfi
                         n: n as number,
                         name: diagram.nodeData[nodeId]?.name || nodeId,
                         subtitle: diagram.nodeData[nodeId]?.subtitle,
-                        color: diagram.nodeData[nodeId]?.color,
+                        color: resolveNodeColor(diagram.nodeData[nodeId]),
                       }))}
                     title={(meta.diagramMeta as { title?: string })?.title || meta.filename || undefined}
                     tally={`${String(Object.keys(diagram.nodeData || {}).length).padStart(2, '0')} CMP / ${String(diagram.connectors.length).padStart(2, '0')} LNK`}

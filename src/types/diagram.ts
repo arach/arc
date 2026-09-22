@@ -15,6 +15,17 @@ export type DiagramColor =
   | 'violet' | 'emerald' | 'blue' | 'amber'
   | 'sky' | 'zinc' | 'rose' | 'orange'
 
+/**
+ * Semantic role for a node. When set, `icon` and `color` may be omitted —
+ * NODE_KIND_DEFAULTS supplies them — and every renderer resolves the kind
+ * through the theme palette the same way an authored `color` resolves.
+ */
+export type NodeKind =
+  | 'frontend' | 'backend' | 'service'
+  | 'database' | 'cache' | 'queue' | 'storage'
+  | 'gateway' | 'security' | 'user'
+  | 'external' | 'observability'
+
 export interface NodePosition {
   x: number
   y: number
@@ -38,14 +49,36 @@ export interface NodePosition {
   isoLabelFont?: 'theme' | 'ui' | 'mono'
 }
 
+/**
+ * A pointer into the codebase this node describes. Lets a diagram cite the
+ * code it models, so docs and agents can jump — or check staleness — at the
+ * recorded `commit`.
+ */
+export interface DiagramSource {
+  /** Repo-relative path, e.g. `src/auth/session.ts`. */
+  path: string
+  /** 1-based first line. */
+  line?: number
+  /** 1-based last line when the reference spans a range. */
+  endLine?: number
+  /** Commit SHA the reference was written against. */
+  commit?: string
+}
+
 export interface NodeData {
-  icon: string
+  /** Lucide icon name. Omit when `kind` supplies the default icon. */
+  icon?: string
   name: string
   subtitle?: string
   description?: string
-  color: DiagramColor
+  /** Palette color. Omit when `kind` supplies the default color. */
+  color?: DiagramColor
+  /** Semantic role — supplies default `icon` and `color`; explicit fields still win. */
+  kind?: NodeKind
   /** Per-node silhouette. Omit to follow the theme's own node shape. */
   shape?: NodeShape
+  /** Code this node describes — see `sourceUrl`/`sourceLabel` in utils/sourceRef. */
+  source?: DiagramSource
 }
 
 export type ConnectorCurve = 'natural' | 'down' | 'up' | 'step' | 'direct'
@@ -167,6 +200,28 @@ export interface FocusTarget {
   steps?: FocusStep[]
 }
 
+/**
+ * A named stop in a guided tour. `views[]` turns a diagram into a document:
+ * an ordered set of camera/highlight states the reader can step through, and
+ * each `id` is stable enough to deep-link (`/player/<session>?view=<id>`).
+ */
+export interface DiagramView {
+  /** Stable slug — used by deep links and the views rail. */
+  id: string
+  /** Chapter title shown in the rail. */
+  title: string
+  /** Anchor node — behaves like selecting it, including its focusTarget story
+   *  unless the view overrides the highlight set. */
+  node?: string
+  /** `append` adds direct neighbors of `node`; `replace` draws only the
+   *  declared set. Views without `node` always behave as `replace`. */
+  mode?: 'append' | 'replace'
+  nodes?: string[]
+  connectors?: FocusConnectorRef[]
+  caption?: string
+  steps?: FocusStep[]
+}
+
 export type LayoutAlignment = 'start' | 'center' | 'end'
 export type GroupLayoutDirection = 'horizontal' | 'vertical'
 
@@ -214,10 +269,37 @@ export interface ExportZone {
   height: number
 }
 
+/**
+ * Legend policy for the edge/group key. `auto` lists the connector styles
+ * actually used plus labelled groups; `all` lists every connector style
+ * (used or not); `hidden` never shows the key.
+ */
+export type LegendMode = 'auto' | 'all' | 'hidden'
+
+/**
+ * Viewer/editor display state saved alongside the diagram in a file (the
+ * `_meta` key). Never affects geometry, structure validation, or diffs —
+ * the editor strips it into `diagramMeta` at load and writes it back at save.
+ */
+export interface FileMeta {
+  themeId?: string
+  colorMode?: 'light' | 'dark'
+  viewMode?: string
+  isoStyle?: string
+  viewport?: { width: number; height: number }
+  sourceUrl?: string
+  /** BCP-47 locale tag, e.g. `en`, `fr`, `ar` — viewer `lang`/`dir` + Intl formatting. */
+  locale?: string
+}
+
 // Full diagram format (internal Arc state)
 export interface ArcDiagram {
   layout: DiagramLayout
   grid: GridConfig
+  /** Authored legend policy; a viewer prop can still override it. */
+  legend?: LegendMode
+  /** Viewer/editor display state saved with the file — see `FileMeta`. */
+  _meta?: FileMeta
   layoutHints?: LayoutHints
   nodes: Record<string, NodePosition>
   nodeData: Record<string, NodeData>
@@ -225,6 +307,8 @@ export interface ArcDiagram {
   connectorStyles: Record<string, ConnectorStyle>
   groups?: GroupShape[]
   focusTargets?: Record<string, FocusTarget>
+  /** Ordered guided views — the chapter rail in the player. */
+  views?: DiagramView[]
   images?: DiagramImage[]
   exportZone?: ExportZone | null
 }
@@ -233,12 +317,17 @@ export interface ArcDiagram {
 export interface ArcDiagramData {
   id?: string
   layout: DiagramLayout
+  /** Authored legend policy: 'auto' | 'all' | 'hidden'. */
+  legend?: LegendMode
+  /** Viewer/editor display state saved with the file — see `FileMeta`. */
+  _meta?: FileMeta
   layoutHints?: LayoutHints
   nodes: Record<string, NodePosition>
   nodeData: Record<string, NodeData>
   connectors: Connector[]
   connectorStyles: Record<string, ConnectorStyle>
   focusTargets?: Record<string, FocusTarget>
+  views?: DiagramView[]
   groups?: GroupShape[]
 }
 
@@ -246,12 +335,15 @@ export interface ArcDiagramData {
 export function toExportFormat(diagram: ArcDiagram): ArcDiagramData {
   return {
     layout: diagram.layout,
+    legend: diagram.legend,
+    _meta: diagram._meta,
     layoutHints: diagram.layoutHints,
     nodes: diagram.nodes,
     nodeData: diagram.nodeData,
     connectors: diagram.connectors,
     connectorStyles: diagram.connectorStyles,
     focusTargets: diagram.focusTargets,
+    views: diagram.views,
     groups: diagram.groups,
   }
 }

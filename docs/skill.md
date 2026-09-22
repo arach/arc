@@ -74,6 +74,8 @@ Export Arc diagrams to various formats.
 - Export to TypeScript with proper types
 - Generate React component code
 - Render ASCII via `renderAscii()` or `bin/arc-ascii.mjs`
+- Render MCP SVG/PNG via `render_svg` and `render_png` (PNG needs Chrome/Chromium or `ARC_CHROME`)
+- Emit React component, iframe embed, or standalone HTML via `render_html`
 - Prepare diagrams for documentation sites
 
 **Example output** (TypeScript):
@@ -83,7 +85,7 @@ import type { ArcDiagramData } from '@arach/arc'
 export const systemArchitecture: ArcDiagramData = {
   layout: { width: 700, height: 400 },
   nodes: { /* x, y, size: 'm' */ },
-  nodeData: { /* icon: 'Server', name, color */ },
+  nodeData: { /* name, kind: 'backend' — or explicit icon/color overrides */ },
   connectors: [ /* ... */ ],
   connectorStyles: { /* ... */ }
 }

@@ -17,6 +17,10 @@ interface ArcDiagramProps {
   showMinimap?: boolean
   showLegend?: boolean
   showFocusStory?: boolean
+  showViews?: boolean                      // chapter rail for data.views
+  view?: string | null                     // controlled active view id
+  defaultViewId?: string                   // uncontrolled initial view
+  onViewChange?: (viewId: string | null) => void
   frame?: BrandSpec['frame']
   onNodeHover?: (nodeId: string | null) => void
   className?: string
@@ -27,6 +31,8 @@ interface ArcDiagramProps {
 
 ```typescript
 interface ArcDiagramData {
+  legend?: 'auto' | 'all' | 'hidden'  // legend policy; prop overrides
+  _meta?: FileMeta                    // saved viewer/editor state; `locale` is BCP-47
   id?: string
   layout: { width: number; height: number }
   layoutHints?: LayoutHints
@@ -36,6 +42,7 @@ interface ArcDiagramData {
   connectorStyles: Record<string, ConnectorStyle>
   groups?: GroupShape[]
   focusTargets?: Record<string, FocusTarget>
+  views?: DiagramView[]                    // ordered guided chapters
 }
 ```
 
@@ -49,12 +56,15 @@ interface NodePosition {
 }
 
 interface NodeData {
-  icon: string           // Lucide icon name (string, not component)
+  icon?: string          // Lucide icon name (string, not component); omit when kind supplies it
   name: string
   subtitle?: string
   description?: string
-  color: DiagramColor
+  color?: DiagramColor   // omit when kind supplies it; overrides the kind default
+  kind?: NodeKind        // 'frontend'|'backend'|'service'|'database'|'cache'|'queue'|
+                         // 'storage'|'gateway'|'security'|'user'|'external'|'observability'
   shape?: NodeShape      // per-node override; omit to follow theme
+  source?: DiagramSource   // code evidence: {path, line?, endLine?, commit?}
 }
 
 type DiagramColor = 'violet' | 'emerald' | 'blue' | 'amber' | 'sky' | 'zinc' | 'rose' | 'orange'
@@ -103,7 +113,19 @@ interface LayoutHints {
 interface FocusTarget {
   mode?: 'append' | 'replace'
   nodes?: string[]
-  connectors?: Array<{ from: string; to: string }>
+  connectors?: Array<{ from: string; to: string } | { id: string }>
+  caption?: string
+  steps?: Array<{ icon: string; label: string }>
+}
+
+// Guided view / chapter (player chrome; see docs/views.md)
+interface DiagramView {
+  id: string            // stable slug — deep-link key (/player/<s>?view=<id>)
+  title: string
+  node?: string         // anchor: behaves like selecting the node
+  mode?: 'append' | 'replace'
+  nodes?: string[]
+  connectors?: Array<{ from: string; to: string } | { id: string }>
   caption?: string
   steps?: Array<{ icon: string; label: string }>
 }
@@ -145,7 +167,7 @@ const theme = getTheme('engineering')
 const palette = theme.light.palette.violet
 ```
 
-Theme IDs: `default`, `warm`, `cool`, `mono`, `engineering`, `workbench`, `tactical`, `command`
+Theme IDs: `default`, `warm`, `cool`, `mono`, `engineering`, `workbench`, `tactical`, `command`, `spacex`, `claude`, `codex`
 
 ## Valid Values Quick Reference
 
@@ -153,7 +175,7 @@ Theme IDs: `default`, `warm`, `cool`, `mono`, `engineering`, `workbench`, `tacti
 |----------|-------------|
 | `size` | `'xs'`, `'s'`, `'m'`, `'l'` |
 | `color` | `'violet'`, `'emerald'`, `'blue'`, `'amber'`, `'sky'`, `'zinc'`, `'rose'`, `'orange'` |
-| `theme` | eight ThemeIds above |
+| `theme` | eleven ThemeIds above |
 | `mode` | `'light'`, `'dark'` |
 | `anchor` | `'left'`, `'right'`, `'top'`, `'bottom'`, corner variants |
 | `curve` | `'natural'`, `'step'` |

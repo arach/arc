@@ -1,0 +1,18 @@
+{
+  "variants": [
+    { "id": "light" },
+    { "id": "dark", "theme": "default", "mode": "dark" },
+    { "id": "engineering", "theme": "engineering" },
+    { "id": "workbench", "theme": "workbench" },
+    { "id": "tactical", "theme": "tactical" },
+    { "id": "command", "theme": "command" },
+    { "id": "spacex", "theme": "spacex" },
+    { "id": "claude", "theme": "claude" },
+    { "id": "codex", "theme": "codex" },
+    { "id": "mono-grid", "theme": "mono", "grid": true }
+  ],
+  "cases": [
+    { "name": "flow", "diagram": "cases/flow.json" },
+    { "name": "platform", "diagram": "cases/platform.json" }
+  ]
+}

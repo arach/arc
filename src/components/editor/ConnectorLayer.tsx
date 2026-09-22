@@ -6,6 +6,7 @@ import {
   angleBetween,
   connectorArrowAt,
   connectorArrowSize,
+  connectorControlPoints,
   connectorLineStyle,
   elbowPolyline,
   roundedPolylineD,
@@ -106,34 +107,18 @@ function EndpointDot({ x, y, color, size = 3, themeColors }: { x: number; y: num
   )
 }
 
-// Get control point offset based on anchor position
-function getControlOffset(anchor, distance) {
-  const d = Math.abs(distance) * 0.5 // Control point distance
-  switch (anchor) {
-    case 'top': return { dx: 0, dy: -d }
-    case 'bottom': return { dx: 0, dy: d }
-    case 'left': return { dx: -d, dy: 0 }
-    case 'right': return { dx: d, dy: 0 }
-    case 'bottomRight': return { dx: d * 0.7, dy: d * 0.7 }
-    case 'bottomLeft': return { dx: -d * 0.7, dy: d * 0.7 }
-    default: return { dx: 0, dy: 0 }
-  }
-}
-
 // Generate path between two points, with the tangent angles at each end
-// (needed to orient inline arrowheads on curves and elbows).
+// (needed to orient inline arrowheads on curves and elbows). Beziers go
+// through connectorControlPoints so the canvas and the SVG export draw
+// identical curves for the same connector.
 function generatePath(
   from: { x: number; y: number },
   to: { x: number; y: number },
-  fromAnchor: string,
-  toAnchor: string,
+  fromAnchor: Parameters<typeof connectorControlPoints>[2],
+  toAnchor: Parameters<typeof connectorControlPoints>[3],
   curve?: string,
-  curveDepth = 50,
+  curveDepth = 40,
 ): { d: string; startAngle: number; endAngle: number } {
-  const dx = to.x - from.x
-  const dy = to.y - from.y
-  const distance = Math.sqrt(dx * dx + dy * dy)
-
   // Straight line
   if (curve === 'direct') {
     const a = angleBetween(from, to)
@@ -142,60 +127,21 @@ function generatePath(
 
   // Orthogonal elbow with rounded corners
   if (curve === 'step') {
-    const pts = elbowPolyline(from, to, fromAnchor as never, toAnchor as never)
-    const d = roundedPolylineD(pts)
+    const pts = elbowPolyline(from, to, fromAnchor, toAnchor)
     return {
-      d,
+      d: roundedPolylineD(pts),
       startAngle: angleBetween(pts[0], pts[1]),
       endAngle: angleBetween(pts[pts.length - 2], pts[pts.length - 1]),
     }
   }
 
   // Bezier — tangent at each end runs through the adjacent control point
-  const bezier = (cp1x: number, cp1y: number, cp2x: number, cp2y: number) => ({
-    d: `M ${from.x} ${from.y} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${to.x} ${to.y}`,
-    startAngle: angleBetween(from, { x: cp1x, y: cp1y }),
-    endAngle: angleBetween({ x: cp2x, y: cp2y }, to),
-  })
-
-  // Natural bezier curve - control points extend from anchors in their natural direction
-  if (curve === 'natural' || curve === 'down' || curve === 'up') {
-    const fromOffset = getControlOffset(fromAnchor, distance)
-    const toOffset = getControlOffset(toAnchor, distance)
-
-    // Scale by curveDepth (default 50 = 50% of distance for control points)
-    const scale = curveDepth / 50
-
-    return bezier(
-      from.x + fromOffset.dx * scale,
-      from.y + fromOffset.dy * scale,
-      to.x + toOffset.dx * scale,
-      to.y + toOffset.dy * scale,
-    )
+  const { cp1, cp2 } = connectorControlPoints(from, to, fromAnchor, toAnchor, curve as 'natural' | 'down' | 'up' | undefined, curveDepth)
+  return {
+    d: `M ${from.x} ${from.y} C ${cp1.x} ${cp1.y}, ${cp2.x} ${cp2.y}, ${to.x} ${to.y}`,
+    startAngle: angleBetween(from, cp1),
+    endAngle: angleBetween(cp2, to),
   }
-
-  // For horizontal connections (right->left or left->right)
-  if ((fromAnchor === 'right' && toAnchor === 'left') || (fromAnchor === 'left' && toAnchor === 'right')) {
-    const midX = (from.x + to.x) / 2
-    return bezier(midX, from.y, midX, to.y)
-  }
-
-  // For vertical connections (top->bottom or bottom->top)
-  if ((fromAnchor === 'bottom' && toAnchor === 'top') || (fromAnchor === 'top' && toAnchor === 'bottom')) {
-    const midY = (from.y + to.y) / 2
-    return bezier(from.x, midY, to.x, midY)
-  }
-
-  // For any other connections, use a gentle curve based on anchor directions
-  const fromOffset = getControlOffset(fromAnchor, distance)
-  const toOffset = getControlOffset(toAnchor, distance)
-
-  return bezier(
-    from.x + fromOffset.dx,
-    from.y + fromOffset.dy,
-    to.x + toOffset.dx,
-    to.y + toOffset.dy,
-  )
 }
 
 function EdgeHandle({

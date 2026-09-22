@@ -9,7 +9,7 @@ import IsometricExamples from './components/IsometricExamples'
 import PlayerShowcase from './components/PlayerShowcase'
 import NativeMermaidSequencesPost from './components/blog/NativeMermaidSequencesPost'
 import architectureDiagram from './components/diagrams/architecture.diagram'
-import type { ThemeId } from './utils/themes'
+import { getTheme, type ThemeId } from './utils/themes'
 import { GoogleAnalytics } from './components/GoogleAnalytics'
 import { useMeta } from './hooks/useMeta'
 import { generateSessionId, deriveSessionId, saveDiagramSession, loadDiagramSession } from './utils/sessionStorage'
@@ -88,6 +88,9 @@ function parseHashData(): HashPayload | null {
       nodeData: d.nodeData || {},
       connectors: d.connectors || [],
       connectorStyles: d.connectorStyles || {},
+      focusTargets: d.focusTargets,
+      views: d.views,
+      groups: d.groups || [],
     }
 
     return {
@@ -98,6 +101,8 @@ function parseHashData(): HashPayload | null {
         nodeData: d.nodeData || {},
         connectors: d.connectors || [],
         connectorStyles: d.connectorStyles || {},
+        focusTargets: d.focusTargets,
+        views: d.views,
         groups,
       },
       originalDiagram,
@@ -234,7 +239,7 @@ function NotFoundPage() {
 
 /** Parse URL query params for theme/mode/viewport overrides */
 function useUrlOverrides() {
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   return {
     theme: searchParams.get('theme'),
     mode: searchParams.get('mode') as 'light' | 'dark' | null,
@@ -244,6 +249,17 @@ function useUrlOverrides() {
     })() : null,
     // ?chrome=false strips the Source toggle + zoom controls for clean captures
     chrome: searchParams.get('chrome') !== 'false',
+    // ?view=<id> deep-links one of data.views in the player's chapter rail
+    view: searchParams.get('view'),
+    setView: (view: string | null) => {
+      setSearchParams(prev => {
+        const next = new URLSearchParams(prev)
+        if (view == null) next.delete('view')
+        else next.set('view', view)
+        return next
+      }, { replace: true })
+    },
+    locale: searchParams.get('locale'),
   }
 }
 
@@ -290,6 +306,7 @@ function PlayerPage() {
   const colorMode = urlOverrides.mode || session?.colorMode || 'dark'
   const themeId = urlOverrides.theme || session?.themeId
   const viewport = urlOverrides.viewport || session?.diagramMeta?.viewport
+  const locale = urlOverrides.locale || session?.diagramMeta?.locale
 
   useEffect(() => {
     if (colorMode === 'dark') {
@@ -335,6 +352,11 @@ function PlayerPage() {
           defaultZoom="fit"
           showArcToggle={urlOverrides.chrome}
           showControls={urlOverrides.chrome}
+          showViews={urlOverrides.chrome && !!playerData.views?.length}
+          showFocusStory={urlOverrides.chrome && !!playerData.focusTargets}
+          view={urlOverrides.view}
+          onViewChange={urlOverrides.setView}
+          locale={locale}
         />
       </div>
     </div>
@@ -364,6 +386,9 @@ function DocsWrapper() {
 }
 
 const EXPLORATIONS: { id: ThemeId; label: string; sub: string }[] = [
+  { id: 'spacex', label: 'xAI / SpaceX', sub: 'crosshair grid · chamfer plates · telemetry cyan · reticle frame' },
+  { id: 'claude', label: 'Claude', sub: 'parchment paper · warm clay accents · serif type · soft rule' },
+  { id: 'codex', label: 'OpenAI / Codex', sub: 'graphite console · mint signal · glass cards · mono labels' },
   { id: 'command', label: 'Command', sub: 'crosshair grid · chamfer glass · cyan accent bar · connector glow' },
   { id: 'engineering', label: 'Engineering', sub: 'graph grid · framed corners · square tiles · uppercase mono' },
   { id: 'workbench', label: 'Workbench', sub: 'dot grid · hairline edge · soft corners · sentence case' },
@@ -385,7 +410,7 @@ function InspirationPage() {
       <div style={{ maxWidth: 1000, margin: '0 auto' }}>
         <h1 style={{ color: '#fff', fontSize: 24, fontWeight: 700, margin: '0 0 6px' }}>Diagram style explorations</h1>
         <p style={{ color: '#9aa0a6', fontSize: 14, margin: '0 0 36px' }}>
-          One shared color scheme, three drafting grammars. The nodes and palette stay the same — what changes is the grid system, the edge treatment, the type, and the geometry. Pan/zoom is live.
+          One diagram, seven drafting grammars. The nodes and palette stay the same — what changes is the grid system, the edge treatment, the type, and the geometry. Pan/zoom is live.
         </p>
         {EXPLORATIONS.map((b) => (
           <section key={b.id} style={{ marginBottom: 44 }}>
@@ -394,7 +419,7 @@ function InspirationPage() {
               <div style={{ color: '#6b7178', fontSize: 12, marginTop: 2 }}>{b.sub} · <code style={{ color: '#9aa0a6' }}>theme="{b.id}"</code></div>
             </div>
             <div style={{ height: 460 }}>
-              <ArcDiagram data={architectureDiagram} mode="dark" theme={b.id} interactive defaultZoom="fit" showControls showMinimap />
+              <ArcDiagram data={architectureDiagram} mode={getTheme(b.id).defaultMode || 'dark'} theme={b.id} interactive defaultZoom="fit" showControls showMinimap />
             </div>
           </section>
         ))}

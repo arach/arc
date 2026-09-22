@@ -25,11 +25,17 @@ import {
 import { getIsoStyle, type IsoStyleId } from '../utils/isoStyles'
 import { isoContentBounds, isoPlateBounds, buildNodeIndex } from '../utils/isoBlueprint'
 import IsometricNodeLayer from './editor/IsometricNodeLayer'
+import { anchorOnNode, getContentBounds } from '../utils/diagramHelpers'
 import IsometricConnectorLayer from './editor/IsometricConnectorLayer'
 import TechnicalBackdrop from './technical/TechnicalBackdrop'
 import TechnicalPlate from './technical/TechnicalPlate'
 import type { Connector as EditorConnector } from '../types/editor'
+import type { NodeKind } from '../types/diagram'
+import { resolveNodeColor, resolveNodeIcon } from '../utils/nodeKinds'
 import type { DiagramDelta } from '../utils/diffDiagram'
+import type { DiagramSource, FileMeta, LegendMode } from '../types/diagram'
+import { sourceLabel } from '../utils/sourceRef'
+import { isRtlLocale, isValidLocale } from '../utils/locale'
 
 // ============================================
 // Types
@@ -65,13 +71,19 @@ export interface NodePosition {
 }
 
 export interface NodeData {
-  icon: string
+  /** Lucide icon name. Omit when `kind` supplies the default icon. */
+  icon?: string
   name: string
   subtitle?: string
   description?: string
-  color: DiagramColor
+  /** Palette color. Omit when `kind` supplies the default color. */
+  color?: DiagramColor
+  /** Semantic role — supplies default `icon` and `color`; explicit fields still win. */
+  kind?: NodeKind
   /** Per-node silhouette. Omit to follow the theme's own node shape. */
   shape?: NodeShape
+  /** Code this node describes (path + optional line range/commit). */
+  source?: DiagramSource
 }
 
 export type ConnectorCurve = 'natural' | 'down' | 'up' | 'step' | 'direct'
@@ -159,6 +171,28 @@ export interface FocusTarget {
   steps?: FocusStep[]
 }
 
+/**
+ * A named stop in a guided tour. `views[]` turns a diagram into a document —
+ * an ordered set of camera/highlight states a reader steps through in the
+ * views rail, deep-linkable by `id`.
+ */
+export interface DiagramView {
+  /** Stable slug — used by deep links and the views rail. */
+  id: string
+  /** Chapter title shown in the rail. */
+  title: string
+  /** Anchor node — behaves like selecting it, including its focusTarget story
+   *  unless the view overrides the highlight set. */
+  node?: string
+  /** `append` adds direct neighbors of `node`; `replace` draws only the
+   *  declared set. Views without `node` always behave as `replace`. */
+  mode?: 'append' | 'replace'
+  nodes?: string[]
+  connectors?: FocusConnectorRef[]
+  caption?: string
+  steps?: FocusStep[]
+}
+
 export interface GroupShape {
   id: string
   x: number
@@ -197,12 +231,17 @@ export interface LayoutHints {
 export interface ArcDiagramData {
   id?: string
   layout: DiagramLayout
+  /** Authored legend policy; the `legend` prop can still override it. */
+  legend?: LegendMode
+  /** Viewer/editor display state saved with the file — see `FileMeta`. */
+  _meta?: FileMeta
   layoutHints?: LayoutHints
   nodes: Record<string, NodePosition>
   nodeData: Record<string, NodeData>
   connectors: Connector[]
   connectorStyles: Record<string, ConnectorStyle>
   focusTargets?: Record<string, FocusTarget>
+  views?: DiagramView[]
   groups?: GroupShape[]
 }
 
@@ -289,6 +328,47 @@ export function resolveFocusState(
   return { nodeIds, connectorIndexes }
 }
 
+/**
+ * Resolve a DiagramView to the highlight sets the renderer consumes. With an
+ * anchor `node` and no explicit highlight set, the view inherits that node's
+ * focusTarget story; a view that declares `nodes`/`connectors`/`mode`
+ * overrides it. A view without `node` highlights exactly its declared set.
+ */
+export function resolveViewFocus(
+  view: DiagramView | undefined,
+  connectors: Connector[],
+  focusTargets?: Record<string, FocusTarget>,
+) {
+  const nodeIds = new Set<string>()
+  const connectorIndexes = new Set<number>()
+  if (!view) return { nodeIds, connectorIndexes }
+
+  if (!view.node) {
+    for (const id of view.nodes || []) nodeIds.add(id)
+    for (const ref of view.connectors || []) {
+      connectors.forEach((connector, index) => {
+        const matches = ref.id
+          ? connector.id === ref.id
+          : connector.from === ref.from && connector.to === ref.to
+        if (!matches) return
+        connectorIndexes.add(index)
+        nodeIds.add(connector.from)
+        nodeIds.add(connector.to)
+      })
+    }
+    return { nodeIds, connectorIndexes }
+  }
+
+  const overrides = view.nodes != null || view.connectors != null || view.mode != null
+  const targets: Record<string, FocusTarget> | undefined = overrides
+    ? {
+        ...focusTargets,
+        [view.node]: { mode: view.mode, nodes: view.nodes, connectors: view.connectors },
+      }
+    : focusTargets
+  return resolveFocusState(view.node, connectors, targets)
+}
+
 function FocusStory({
   target,
   mode,
@@ -367,6 +447,101 @@ function FocusStory({
             )
           })}
         </div>
+      )}
+    </div>
+  )
+}
+
+/** Bottom-center chapter rail for `data.views` — prev/next, counter, exit. */
+function ViewsRail({
+  views,
+  activeIndex,
+  mode,
+  monoFamily,
+  inset,
+  onStep,
+  onExit,
+}: {
+  views: DiagramView[]
+  activeIndex: number // -1 when exploring freely
+  mode: DiagramMode
+  monoFamily?: string
+  inset: number
+  onStep: (index: number) => void
+  onExit: () => void
+}) {
+  const isLight = mode === 'light'
+  const active = activeIndex >= 0 ? views[activeIndex] : undefined
+  const border = `1px solid ${isLight ? 'rgba(24,24,27,0.14)' : 'rgba(244,244,245,0.14)'}`
+  const ink = isLight ? 'rgba(24,24,27,0.85)' : 'rgba(244,244,245,0.85)'
+  const dim = isLight ? 'rgba(24,24,27,0.45)' : 'rgba(244,244,245,0.45)'
+  const btn = {
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    width: 24, height: 24, borderRadius: 4, border: 'none', cursor: 'pointer',
+    background: 'transparent', color: ink, padding: 0,
+  } as React.CSSProperties
+
+  return (
+    <div
+      data-arc-views
+      className="absolute z-20 pointer-events-auto flex items-center"
+      style={{
+        left: '50%',
+        bottom: inset,
+        transform: 'translateX(-50%)',
+        gap: 2,
+        padding: '3px 4px',
+        border,
+        borderRadius: 8,
+        background: isLight ? 'rgba(255,255,255,0.92)' : 'rgba(9,9,11,0.9)',
+        boxShadow: isLight ? '0 8px 24px rgba(24,24,27,0.08)' : '0 8px 24px rgba(0,0,0,0.24)',
+        backdropFilter: 'blur(10px)',
+        fontFamily: monoFamily || 'ui-monospace, monospace',
+      }}
+    >
+      <button
+        type="button"
+        aria-label="Previous view"
+        disabled={activeIndex <= 0}
+        onClick={() => onStep(activeIndex - 1)}
+        style={{ ...btn, opacity: activeIndex <= 0 ? 0.3 : 1 }}
+      >
+        <LucideIcons.ChevronLeft style={{ width: 14, height: 14 }} strokeWidth={1.8} />
+      </button>
+      <button
+        type="button"
+        onClick={() => onStep(activeIndex < 0 ? 0 : activeIndex)}
+        title={active ? 'Current view' : 'Start the guided views'}
+        style={{
+          border: 'none', background: 'transparent', cursor: 'pointer',
+          color: ink, padding: '2px 8px', fontFamily: 'inherit',
+          fontSize: 9.5, letterSpacing: '0.08em', textTransform: 'uppercase',
+          display: 'flex', alignItems: 'baseline', gap: 7, whiteSpace: 'nowrap',
+        }}
+      >
+        <span style={{ color: dim, fontSize: 8.5 }}>
+          {active ? `${activeIndex + 1} / ${views.length}` : `Views · ${views.length}`}
+        </span>
+        {active && <span>{active.title}</span>}
+      </button>
+      <button
+        type="button"
+        aria-label="Next view"
+        disabled={activeIndex >= views.length - 1}
+        onClick={() => onStep(activeIndex + 1)}
+        style={{ ...btn, opacity: activeIndex >= views.length - 1 ? 0.3 : 1 }}
+      >
+        <LucideIcons.ChevronRight style={{ width: 14, height: 14 }} strokeWidth={1.8} />
+      </button>
+      {active && (
+        <button
+          type="button"
+          aria-label="Exit view"
+          onClick={onExit}
+          style={{ ...btn, borderLeft: `1px solid ${isLight ? 'rgba(24,24,27,0.1)' : 'rgba(244,244,245,0.1)'}`, borderRadius: 0, marginLeft: 2 }}
+        >
+          <LucideIcons.X style={{ width: 12, height: 12 }} strokeWidth={1.8} />
+        </button>
       )}
     </div>
   )
@@ -520,8 +695,8 @@ function NodeDecoration({ decor, stroke, cut }: { decor: NodeDecor; stroke: stri
 
 export function Node({ node, data, mode, themeColors, brand, hovered, dimmed, lift = true, glow = true, dimOpacity = 0.45, onMouseEnter, onMouseLeave, onClick }: NodeProps) {
   const size = NODE_SIZES[node.size]
-  const color = themeColors.palette[data.color] || themeColors.palette.zinc
-  const Icon = (LucideIcons as unknown as Record<string, LucideIcon>)[data.icon] || LucideIcons.Box
+  const color = themeColors.palette[resolveNodeColor(data)] || themeColors.palette.zinc
+  const Icon = (LucideIcons as unknown as Record<string, LucideIcon>)[resolveNodeIcon(data)] || LucideIcons.Box
 
   const isLarge = node.size === 'l'
   const isSmall = node.size === 's'
@@ -617,6 +792,10 @@ export function Node({ node, data, mode, themeColors, brand, hovered, dimmed, li
 
   const handlers = { onMouseEnter, onMouseLeave, onClick }
 
+  // Evidence link — hover shows where the node lives in the codebase; the
+  // attribute lets embedders/tooling wire a click-through.
+  const sourceAttr = data.source ? { title: sourceLabel(data.source), 'data-arc-source': data.source.path } : {}
+
   // Cut silhouettes clip their own border and box-shadow: the edge is stroked
   // as an SVG overlay, and the glow becomes a drop-shadow, which follows the
   // clip path. The shell takes the nominal height so the outline matches the
@@ -632,6 +811,7 @@ export function Node({ node, data, mode, themeColors, brand, hovered, dimmed, li
           filter: hovered && glow ? `drop-shadow(0 4px 12px ${color.stroke}55)` : undefined,
         }}
         data-arc-node
+        {...sourceAttr}
         {...handlers}
       >
         <div
@@ -671,9 +851,13 @@ export function Node({ node, data, mode, themeColors, brand, hovered, dimmed, li
         ...placement,
         borderRadius: nodeRadius,
         borderWidth,
+        // Clip decor to the silhouette — a bar painted corner-to-corner
+        // otherwise pokes past the rounded edge like the export's used to.
+        overflow: 'hidden',
         boxShadow: hovered && glow ? `${glowShadow}, ${innerHighlight}` : innerHighlight,
       }}
       data-arc-node
+      {...sourceAttr}
       {...handlers}
     >
       {body}
@@ -681,22 +865,9 @@ export function Node({ node, data, mode, themeColors, brand, hovered, dimmed, li
   )
 }
 
-function getAnchorPoint(node: NodePosition, anchor: AnchorPosition): { x: number; y: number } {
-  const size = NODE_SIZES[node.size]
-  const gap = 6
-
-  const anchors: Record<AnchorPosition, { x: number; y: number }> = {
-    left:        { x: node.x - gap,              y: node.y + size.height / 2 },
-    right:       { x: node.x + size.width + gap, y: node.y + size.height / 2 },
-    top:         { x: node.x + size.width / 2,   y: node.y - gap },
-    bottom:      { x: node.x + size.width / 2,   y: node.y + size.height + gap },
-    bottomRight: { x: node.x + size.width + gap, y: node.y + size.height - 12 },
-    bottomLeft:  { x: node.x - gap,              y: node.y + size.height - 12 },
-    topRight:    { x: node.x + size.width + gap, y: node.y + 12 },
-    topLeft:     { x: node.x - gap,              y: node.y + 12 },
-  }
-
-  return anchors[anchor]
+function getAnchorPoint(node: NodePosition, position: AnchorPosition): { x: number; y: number } {
+  const size = NODE_SIZES[node.size] ?? NODE_SIZES.m
+  return anchorOnNode({ x: node.x, y: node.y, width: size.width, height: size.height }, position)
 }
 
 // Calculate angle between two points for arrow rotation
@@ -1045,7 +1216,7 @@ function DeltaOverlay({ delta, nodes, nodeData, styles, themeColors, layout, mod
     const pos = nodes[id]
     const sz = pos && NODE_SIZES[pos.size]
     if (!pos || !sz) return null
-    const color = themeColors.palette[nodeData[id]?.color ?? 'zinc']?.stroke ?? ghost
+    const color = themeColors.palette[resolveNodeColor(nodeData[id])]?.stroke ?? ghost
     const inset = 4
     const dashed = kind === 'changed'
     return (
@@ -1237,7 +1408,7 @@ function MiniMap({ nodes, nodeData, layout, themeColors, brand, mode, inset = 12
         {Object.entries(nodes).map(([id, n]) => {
           const sz = NODE_SIZES[n.size]
           if (!sz) return null
-          const stroke = themeColors.palette[nodeData[id]?.color]?.stroke || themeColors.palette.zinc.stroke
+          const stroke = themeColors.palette[resolveNodeColor(nodeData[id])]?.stroke || themeColors.palette.zinc.stroke
           return (
             <rect
               key={id}
@@ -1261,7 +1432,7 @@ function MiniMap({ nodes, nodeData, layout, themeColors, brand, mode, inset = 12
 // ============================================
 
 interface LegendProps {
-  /** Only styles actually used by a connector are listed. */
+  /** Only styles actually used by a connector are listed — unless `all`. */
   styles: Record<string, ConnectorStyle>
   connectors: Connector[]
   groups: GroupShape[]
@@ -1270,21 +1441,25 @@ interface LegendProps {
   mode: DiagramMode
   left: number
   bottom: number
+  /** 'all' lists every connector style, used or not. */
+  all?: boolean
 }
 
 /**
  * A key for the diagram's edge types (and group boundaries, when labelled).
  * Read-only chrome: it never intercepts pointer events.
  */
-function DiagramLegend({ styles, connectors, groups, themeColors, brand, mode, left, bottom }: LegendProps) {
+function DiagramLegend({ styles, connectors, groups, themeColors, brand, mode, left, bottom, all }: LegendProps) {
   const isLight = mode === 'light'
   const mono = brand?.monoFamily || "'JetBrains Mono', ui-monospace, monospace"
 
-  // Only keys that appear in the drawing, in first-use order.
+  // Only keys that appear in the drawing, in first-use order — 'all' mode
+  // lists every authored style instead.
   const used: string[] = []
   for (const c of connectors) if (styles[c.style] && !used.includes(c.style)) used.push(c.style)
+  const keys = all ? Object.keys(styles) : used
 
-  const rows = used.map(key => ({ key, style: styles[key] }))
+  const rows = keys.map(key => ({ key, style: styles[key] }))
   const groupRows = groups.filter(g => !!g.label)
 
   if (!rows.length && !groupRows.length) return null
@@ -1713,10 +1888,27 @@ interface ArcDiagramProps {
   showControls?: boolean
   /** Show a minimap overview (bottom-left). Default: false */
   showMinimap?: boolean
-  /** Show a key for the connector styles and labelled groups (bottom-left). Default: false */
+  /** Show a key for the connector styles and labelled groups (bottom-left). Default: false.
+   *  Equivalent to `legend='auto'`; kept for back-compat — prefer `legend`. */
   showLegend?: boolean
+  /** Legend policy — 'auto' | 'all' | 'hidden'. Overrides `data.legend`;
+   *  'auto' lists styles actually used, 'all' lists every connector style. */
+  legend?: LegendMode
+  /** BCP-47 locale for the viewer frame (lang/dir + Intl formatting).
+   *  Overrides `data._meta?.locale`. */
+  locale?: string
   /** Show the active focus target's caption and steps. Default: false */
   showFocusStory?: boolean
+  /** Show the chapter rail when `data.views` is present, and let a view own
+   *  the camera + highlight state. Default: false */
+  showViews?: boolean
+  /** Controlled active view id — `null` explores freely. Pair with
+   *  `onViewChange`; pass `undefined` to leave it uncontrolled. */
+  view?: string | null
+  /** Initial view id when uncontrolled. */
+  defaultViewId?: string
+  /** Fires when the rail selects or exits a view. */
+  onViewChange?: (viewId: string | null) => void
   /** Override the edge/frame treatment (else the theme's brand.frame). */
   frame?: BrandSpec['frame']
   /** Control hover behavior. true = all effects (default), false = none, object = granular control */
@@ -1750,7 +1942,13 @@ export default function ArcDiagram({
   showControls,
   showMinimap = false,
   showLegend = false,
+  legend,
+  locale: localeProp,
   showFocusStory = false,
+  showViews = false,
+  view,
+  defaultViewId,
+  onViewChange,
   frame,
   hoverEffects,
   onNodeHover,
@@ -1770,8 +1968,22 @@ export default function ArcDiagram({
   const [titleBlockH, setTitleBlockH] = useState(48)
   const fx = useMemo(() => resolveHoverEffects(hoverEffects), [hoverEffects])
 
+  // Legend policy: explicit prop > deprecated showLegend > authored > hidden.
+  const legendMode = legend ?? (showLegend ? 'auto' : undefined) ?? data.legend ?? 'hidden'
+
+  // Viewer locale: prop > authored meta. Drives `lang`/`dir` on the frame so
+  // screen readers and RTL consumers see the document's declared locale.
+  const locale = localeProp ?? data._meta?.locale
+  const langAttr = locale && isValidLocale(locale) ? locale : undefined
+  const dirAttr = langAttr && isRtlLocale(langAttr) ? ('rtl' as const) : undefined
+
   // Active node = locked takes priority over hovered
   const activeNodeId = fx.enabled ? (lockedNodeId ?? hoveredNodeId) : null
+
+  // Guided views — an ordered list of named highlight/camera states the rail
+  // steps through. `view` controlled; `defaultViewId` uncontrolled.
+  const [internalViewId, setInternalViewId] = useState<string | null>(defaultViewId ?? null)
+  const activeViewId = view !== undefined ? view : internalViewId
 
   // Apply auto-layout if toggled
   const activeData = useMemo(
@@ -1780,11 +1992,25 @@ export default function ArcDiagram({
   )
 
   const { id, layout, nodes, nodeData, connectors, connectorStyles, groups = [] } = activeData
+  const views = activeData.views
   const focusTargets = activeData.focusTargets
+  const activeViewIndex = activeViewId ? (views?.findIndex(v => v.id === activeViewId) ?? -1) : -1
+  const activeView = activeViewIndex >= 0 ? views![activeViewIndex] : undefined
+  const setActiveView = useCallback((viewId: string | null) => {
+    if (view === undefined) setInternalViewId(viewId)
+    onViewChange?.(viewId)
+  }, [view, onViewChange])
+
   const activeFocusTarget = activeNodeId ? focusTargets?.[activeNodeId] : undefined
+  const storyTarget: FocusTarget | undefined = activeView
+    ? { caption: activeView.caption, steps: activeView.steps }
+    : activeFocusTarget
+  const hasFocus = activeView != null || activeNodeId != null
   const focusState = useMemo(
-    () => resolveFocusState(activeNodeId, connectors, focusTargets),
-    [activeNodeId, connectors, focusTargets],
+    () => activeView
+      ? resolveViewFocus(activeView, connectors, focusTargets)
+      : resolveFocusState(activeNodeId, connectors, focusTargets),
+    [activeView, activeNodeId, connectors, focusTargets],
   )
 
   // Resolve theme colors based on mode
@@ -1909,6 +2135,43 @@ export default function ArcDiagram({
     centreOnBounds(isIso && isoBounds ? isoBounds : contentBounds, defaultZoom)
   }, [isIso, isoBounds, contentBounds, defaultZoom, centreOnBounds])
 
+  // The camera follows the active view: entering one frames its highlight set;
+  // leaving restores the default framing. 2D only — iso handles its own pan.
+  React.useEffect(() => {
+    if (!initialized || isIso) return
+    const el = containerRef.current
+    if (!el) return
+
+    if (!activeView) return // exiting leaves the camera where the reader put it
+
+    const { nodeIds } = resolveViewFocus(activeView, connectors, focusTargets)
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+    for (const id of nodeIds) {
+      const pos = nodes[id]
+      const size = pos && NODE_SIZES[pos.size]
+      if (!pos || !size) continue
+      minX = Math.min(minX, pos.x)
+      minY = Math.min(minY, pos.y)
+      maxX = Math.max(maxX, pos.x + size.width)
+      maxY = Math.max(maxY, pos.y + size.height)
+    }
+    if (minX === Infinity) return // empty highlight — leave the camera alone
+
+    const PADDING = 88
+    const cw = el.clientWidth
+    const ch = el.clientHeight
+    const z = Math.min(
+      cw / (maxX - minX + PADDING * 2),
+      ch / (maxY - minY + PADDING * 2),
+      1.4, // cap so a single small node doesn't fill the screen
+    )
+    setZoom(z)
+    setPan({
+      x: cw / 2 - ((minX + maxX) / 2) * z,
+      y: ch / 2 - ((minY + maxY) / 2) * z,
+    })
+  }, [activeView, initialized, isIso, nodes, connectors, focusTargets])
+
   // Sorted zoom levels for consistent navigation
   const sortedZoomLevels = React.useMemo(() => [...zoomLevels].sort((a, b) => a - b), [zoomLevels])
 
@@ -1943,12 +2206,13 @@ export default function ArcDiagram({
 
   // Click-to-lock: clicking a node locks the highlight, clicking background or same node unlocks
   const handleNodeClick = useCallback((nodeId: string) => {
+    if (activeView) setActiveView(null)
     setLockedNodeId(prev => {
       const next = prev === nodeId ? null : nodeId
       onNodeHover?.(next)
       return next
     })
-  }, [onNodeHover])
+  }, [activeView, onNodeHover, setActiveView])
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (!interactive) return
@@ -2005,6 +2269,8 @@ export default function ArcDiagram({
     <div
       ref={containerRef}
       data-arc-diagram
+      lang={langAttr}
+      dir={dirAttr}
       className={`rounded-2xl overflow-hidden relative ${themeColors.background.container} ${className}`}
       onWheel={handleWheel}
       onMouseDown={handleMouseDown}
@@ -2075,7 +2341,7 @@ export default function ArcDiagram({
                     n: n as number,
                     name: nodeData[nodeId]?.name || nodeId,
                     subtitle: nodeData[nodeId]?.subtitle,
-                    color: nodeData[nodeId]?.color,
+                    color: resolveNodeColor(nodeData[nodeId]),
                   }))}
                 title={titleBlock?.title ?? displayLabel}
                 tally={`${String(Object.keys(nodeData).length).padStart(2, '0')} CMP / ${String(connectors.length).padStart(2, '0')} LNK`}
@@ -2117,7 +2383,7 @@ export default function ArcDiagram({
               viewBox={`0 0 ${layout.width} ${layout.height}`}
             >
               {connectors.map((conn, i) => {
-                const isConnected = activeNodeId != null && focusState.connectorIndexes.has(i)
+                const isConnected = hasFocus && focusState.connectorIndexes.has(i)
                 return (
                   <ConnectorPath
                     key={i}
@@ -2128,7 +2394,7 @@ export default function ArcDiagram({
                     themeColors={themeColors}
                     brand={brand}
                     highlighted={fx.highlightEdges && isConnected}
-                    dimmed={fx.dim && activeNodeId != null && !isConnected}
+                    dimmed={fx.dim && hasFocus && !isConnected}
                     dimOpacity={fx.connectorDimOpacity}
                   />
                 )
@@ -2150,7 +2416,7 @@ export default function ArcDiagram({
                   themeColors={themeColors}
                   brand={brand}
                   hovered={isActive}
-                  dimmed={fx.dim && activeNodeId != null && !isInFocus}
+                  dimmed={fx.dim && hasFocus && !isInFocus}
                   lift={fx.lift}
                   glow={fx.glow}
                   dimOpacity={fx.dimOpacity}
@@ -2209,12 +2475,25 @@ export default function ArcDiagram({
         <ArcSourceView source={sourceCode} mode={mode} />
       )}
 
-      {!showArc && showFocusStory && activeFocusTarget && (
+      {!showArc && storyTarget && (activeView ? showViews : showFocusStory) && (
         <FocusStory
-          target={activeFocusTarget}
+          target={storyTarget}
           mode={mode}
           inset={chromeInset}
           monoFamily={brand?.monoFamily}
+        />
+      )}
+
+      {/* Guided views rail - bottom center */}
+      {showViews && !showArc && views != null && views.length > 0 && (
+        <ViewsRail
+          views={views}
+          activeIndex={activeViewIndex}
+          mode={mode}
+          monoFamily={brand?.monoFamily}
+          inset={chromeInset}
+          onStep={i => setActiveView(views[i]?.id ?? null)}
+          onExit={() => setActiveView(null)}
         />
       )}
 
@@ -2249,7 +2528,7 @@ export default function ArcDiagram({
       )}
 
       {/* Key - bottom left, stacked above the minimap when both are shown */}
-      {showLegend && !showArc && (
+      {legendMode !== 'hidden' && !showArc && (
         <DiagramLegend
           styles={connectorStyles}
           connectors={connectors}
@@ -2259,6 +2538,7 @@ export default function ArcDiagram({
           mode={mode}
           left={chromeInset}
           bottom={chromeInset + (showMinimap ? minimapHeight(layout) + 8 : 0)}
+          all={legendMode === 'all'}
         />
       )}
 
