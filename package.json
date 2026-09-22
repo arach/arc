@@ -73,6 +73,8 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview",
+    "visual": "bun scripts/visualCheck.ts",
+    "visual:update": "bun scripts/visualCheck.ts --update",
     "generate:schema": "bun scripts/generate-schema.ts",
     "generate-og": "node scripts/generate-og.js",
     "check:dist": "attw --pack . --ignore-rules cjs-resolves-to-esm unexpected-module-syntax && publint && node scripts/check-packlist.mjs",

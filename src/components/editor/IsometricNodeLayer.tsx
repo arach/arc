@@ -7,6 +7,7 @@ import type { IsoStyleSpec } from '../../utils/isoStyles'
 import TechnicalDefs from '../technical/TechnicalDefs'
 import { TechnicalBox, TechnicalCallout } from '../technical/TechnicalNode'
 import IsoFacePrint from './IsoFacePrint'
+import { resolveNodeColor, resolveNodeIcon } from '../../utils/nodeKinds'
 import type { NodePosition, NodeData } from '../../types/editor'
 import type { BrandSpec } from '../../utils/themes'
 
@@ -116,7 +117,7 @@ export default function IsometricNodeLayer({
               uid={uid}
               style={isoStyle}
               box={box}
-              color={data.color}
+              color={resolveNodeColor(data)}
               tag={nodeIndex[nodeId]}
               selected={selectedNodeIds.includes(nodeId)}
             />
@@ -131,7 +132,7 @@ export default function IsometricNodeLayer({
             box={box}
             name={data.name}
             subtitle={data.subtitle}
-            icon={data.icon}
+            icon={resolveNodeIcon(data)}
             selected={selectedNodeIds.includes(nodeId)}
           />
         ))}
@@ -200,8 +201,9 @@ export default function IsometricNodeLayer({
         const box = isoBox(isoWidth, isoDepth, isoHeight, screenX, screenY, DEFAULT_CORNER_RADIUS)
 
         // Get shading colors
-        const colorDef = ISO_COLORS[data.color as keyof typeof ISO_COLORS] || ISO_COLORS.violet
-        const shading = getColorShading(data.color)
+        const resolvedColor = resolveNodeColor(data)
+        const colorDef = ISO_COLORS[resolvedColor as keyof typeof ISO_COLORS] || ISO_COLORS.violet
+        const shading = getColorShading(resolvedColor)
 
         const labelPos = isoToScreen(node.x + isoWidth / 2, node.y + isoDepth / 2, elevation + isoHeight)
         const labelX = originX + labelPos.screenX
@@ -285,7 +287,7 @@ export default function IsometricNodeLayer({
                 width={isoWidth}
                 depth={isoDepth}
                 name={data.name}
-                icon={data.icon}
+                icon={resolveNodeIcon(data)}
                 dir={node.isoLabelDir}
                 flip={node.isoLabelFlip}
                 fontFamily={isoPrintFont(node.isoLabelFont, brand)}

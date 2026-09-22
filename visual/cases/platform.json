@@ -1,0 +1,38 @@
+{
+  "layout": { "width": 820, "height": 420 },
+  "nodes": {
+    "web": { "x": 40, "y": 60, "size": "m" },
+    "mobile": { "x": 40, "y": 260, "size": "m" },
+    "lb": { "x": 300, "y": 160, "size": "s" },
+    "workers": { "x": 480, "y": 40, "size": "m" },
+    "queue": { "x": 480, "y": 160, "size": "s" },
+    "store": { "x": 480, "y": 280, "size": "m" },
+    "obs": { "x": 660, "y": 160, "size": "s" }
+  },
+  "nodeData": {
+    "web": { "icon": "Globe", "name": "Web", "subtitle": "Next.js", "color": "sky" },
+    "mobile": { "icon": "Smartphone", "name": "Mobile", "subtitle": "Expo", "color": "rose", "shape": "notch" },
+    "lb": { "icon": "Network", "name": "LB", "color": "zinc", "shape": "pill" },
+    "workers": { "icon": "Cpu", "name": "Workers", "subtitle": "x4", "color": "emerald" },
+    "queue": { "icon": "ListOrdered", "name": "Queue", "color": "orange", "shape": "pill" },
+    "store": { "icon": "HardDrive", "name": "Object Store", "subtitle": "S3", "color": "blue" },
+    "obs": { "icon": "Activity", "name": "Telemetry", "color": "violet", "shape": "square" }
+  },
+  "connectors": [
+    { "id": "w1", "from": "web", "to": "lb", "fromAnchor": "right", "toAnchor": "left", "style": "tls" },
+    { "id": "w2", "from": "mobile", "to": "lb", "fromAnchor": "right", "toAnchor": "left", "style": "tls" },
+    { "id": "l1", "from": "lb", "to": "workers", "fromAnchor": "right", "toAnchor": "left", "style": "jobs" },
+    { "id": "l2", "from": "lb", "to": "queue", "fromAnchor": "right", "toAnchor": "left", "style": "jobs" },
+    { "id": "l3", "from": "workers", "to": "store", "fromAnchor": "bottom", "toAnchor": "top", "style": "io" },
+    { "id": "l4", "from": "workers", "to": "obs", "fromAnchor": "right", "toAnchor": "left", "style": "metrics" }
+  ],
+  "connectorStyles": {
+    "tls": { "color": "sky", "strokeWidth": 2, "label": "TLS" },
+    "jobs": { "color": "emerald", "strokeWidth": 2 },
+    "io": { "color": "blue", "strokeWidth": 2, "label": "read/write", "dashed": true },
+    "metrics": { "color": "violet", "strokeWidth": 1.5, "dashed": true, "showArrow": true }
+  },
+  "groups": [
+    { "id": "prod", "x": 280, "y": 20, "width": 380, "height": 380, "type": "rect", "color": "zinc", "label": "Production", "dashed": true }
+  ]
+}

@@ -223,14 +223,21 @@ interface NodePosition {
 }
 
 interface NodeData {
-  icon: string
+  icon?: string          // Lucide name; omit when `kind` supplies it
   name: string
   subtitle?: string
   description?: string
-  color: DiagramColor
+  color?: DiagramColor   // omit when `kind` supplies it; overrides the kind default
+  kind?: NodeKind        // semantic role — supplies default icon + color
+  shape?: NodeShape      // per-node silhouette override
 }
 
 type DiagramColor = 'violet' | 'emerald' | 'blue' | 'amber' | 'sky' | 'zinc' | 'rose' | 'orange'
+
+// Semantic roles — `src/utils/nodeKinds.ts` maps each to a default palette
+// color + Lucide icon, resolved at render time.
+type NodeKind = 'frontend' | 'backend' | 'service' | 'database' | 'cache' | 'queue' |
+                'storage' | 'gateway' | 'security' | 'user' | 'external' | 'observability'
 ```
 
 ### Connector Types
