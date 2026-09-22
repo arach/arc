@@ -240,10 +240,37 @@ export interface ExportZone {
   height: number
 }
 
+/**
+ * Legend policy for the edge/group key. `auto` lists the connector styles
+ * actually used plus labelled groups; `all` lists every connector style
+ * (used or not); `hidden` never shows the key.
+ */
+export type LegendMode = 'auto' | 'all' | 'hidden'
+
+/**
+ * Viewer/editor display state saved alongside the diagram in a file (the
+ * `_meta` key). Never affects geometry, structure validation, or diffs —
+ * the editor strips it into `diagramMeta` at load and writes it back at save.
+ */
+export interface FileMeta {
+  themeId?: string
+  colorMode?: 'light' | 'dark'
+  viewMode?: string
+  isoStyle?: string
+  viewport?: { width: number; height: number }
+  sourceUrl?: string
+  /** BCP-47 locale tag, e.g. `en`, `fr`, `ar` — viewer `lang`/`dir` + Intl formatting. */
+  locale?: string
+}
+
 // Full diagram format (internal Arc state)
 export interface ArcDiagram {
   layout: DiagramLayout
   grid: GridConfig
+  /** Authored legend policy; a viewer prop can still override it. */
+  legend?: LegendMode
+  /** Viewer/editor display state saved with the file — see `FileMeta`. */
+  _meta?: FileMeta
   layoutHints?: LayoutHints
   nodes: Record<string, NodePosition>
   nodeData: Record<string, NodeData>
@@ -261,6 +288,10 @@ export interface ArcDiagram {
 export interface ArcDiagramData {
   id?: string
   layout: DiagramLayout
+  /** Authored legend policy: 'auto' | 'all' | 'hidden'. */
+  legend?: LegendMode
+  /** Viewer/editor display state saved with the file — see `FileMeta`. */
+  _meta?: FileMeta
   layoutHints?: LayoutHints
   nodes: Record<string, NodePosition>
   nodeData: Record<string, NodeData>
@@ -275,6 +306,8 @@ export interface ArcDiagramData {
 export function toExportFormat(diagram: ArcDiagram): ArcDiagramData {
   return {
     layout: diagram.layout,
+    legend: diagram.legend,
+    _meta: diagram._meta,
     layoutHints: diagram.layoutHints,
     nodes: diagram.nodes,
     nodeData: diagram.nodeData,

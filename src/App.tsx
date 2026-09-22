@@ -259,6 +259,7 @@ function useUrlOverrides() {
         return next
       }, { replace: true })
     },
+    locale: searchParams.get('locale'),
   }
 }
 
@@ -305,6 +306,7 @@ function PlayerPage() {
   const colorMode = urlOverrides.mode || session?.colorMode || 'dark'
   const themeId = urlOverrides.theme || session?.themeId
   const viewport = urlOverrides.viewport || session?.diagramMeta?.viewport
+  const locale = urlOverrides.locale || session?.diagramMeta?.locale
 
   useEffect(() => {
     if (colorMode === 'dark') {
@@ -354,6 +356,7 @@ function PlayerPage() {
           showFocusStory={urlOverrides.chrome && !!playerData.focusTargets}
           view={urlOverrides.view}
           onViewChange={urlOverrides.setView}
+          locale={locale}
         />
       </div>
     </div>

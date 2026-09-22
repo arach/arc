@@ -18,6 +18,10 @@
     "ArcDiagramData": {
       "additionalProperties": false,
       "properties": {
+        "_meta": {
+          "$ref": "#/definitions/FileMeta",
+          "description": "Viewer/editor display state saved with the file — see `FileMeta`."
+        },
         "connectorStyles": {
           "additionalProperties": {
             "$ref": "#/definitions/ConnectorStyle"
@@ -50,6 +54,10 @@
         },
         "layoutHints": {
           "$ref": "#/definitions/LayoutHints"
+        },
+        "legend": {
+          "$ref": "#/definitions/LegendMode",
+          "description": "Authored legend policy: 'auto' | 'all' | 'hidden'."
         },
         "nodeData": {
           "additionalProperties": {
@@ -272,6 +280,52 @@
       ],
       "type": "object"
     },
+    "FileMeta": {
+      "additionalProperties": false,
+      "description": "Viewer/editor display state saved alongside the diagram in a file (the `_meta` key). Never affects geometry, structure validation, or diffs — the editor strips it into `diagramMeta` at load and writes it back at save.",
+      "properties": {
+        "colorMode": {
+          "enum": [
+            "light",
+            "dark"
+          ],
+          "type": "string"
+        },
+        "isoStyle": {
+          "type": "string"
+        },
+        "locale": {
+          "description": "BCP-47 locale tag, e.g. `en`, `fr`, `ar` — viewer `lang`/`dir` + Intl formatting.",
+          "type": "string"
+        },
+        "sourceUrl": {
+          "type": "string"
+        },
+        "themeId": {
+          "type": "string"
+        },
+        "viewMode": {
+          "type": "string"
+        },
+        "viewport": {
+          "additionalProperties": false,
+          "properties": {
+            "height": {
+              "type": "number"
+            },
+            "width": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "width",
+            "height"
+          ],
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
     "FocusConnectorRef": {
       "additionalProperties": false,
       "properties": {
@@ -461,6 +515,15 @@
         }
       },
       "type": "object"
+    },
+    "LegendMode": {
+      "description": "Legend policy for the edge/group key. `auto` lists the connector styles actually used plus labelled groups; `all` lists every connector style (used or not); `hidden` never shows the key.",
+      "enum": [
+        "auto",
+        "all",
+        "hidden"
+      ],
+      "type": "string"
     },
     "NodeData": {
       "additionalProperties": false,

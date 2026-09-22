@@ -168,6 +168,8 @@ export interface DiagramMeta {
   colorMode?: 'light' | 'dark'
   viewport?: { width: number; height: number }
   sourceUrl?: string  // e.g. 'operate/control-plane' — where this diagram came from
+  /** BCP-47 locale — viewer `lang`/`dir` + Intl formatting. Viewer-only. */
+  locale?: string
 }
 
 export interface MetaState {

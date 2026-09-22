@@ -442,4 +442,37 @@ describe('validateDiagram — node kinds', () => {
     const diag = find(validateDiagram(d), 'shape/invalid-node-data')
     expect(diag?.supportedFixes).toBeUndefined()
   })
+
+  describe('legend + locale contracts', () => {
+    test.each([
+      [{ legend: 'auto' }],
+      [{ legend: 'all' }],
+      [{ legend: 'hidden' }],
+      [{ _meta: { locale: 'en' } }],
+      [{ _meta: { locale: 'ar-EG' } }],
+      [{ _meta: {} }],
+      [{ _meta: { themeId: 'command', colorMode: 'dark' } }],
+    ])('valid doc-level field %s', (patch) => {
+      expect(validateDiagram({ ...base(), ...patch })).toEqual([])
+    })
+
+    test('unknown legend value proposes the nearest mode', () => {
+      const d = { ...base(), legend: 'aut' }
+      const diag = find(validateDiagram(d), 'semantic/unknown-legend')
+      expect(diag?.severity).toBe('error')
+      expect(diag?.subject).toEqual({ type: 'diagram' })
+      expect(diag?.supportedFixes).toEqual([{ kind: 'set-legend', legend: 'auto' }])
+    })
+
+    test('non-object _meta is an error with a remove fix', () => {
+      const diag = find(validateDiagram({ ...base(), _meta: 'en' }), 'semantic/invalid-meta')
+      expect(diag?.supportedFixes).toEqual([{ kind: 'remove-meta' }])
+    })
+
+    test.each([['en_US'], ['not a locale'], [42]])('invalid locale %s', (locale) => {
+      const diag = find(validateDiagram({ ...base(), _meta: { locale } }), 'semantic/invalid-locale')
+      expect(diag?.severity).toBe('error')
+      expect(diag?.supportedFixes).toEqual([{ kind: 'remove-meta' }])
+    })
+  })
 })

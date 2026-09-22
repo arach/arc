@@ -25,8 +25,9 @@ import type { Connector as EditorConnector } from '../types/editor'
 import type { NodeKind } from '../types/diagram'
 import { resolveNodeColor, resolveNodeIcon } from '../utils/nodeKinds'
 import type { DiagramDelta } from '../utils/diffDiagram'
-import type { DiagramSource } from '../types/diagram'
+import type { DiagramSource, FileMeta, LegendMode } from '../types/diagram'
 import { sourceLabel } from '../utils/sourceRef'
+import { isRtlLocale, isValidLocale } from '../utils/locale'
 
 // ============================================
 // Types
@@ -193,6 +194,10 @@ export interface LayoutHints {
 export interface ArcDiagramData {
   id?: string
   layout: DiagramLayout
+  /** Authored legend policy; the `legend` prop can still override it. */
+  legend?: LegendMode
+  /** Viewer/editor display state saved with the file — see `FileMeta`. */
+  _meta?: FileMeta
   layoutHints?: LayoutHints
   nodes: Record<string, NodePosition>
   nodeData: Record<string, NodeData>
@@ -1319,7 +1324,7 @@ function MiniMap({ nodes, nodeData, layout, themeColors, brand, mode, inset = 12
 // ============================================
 
 interface LegendProps {
-  /** Only styles actually used by a connector are listed. */
+  /** Only styles actually used by a connector are listed — unless `all`. */
   styles: Record<string, ConnectorStyle>
   connectors: Connector[]
   groups: GroupShape[]
@@ -1328,21 +1333,25 @@ interface LegendProps {
   mode: DiagramMode
   left: number
   bottom: number
+  /** 'all' lists every connector style, used or not. */
+  all?: boolean
 }
 
 /**
  * A key for the diagram's edge types (and group boundaries, when labelled).
  * Read-only chrome: it never intercepts pointer events.
  */
-function DiagramLegend({ styles, connectors, groups, themeColors, brand, mode, left, bottom }: LegendProps) {
+function DiagramLegend({ styles, connectors, groups, themeColors, brand, mode, left, bottom, all }: LegendProps) {
   const isLight = mode === 'light'
   const mono = brand?.monoFamily || "'JetBrains Mono', ui-monospace, monospace"
 
-  // Only keys that appear in the drawing, in first-use order.
+  // Only keys that appear in the drawing, in first-use order — 'all' mode
+  // lists every authored style instead.
   const used: string[] = []
   for (const c of connectors) if (styles[c.style] && !used.includes(c.style)) used.push(c.style)
+  const keys = all ? Object.keys(styles) : used
 
-  const rows = used.map(key => ({ key, style: styles[key] }))
+  const rows = keys.map(key => ({ key, style: styles[key] }))
   const groupRows = groups.filter(g => !!g.label)
 
   if (!rows.length && !groupRows.length) return null
@@ -1771,8 +1780,15 @@ interface ArcDiagramProps {
   showControls?: boolean
   /** Show a minimap overview (bottom-left). Default: false */
   showMinimap?: boolean
-  /** Show a key for the connector styles and labelled groups (bottom-left). Default: false */
+  /** Show a key for the connector styles and labelled groups (bottom-left). Default: false.
+   *  Equivalent to `legend='auto'`; kept for back-compat — prefer `legend`. */
   showLegend?: boolean
+  /** Legend policy — 'auto' | 'all' | 'hidden'. Overrides `data.legend`;
+   *  'auto' lists styles actually used, 'all' lists every connector style. */
+  legend?: LegendMode
+  /** BCP-47 locale for the viewer frame (lang/dir + Intl formatting).
+   *  Overrides `data._meta?.locale`. */
+  locale?: string
   /** Show the active focus target's caption and steps. Default: false */
   showFocusStory?: boolean
   /** Show the chapter rail when `data.views` is present, and let a view own
@@ -1818,6 +1834,8 @@ export default function ArcDiagram({
   showControls,
   showMinimap = false,
   showLegend = false,
+  legend,
+  locale: localeProp,
   showFocusStory = false,
   showViews = false,
   view,
@@ -1841,6 +1859,15 @@ export default function ArcDiagram({
   // Measured title-block height, so the zoom controls can slide clear of it.
   const [titleBlockH, setTitleBlockH] = useState(48)
   const fx = useMemo(() => resolveHoverEffects(hoverEffects), [hoverEffects])
+
+  // Legend policy: explicit prop > deprecated showLegend > authored > hidden.
+  const legendMode = legend ?? (showLegend ? 'auto' : undefined) ?? data.legend ?? 'hidden'
+
+  // Viewer locale: prop > authored meta. Drives `lang`/`dir` on the frame so
+  // screen readers and RTL consumers see the document's declared locale.
+  const locale = localeProp ?? data._meta?.locale
+  const langAttr = locale && isValidLocale(locale) ? locale : undefined
+  const dirAttr = langAttr && isRtlLocale(langAttr) ? ('rtl' as const) : undefined
 
   // Active node = locked takes priority over hovered
   const activeNodeId = fx.enabled ? (lockedNodeId ?? hoveredNodeId) : null
@@ -2125,6 +2152,8 @@ export default function ArcDiagram({
     <div
       ref={containerRef}
       data-arc-diagram
+      lang={langAttr}
+      dir={dirAttr}
       className={`rounded-2xl overflow-hidden relative ${themeColors.background.container} ${className}`}
       onWheel={handleWheel}
       onMouseDown={handleMouseDown}
@@ -2382,7 +2411,7 @@ export default function ArcDiagram({
       )}
 
       {/* Key - bottom left, stacked above the minimap when both are shown */}
-      {showLegend && !showArc && (
+      {legendMode !== 'hidden' && !showArc && (
         <DiagramLegend
           styles={connectorStyles}
           connectors={connectors}
@@ -2392,6 +2421,7 @@ export default function ArcDiagram({
           mode={mode}
           left={chromeInset}
           bottom={chromeInset + (showMinimap ? minimapHeight(layout) + 8 : 0)}
+          all={legendMode === 'all'}
         />
       )}
 

@@ -206,6 +206,8 @@ interface ArcDiagramProps {
 interface ArcDiagramData {
   id?: string
   layout: { width: number; height: number }
+  legend?: 'auto' | 'all' | 'hidden'  // authored legend policy
+  _meta?: FileMeta                    // viewer/editor state; `locale` is BCP-47
   nodes: Record<string, NodePosition>
   nodeData: Record<string, NodeData>
   connectors: Connector[]
