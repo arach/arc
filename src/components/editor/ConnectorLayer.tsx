@@ -1,5 +1,18 @@
 import React from 'react'
-import { anchor, connectorPath, midPoint } from '../../utils/diagramHelpers'
+import {
+  anchor,
+  midPoint,
+  arrowShape,
+  angleBetween,
+  connectorArrowAt,
+  connectorArrowSize,
+  connectorControlPoints,
+  connectorLineStyle,
+  elbowPolyline,
+  roundedPolylineD,
+  straightPath,
+} from '../../utils/diagramHelpers'
+import type { ArrowHead } from '../../types/editor'
 import type { BrandSpec, Theme } from '../../utils/themes'
 
 type ResolvedThemeMode = Theme['light'] | Theme['dark']
@@ -23,59 +36,52 @@ function resolveStrokeColor(color: string, themeColors?: ResolvedThemeMode | nul
   return strokeColors[color] || strokeColors.zinc
 }
 
-function EndMarker({
-  id,
+/** Arrowhead (or other end glyph) drawn inline at a connector endpoint.
+ *  `angle` is the path's tangent at that end, pointing along travel;
+ *  the glyph is placed tip-down at `x,y` facing travel direction. */
+function EndGlyph({
+  kind,
+  x,
+  y,
+  angle,
+  size,
   color,
+  opacity,
   themeColors,
   chevron,
-  start,
 }: {
-  id: string
+  kind: ArrowHead
+  x: number
+  y: number
+  angle: number
+  size: number
   color: string
+  opacity: number
   themeColors?: ResolvedThemeMode | null
   chevron?: boolean
-  start?: boolean
 }) {
+  // 'chevron' brand turns the filled 'arrow' into an open chevron
+  const resolved = kind === 'arrow' && chevron ? 'open' : kind
+  const shape = arrowShape(resolved, size)
+  if (!shape) return null
   const stroke = resolveStrokeColor(color, themeColors)
-  if (chevron) {
-    return (
-      <marker
-        id={id}
-        markerWidth="10"
-        markerHeight="10"
-        refX={start ? 1 : 9}
-        refY="5"
-        orient="auto"
-        markerUnits="userSpaceOnUse"
-      >
+  return (
+    <g transform={`translate(${x}, ${y}) rotate(${angle})`} className="pointer-events-none">
+      {shape.circle ? (
+        <circle cx={shape.circle.cx} cy={0} r={shape.circle.r} fill={stroke} fillOpacity={0.88 * opacity} />
+      ) : (
         <path
-          d={start ? 'M9,1 L2,5 L9,9' : 'M1,1 L8,5 L1,9'}
-          fill="none"
-          stroke={stroke}
-          strokeWidth="1.15"
-          strokeOpacity="0.9"
+          d={shape.d!}
+          fill={shape.filled ? stroke : 'none'}
+          fillOpacity={shape.filled ? 0.88 * opacity : undefined}
+          stroke={shape.filled ? undefined : stroke}
+          strokeWidth={resolved === 'open' ? Math.max(1, size * 0.14) : Math.max(1, size * 0.2)}
+          strokeOpacity={shape.filled ? undefined : 0.9 * opacity}
           strokeLinecap="square"
           strokeLinejoin="miter"
         />
-      </marker>
-    )
-  }
-  return (
-    <marker
-      id={id}
-      markerWidth="8"
-      markerHeight="6"
-      refX={start ? 1 : 7}
-      refY="3"
-      orient="auto"
-      markerUnits="userSpaceOnUse"
-    >
-      <polygon
-        points={start ? '8 0, 0 3, 8 6' : '0 0, 8 3, 0 6'}
-        fill={stroke}
-        fillOpacity="0.88"
-      />
-    </marker>
+      )}
+    </g>
   )
 }
 
@@ -101,8 +107,42 @@ function EndpointDot({ x, y, color, size = 3, themeColors }: { x: number; y: num
   )
 }
 
-// Connector paths share the helper in diagramHelpers so the canvas and the
-// SVG export draw identical curves for the same connector.
+// Generate path between two points, with the tangent angles at each end
+// (needed to orient inline arrowheads on curves and elbows). Beziers go
+// through connectorControlPoints so the canvas and the SVG export draw
+// identical curves for the same connector.
+function generatePath(
+  from: { x: number; y: number },
+  to: { x: number; y: number },
+  fromAnchor: Parameters<typeof connectorControlPoints>[2],
+  toAnchor: Parameters<typeof connectorControlPoints>[3],
+  curve?: string,
+  curveDepth = 40,
+): { d: string; startAngle: number; endAngle: number } {
+  // Straight line
+  if (curve === 'direct') {
+    const a = angleBetween(from, to)
+    return { d: straightPath(from, to), startAngle: a, endAngle: a }
+  }
+
+  // Orthogonal elbow with rounded corners
+  if (curve === 'step') {
+    const pts = elbowPolyline(from, to, fromAnchor, toAnchor)
+    return {
+      d: roundedPolylineD(pts),
+      startAngle: angleBetween(pts[0], pts[1]),
+      endAngle: angleBetween(pts[pts.length - 2], pts[pts.length - 1]),
+    }
+  }
+
+  // Bezier — tangent at each end runs through the adjacent control point
+  const { cp1, cp2 } = connectorControlPoints(from, to, fromAnchor, toAnchor, curve as 'natural' | 'down' | 'up' | undefined, curveDepth)
+  return {
+    d: `M ${from.x} ${from.y} C ${cp1.x} ${cp1.y}, ${cp2.x} ${cp2.y}, ${to.x} ${to.y}`,
+    startAngle: angleBetween(from, cp1),
+    endAngle: angleBetween(cp2, to),
+  }
+}
 
 function EdgeHandle({
   x,
@@ -140,17 +180,25 @@ function Connector({ connector, nodes, connectorStyles, isSelected, onClick, onC
 
   // Get curve depth from connector or use default
   const curveDepth = connector.curveDepth ?? 40
-  const path = connectorPath(from, to, connector.fromAnchor, connector.toAnchor, connector.curve, curveDepth)
-  const strokeColor = resolveStrokeColor(style.color, themeColors)
+  const { d: path, startAngle, endAngle } = generatePath(from, to, connector.fromAnchor, connector.toAnchor, connector.curve, curveDepth)
+  const strokeColor = resolveStrokeColor(style.color ?? 'zinc', themeColors)
+  const strokeWidth = style.strokeWidth ?? 2
+  // Overall connector opacity ('auto' = fully opaque line)
+  const opacity = style.opacity ?? 1
 
-  // Arrow control - default to true if not specified
-  const showArrow = style.showArrow !== false
+  // Per-end glyphs (explicit fromArrow/toArrow win over the legacy flags)
+  const fromArrow = connectorArrowAt(style, 'from')
+  const toArrow = connectorArrowAt(style, 'to')
+  const fromArrowSize = connectorArrowSize(style, 'from')
+  const toArrowSize = connectorArrowSize(style, 'to')
   // Endpoint dots - default to true
   const showEndpoints = style.showEndpoints !== false
   // Bidirectional support
-  const isBidirectional = style.bidirectional === true
-  // Animation support (enabled by default for dashed lines, can be explicitly disabled)
-  const isAnimated = style.animated !== false && style.dashed
+  const isBidirectional = style.bidirectional === true || fromArrow !== 'none'
+  // Animation support (enabled by default for dashed/dotted lines)
+  const lineStyle = connectorLineStyle(style)
+  const isAnimated = style.animated !== false && lineStyle !== 'solid'
+  const labelText = connector.label ?? style.label
 
   // Determine label position based on connector direction
   const isVertical = connector.fromAnchor === 'bottom' || connector.fromAnchor === 'top'
@@ -173,25 +221,21 @@ function Connector({ connector, nodes, connectorStyles, isSelected, onClick, onC
     textAnchor = 'middle'
   }
 
-  // Calculate dash array and animation properties
-  const dashArray = style.dashed ? '8 4' : undefined
-  
-  // Determine arrow markers
-  let markerStartAttr: string | undefined = undefined
-  let markerEndAttr: string | undefined = undefined
-  if (showArrow) {
-    if (isBidirectional) {
-      markerStartAttr = `url(#arrow-start-${style.color})`
-      markerEndAttr = `url(#arrow-${style.color})`
-    } else {
-      markerEndAttr = `url(#arrow-${style.color})`
-    }
-  }
-  
+  // Dash pattern for the resolved line style ('0.1 6' + round caps = dots)
+  const dashArray = lineStyle === 'dashed' ? '8 4' : lineStyle === 'dotted' ? '0.1 6' : undefined
+  const dashPeriod = lineStyle === 'dashed' ? 12 : 6.1
+
   // Animation class for CSS animations
-  const animationClass = isAnimated 
+  const animationClass = isAnimated
     ? (isBidirectional ? 'animate-dash-bidirectional' : 'animate-dash-forward')
     : ''
+
+  // Role label positions — a short way along the line from each end
+  const rad = (deg: number) => (deg * Math.PI) / 180
+  const rolePos = (p: { x: number; y: number }, angle: number, inward: boolean) => {
+    const a = rad(inward ? angle : angle + 180)
+    return { x: p.x + Math.cos(a) * 20, y: p.y + Math.sin(a) * 20 + 10 }
+  }
 
   return (
     <g
@@ -220,67 +264,100 @@ function Connector({ connector, nodes, connectorStyles, isSelected, onClick, onC
           d={path}
           fill="none"
           stroke={strokeColor}
-          strokeWidth={style.strokeWidth + 7}
+          strokeWidth={strokeWidth + 7}
           strokeOpacity={0.22}
           strokeDasharray={dashArray}
           style={{ filter: 'blur(4px)' }}
         />
       )}
 
-      {brand?.connectorGlow && (
+      <g opacity={opacity}>
+        {brand?.connectorGlow && (
+          <path
+            d={path}
+            fill="none"
+            stroke={strokeColor}
+            strokeWidth={strokeWidth + 5}
+            strokeOpacity={0.16}
+            strokeDasharray={dashArray}
+            strokeLinecap="round"
+            style={{ filter: 'blur(2.5px)' }}
+            className={animationClass}
+          />
+        )}
+
+        {/* Visible connector line with animation */}
         <path
           d={path}
           fill="none"
           stroke={strokeColor}
-          strokeWidth={style.strokeWidth + 5}
-          strokeOpacity={0.16}
+          strokeWidth={strokeWidth}
           strokeDasharray={dashArray}
           strokeLinecap="round"
-          style={{ filter: 'blur(2.5px)' }}
+          strokeLinejoin="round"
           className={animationClass}
+          strokeOpacity={0.92}
+          style={{ ['--dash-period' as string]: dashPeriod }}
         />
-      )}
 
-      {/* Visible connector line with animation */}
-      <path
-        d={path}
-        fill="none"
-        stroke={strokeColor}
-        strokeWidth={style.strokeWidth}
-        strokeDasharray={dashArray}
-        markerStart={markerStartAttr}
-        markerEnd={markerEndAttr}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className={animationClass}
-        strokeOpacity={0.92}
-      />
+        {/* End glyphs (arrowheads, dots, diamonds, bars) */}
+        <EndGlyph kind={fromArrow} x={from.x} y={from.y} angle={startAngle + 180} size={fromArrowSize} color={style.color ?? 'zinc'} opacity={opacity} themeColors={themeColors} chevron={brand?.arrowhead === 'chevron'} />
+        <EndGlyph kind={toArrow} x={to.x} y={to.y} angle={endAngle} size={toArrowSize} color={style.color ?? 'zinc'} opacity={opacity} themeColors={themeColors} chevron={brand?.arrowhead === 'chevron'} />
 
-      {/* Endpoint dots at node edges */}
-      {showEndpoints && (
-        <>
-          <EndpointDot x={from.x} y={from.y} color={style.color} size={4} themeColors={themeColors} />
-          <EndpointDot x={to.x} y={to.y} color={style.color} size={4} themeColors={themeColors} />
-        </>
-      )}
+        {/* Endpoint dots at node edges */}
+        {showEndpoints && (
+          <>
+            <EndpointDot x={from.x} y={from.y} color={style.color ?? 'zinc'} size={4} themeColors={themeColors} />
+            <EndpointDot x={to.x} y={to.y} color={style.color ?? 'zinc'} size={4} themeColors={themeColors} />
+          </>
+        )}
 
-      {/* Label - only for non-curved connectors with labels */}
-      {style.label && style.label.length > 0 && !connector.curve && (
-        <text
-          x={labelX}
-          y={labelY}
-          textAnchor={textAnchor}
-          fill={strokeColor}
-          fontSize="9"
-          fontFamily={brand?.upperLabels ? (brand.monoFamily || 'ui-monospace, monospace') : (brand?.fontFamily || 'system-ui, sans-serif')}
-          fontWeight="500"
-          letterSpacing={brand?.upperLabels ? '0.08em' : '0.02em'}
-          fillOpacity={0.82}
-          style={{ textTransform: brand?.upperLabels ? 'uppercase' : 'none' }}
-        >
-          {style.label}
-        </text>
-      )}
+        {/* Label — connector label wins over the style's */}
+        {labelText && labelText.length > 0 && connector.curve !== 'down' && connector.curve !== 'up' && (
+          <text
+            x={labelX}
+            y={labelY}
+            textAnchor={textAnchor}
+            fill={strokeColor}
+            fontSize="9"
+            fontFamily={brand?.upperLabels ? (brand.monoFamily || 'ui-monospace, monospace') : (brand?.fontFamily || 'system-ui, sans-serif')}
+            fontWeight="500"
+            letterSpacing={brand?.upperLabels ? '0.08em' : '0.02em'}
+            fillOpacity={0.82}
+            style={{ textTransform: brand?.upperLabels ? 'uppercase' : 'none' }}
+          >
+            {labelText}
+          </text>
+        )}
+
+        {/* Relationship role annotations near each end */}
+        {connector.fromRole && (
+          <text
+            x={rolePos(from, startAngle, true).x}
+            y={rolePos(from, startAngle, true).y}
+            textAnchor="middle"
+            fill={strokeColor}
+            fontSize="7.5"
+            fontFamily={brand?.monoFamily || 'ui-monospace, monospace'}
+            fillOpacity={0.6}
+          >
+            {connector.fromRole}
+          </text>
+        )}
+        {connector.toRole && (
+          <text
+            x={rolePos(to, endAngle, false).x}
+            y={rolePos(to, endAngle, false).y}
+            textAnchor="middle"
+            fill={strokeColor}
+            fontSize="7.5"
+            fontFamily={brand?.monoFamily || 'ui-monospace, monospace'}
+            fillOpacity={0.6}
+          >
+            {connector.toRole}
+          </text>
+        )}
+      </g>
 
       {isSelected && onEndpointDown && (
         <>
@@ -306,13 +383,6 @@ export default function ConnectorLayer({
 }: {
   layout: any; nodes: any; connectors: any[]; connectorStyles: any; selectedConnectorIndex: number | null; onConnectorClick: (i: number) => void; onConnectorContextMenu?: (i: number, e: React.MouseEvent) => void; onEndpointDown?: (i: number, end: 'from' | 'to', e: React.PointerEvent) => void; themeColors?: ResolvedThemeMode | null; brand?: BrandSpec
 }) {
-  // Get unique colors used by connectors for marker definitions
-  const usedColors = [...new Set(
-    connectors
-      .map(c => connectorStyles[c.style]?.color)
-      .filter(Boolean)
-  )] as string[]
-
   return (
     <>
       {/* CSS animations for dashed line motion */}
@@ -322,7 +392,7 @@ export default function ConnectorLayer({
             stroke-dashoffset: 0;
           }
           100% {
-            stroke-dashoffset: 12;
+            stroke-dashoffset: var(--dash-period, 12);
           }
         }
         
@@ -331,7 +401,7 @@ export default function ConnectorLayer({
             stroke-dashoffset: 0;
           }
           50% {
-            stroke-dashoffset: 12;
+            stroke-dashoffset: var(--dash-period, 12);
           }
           100% {
             stroke-dashoffset: 0;
@@ -352,16 +422,6 @@ export default function ConnectorLayer({
         viewBox={`0 0 ${layout.width} ${layout.height}`}
         preserveAspectRatio="none"
       >
-        {/* Arrow marker definitions */}
-        <defs>
-          {usedColors.map(color => (
-            <React.Fragment key={color}>
-              <EndMarker id={`arrow-${color}`} color={color} themeColors={themeColors} chevron={brand?.arrowhead === 'chevron'} />
-              <EndMarker id={`arrow-start-${color}`} color={color} themeColors={themeColors} chevron={brand?.arrowhead === 'chevron'} start />
-            </React.Fragment>
-          ))}
-        </defs>
-
         {/* Render all connectors */}
         <g className="pointer-events-auto">
           {connectors.map((connector, i) => (

@@ -81,7 +81,11 @@ export interface NodeData {
   source?: DiagramSource
 }
 
-export type ConnectorCurve = 'natural' | 'down' | 'up' | 'step'
+export type ConnectorCurve = 'natural' | 'down' | 'up' | 'step' | 'direct'
+
+export type ArrowHead = 'none' | 'arrow' | 'open' | 'dot' | 'diamond' | 'bar'
+
+export type ConnectorLineStyle = 'solid' | 'dashed' | 'dotted'
 
 export interface Connector {
   /**
@@ -98,6 +102,14 @@ export interface Connector {
   curve?: ConnectorCurve
   /** Bezier control-point scale for curved connectors (percent of distance). */
   curveDepth?: number
+  /** Label drawn beside this connector; overrides the style's `label`. */
+  label?: string
+  /** Relationship kind ('custom' by default). Inspector metadata. */
+  kind?: string
+  /** Role annotation drawn near the `from` end, e.g. "owner 1". */
+  fromRole?: string
+  /** Role annotation drawn near the `to` end, e.g. "items 0..*". */
+  toRole?: string
 }
 
 /**
@@ -111,16 +123,33 @@ export function connectorKey(connector: Pick<Connector, 'from' | 'to' | 'id'>): 
 export type LabelAlign = 'left' | 'right' | 'center'
 
 export interface ConnectorStyle {
-  color: DiagramColor
-  strokeWidth: number
+  /** Omit for 'auto' — renderers fall back to the theme's neutral stroke. */
+  color?: DiagramColor
+  /** Omit for 'auto' — renderers use a 2px stroke. */
+  strokeWidth?: number
   label?: string
   /** For vertical connectors, `right`/`left` places the label beside the line. */
   labelAlign?: LabelAlign
   dashed?: boolean
+  /** Stroke pattern; when set it takes precedence over `dashed`. */
+  lineStyle?: ConnectorLineStyle
+  /** Stroke opacity 0–1. */
+  opacity?: number
   bidirectional?: boolean
   animated?: boolean
   showArrow?: boolean
   showEndpoints?: boolean
+  /** Arrowhead at the `from` end. Omit = `bidirectional ? 'arrow' : 'none'`. */
+  fromArrow?: ArrowHead
+  /** Arrowhead at the `to` end. Omit = `showArrow === false ? 'none' : 'arrow'`. */
+  toArrow?: ArrowHead
+  /** Arrowhead length in px. Omit = auto. */
+  arrowSize?: number
+  /** Per-end size overrides; omit = `arrowSize` then auto. */
+  fromArrowSize?: number
+  toArrowSize?: number
+  /** When true, arrowhead size scales with `strokeWidth` ("sizes follow .width"). */
+  arrowScale?: boolean
 }
 
 export interface DiagramLayout {

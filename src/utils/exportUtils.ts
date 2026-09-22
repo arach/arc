@@ -291,8 +291,12 @@ export function generateSVG(diagram: any, options: any = {}) {
     const fromSize = NODE_SIZES[fromNode.size] || NODE_SIZES.m
     const toSize = NODE_SIZES[toNode.size] || NODE_SIZES.m
 
-    const style = diagram.connectorStyles?.[connector.style] || { color: 'zinc', strokeWidth: 2 }
-    const strokeColor = themeColors?.palette[style.color]?.stroke || nodeColors[style.color]?.bg || accent
+    const style = diagram.connectorStyles?.[connector.style] || { color: 'zinc' as const }
+    const color = style.color ?? 'zinc'
+    const strokeColor = themeColors?.palette[color]?.stroke || nodeColors[color]?.bg || accent
+    const lineStyle = style.lineStyle ?? (style.dashed ? 'dashed' : 'solid')
+    const dashAttr = lineStyle === 'dashed' ? ' stroke-dasharray="6 3"' : lineStyle === 'dotted' ? ' stroke-dasharray="0.1 6" stroke-linecap="round"' : ''
+    const opacityAttr = style.opacity != null ? ` stroke-opacity="${style.opacity}"` : ''
 
     const fromPos = getAnchorPosition(
       fromNode.x,
@@ -313,12 +317,11 @@ export function generateSVG(diagram: any, options: any = {}) {
     const curveDepth = connector.curveDepth ?? 40
     const path = connectorPath(fromPos, toPos, connector.fromAnchor, connector.toAnchor, connector.curve, curveDepth)
     const strokeWidth = style.strokeWidth || 2
-    const dashed = style.dashed ? ' stroke-dasharray="6 3"' : ''
 
     if (brand?.connectorGlow) {
-      svg += `  <path d="${path}" fill="none" stroke="${strokeColor}" stroke-width="${strokeWidth + 4}" stroke-opacity="0.18" stroke-linecap="round" filter="url(#arc-glow)"${dashed}/>\n`
+      svg += `  <path d="${path}" fill="none" stroke="${strokeColor}" stroke-width="${strokeWidth + 4}" stroke-opacity="0.18" stroke-linecap="round" filter="url(#arc-glow)"${dashAttr}/>\n`
     }
-    svg += `  <path d="${path}" fill="none" stroke="${strokeColor}" stroke-width="${strokeWidth}"${dashed}/>\n`
+    svg += `  <path d="${path}" fill="none" stroke="${strokeColor}" stroke-width="${strokeWidth}"${dashAttr}${opacityAttr}/>\n`
 
     // Arrowheads orient to the path's end tangent and land their tip exactly
     // on the anchor — the endpoint secant mis-rotates them on curved runs.

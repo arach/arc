@@ -14,10 +14,18 @@ import {
   type NodeDecor,
 } from '../utils/nodeShape'
 import { autoLayout } from '../utils/autoLayout'
+import {
+  arrowShape,
+  connectorArrowAt,
+  connectorArrowSize,
+  connectorLineStyle,
+  elbowPolyline,
+  roundedPolylineD,
+} from '../utils/diagramHelpers'
 import { getIsoStyle, type IsoStyleId } from '../utils/isoStyles'
 import { isoContentBounds, isoPlateBounds, buildNodeIndex } from '../utils/isoBlueprint'
 import IsometricNodeLayer from './editor/IsometricNodeLayer'
-import { anchorOnNode, connectorEndAngle, connectorPath, connectorStartAngle } from '../utils/diagramHelpers'
+import { anchorOnNode, getContentBounds } from '../utils/diagramHelpers'
 import IsometricConnectorLayer from './editor/IsometricConnectorLayer'
 import TechnicalBackdrop from './technical/TechnicalBackdrop'
 import TechnicalPlate from './technical/TechnicalPlate'
@@ -78,7 +86,11 @@ export interface NodeData {
   source?: DiagramSource
 }
 
-export type ConnectorCurve = 'natural' | 'down' | 'up' | 'step'
+export type ConnectorCurve = 'natural' | 'down' | 'up' | 'step' | 'direct'
+
+export type ArrowHead = 'none' | 'arrow' | 'open' | 'dot' | 'diamond' | 'bar'
+
+export type ConnectorLineStyle = 'solid' | 'dashed' | 'dotted'
 
 export interface Connector {
   /** Stable identity for diffs, deep links, and diagnostics. Without it a
@@ -92,20 +104,45 @@ export interface Connector {
   curve?: ConnectorCurve
   /** Bezier control-point scale for curved connectors (percent of distance). */
   curveDepth?: number
+  /** Label drawn beside this connector; overrides the style's `label`. */
+  label?: string
+  /** Relationship kind ('custom' by default). Inspector metadata. */
+  kind?: string
+  /** Role annotation drawn near the `from` end. */
+  fromRole?: string
+  /** Role annotation drawn near the `to` end. */
+  toRole?: string
 }
 
 export type LabelAlign = 'left' | 'right' | 'center'
 
 export interface ConnectorStyle {
-  color: DiagramColor
-  strokeWidth: number
+  /** Omit for 'auto' — falls back to the theme's neutral stroke. */
+  color?: DiagramColor
+  /** Omit for 'auto' — renderers use a 2px stroke. */
+  strokeWidth?: number
   label?: string
   labelAlign?: LabelAlign  // For vertical: 'right' = right of line, 'left' = left of line. Default: 'right'
   dashed?: boolean
+  /** Stroke pattern; when set it takes precedence over `dashed`. */
+  lineStyle?: ConnectorLineStyle
+  /** Stroke opacity 0–1. */
+  opacity?: number
   bidirectional?: boolean
   animated?: boolean
   showArrow?: boolean
   showEndpoints?: boolean
+  /** Arrowhead at the `from` end. Omit = `bidirectional ? 'arrow' : 'none'`. */
+  fromArrow?: ArrowHead
+  /** Arrowhead at the `to` end. Omit = `showArrow === false ? 'none' : 'arrow'`. */
+  toArrow?: ArrowHead
+  /** Arrowhead length in px. Omit = auto. */
+  arrowSize?: number
+  /** Per-end size overrides; omit = `arrowSize` then auto. */
+  fromArrowSize?: number
+  toArrowSize?: number
+  /** When true, arrowhead size scales with `strokeWidth`. */
+  arrowScale?: boolean
 }
 
 export interface DiagramLayout {
@@ -833,11 +870,47 @@ function getAnchorPoint(node: NodePosition, position: AnchorPosition): { x: numb
   return anchorOnNode({ x: node.x, y: node.y, width: size.width, height: size.height }, position)
 }
 
-// Path string between resolved anchor points — shared by ConnectorPath and the
-// delta overlay's ghost/halo strokes. Same bezier the editor draws and the
-// static export emits.
+// Calculate angle between two points for arrow rotation
+function getAngle(from: { x: number; y: number }, to: { x: number; y: number }): number {
+  return Math.atan2(to.y - from.y, to.x - from.x) * (180 / Math.PI)
+}
+
+// Path geometry between resolved anchor points — shared by ConnectorPath and
+// the delta overlay's ghost/halo strokes. Tangent angles at each end orient
+// the inline arrowheads on curves and elbows.
+function connectorPathGeometry(
+  connector: Connector,
+  from: { x: number; y: number },
+  to: { x: number; y: number },
+): { d: string; startAngle: number; endAngle: number } {
+  if (connector.curve === 'step') {
+    const pts = elbowPolyline(from, to, connector.fromAnchor, connector.toAnchor)
+    return {
+      d: roundedPolylineD(pts),
+      startAngle: getAngle(pts[0], pts[1]),
+      endAngle: getAngle(pts[pts.length - 2], pts[pts.length - 1]),
+    }
+  }
+  if (connector.curve === 'natural') {
+    const dx = to.x - from.x
+    const dy = to.y - from.y
+    const tension = ((connector.curveDepth ?? 50) / 50) * 0.4
+    const cp1x = from.x + dx * tension
+    const cp1y = from.y + dy * 0.1
+    const cp2x = to.x - dx * tension
+    const cp2y = to.y - dy * 0.1
+    return {
+      d: `M ${from.x} ${from.y} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${to.x} ${to.y}`,
+      startAngle: getAngle(from, { x: cp1x, y: cp1y }),
+      endAngle: getAngle({ x: cp2x, y: cp2y }, to),
+    }
+  }
+  const a = getAngle(from, to)
+  return { d: `M ${from.x} ${from.y} L ${to.x} ${to.y}`, startAngle: a, endAngle: a }
+}
+
 function connectorPathD(connector: Connector, from: { x: number; y: number }, to: { x: number; y: number }): string {
-  return connectorPath(from, to, connector.fromAnchor, connector.toAnchor, connector.curve, connector.curveDepth ?? 40)
+  return connectorPathGeometry(connector, from, to).d
 }
 
 interface ConnectorProps {
@@ -863,7 +936,12 @@ function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors, 
     return null
   }
 
-  const style = styles[connector.style] || { color: 'zinc', strokeWidth: 2 }
+  const style = styles[connector.style] || { color: 'zinc' as const }
+  const strokeWidth = style.strokeWidth ?? 2
+  const styleColor = style.color ?? 'zinc'
+  const styleOpacity = style.opacity ?? 1
+  const lineStyle = connectorLineStyle(style)
+  const labelText = connector.label ?? style.label
 
   // Safely get anchor points
   let from: { x: number; y: number }
@@ -876,10 +954,10 @@ function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors, 
     return null
   }
 
-  const color = themeColors.palette[style.color]?.stroke || themeColors.palette.zinc.stroke
+  const color = themeColors.palette[styleColor]?.stroke || themeColors.palette.zinc.stroke
   const gradientId = `connector-gradient-${connectorIndex}`
 
-  const path = connectorPathD(connector, from, to)
+  const { d: path, startAngle, endAngle } = connectorPathGeometry(connector, from, to)
   const isVertical = Math.abs(to.y - from.y) > Math.abs(to.x - from.x)
   const labelAlign = style.labelAlign || (isVertical ? 'right' : 'center')
 
@@ -913,16 +991,48 @@ function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors, 
     }
   }
 
-  // Arrow heads rotate to the path's end tangent (and start tangent for
-  // bidirectional runs), not the endpoint secant — on a bezier the approach
-  // differs from the chord.
-  const angle = connectorEndAngle(from, to, connector.fromAnchor, connector.toAnchor, connector.curve, connector.curveDepth ?? 40)
-  const startAngle = connectorStartAngle(from, to, connector.fromAnchor, connector.toAnchor, connector.curve, connector.curveDepth ?? 40)
-  const arrowSize = 8
+  // Arrowheads at each end (explicit fromArrow/toArrow win over legacy flags)
+  const fromArrow = connectorArrowAt(style, 'from')
+  const toArrow = connectorArrowAt(style, 'to')
+
+  const renderEnd = (kind: ArrowHead, x: number, y: number, angle: number, arrowSize: number) => {
+    // 'chevron' brand turns the filled 'arrow' into an open chevron
+    const resolved = kind === 'arrow' && brand?.arrowhead === 'chevron' ? 'open' : kind
+    const shape = arrowShape(resolved, arrowSize)
+    if (!shape) return null
+    if (shape.circle) {
+      return (
+        <g transform={`translate(${x}, ${y}) rotate(${angle})`}>
+          <circle cx={shape.circle.cx} cy={0} r={shape.circle.r} fill={color} />
+        </g>
+      )
+    }
+    return (
+      <g transform={`translate(${x}, ${y}) rotate(${angle})`}>
+        <path
+          d={shape.d!}
+          fill={shape.filled ? color : 'none'}
+          stroke={shape.filled ? undefined : color}
+          strokeWidth={Math.max(1, strokeWidth * 0.85)}
+          strokeOpacity={0.9}
+          strokeLinecap="square"
+          strokeLinejoin="miter"
+        />
+      </g>
+    )
+  }
+
+  // Role annotation positions — a short way into the line from each end
+  const rolePos = (p: { x: number; y: number }, angle: number, inward: boolean) => {
+    const a = ((inward ? angle : angle + 180) * Math.PI) / 180
+    return { x: p.x + Math.cos(a) * 20, y: p.y + Math.sin(a) * 20 + 10 }
+  }
+
+  const dashArray = lineStyle === 'dashed' ? '6 3' : lineStyle === 'dotted' ? '0.1 6' : undefined
 
   return (
     <g style={{
-      opacity: dimmed ? dimOpacity : 1,
+      opacity: (dimmed ? dimOpacity : 1) * styleOpacity,
       transition: 'opacity 200ms ease-out',
     }}>
       {/* Gradient definition - fades at both ends */}
@@ -947,9 +1057,9 @@ function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors, 
           d={path}
           fill="none"
           stroke={color}
-          strokeWidth={(highlighted ? style.strokeWidth + 1 : style.strokeWidth) + 4}
+          strokeWidth={(highlighted ? strokeWidth + 1 : strokeWidth) + 4}
           strokeOpacity={0.18}
-          strokeDasharray={style.dashed ? '6 3' : undefined}
+          strokeDasharray={dashArray}
           style={{ filter: 'blur(3px)', transition: 'stroke-width 200ms ease-out' }}
         />
       )}
@@ -959,56 +1069,26 @@ function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors, 
         d={path}
         fill="none"
         stroke={`url(#${gradientId})`}
-        strokeWidth={highlighted ? style.strokeWidth + 1 : style.strokeWidth}
-        strokeDasharray={style.dashed ? '6 3' : undefined}
+        strokeWidth={highlighted ? strokeWidth + 1 : strokeWidth}
+        strokeDasharray={dashArray}
         strokeLinecap="round"
         style={{ transition: 'stroke-width 200ms ease-out' }}
       />
 
-      {/* Arrow heads — chevron (brand) or filled triangle, tip on the anchor */}
-      {style.showArrow !== false && (
-        <g transform={`translate(${to.x}, ${to.y}) rotate(${angle})`}>
-          {brand?.arrowhead === 'chevron' ? (
-            <polyline
-              points={`${-arrowSize},${-arrowSize / 2.4} 0,0 ${-arrowSize},${arrowSize / 2.4}`}
-              fill="none"
-              stroke={color}
-              strokeWidth={Math.max(1, style.strokeWidth * 0.85)}
-              strokeOpacity={0.9}
-              strokeLinecap="square"
-              strokeLinejoin="miter"
-            />
-          ) : (
-            <polygon
-              points={`0,0 ${-arrowSize},-${arrowSize / 2.5} ${-arrowSize},${arrowSize / 2.5}`}
-              fill={color}
-            />
-          )}
-        </g>
-      )}
-      {style.bidirectional && (
-        <g transform={`translate(${from.x}, ${from.y}) rotate(${startAngle})`}>
-          {brand?.arrowhead === 'chevron' ? (
-            <polyline
-              points={`${-arrowSize},${-arrowSize / 2.4} 0,0 ${-arrowSize},${arrowSize / 2.4}`}
-              fill="none"
-              stroke={color}
-              strokeWidth={Math.max(1, style.strokeWidth * 0.85)}
-              strokeOpacity={0.9}
-              strokeLinecap="square"
-              strokeLinejoin="miter"
-            />
-          ) : (
-            <polygon
-              points={`0,0 ${-arrowSize},-${arrowSize / 2.5} ${-arrowSize},${arrowSize / 2.5}`}
-              fill={color}
-            />
-          )}
-        </g>
+      {/* End glyphs — arrow/open/dot/diamond/bar at each end */}
+      {renderEnd(fromArrow, from.x, from.y, startAngle + 180, connectorArrowSize(style, 'from'))}
+      {renderEnd(toArrow, to.x, to.y, endAngle, connectorArrowSize(style, 'to'))}
+
+      {/* Endpoint dots (matches the editor's showEndpoints) */}
+      {style.showEndpoints === true && (
+        <>
+          <circle cx={from.x} cy={from.y} r={2.6} fill={color} fillOpacity={0.75} />
+          <circle cx={to.x} cy={to.y} r={2.6} fill={color} fillOpacity={0.75} />
+        </>
       )}
 
       {/* Label */}
-      {style.label && (
+      {labelText && (
         <text
           x={labelPos.x + labelOffset.x}
           y={labelPos.y + labelOffset.y}
@@ -1025,7 +1105,35 @@ function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors, 
             transition: 'font-weight 200ms ease-out',
           }}
         >
-          {style.label}
+          {labelText}
+        </text>
+      )}
+
+      {/* Relationship role annotations near each end */}
+      {connector.fromRole && (
+        <text
+          x={rolePos(from, startAngle, true).x}
+          y={rolePos(from, startAngle, true).y}
+          textAnchor="middle"
+          fill={color}
+          fontSize="7.5"
+          fontFamily={brand?.monoFamily || 'ui-monospace, monospace'}
+          opacity={0.6}
+        >
+          {connector.fromRole}
+        </text>
+      )}
+      {connector.toRole && (
+        <text
+          x={rolePos(to, endAngle, false).x}
+          y={rolePos(to, endAngle, false).y}
+          textAnchor="middle"
+          fill={color}
+          fontSize="7.5"
+          fontFamily={brand?.monoFamily || 'ui-monospace, monospace'}
+          opacity={0.6}
+        >
+          {connector.toRole}
         </text>
       )}
     </g>
@@ -1929,6 +2037,21 @@ export default function ArcDiagram({
     return { minX: bounds.minX - pad, minY: bounds.minY - pad, maxX: bounds.maxX + pad, maxY: bounds.maxY + pad }
   }, [isIso, isoStyle.technical, nodes, nodeData, isoOriginX, isoOriginY, layout])
 
+  // 2D drawings are positioned in canvas coordinates and can spill outside the
+  // layout rect (negative or oversized node coords). Fit and centre the union
+  // of the layout rect and the real content bounds so nothing clips at the
+  // edges — the iso path above already does this for the projected drawing.
+  const contentBounds = useMemo(() => {
+    const pad = 60
+    const content = getContentBounds(nodes, groups)
+    return {
+      minX: Math.min(0, (content?.minX ?? 0) - pad),
+      minY: Math.min(0, (content?.minY ?? 0) - pad),
+      maxX: Math.max(layout.width, (content?.maxX ?? layout.width) + pad),
+      maxY: Math.max(layout.height, (content?.maxY ?? layout.height) + pad),
+    }
+  }, [nodes, groups, layout.width, layout.height])
+
   // Inject the brand font stylesheet once (only for themes that set a fontImport).
   React.useEffect(() => {
     const href = brand?.fontImport
@@ -1960,11 +2083,11 @@ export default function ArcDiagram({
         return Math.min((containerWidth - padding) / boundsWidth, (containerHeight - padding) / boundsHeight, maxFitZoom)
       }
     }
-    const fitX = (containerWidth - padding) / layout.width
-    const fitY = (containerHeight - padding) / layout.height
+    const fitX = (containerWidth - padding) / (contentBounds.maxX - contentBounds.minX)
+    const fitY = (containerHeight - padding) / (contentBounds.maxY - contentBounds.minY)
     // Use the smaller ratio to fit both dimensions, cap at maxFitZoom
     return Math.min(fitX, fitY, maxFitZoom)
-  }, [isIso, isoBounds, layout.width, layout.height, maxFitZoom])
+  }, [isIso, isoBounds, contentBounds, maxFitZoom])
 
   // Determine initial zoom
   const getInitialZoom = useCallback(() => {
@@ -1981,34 +2104,36 @@ export default function ArcDiagram({
   const [panStart, setPanStart] = useState({ x: 0, y: 0 })
   const [initialized, setInitialized] = useState(typeof defaultZoom === 'number')
 
+  const centreOnBounds = useCallback(
+    (b: { minX: number; minY: number; maxX: number; maxY: number }, z: number) => {
+      const rect = containerRef.current?.getBoundingClientRect()
+      if (!rect) return
+      setPan({
+        x: rect.width / 2 - ((b.minX + b.maxX) / 2) * z,
+        y: rect.height / 2 - ((b.minY + b.maxY) / 2) * z,
+      })
+    },
+    [],
+  )
+
   // Set initial zoom after mount (needed for 'fit' to measure container)
   React.useEffect(() => {
     if (!initialized) {
       const nextZoom = getInitialZoom()
       setZoom(nextZoom)
-      // Centre the isometric drawing in its container once the fit zoom is known.
-      if (isIso && isoBounds && containerRef.current) {
-        const rect = containerRef.current.getBoundingClientRect()
-        setPan({
-          x: rect.width / 2 - ((isoBounds.minX + isoBounds.maxX) / 2) * nextZoom,
-          y: rect.height / 2 - ((isoBounds.minY + isoBounds.maxY) / 2) * nextZoom,
-        })
-      }
+      // Centre the drawing in its container once the fit zoom is known.
+      centreOnBounds(isIso && isoBounds ? isoBounds : contentBounds, nextZoom)
       setInitialized(true)
     }
-  }, [initialized, getInitialZoom, isIso, isoBounds])
+  }, [initialized, getInitialZoom, isIso, isoBounds, contentBounds, centreOnBounds])
 
-  // Numeric defaultZoom skips the init effect above, so centre the isometric
-  // drawing separately (2D content sits at the origin; the iso projection
-  // spreads around the bottom-centre origin and can spill outside the rect).
+  // Numeric defaultZoom skips the init effect above, so centre the drawing
+  // separately (the iso projection spreads around the bottom-centre origin
+  // and 2D content can sit anywhere relative to the layout rect).
   React.useEffect(() => {
-    if (!isIso || !isoBounds || typeof defaultZoom !== 'number' || !containerRef.current) return
-    const rect = containerRef.current.getBoundingClientRect()
-    setPan({
-      x: rect.width / 2 - ((isoBounds.minX + isoBounds.maxX) / 2) * defaultZoom,
-      y: rect.height / 2 - ((isoBounds.minY + isoBounds.maxY) / 2) * defaultZoom,
-    })
-  }, [isIso, isoBounds, defaultZoom])
+    if (typeof defaultZoom !== 'number' || !containerRef.current) return
+    centreOnBounds(isIso && isoBounds ? isoBounds : contentBounds, defaultZoom)
+  }, [isIso, isoBounds, contentBounds, defaultZoom, centreOnBounds])
 
   // The camera follows the active view: entering one frames its highlight set;
   // leaving restores the default framing. 2D only — iso handles its own pan.
@@ -2067,16 +2192,8 @@ export default function ArcDiagram({
   const handleReset = useCallback(() => {
     const nextZoom = getInitialZoom()
     setZoom(nextZoom)
-    if (isIso && isoBounds && containerRef.current) {
-      const rect = containerRef.current.getBoundingClientRect()
-      setPan({
-        x: rect.width / 2 - ((isoBounds.minX + isoBounds.maxX) / 2) * nextZoom,
-        y: rect.height / 2 - ((isoBounds.minY + isoBounds.maxY) / 2) * nextZoom,
-      })
-    } else {
-      setPan({ x: 0, y: 0 })
-    }
-  }, [getInitialZoom, isIso, isoBounds])
+    centreOnBounds(isIso && isoBounds ? isoBounds : contentBounds, nextZoom)
+  }, [getInitialZoom, isIso, isoBounds, contentBounds, centreOnBounds])
 
   const handleWheel = useCallback((e: React.WheelEvent) => {
     if (!interactive) return

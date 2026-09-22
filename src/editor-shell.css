@@ -350,8 +350,9 @@ body,
   border: none;
   background: transparent;
   color: var(--arc-ink);
-  font-family: var(--arc-font-body);
-  font-size: var(--arc-text-ui);
+  font-family: var(--arc-font-mono);
+  font-size: var(--arc-text-xs);
+  letter-spacing: 0.03em;
   text-align: left;
   cursor: pointer;
 }
@@ -777,8 +778,10 @@ body,
 }
 
 .arc-editor-menu-item-name {
-  font-size: var(--arc-text-ui);
-  font-weight: 600;
+  font-family: var(--arc-font-mono);
+  font-size: var(--arc-text-xs);
+  font-weight: 500;
+  letter-spacing: 0.04em;
   color: var(--arc-ink);
 }
 
@@ -1001,15 +1004,33 @@ body,
 
 .arc-editor-tool-btn {
   display: inline-flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: var(--arc-space-3);
+  gap: 1px;
+  padding: var(--arc-space-2) var(--arc-space-3);
   border: 1px solid transparent;
   border-radius: var(--arc-radius);
   background: transparent;
   color: var(--arc-ink-2);
   cursor: pointer;
   transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* Vellum-style shortcut glyph under each tool icon. Always rendered (empty
+   when the tool has no key) so every button in the row shares one height. */
+.arc-editor-tool-key {
+  display: block;
+  min-height: calc(var(--arc-text-2xs) + 1px);
+  font-family: var(--arc-font-mono);
+  font-size: var(--arc-text-2xs);
+  line-height: 1;
+  letter-spacing: 0.04em;
+  color: var(--arc-faint);
+}
+
+.arc-editor-tool-btn.is-active .arc-editor-tool-key {
+  color: color-mix(in srgb, #fff 75%, transparent);
 }
 
 .arc-editor-tool-btn:hover:not(:disabled) {
@@ -1250,7 +1271,7 @@ body,
   font-weight: 500;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--arc-acc);
+  color: var(--arc-muted);
 }
 
 .arc-insp-hint {
@@ -1273,8 +1294,7 @@ body,
   font-family: var(--arc-font-mono);
   font-size: var(--arc-text-xs);
   font-weight: 500;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  letter-spacing: 0.04em;
   color: var(--arc-muted);
 }
 
@@ -1348,10 +1368,16 @@ body,
   font-family: var(--arc-font-mono);
   font-size: var(--arc-text-xs);
   font-weight: 500;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-transform: lowercase;
   color: var(--arc-muted);
   line-height: 1.2;
+}
+
+/* Vellum's property rows read `.stroke`, `.width` — the dot is decorative. */
+.arc-insp-k::before {
+  content: ".";
+  color: var(--arc-faint);
 }
 
 .arc-insp-v {
@@ -1368,6 +1394,85 @@ body,
   font-variant-numeric: tabular-nums;
   color: var(--arc-ink-2);
   text-align: right;
+}
+
+/* Title row with a right-aligned kind chip (Vellum's connector header). */
+.arc-insp-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--arc-space-3);
+}
+
+.arc-insp-kindchip {
+  font-family: var(--arc-font-mono);
+  font-size: var(--arc-text-xs);
+  letter-spacing: 0.05em;
+  color: var(--arc-muted);
+  border: 1px solid var(--arc-line);
+  border-radius: var(--arc-radius);
+  padding: 1px var(--arc-space-2);
+}
+
+/* Slider + value/'auto' readout on one row. */
+.arc-insp-range-row {
+  display: flex;
+  align-items: center;
+  gap: var(--arc-space-3);
+  min-width: 0;
+}
+
+.arc-insp-range-row .arc-insp-input[type="range"] {
+  flex: 1;
+  min-width: 0;
+}
+
+.arc-insp-value {
+  flex: 0 0 auto;
+  min-width: calc(34px * var(--arc-ui-scale));
+  padding: 0;
+  border: none;
+  background: transparent;
+  font-family: var(--arc-font-mono);
+  font-size: var(--arc-text-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--arc-ink-2);
+  text-align: right;
+  cursor: pointer;
+}
+
+.arc-insp-value.is-auto {
+  color: var(--arc-faint);
+}
+
+.arc-insp-value.is-chip {
+  border: 1px solid var(--arc-line);
+  border-radius: var(--arc-radius);
+  padding: 1px var(--arc-space-2);
+  text-align: center;
+}
+
+/* Connector end-glyph picker row. */
+.arc-insp-ends {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1px;
+}
+
+.arc-insp-ends .arc-insp-icon-btn {
+  flex: 1;
+  min-width: calc(24px * var(--arc-ui-scale));
+  background: color-mix(in srgb, var(--arc-canvas) 55%, var(--arc-surface));
+  border: 1px solid var(--arc-line);
+  border-radius: 0;
+}
+
+.arc-insp-ends .arc-insp-icon-btn:first-child {
+  border-radius: var(--arc-radius) 0 0 var(--arc-radius);
+}
+
+.arc-insp-ends .arc-insp-icon-btn:last-child {
+  border-radius: 0 var(--arc-radius) var(--arc-radius) 0;
 }
 
 .arc-insp-pair {
@@ -1401,9 +1506,9 @@ body,
 }
 
 .arc-insp-pair-btn.is-active {
-  color: #fff;
-  background: color-mix(in srgb, var(--arc-acc) 88%, #000);
-  border-color: var(--arc-edge);
+  color: var(--arc-ink);
+  background: color-mix(in srgb, var(--arc-ink) 10%, var(--arc-surface));
+  border-color: var(--arc-line-2);
 }
 
 .arc-insp-input[type="checkbox"] {
@@ -1574,7 +1679,7 @@ body,
   gap: 0;
   padding: 0;
   border-radius: var(--arc-radius);
-  background: var(--arc-surface-muted);
+  background: color-mix(in srgb, var(--arc-canvas) 55%, var(--arc-surface));
   border: 1px solid var(--arc-line);
   overflow: hidden;
 }
@@ -1585,11 +1690,11 @@ body,
   border: none;
   border-radius: 0;
   background: transparent;
-  font-family: var(--arc-font-body);
-  font-size: var(--arc-text-sm);
+  font-family: var(--arc-font-mono);
+  font-size: var(--arc-text-xs);
   font-weight: 500;
-  letter-spacing: 0;
-  text-transform: none;
+  letter-spacing: 0.04em;
+  text-transform: lowercase;
   color: var(--arc-muted);
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease;
@@ -1597,13 +1702,13 @@ body,
 
 .arc-insp-segment:hover {
   color: var(--arc-ink);
-  background: color-mix(in srgb, var(--arc-acc-soft) 55%, transparent);
+  background: color-mix(in srgb, var(--arc-ink) 5%, transparent);
 }
 
 .arc-insp-segment.is-active {
-  background: color-mix(in srgb, var(--arc-acc) 88%, #000);
-  color: #fff;
-  box-shadow: inset 0 0 8px -2px var(--arc-glow);
+  background: color-mix(in srgb, var(--arc-ink) 12%, var(--arc-surface));
+  color: var(--arc-ink);
+  box-shadow: none;
 }
 
 .arc-insp-swatch-row {
@@ -1672,10 +1777,10 @@ body,
 }
 
 .arc-insp-shape.is-selected {
-  color: #fff;
-  background: color-mix(in srgb, var(--arc-acc) 88%, #000);
-  border-color: var(--arc-edge);
-  box-shadow: 0 0 10px -4px var(--arc-glow);
+  color: var(--arc-ink);
+  background: color-mix(in srgb, var(--arc-ink) 10%, var(--arc-surface));
+  border-color: var(--arc-line-2);
+  box-shadow: none;
 }
 
 .arc-insp-icon-grid {
@@ -1710,8 +1815,8 @@ body,
 }
 
 .arc-insp-icon-btn.is-selected {
-  background: var(--arc-acc);
-  color: #fff;
+  background: color-mix(in srgb, var(--arc-ink) 12%, var(--arc-surface));
+  color: var(--arc-ink);
 }
 
 .arc-insp-icon-btn.is-danger {
@@ -1927,7 +2032,7 @@ body,
   font-weight: 500;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--arc-acc);
+  color: var(--arc-muted);
 }
 
 .arc-insp-caption {

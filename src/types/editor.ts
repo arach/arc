@@ -28,7 +28,14 @@ export type AnchorPosition =
   | 'bottomLeft'
   | 'bottomRight'
 
-export type EditorMode = 'select' | 'addNode' | 'addConnector' | 'addGroup' | 'pan'
+export type EditorMode =
+  | 'select'
+  | 'addNode'
+  | 'addConnector'
+  | 'addGroup'
+  | 'addRect'
+  | 'addCircle'
+  | 'pan'
 
 export type ViewMode = '2d' | 'isometric'
 
@@ -54,7 +61,7 @@ export interface EmbedConfig {
   showGrid?: boolean               // Show background grid, defaults to true
 }
 
-export type ConnectorCurve = 'natural' | 'down' | 'up' | 'step'
+export type ConnectorCurve = 'natural' | 'down' | 'up' | 'step' | 'direct'
 
 export interface NodePosition {
   x: number
@@ -100,19 +107,48 @@ export interface Connector {
   curve?: ConnectorCurve
   /** Bezier control-point scale for curved connectors (percent of distance). */
   curveDepth?: number
+  /** Label drawn beside this connector; overrides the style's `label`. */
+  label?: string
+  /** Relationship kind ('custom' by default). Inspector metadata. */
+  kind?: string
+  /** Role annotation drawn near the `from` end. */
+  fromRole?: string
+  /** Role annotation drawn near the `to` end. */
+  toRole?: string
 }
 
+export type ArrowHead = 'none' | 'arrow' | 'open' | 'dot' | 'diamond' | 'bar'
+
+export type ConnectorLineStyle = 'solid' | 'dashed' | 'dotted'
+
 export interface ConnectorStyle {
-  color: string
-  strokeWidth: number
+  /** Omit for 'auto' — renderers fall back to the neutral stroke. */
+  color?: string
+  /** Omit for 'auto' — renderers use a 2px stroke. */
+  strokeWidth?: number
   label?: string
   /** For vertical connectors, `right`/`left` places the label beside the line. */
   labelAlign?: 'left' | 'right' | 'center'
   dashed?: boolean
+  /** Stroke pattern; when set it takes precedence over `dashed`. */
+  lineStyle?: ConnectorLineStyle
+  /** Stroke opacity 0–1. */
+  opacity?: number
   bidirectional?: boolean
   animated?: boolean
   showArrow?: boolean
   showEndpoints?: boolean
+  /** Arrowhead at the `from` end. Omit = `bidirectional ? 'arrow' : 'none'`. */
+  fromArrow?: ArrowHead
+  /** Arrowhead at the `to` end. Omit = `showArrow === false ? 'none' : 'arrow'`. */
+  toArrow?: ArrowHead
+  /** Arrowhead length in px. Omit = auto. */
+  arrowSize?: number
+  /** Per-end size overrides; omit = `arrowSize` then auto. */
+  fromArrowSize?: number
+  toArrowSize?: number
+  /** When true, arrowhead size scales with `strokeWidth`. */
+  arrowScale?: boolean
 }
 
 export interface GridConfig {
