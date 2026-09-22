@@ -95,7 +95,16 @@ export const systemArchitecture: ArcDiagramData = {
 
 ## Installing Skills
 
-### Claude Code / Cursor
+Install Arc's diagram skill with the open Skills CLI:
+
+```bash
+npx skills add arach/arc --skill arc-diagrams
+```
+
+The installer detects supported coding agents and places the skill in their
+expected project directories.
+
+### Manual setup
 
 Point agents at:
 - `CLAUDE.md` — full contributor context

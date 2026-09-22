@@ -51,6 +51,8 @@ const docs = [
   { n: 'DOC.02', h: 'Get up and running', p: 'Install, import, render your first diagram.', to: '/docs/quickstart' },
   { n: 'DOC.03', h: 'Data structure reference', p: 'Nodes, connectors, layout, and theming.', to: '/docs/diagram-format' },
   { n: 'DOC.04', h: 'Color palettes', p: 'default · warm · cool · mono, light & dark.', to: '/docs/themes' },
+  { n: 'AGENT.01', h: 'MCP server', p: 'Give agents tools to validate, lay out, and render.', to: '/mcp' },
+  { n: 'AGENT.02', h: 'Agent skills', p: 'Reusable diagram authoring and repair playbooks.', to: '/skills' },
 ]
 
 type LandingPageProps = { onLaunchEditor: () => void }

@@ -13,10 +13,24 @@ bun run mcp
 
 # published bin (after build:mcp)
 arc-mcp
-npx @arach/arc arc-mcp   # if invoked via package bin
+npx -y -p @arach/arc arc-mcp
 ```
 
 Build the bundled bin: `bun run build:mcp` → `bin/arc-mcp.mjs`
+
+## Add to an MCP client
+
+Claude Code, project scope:
+
+```bash
+claude mcp add --scope project arc -- npx -y -p @arach/arc arc-mcp
+```
+
+Devin CLI:
+
+```bash
+devin mcp add arc -- npx -y -p @arach/arc arc-mcp
+```
 
 ## Cursor / Claude Desktop Config
 

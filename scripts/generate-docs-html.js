@@ -76,3 +76,59 @@ for (const [pattern, replacement] of agentsReplacements) {
 
 writeFileSync(path.join(agentsDir, 'index.html'), agentsHtml)
 console.log('✓ Generated dist/docs/agents/index.html with agents OG tags')
+
+const sharePages = [
+  {
+    path: 'mcp',
+    title: 'Arc MCP | Diagram tools for AI agents',
+    description: 'Give AI agents tools to validate, lay out, diff, render, and hand off architecture diagrams.',
+    image: 'og-mcp.png',
+  },
+  {
+    path: 'skills',
+    title: 'Arc Skills | Architecture diagram playbooks for agents',
+    description: 'Reusable agent skills for creating, repairing, reviewing, and exporting architecture diagrams with Arc.',
+    image: 'og-skills.png',
+  },
+  {
+    path: 'docs/agent-mcp',
+    title: 'MCP Server | Arc Docs',
+    description: 'Reference for Arc MCP tools, resources, configuration, and rendering output.',
+    image: 'og-docs-llm.png',
+  },
+  {
+    path: 'docs/skills',
+    title: 'Agent Skills | Arc Docs',
+    description: 'Reference for reusable Arc diagram authoring, repair, and export skills.',
+    image: 'og-docs-llm.png',
+  },
+]
+
+for (const page of sharePages) {
+  const pageDir = path.join(distDir, page.path)
+  mkdirSync(pageDir, { recursive: true })
+
+  let pageHtml = readFileSync(indexPath, 'utf-8')
+  const pageUrl = `https://arc.jdi.sh/${page.path}`
+  const pageImage = `https://arc.jdi.sh/${page.image}`
+  const pageReplacements = [
+    [/<title>.*?<\/title>/, `<title>${page.title}</title>`],
+    [/<meta name="title" content=".*?"/, `<meta name="title" content="${page.title}"`],
+    [/<meta property="og:title" content=".*?"/, `<meta property="og:title" content="${page.title}"`],
+    [/<meta property="twitter:title" content=".*?"/, `<meta property="twitter:title" content="${page.title}"`],
+    [/<meta name="description" content=".*?"/, `<meta name="description" content="${page.description}"`],
+    [/<meta property="og:description" content=".*?"/, `<meta property="og:description" content="${page.description}"`],
+    [/<meta property="twitter:description" content=".*?"/, `<meta property="twitter:description" content="${page.description}"`],
+    [/<meta property="og:url" content=".*?"/, `<meta property="og:url" content="${pageUrl}"`],
+    [/<meta property="twitter:url" content=".*?"/, `<meta property="twitter:url" content="${pageUrl}"`],
+    [/<meta property="og:image" content=".*?"/, `<meta property="og:image" content="${pageImage}"`],
+    [/<meta property="twitter:image" content=".*?"/, `<meta property="twitter:image" content="${pageImage}"`],
+  ]
+
+  for (const [pattern, replacement] of pageReplacements) {
+    pageHtml = pageHtml.replace(pattern, replacement)
+  }
+
+  writeFileSync(path.join(pageDir, 'index.html'), pageHtml)
+  console.log(`✓ Generated dist/${page.path}/index.html with share-page OG tags`)
+}

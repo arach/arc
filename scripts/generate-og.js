@@ -307,6 +307,38 @@ const docsIndexCard = `
   </div>
 `
 
+const mcpCard = `
+  <div class="card">
+    <div class="card-bar">
+      <div class="dots"><i></i><i></i><i></i></div>
+      <span class="card-name">arc-mcp · tool result</span>
+    </div>
+    <pre><span class="c">request</span>  map the payment system
+
+<span class="k">01</span> validate_diagram  <span class="s">valid</span>
+<span class="k">02</span> auto_layout       <span class="s">12 nodes placed</span>
+<span class="k">03</span> render_svg        <span class="s">artifact ready</span>
+<span class="k">04</span> editor_handoff    <span class="s">studio link</span>
+
+<span class="c">→ typed · deterministic · reviewable</span></pre>
+  </div>
+`
+
+const skillsCard = `
+  <div class="card">
+    <div class="card-bar">
+      <div class="dots"><i></i><i></i><i></i></div>
+      <span class="card-name">arc-diagrams · skill loop</span>
+    </div>
+    <div class="doc-list">
+      <div class="doc-row"><span class="doc-n">CREATE</span><span class="doc-h">Turn a system brief into a diagram</span></div>
+      <div class="doc-row"><span class="doc-n">REPAIR</span><span class="doc-h">Fix schema and composition issues</span></div>
+      <div class="doc-row"><span class="doc-n">REVIEW</span><span class="doc-h">Explain structural changes clearly</span></div>
+      <div class="doc-row"><span class="doc-n">EXPORT</span><span class="doc-h">Ship code, images, or embeds</span></div>
+    </div>
+  </div>
+`
+
 const editorCard = `
   <div class="card">
     <div class="card-bar">
@@ -372,6 +404,23 @@ const editorOGHtml = plate({
   right: editorCard,
 })
 
+const mcpOGHtml = plate({
+  eyebrow: '// AGENT TOOLING · MCP',
+  title: 'Give your agent a diagram engine.',
+  lead: 'Validate, lay out, diff, render, and hand architecture diagrams into the visual studio.',
+  spec: ['VALIDATE', 'LAYOUT', 'RENDER', 'HANDOFF'],
+  right: mcpCard,
+})
+
+const skillsOGHtml = plate({
+  eyebrow: '// AGENT TOOLING · SKILLS',
+  title: 'Let your agents make amazing diagrams.',
+  lead: 'Reusable instructions for architecture diagrams that stay typed, readable, and reviewable.',
+  spec: ['CREATE', 'REPAIR', 'REVIEW', 'EXPORT'],
+  right: skillsCard,
+  compactTitle: true,
+})
+
 function docPageHtml(code, title, description) {
   return plate({
     eyebrow: `// DOCS · ${code}`,
@@ -402,9 +451,10 @@ async function generateOGImage(browser, html, filename, { width = 1200, height =
 async function main() {
   console.log('Generating Arc OG images with Puppeteer...\n')
 
+  const chromePath = process.env.ARC_CHROME || process.env.CHROME_PATH
   const browser = await puppeteer.launch({
     headless: true,
-    channel: 'chrome',
+    ...(chromePath ? { executablePath: chromePath } : { channel: 'chrome' }),
     args: ['--no-sandbox', '--disable-setuid-sandbox'],
   })
 
@@ -414,6 +464,8 @@ async function main() {
 
   await generateOGImage(browser, editorOGHtml, 'og-editor.png')
   await generateOGImage(browser, docsOGHtml, 'og-docs.png')
+  await generateOGImage(browser, mcpOGHtml, 'og-mcp.png')
+  await generateOGImage(browser, skillsOGHtml, 'og-skills.png')
 
   await generateOGImage(
     browser,
@@ -445,7 +497,11 @@ async function main() {
 
   // GitHub social preview wants 1280×640, not the 2× capture.
   const social = path.join(publicDir, 'github-social.png')
-  execFileSync('sips', ['-z', '640', '1280', social])
+  if (process.platform === 'darwin') {
+    execFileSync('sips', ['-z', '640', '1280', social])
+  } else {
+    execFileSync('convert', [social, '-resize', '1280x640!', social])
+  }
   console.log('✓ Downsampled github-social.png to 1280×640')
 
   console.log('\nDone!')
