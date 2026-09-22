@@ -62,6 +62,12 @@
             "$ref": "#/definitions/NodePosition"
           },
           "type": "object"
+        },
+        "views": {
+          "items": {
+            "$ref": "#/definitions/DiagramView"
+          },
+          "type": "array"
         }
       },
       "required": [
@@ -185,6 +191,58 @@
       "required": [
         "width",
         "height"
+      ],
+      "type": "object"
+    },
+    "DiagramView": {
+      "additionalProperties": false,
+      "description": "A named stop in a guided tour. `views[]` turns a diagram into a document: an ordered set of camera/highlight states the reader can step through, and each `id` is stable enough to deep-link (`/player/<session>?view=<id>`).",
+      "properties": {
+        "caption": {
+          "type": "string"
+        },
+        "connectors": {
+          "items": {
+            "$ref": "#/definitions/FocusConnectorRef"
+          },
+          "type": "array"
+        },
+        "id": {
+          "description": "Stable slug — used by deep links and the views rail.",
+          "type": "string"
+        },
+        "mode": {
+          "description": "`append` adds direct neighbors of `node`; `replace` draws only the declared set. Views without `node` always behave as `replace`.",
+          "enum": [
+            "append",
+            "replace"
+          ],
+          "type": "string"
+        },
+        "node": {
+          "description": "Anchor node — behaves like selecting it, including its focusTarget story unless the view overrides the highlight set.",
+          "type": "string"
+        },
+        "nodes": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "steps": {
+          "items": {
+            "$ref": "#/definitions/FocusStep"
+          },
+          "type": "array"
+        },
+        "title": {
+          "description": "Chapter title shown in the rail.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "title"
       ],
       "type": "object"
     },

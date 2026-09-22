@@ -691,6 +691,7 @@ export function editorReducer(state, action) {
           connectorStyles: next.connectorStyles ?? state.diagram.connectorStyles,
           groups: next.groups ?? [],
           focusTargets: next.focusTargets,
+          views: next.views,
         },
         editor: {
           ...state.editor,

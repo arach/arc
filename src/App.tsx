@@ -88,6 +88,9 @@ function parseHashData(): HashPayload | null {
       nodeData: d.nodeData || {},
       connectors: d.connectors || [],
       connectorStyles: d.connectorStyles || {},
+      focusTargets: d.focusTargets,
+      views: d.views,
+      groups: d.groups || [],
     }
 
     return {
@@ -98,6 +101,8 @@ function parseHashData(): HashPayload | null {
         nodeData: d.nodeData || {},
         connectors: d.connectors || [],
         connectorStyles: d.connectorStyles || {},
+        focusTargets: d.focusTargets,
+        views: d.views,
         groups,
       },
       originalDiagram,
@@ -234,7 +239,7 @@ function NotFoundPage() {
 
 /** Parse URL query params for theme/mode/viewport overrides */
 function useUrlOverrides() {
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   return {
     theme: searchParams.get('theme'),
     mode: searchParams.get('mode') as 'light' | 'dark' | null,
@@ -244,6 +249,16 @@ function useUrlOverrides() {
     })() : null,
     // ?chrome=false strips the Source toggle + zoom controls for clean captures
     chrome: searchParams.get('chrome') !== 'false',
+    // ?view=<id> deep-links one of data.views in the player's chapter rail
+    view: searchParams.get('view'),
+    setView: (view: string | null) => {
+      setSearchParams(prev => {
+        const next = new URLSearchParams(prev)
+        if (view == null) next.delete('view')
+        else next.set('view', view)
+        return next
+      }, { replace: true })
+    },
   }
 }
 
@@ -335,6 +350,10 @@ function PlayerPage() {
           defaultZoom="fit"
           showArcToggle={urlOverrides.chrome}
           showControls={urlOverrides.chrome}
+          showViews={urlOverrides.chrome && !!playerData.views?.length}
+          showFocusStory={urlOverrides.chrome && !!playerData.focusTargets}
+          view={urlOverrides.view}
+          onViewChange={urlOverrides.setView}
         />
       </div>
     </div>

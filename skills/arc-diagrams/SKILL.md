@@ -136,7 +136,9 @@ Define connections between nodes:
 
 **Optional:** Add `"curve": "natural"` or `"curve": "step"` for curved connectors.
 
-**Stable identity:** Give a connector an `id` when it may be referenced by a focus story, reviewed in a diff, or when another connector shares the same `from`/`to` pair. Without an `id`, a connector is only addressable by endpoint pair or array index.
+**Stable identity:** Give a connector an `id` when it may be referenced by a focus story or guided view, reviewed in a diff, or when another connector shares the same `from`/`to` pair. Without an `id`, a connector is only addressable by endpoint pair or array index.
+
+**Guided views:** when the diagram explains a flow a reader should follow in order, add `views[]` — `{id, title, node?, nodes?, connectors?, mode?, caption?, steps?}` per chapter. The player draws a chapter rail (`showViews`) and `/player/<session>?view=<id>` deep-links a chapter. A view anchored on `node` inherits that node's `focusTargets` story; declare `nodes`/`connectors`/`mode` to override it.
 
 ### 5. Style Connectors
 

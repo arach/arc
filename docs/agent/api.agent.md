@@ -17,6 +17,10 @@ interface ArcDiagramProps {
   showMinimap?: boolean
   showLegend?: boolean
   showFocusStory?: boolean
+  showViews?: boolean                      // chapter rail for data.views
+  view?: string | null                     // controlled active view id
+  defaultViewId?: string                   // uncontrolled initial view
+  onViewChange?: (viewId: string | null) => void
   frame?: BrandSpec['frame']
   onNodeHover?: (nodeId: string | null) => void
   className?: string
@@ -36,6 +40,7 @@ interface ArcDiagramData {
   connectorStyles: Record<string, ConnectorStyle>
   groups?: GroupShape[]
   focusTargets?: Record<string, FocusTarget>
+  views?: DiagramView[]                    // ordered guided chapters
 }
 ```
 
@@ -105,7 +110,19 @@ interface LayoutHints {
 interface FocusTarget {
   mode?: 'append' | 'replace'
   nodes?: string[]
-  connectors?: Array<{ from: string; to: string }>
+  connectors?: Array<{ from: string; to: string } | { id: string }>
+  caption?: string
+  steps?: Array<{ icon: string; label: string }>
+}
+
+// Guided view / chapter (player chrome; see docs/views.md)
+interface DiagramView {
+  id: string            // stable slug — deep-link key (/player/<s>?view=<id>)
+  title: string
+  node?: string         // anchor: behaves like selecting the node
+  mode?: 'append' | 'replace'
+  nodes?: string[]
+  connectors?: Array<{ from: string; to: string } | { id: string }>
   caption?: string
   steps?: Array<{ icon: string; label: string }>
 }
