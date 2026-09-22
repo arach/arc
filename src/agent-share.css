@@ -268,6 +268,29 @@
 }
 .asp-install h2 { margin-bottom: 14px; }
 .asp-start { margin: 0 0 58px; }
+.asp-setup-picker { min-width: 0; }
+.asp-client-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
+  overflow-x: auto;
+}
+.asp-client-tabs button {
+  flex: 0 0 auto;
+  padding: 8px 10px;
+  border: 1px solid var(--asp-line);
+  border-radius: 4px;
+  background: rgba(255,255,255,0.55);
+  color: var(--asp-muted);
+  cursor: pointer;
+  font: 10px 'JetBrains Mono', monospace;
+}
+.asp-client-tabs button:hover,
+.asp-client-tabs button.is-active {
+  border-color: rgba(46,95,165,0.36);
+  background: rgba(46,95,165,0.09);
+  color: var(--asp-accent);
+}
 .asp-code { overflow: hidden; border: 1px solid rgba(16,21,24,0.13); border-radius: 5px; background: #101518; color: #dfe6e9; }
 .asp-code-bar { border-bottom: 1px solid rgba(255,255,255,0.09); color: #819097; font: 10px 'JetBrains Mono', monospace; }
 .asp-copy {

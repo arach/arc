@@ -20,6 +20,12 @@ import '../agent-share.css'
 
 type SharePageKind = 'mcp' | 'skills'
 
+interface SetupOption {
+  label: string
+  codeLabel: string
+  code: string
+}
+
 interface SharePageConfig {
   eyebrow: string
   title: string
@@ -27,6 +33,7 @@ interface SharePageConfig {
   metaTitle: string
   metaDescription: string
   primaryCode: string
+  setupOptions?: SetupOption[]
   docsHref: string
   docsLabel: string
   outcomes: Array<{
@@ -48,6 +55,42 @@ const MCP_CONFIG: SharePageConfig = {
   metaTitle: 'Arc MCP | Diagram tools for AI agents',
   metaDescription: 'Give AI agents tools to validate, lay out, diff, render, and hand off architecture diagrams.',
   primaryCode: 'claude mcp add --scope project arc -- npx -y -p @arach/arc arc-mcp',
+  setupOptions: [
+    {
+      label: 'Claude Code',
+      codeLabel: 'terminal',
+      code: 'claude mcp add --scope project arc -- npx -y -p @arach/arc arc-mcp',
+    },
+    {
+      label: 'Devin',
+      codeLabel: 'terminal',
+      code: 'devin mcp add arc -- npx -y -p @arach/arc arc-mcp',
+    },
+    {
+      label: 'Cursor',
+      codeLabel: '.cursor/mcp.json',
+      code: `{
+  "mcpServers": {
+    "arc": {
+      "command": "npx",
+      "args": ["-y", "-p", "@arach/arc", "arc-mcp"]
+    }
+  }
+}`,
+    },
+    {
+      label: 'Other clients',
+      codeLabel: 'mcp.json',
+      code: `{
+  "mcpServers": {
+    "arc": {
+      "command": "npx",
+      "args": ["-y", "-p", "@arach/arc", "arc-mcp"]
+    }
+  }
+}`,
+    },
+  ],
   docsHref: '/docs/agent-mcp',
   docsLabel: 'Read the MCP reference',
   outcomes: [
@@ -178,6 +221,46 @@ function CopyCode({ code }: { code: string }) {
   )
 }
 
+function CodeBlock({ code, label = 'terminal' }: { code: string; label?: string }) {
+  return (
+    <div className="asp-code">
+      <div className="asp-code-bar">
+        <span>{label}</span>
+        <CopyCode code={code} />
+      </div>
+      <pre><code>{code}</code></pre>
+    </div>
+  )
+}
+
+function SetupOptions({ options }: { options: SetupOption[] }) {
+  const [selected, setSelected] = useState(0)
+  const option = options[selected]
+
+  return (
+    <div className="asp-setup-picker">
+      <div className="asp-client-tabs" role="tablist" aria-label="MCP client setup">
+        {options.map((item, index) => (
+          <button
+            aria-controls="asp-setup-panel"
+            aria-selected={selected === index}
+            className={selected === index ? 'is-active' : ''}
+            key={item.label}
+            onClick={() => setSelected(index)}
+            role="tab"
+            type="button"
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+      <div id="asp-setup-panel" role="tabpanel">
+        <CodeBlock code={option.code} label={option.codeLabel} />
+      </div>
+    </div>
+  )
+}
+
 export default function AgentSharePage({ kind }: { kind: SharePageKind }) {
   const config = kind === 'mcp' ? MCP_CONFIG : SKILLS_CONFIG
   const capabilities = kind === 'mcp' ? MCP_TOOLS : SKILL_ACTIONS
@@ -254,16 +337,12 @@ export default function AgentSharePage({ kind }: { kind: SharePageKind }) {
               <div className="asp-tag">// GETTING STARTED</div>
               <h2>{kind === 'mcp' ? 'Add Arc MCP in one command.' : 'Add the skill in one command.'}</h2>
               <p>{kind === 'mcp'
-                ? 'Connect it to Claude Code at project scope. Other clients are covered in the setup guide.'
+                ? 'Choose your client, copy its native setup, and start using the same Arc tools everywhere.'
                 : 'The open Skills installer finds your coding agents and puts the Arc playbook in the right place.'}</p>
             </div>
-            <div className="asp-code">
-              <div className="asp-code-bar">
-                <span>terminal</span>
-                <CopyCode code={config.primaryCode} />
-              </div>
-              <pre><code>{config.primaryCode}</code></pre>
-            </div>
+            {config.setupOptions
+              ? <SetupOptions options={config.setupOptions} />
+              : <CodeBlock code={config.primaryCode} />}
           </section>
 
           <div className="asp-ruler" aria-hidden="true" />
