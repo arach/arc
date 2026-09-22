@@ -414,8 +414,8 @@ const mcpOGHtml = plate({
 
 const skillsOGHtml = plate({
   eyebrow: '// AGENT TOOLING · SKILLS',
-  title: 'Teach your agent how good diagrams are made.',
-  lead: 'Reusable authoring and repair playbooks for architecture diagrams that survive review.',
+  title: 'Let your agents make amazing diagrams.',
+  lead: 'Reusable instructions for architecture diagrams that stay typed, readable, and reviewable.',
   spec: ['CREATE', 'REPAIR', 'REVIEW', 'EXPORT'],
   right: skillsCard,
   compactTitle: true,

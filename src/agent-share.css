@@ -267,6 +267,7 @@
   background: linear-gradient(135deg, rgba(46,95,165,0.07), rgba(255,255,255,0.82));
 }
 .asp-install h2 { margin-bottom: 14px; }
+.asp-start { margin: 0 0 58px; }
 .asp-code { overflow: hidden; border: 1px solid rgba(16,21,24,0.13); border-radius: 5px; background: #101518; color: #dfe6e9; }
 .asp-code-bar { border-bottom: 1px solid rgba(255,255,255,0.09); color: #819097; font: 10px 'JetBrains Mono', monospace; }
 .asp-copy {

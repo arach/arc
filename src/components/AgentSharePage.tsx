@@ -26,7 +26,6 @@ interface SharePageConfig {
   lead: string
   metaTitle: string
   metaDescription: string
-  primaryLabel: string
   primaryCode: string
   docsHref: string
   docsLabel: string
@@ -48,9 +47,7 @@ const MCP_CONFIG: SharePageConfig = {
   lead: 'Arc MCP turns architecture work into a tool call: validate a diagram, lay it out, preview it, render production artifacts, and hand the result to the visual studio.',
   metaTitle: 'Arc MCP | Diagram tools for AI agents',
   metaDescription: 'Give AI agents tools to validate, lay out, diff, render, and hand off architecture diagrams.',
-  primaryLabel: 'Install and run',
-  primaryCode: `npm install -g @arach/arc
-arc-mcp`,
+  primaryCode: 'claude mcp add --scope project arc -- npx -y -p @arach/arc arc-mcp',
   docsHref: '/docs/agent-mcp',
   docsLabel: 'Read the MCP reference',
   outcomes: [
@@ -96,14 +93,11 @@ arc-mcp`,
 
 const SKILLS_CONFIG: SharePageConfig = {
   eyebrow: '// AGENT PLAYBOOKS · REUSABLE AUTHORING CONTRACT',
-  title: 'Teach your agent how good diagrams are made.',
-  lead: 'Arc Skills package the schema, composition rules, repair loop, and export workflow into reusable instructions your coding agent can apply inside any repository.',
+  title: 'Let your agents make amazing diagrams.',
+  lead: 'Reusable instructions for creating, repairing, and exporting architecture diagrams that stay typed, readable, and reviewable.',
   metaTitle: 'Arc Skills | Architecture diagram playbooks for agents',
   metaDescription: 'Reusable agent skills for creating, repairing, reviewing, and exporting architecture diagrams with Arc.',
-  primaryLabel: 'Install the diagram skill',
-  primaryCode: `mkdir -p .claude/skills/arc-diagrams
-curl -L https://raw.githubusercontent.com/arach/arc/main/skills/arc-diagrams/SKILL.md \\
-  -o .claude/skills/arc-diagrams/SKILL.md`,
+  primaryCode: 'npx skills add arach/arc --skill arc-diagrams',
   docsHref: '/docs/skills',
   docsLabel: 'Browse the skills reference',
   outcomes: [
@@ -255,6 +249,23 @@ export default function AgentSharePage({ kind }: { kind: SharePageKind }) {
             </div>
           </section>
 
+          <section className="asp-install asp-start" id="start">
+            <div>
+              <div className="asp-tag">// GETTING STARTED</div>
+              <h2>{kind === 'mcp' ? 'Add Arc MCP in one command.' : 'Add the skill in one command.'}</h2>
+              <p>{kind === 'mcp'
+                ? 'Connect it to Claude Code at project scope. Other clients are covered in the setup guide.'
+                : 'The open Skills installer finds your coding agents and puts the Arc playbook in the right place.'}</p>
+            </div>
+            <div className="asp-code">
+              <div className="asp-code-bar">
+                <span>terminal</span>
+                <CopyCode code={config.primaryCode} />
+              </div>
+              <pre><code>{config.primaryCode}</code></pre>
+            </div>
+          </section>
+
           <div className="asp-ruler" aria-hidden="true" />
 
           <section className="asp-section">
@@ -297,7 +308,7 @@ export default function AgentSharePage({ kind }: { kind: SharePageKind }) {
             </div>
           </section>
 
-          <section className="asp-section" id="start">
+          <section className="asp-section">
             <div className="asp-tag">// START IN THREE STEPS</div>
             <div className="asp-steps">
               {config.steps.map((step) => (
@@ -307,21 +318,6 @@ export default function AgentSharePage({ kind }: { kind: SharePageKind }) {
                   <p>{step.description}</p>
                 </article>
               ))}
-            </div>
-
-            <div className="asp-install">
-              <div>
-                <div className="asp-tag">// {config.primaryLabel.toUpperCase()}</div>
-                <h2>Copy, connect, create.</h2>
-                <p>The source remains ordinary JSON or TypeScript, so every output stays portable and reviewable.</p>
-              </div>
-              <div className="asp-code">
-                <div className="asp-code-bar">
-                  <span>terminal</span>
-                  <CopyCode code={config.primaryCode} />
-                </div>
-                <pre><code>{config.primaryCode}</code></pre>
-              </div>
             </div>
           </section>
 
