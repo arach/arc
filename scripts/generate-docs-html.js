@@ -82,13 +82,13 @@ const sharePages = [
     path: 'mcp',
     title: 'Arc MCP | Diagram tools for AI agents',
     description: 'Give AI agents tools to validate, lay out, diff, render, and hand off architecture diagrams.',
-    image: 'og-docs-llm.png',
+    image: 'og-mcp.png',
   },
   {
     path: 'skills',
     title: 'Arc Skills | Architecture diagram playbooks for agents',
     description: 'Reusable agent skills for creating, repairing, reviewing, and exporting architecture diagrams with Arc.',
-    image: 'og-docs-llm.png',
+    image: 'og-skills.png',
   },
   {
     path: 'docs/agent-mcp',

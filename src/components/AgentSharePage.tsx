@@ -191,7 +191,7 @@ export default function AgentSharePage({ kind }: { kind: SharePageKind }) {
   useMeta({
     title: config.metaTitle,
     description: config.metaDescription,
-    image: '/og-docs-llm.png',
+    image: kind === 'mcp' ? '/og-mcp.png' : '/og-skills.png',
     url: `/${kind}`,
   })
 
