@@ -1,12 +1,12 @@
 {
   "name": "@arach/arc",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "type": "module",
   "packageManager": "bun@1.3.11",
   "workspaces": [
     "packages/*"
   ],
-  "description": "Architecture diagrams as code \u2014 typed JSON schema, React renderer, visual editor, Mermaid import, ASCII/SVG/PNG export, CLI + MCP server",
+  "description": "Architecture diagrams as code — typed JSON schema, React renderer, visual editor, Mermaid import, ASCII/SVG/PNG export, CLI + MCP server",
   "author": "Arach Tchoupani",
   "license": "MIT",
   "repository": {
