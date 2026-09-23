@@ -8,7 +8,7 @@ order: 1
 
 Arc is a diagram editor that bridges the gap between visual design tools and code. Instead of exporting opaque image files, Arc outputs clean, declarative configurations that can be version-controlled, reviewed in PRs, and rendered anywhere.
 
-Think of it as Figma for architecture diagrams—but the output is TypeScript or JSON that lives alongside your codebase.
+Think of it as Figma for architecture diagrams, but the output is TypeScript or JSON that lives alongside your codebase.
 
 ## Key Concepts
 
@@ -20,11 +20,11 @@ Diagrams are data structures. Nodes, connectors, and styles are all defined in a
 
 ### Templates
 
-Structural presets that define box shapes, line styles, and layout behaviors. Templates control the visual language of your diagrams—rounded vs sharp corners, solid vs dashed lines, horizontal vs vertical layouts.
+Structural presets that define box shapes, line styles, and layout behaviors. Templates control the visual language of your diagrams: rounded vs sharp corners, solid vs dashed lines, horizontal vs vertical layouts.
 
 ### Themes
 
-Color palettes that can be applied to any template. Switch between light and dark modes, or match your brand colors, without changing the diagram structure. Built-in themes include default, warm, cool, and mono.
+Color palettes that can be applied to any template. Switch between light and dark modes, or match your brand colors, without changing the diagram structure. There are 8 built-in themes: `default`, `warm`, `cool`, `mono`, `engineering`, `workbench`, `tactical`, and `command` (the Arc editor default).
 
 ## Why Arc?
 
@@ -36,7 +36,7 @@ Architecture diagrams typically live in design tools, disconnected from the code
 
 ## Packages
 
-Arc exports two npm packages:
+Arc publishes three npm packages:
 
 | Package | Description |
 |---------|-------------|

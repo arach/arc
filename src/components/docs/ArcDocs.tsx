@@ -734,7 +734,7 @@ Return complete JSON. Before responding, verify:
     prompt: {
       title: 'Set Up Arc',
       description: 'Add Arc diagrams to your React project',
-      info: 'Arc is a React component that renders diagrams from JSON configs. Install the package, import ArchitectureDiagram, and pass your config as a prop. Works with Next.js, Vite, CRA, and any React setup.',
+      info: 'Arc is a React component that renders diagrams from JSON configs. Install the package, import ArcDiagram, and pass your config as the data prop. Works with Next.js, Vite, CRA, and any React setup.',
       params: [
         { name: 'FRAMEWORK', description: 'Your React setup', example: 'Next.js 14 with App Router' },
         { name: 'PACKAGE_MANAGER', description: 'npm, yarn, pnpm, or bun', example: 'pnpm' },
@@ -756,7 +756,7 @@ pnpm add @arach/arc
 yarn add @arach/arc
 
 // BASIC USAGE - React component
-import { ArchitectureDiagram } from '@arach/arc'
+import { ArcDiagram } from '@arach/arc'
 
 const config = {
   layout: { width: 600, height: 300 },
@@ -774,13 +774,13 @@ const config = {
 }
 
 export default function Page() {
-  return <ArchitectureDiagram config={config} />
+  return <ArcDiagram data={config} />
 }
 
 // NEXT.JS APP ROUTER - app/architecture/page.tsx
 // WHY: Use 'use client' because Arc uses browser APIs
 'use client'
-import { ArchitectureDiagram } from '@arach/arc'
+import { ArcDiagram } from '@arach/arc'
 // ... rest of component
 
 // STORING CONFIGS - recommended pattern

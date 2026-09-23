@@ -1,5 +1,5 @@
 // Arc Diagram Types
-// Shared format for Arc editor and consumers (Talkie docs, etc.)
+// Shared format for the Arc editor and diagram consumers
 
 import type { NodeShape } from '../utils/nodeShape'
 
