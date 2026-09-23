@@ -1,33 +1,30 @@
 /**
  * Arc MCP server — stdio tools for diagram authoring.
- * Run locally: `bun scripts/mcp/server.ts` or `bun run mcp`
- * Published bin: `bin/arc-mcp.mjs` (built via `bun run build:mcp`)
+ * Run locally: `bun packages/mcp/src/server.ts` or `bun run mcp`
+ * Published bin: `@arach/arc-mcp` → dist/arc-mcp.mjs (built via `bun run build:mcp`)
  */
-import { readFile } from 'node:fs/promises'
-import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod'
 import {
   autoLayout,
   createAutoLayout,
-} from '../../src/utils/autoLayout.ts'
-import { renderAscii } from '../../src/utils/asciiRenderer.ts'
-import { validateDiagramShape, isDiagramShape } from '../../src/utils/diagramValidation.ts'
-import { validateDiagram } from '../../src/utils/diagramDiagnostics.ts'
-import { diffDiagram } from '../../src/utils/diffDiagram.ts'
-import { buildEditorHandoff } from '../diagramHandoff.ts'
-import { renderDiagramHtml } from '../renderHtml.ts'
-import { renderDiagramPng, renderDiagramSvg, RenderError } from '../renderImage.ts'
-import { toTypeScriptSource } from '../../src/types/diagram.ts'
-import type { ArcDiagram, ArcDiagramData } from '../../src/types/diagram.ts'
-// Inlined by `bun run build:mcp` so the published arc-mcp bin serves the schema
+} from '../../../src/utils/autoLayout.ts'
+import { renderAscii } from '../../../src/utils/asciiRenderer.ts'
+import { validateDiagramShape, isDiagramShape } from '../../../src/utils/diagramValidation.ts'
+import { validateDiagram } from '../../../src/utils/diagramDiagnostics.ts'
+import { diffDiagram } from '../../../src/utils/diffDiagram.ts'
+import { buildEditorHandoff } from '../../../scripts/diagramHandoff.ts'
+import { renderDiagramHtml } from '../../../scripts/renderHtml.ts'
+import { renderDiagramPng, renderDiagramSvg, RenderError } from '../../../scripts/renderImage.ts'
+import { toTypeScriptSource } from '../../../src/types/diagram.ts'
+import type { ArcDiagram, ArcDiagramData } from '../../../src/types/diagram.ts'
+import pkg from '../package.json'
+// Inlined by `bun run build:mcp` so the published arc-mcp bin serves these
 // without depending on the package's on-disk layout.
-import diagramSchemaJson from '../../schemas/arc-diagram.schema.json'
-
-const __dirname = dirname(fileURLToPath(import.meta.url))
-const REPO_ROOT = join(__dirname, '..', '..')
+import diagramSchemaJson from '../../../schemas/arc-diagram.schema.json'
+import skillMarkdown from '../../../skills/arc-diagrams/SKILL.md' with { type: 'text' }
+import llmBriefing from '../../../docs/llm.txt' with { type: 'text' }
 
 const diagramSchema = z.record(z.unknown())
 const themeDescription = 'Arc theme id: default, warm, cool, mono, engineering, workbench, tactical, command, spacex, claude, or codex'
@@ -49,14 +46,10 @@ function renderToolError(err: unknown) {
   }
 }
 
-async function readRepoFile(...segments: string[]): Promise<string> {
-  return readFile(join(REPO_ROOT, ...segments), 'utf8')
-}
-
 export function createArcMcpServer(): McpServer {
   const server = new McpServer({
     name: 'arc',
-    version: '0.7.0',
+    version: pkg.version,
   })
 
   server.tool(
@@ -360,20 +353,18 @@ export function createArcMcpServer(): McpServer {
     'skill',
     'arc://skill/diagrams',
     { description: 'Arc diagram generation skill for agents', mimeType: 'text/markdown' },
-    async () => {
-      const text = await readRepoFile('skills', 'arc-diagrams', 'SKILL.md')
-      return { contents: [{ uri: 'arc://skill/diagrams', mimeType: 'text/markdown', text }] }
-    },
+    async () => ({
+      contents: [{ uri: 'arc://skill/diagrams', mimeType: 'text/markdown', text: skillMarkdown }],
+    }),
   )
 
   server.resource(
     'llm',
     'arc://docs/llm',
     { description: 'Dense LLM briefing (docs/llm.txt)', mimeType: 'text/plain' },
-    async () => {
-      const text = await readRepoFile('docs', 'llm.txt')
-      return { contents: [{ uri: 'arc://docs/llm', mimeType: 'text/plain', text }] }
-    },
+    async () => ({
+      contents: [{ uri: 'arc://docs/llm', mimeType: 'text/plain', text: llmBriefing }],
+    }),
   )
 
   return server

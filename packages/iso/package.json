@@ -17,11 +17,19 @@
   "keywords": [
     "diagram",
     "isometric",
+    "isometric-diagram",
     "embed",
     "visualization",
     "react",
-    "svg"
+    "react-component",
+    "svg",
+    "diagrams-as-code",
+    "architecture-diagram",
+    "3d",
+    "vanilla-js",
+    "standalone"
   ],
+  "homepage": "https://arc.jdi.sh",
   "files": [
     "dist"
   ],

@@ -12,7 +12,7 @@
 - **Stack**: React 19, Vite 7, TailwindCSS 4, Hudson shell (editor chrome)
 - **Package manager**: bun (`bun install`, `bun run dev`)
 - **CLI**: `arc` bin — `schema`, `check`, `diff`, `render`, `bench`
-- **MCP**: `arc-mcp` bin — see `docs/agent/mcp.agent.md`
+- **MCP**: `arc-mcp` bin on `@arach/arc-mcp` — see `docs/agent/mcp.agent.md`
 
 ## Which Package?
 
@@ -21,6 +21,7 @@
 | Render a 2D diagram in React | `@arach/arc` or `@arach/arc-viewer` |
 | Mermaid sequence diagrams | `@arach/arc-viewer` (`ArcMermaidPlayer`) |
 | Isometric / YAML tier diagrams | `@arach/arc-iso` |
+| AI agent tooling (MCP) | `@arach/arc-mcp` |
 | Full visual studio | Clone repo → `bun run dev` → `/editor` |
 | Contribute to editor | This repo — see CLAUDE.md |
 
@@ -237,7 +238,7 @@ curl "http://localhost:5188/capture/my-session" > out.png
 ## MCP
 
 `arc` bin on `@arach/arc` (`bun run build:cli` for publish) exposes `schema`, `check`, `diff`, `render`, and `bench`.
-`arc-mcp` bin (`bun run mcp` in dev, `bun run build:mcp` for publish).
+`arc-mcp` bin on `@arach/arc-mcp` (`bun run mcp` in dev, `bun run build:mcp` → `packages/mcp/dist/arc-mcp.mjs` for publish).
 Tools: validate_diagram, diff_diagram, auto_layout, render_ascii, render_svg, render_png, render_html, diagram_to_typescript, editor_handoff.
 `render_svg`/`render_png`/`render_html` accept `theme` and `mode`; omitted modes use the theme default. `render_png` uses an installed Chrome/Chromium binary (`ARC_CHROME` overrides lookup); `render_html` emits component/iframe/html text.
 See docs/agent/mcp.agent.md for remaining coverage gaps (Mermaid stays elsewhere).

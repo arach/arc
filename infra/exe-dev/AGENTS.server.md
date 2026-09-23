@@ -33,7 +33,7 @@ Agents grok arc: diagrams are `ArcDiagramData` JSON — typed, diffable, validat
 cd ~/arc
 ~/.bun/bin/bun run mcp:http          # MCP server (systemd: arc-mcp)
 curl -s http://127.0.0.1:5190/health
-~/.bun/bin/bun scripts/mcp/server.ts # stdio MCP (local only)
+~/.bun/bin/bun packages/mcp/src/server.ts # stdio MCP (local only)
 ```
 
 ## exe.dev

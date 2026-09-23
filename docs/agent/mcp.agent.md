@@ -1,9 +1,10 @@
 # MCP Server — Agent Context
 
-## Status: Shipped (`arc-mcp` bin on `@arach/arc`)
+## Status: Shipped (`arc-mcp` bin on `@arach/arc-mcp`)
 
-The MCP server is part of the main authoring package — same family as `arc-ascii`
-and the dev studio. It is **not** a separate npm package.
+The MCP server ships as its own package, `@arach/arc-mcp` — split out of
+`@arach/arc` so agent installs don't pull the studio/renderer bundle. Source
+lives in `packages/mcp/` in the same repo.
 
 ## Run
 
@@ -13,23 +14,23 @@ bun run mcp
 
 # published bin (after build:mcp)
 arc-mcp
-npx -y -p @arach/arc arc-mcp
+npx -y @arach/arc-mcp
 ```
 
-Build the bundled bin: `bun run build:mcp` → `bin/arc-mcp.mjs`
+Build the bundled bin: `bun run build:mcp` → `packages/mcp/dist/arc-mcp.mjs`
 
 ## Add to an MCP client
 
 Claude Code, project scope:
 
 ```bash
-claude mcp add --scope project arc -- npx -y -p @arach/arc arc-mcp
+claude mcp add --scope project arc -- npx -y @arach/arc-mcp
 ```
 
 Devin CLI:
 
 ```bash
-devin mcp add arc -- npx -y -p @arach/arc arc-mcp
+devin mcp add arc -- npx -y @arach/arc-mcp
 ```
 
 ## Cursor / Claude Desktop Config
@@ -39,7 +40,7 @@ devin mcp add arc -- npx -y -p @arach/arc arc-mcp
   "mcpServers": {
     "arc": {
       "command": "node",
-      "args": ["/absolute/path/to/arc/bin/arc-mcp.mjs"],
+      "args": ["/absolute/path/to/arc/packages/mcp/dist/arc-mcp.mjs"],
       "env": {
         "ARC_EDITOR_URL": "http://localhost:5188",
         "ARC_CHROME": "/path/to/chrome-or-chromium"
@@ -61,7 +62,7 @@ From a global install (after publish):
 }
 ```
 
-## Tools (v0.7 — authoring coverage)
+## Tools (authoring coverage)
 
 | Tool | Description |
 |------|-------------|
@@ -87,11 +88,13 @@ From a global install (after publish):
 
 ## PNG rasterization
 
-`render_png` keeps `@arach/arc` dependency-free by reusing `generateSVG()` and
+`render_png` keeps `@arach/arc-mcp` dependency-free by reusing `generateSVG()` and
 launching an installed Chrome/Chromium binary in headless screenshot mode. It
 looks for `ARC_CHROME`, `CHROME_PATH`, `PUPPETEER_EXECUTABLE_PATH`, common OS
 install paths, then `google-chrome`/`chromium` on `PATH`. If none is available,
-the tool returns `render/chrome-unavailable` instead of a broken image.
+the tool returns `render/chrome-unavailable` instead of a broken image. Set any
+of the env vars to `none` (or `0`/`false`/`off`) to force unavailability —
+useful for deterministic CI.
 
 ## Not in MCP (yet)
 
@@ -108,11 +111,12 @@ v0 targets the **authoring loop**: validate → layout → preview → open in s
 
 ## Implementation
 
-- Source: `scripts/mcp/server.ts`
-- Bundle: `scripts/build-arc-mcp.mjs` → `bin/arc-mcp.mjs`
-- MCP SDK + zod are devDependencies, bundled into the bin (zero production deps on `@arach/arc`)
+- Source: `packages/mcp/src/server.ts`
+- Bundle: `packages/mcp/build.mjs` → `packages/mcp/dist/arc-mcp.mjs` (`bun run build:mcp` from the repo root)
+- MCP SDK + zod are devDependencies, bundled into the bin (zero runtime deps)
+- The schema, skill markdown, and `llm.txt` resources are inlined as text imports at bundle time
 
-## Programmatic API (same package)
+## Programmatic API (from `@arach/arc`)
 
 ```typescript
 import {

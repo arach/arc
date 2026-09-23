@@ -12,7 +12,7 @@ order: 6
 
 **IMPORTANT:** Read these rules before making any changes:
 
-- Arc exports three npm packages: @arach/arc (full editor), @arach/arc-viewer (lightweight viewer), and @arach/arc-iso (isometric renderer)
+- Arc exports four npm packages: @arach/arc (full editor), @arach/arc-viewer (lightweight viewer), @arach/arc-iso (isometric renderer), and @arach/arc-mcp (MCP server)
 - Diagrams are stored as declarative JSON/TypeScript configs, not binary files
 - The editor uses useReducer + Context for state management (EditorProvider)
 - Never modify diagram configs without understanding the schema in src/types/
@@ -41,7 +41,7 @@ order: 6
 
 ## MCP Support
 
-**Shipped** as the `arc-mcp` bin on `@arach/arc` (`scripts/mcp/server.ts`). See `docs/agent/mcp.agent.md`.
+**Shipped** as the `arc-mcp` bin on `@arach/arc-mcp` (`packages/mcp/src/server.ts`). See `docs/agent/mcp.agent.md`.
 
 ## Package Decision Tree
 
@@ -73,6 +73,7 @@ Architecture diagrams typically live in design tools, disconnected from the code
 | `@arach/arc` | Full editor + renderer |
 | `@arach/arc-viewer` | Lightweight diagram viewer |
 | `@arach/arc-iso` | Isometric diagram renderer |
+| `@arach/arc-mcp` | MCP server — diagram tools for AI agents |
 
 ## Key Features
 
@@ -85,6 +86,7 @@ Architecture diagrams typically live in design tools, disconnected from the code
 
 - [GitHub Repository](https://github.com/arach/arc)
 - [NPM: @arach/arc](https://www.npmjs.com/package/@arach/arc)
+- [NPM: @arach/arc-mcp](https://www.npmjs.com/package/@arach/arc-mcp)
 
 ## Quickstart
 
@@ -92,7 +94,6 @@ Architecture diagrams typically live in design tools, disconnected from the code
 
 ```bash
 npm install @arach/arc
-npx @arach/arc-editor
 ```
 
 ### Quick Start

@@ -2,9 +2,9 @@ import { afterAll, describe, expect, test } from 'bun:test'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { join } from 'node:path'
-import type { ArcDiagramData } from '../../src/types/diagram.ts'
+import type { ArcDiagramData } from '../../../src/types/diagram.ts'
 
-const root = join(import.meta.dir, '../..')
+const root = join(import.meta.dir, '../../..')
 const diagram: ArcDiagramData = {
   layout: { width: 640, height: 320 },
   nodes: {
@@ -25,11 +25,11 @@ const diagram: ArcDiagramData = {
 
 const transport = new StdioClientTransport({
   command: process.execPath,
-  args: ['scripts/mcp/server.ts'],
+  args: ['packages/mcp/src/server.ts'],
   cwd: root,
   env: {
     ...process.env,
-    ARC_CHROME: '',
+    ARC_CHROME: 'none',
     CHROME_PATH: '',
     PUPPETEER_EXECUTABLE_PATH: '',
     PATH: '',

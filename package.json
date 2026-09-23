@@ -6,14 +6,14 @@
   "workspaces": [
     "packages/*"
   ],
-  "description": "Diagrams as code for React \u2014 design, render, and export typed architecture diagrams",
+  "description": "Architecture diagrams as code \u2014 typed JSON schema, React renderer, visual editor, Mermaid import, ASCII/SVG/PNG export, CLI + MCP server",
   "author": "Arach Tchoupani",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/arach/arc.git"
   },
-  "homepage": "https://github.com/arach/arc#readme",
+  "homepage": "https://arc.jdi.sh",
   "bugs": {
     "url": "https://github.com/arach/arc/issues"
   },
@@ -26,17 +26,37 @@
   },
   "keywords": [
     "diagram",
+    "diagrams",
     "editor",
     "architecture",
+    "architecture-diagram",
+    "diagram-as-code",
     "diagrams-as-code",
     "visualization",
     "react",
-    "isometric"
+    "react-component",
+    "react-diagram",
+    "diagram-editor",
+    "isometric",
+    "ascii",
+    "ascii-diagram",
+    "ascii-art",
+    "svg",
+    "mermaid",
+    "sequence-diagram",
+    "flowchart",
+    "system-design",
+    "infrastructure",
+    "cloud-architecture",
+    "cli",
+    "typescript",
+    "mcp",
+    "model-context-protocol",
+    "json-schema"
   ],
   "bin": {
     "arc": "./bin/arc.mjs",
-    "arc-ascii": "./bin/arc-ascii.mjs",
-    "arc-mcp": "./bin/arc-mcp.mjs"
+    "arc-ascii": "./bin/arc-ascii.mjs"
   },
   "files": [
     "lib/*.js",
@@ -44,7 +64,6 @@
     "lib/*.css",
     "bin/arc.mjs",
     "bin/arc-ascii.mjs",
-    "bin/arc-mcp.mjs",
     "docs/llm.txt",
     "schemas/arc-diagram.schema.json",
     "skills/arc-diagrams/SKILL.md",
@@ -58,17 +77,21 @@
       "types": "./lib/index.d.ts",
       "import": "./lib/arc.es.js",
       "require": "./lib/arc.umd.js"
-    }
+    },
+    "./arc.css": "./lib/arc.css",
+    "./style.css": "./lib/arc.css"
   },
-  "sideEffects": false,
+  "sideEffects": [
+    "**/*.css"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build && node scripts/generate-docs-html.js",
     "build:lib": "vite build --config vite.config.lib.js",
-    "build:mcp": "bun scripts/build-arc-mcp.mjs",
+    "build:mcp": "bun packages/mcp/build.mjs",
     "build:cli": "bun scripts/build-arc-cli.mjs",
-    "mcp": "bun scripts/mcp/server.ts",
-    "mcp:http": "bun scripts/mcp/http-server.ts",
+    "mcp": "bun packages/mcp/src/server.ts",
+    "mcp:http": "bun packages/mcp/src/http-server.ts",
     "build:iso": "vite build --config vite.config.iso.js && vite build --config vite.config.iso-slim.js",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
@@ -77,8 +100,8 @@
     "visual:update": "bun scripts/visualCheck.ts --update",
     "generate:schema": "bun scripts/generate-schema.ts",
     "generate-og": "node scripts/generate-og.js",
-    "check:dist": "attw --pack . --ignore-rules cjs-resolves-to-esm unexpected-module-syntax && publint && node scripts/check-packlist.mjs",
-    "prepublishOnly": "bun run build:lib && bun run build:mcp && bun run build:cli && bun run check:dist"
+    "check:dist": "attw --pack . --ignore-rules cjs-resolves-to-esm unexpected-module-syntax --exclude-entrypoints ./arc.css ./style.css && publint && node scripts/check-packlist.mjs",
+    "prepublishOnly": "bun run build:lib && bun run build:cli && bun run check:dist"
   },
   "peerDependencies": {
     "react": "^18.0.0 || ^19.0.0",
@@ -98,7 +121,6 @@
     "@codemirror/state": "^6.7.1",
     "@codemirror/view": "^6.43.8",
     "@eslint/js": "^9.39.1",
-    "@modelcontextprotocol/sdk": "^1.30.0",
     "@tailwindcss/vite": "^4.1.18",
     "@types/js-yaml": "^4.0.9",
     "@types/react": "^19.2.5",
@@ -127,7 +149,6 @@
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.67.0",
     "vite": "^7.2.4",
-    "vite-plugin-dts": "^4.5.4",
-    "zod": "^3.25.76"
+    "vite-plugin-dts": "^4.5.4"
   }
 }

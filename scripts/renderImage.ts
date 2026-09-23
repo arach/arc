@@ -163,7 +163,9 @@ export function findChrome(
   platform: string = process.platform,
 ): string | null {
   for (const key of ['ARC_CHROME', 'CHROME_PATH', 'PUPPETEER_EXECUTABLE_PATH']) {
-    const resolved = executable(env[key])
+    const value = env[key]
+    if (value && ['0', 'false', 'none', 'off'].includes(value.toLowerCase())) return null
+    const resolved = executable(value)
     if (resolved) return resolved
   }
 

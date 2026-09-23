@@ -4,15 +4,17 @@
 
 # Arc
 
-### Diagrams as code.
+### Architecture diagrams as code.
 
 Arc turns typed, diffable config into clean, themeable architecture diagrams.
-Design in the visual editor, render with React, or export as **TypeScript, JSON,
-SVG, PNG, or crisp ASCII**. The diagram lives with the system it describes.
+Design in the visual studio, render with React, or export as **TypeScript, JSON,
+SVG, PNG, or crisp ASCII** — with a CLI, generated JSON Schema, Mermaid import,
+and an MCP server so AI agents can author diagrams too. The diagram lives with
+the system it describes.
 
 [![npm version](https://img.shields.io/npm/v/@arach/arc.svg?color=6d5efc&label=%40arach%2Farc)](https://www.npmjs.com/package/@arach/arc)
 [![license](https://img.shields.io/npm/l/@arach/arc.svg?color=41b883)](./LICENSE)
-[![types](https://img.shields.io/npm/types/@arach/arc.svg?color=3b82f6)](./lib/index.d.ts)
+[![types](https://img.shields.io/npm/types/@arach/arc.svg?color=3b82f6)](./src/types/diagram.ts)
 
 ![A microservices architecture rendered by Arc's ArcDiagram component in the Engineering theme](https://raw.githubusercontent.com/arach/arc/main/public/hero.png)
 
@@ -44,7 +46,7 @@ export function Architecture() {
   return (
     <ArcDiagram
       data={diagram}      // your ArcDiagramData (see below)
-      theme="default"     // seven themes, each with light & dark
+      theme="default"     // eleven themes, each with light & dark
       mode="dark"         // light · dark
       defaultZoom="fit"   // auto-fit to the container
     />
@@ -52,7 +54,7 @@ export function Architecture() {
 }
 ```
 
-You get pan/zoom, hover highlighting, light/dark modes, and seven color themes
+You get pan/zoom, hover highlighting, light/dark modes, and eleven color themes
 out of the box.
 
 ### Key props
@@ -60,7 +62,7 @@ out of the box.
 | Prop | Type | Notes |
 |------|------|-------|
 | `data` | `ArcDiagramData` | The diagram config (required) — see [Example Output](#example-output). |
-| `theme` | `'default' \| 'warm' \| 'cool' \| 'mono' \| 'engineering' \| 'workbench' \| 'tactical'` | Palette + drafting grammar (grid, frame, type). |
+| `theme` | `'default' \| 'warm' \| 'cool' \| 'mono' \| 'engineering' \| 'workbench' \| 'tactical' \| 'command' \| 'spacex' \| 'claude' \| 'codex'` | Palette + drafting grammar (grid, frame, type). |
 | `mode` | `'light' \| 'dark'` | Appearance. |
 | `frame` | `'hairline' \| 'inset' \| 'brackets' \| 'ticks' \| 'cropmarks' \| 'corners' \| 'sheet' \| 'none'` | Override the theme's edge treatment. |
 | `interactive` | `boolean` | Pan/zoom controls. |
@@ -73,7 +75,8 @@ out of the box.
 
 Prefer to design visually? Arc ships a full drag-and-drop **studio** — infinite
 canvas, floating toolbar, reusable connector styles, live properties panel, and
-a minimap. Clone the repo and open it:
+a minimap. Try the [hosted studio](https://arc.jdi.sh), or clone the repo and
+open it locally:
 
 ```bash
 git clone https://github.com/arach/arc && cd arc
@@ -87,14 +90,18 @@ shareable link — and drop the result straight into `<ArcDiagram />`.
 
 ## Features
 
-- **Visual Editor** - Drag-and-drop nodes, connect with arrows
-- **Multiple Node Sizes** - Large, medium, small
-- **Color Themes** - Violet, emerald, blue, amber, sky, zinc, rose, orange
-- **Connector Styles** - Solid/dashed lines, labels, curved paths
-- **Export Options** - TypeScript, JSON, SVG, PNG, ASCII, shareable links
-- **Interactive Canvas** - Infinite pan/zoom, grid snapping
-- **Groups & Images** - Visual grouping, background images
-- **Templates** - Quick-start layouts
+- **`<ArcDiagram />` player** - Interactive React renderer with pan/zoom, hover highlighting, minimap, and light/dark modes
+- **Eleven themes** - Drafting grammars (grid, frame, type, geometry), each with light & dark palettes
+- **Visual studio** - Drag-and-drop editor with anchors, connector styles, groups, images, and templates
+- **Typed schema** - `ArcDiagramData` TypeScript types plus a generated draft-07 JSON Schema with coded diagnostics
+- **Semantic node kinds** - `frontend`, `database`, `queue`, `gateway`… supply default icon + color
+- **CLI** - `arc check`, `arc diff`, `arc render`, `arc bench`, `arc schema`, and `arc-ascii`
+- **MCP server** - `@arach/arc-mcp` gives AI agents validate/layout/render/diff tools over stdio
+- **Mermaid** - Native sequence-diagram player and flowchart import via `@arach/arc-viewer`
+- **Isometric** - `ArcDiagramIsometric` for 3D diagrams, plus `@arach/arc-iso` for vanilla JS
+- **ASCII renderer** - The same document as precise box-drawing text for terminals and docs
+- **Exports** - TypeScript, JSON, SVG, PNG, ASCII, and shareable links
+- **Zero runtime dependencies** - React is the only peer
 
 ## Native Mermaid Sequences
 
@@ -154,7 +161,8 @@ Arc's own architecture rendered three ways:
   <sub><strong>Tactical</strong> — crosshair grid, corner brackets, hard edges</sub>
 </div>
 
-Plus `default`, `warm`, `cool`, and `mono` — seven in all, each with light and dark modes.
+Plus `default`, `warm`, `cool`, `mono`, `command`, `spacex`, `claude`, and
+`codex` — eleven in all, each with light and dark modes.
 
 ## Example Output
 
@@ -260,14 +268,54 @@ bun run visual -- --png     # also compare Chrome-rasterized PNGs (non-strict)
 
 Cases and variants live in `visual/manifest.json` — see `visual/README.md`.
 
-## Requirements
+## MCP server
 
-The `ArcDiagram` player component requires:
+[`@arach/arc-mcp`](https://www.npmjs.com/package/@arach/arc-mcp) exposes Arc's
+toolchain over the Model Context Protocol — AI agents can author, validate,
+lay out, render (ASCII/SVG/PNG/HTML), and diff diagrams from any MCP client:
 
-- **Tailwind CSS v3+** - Component uses Tailwind utility classes for styling
-- **Default color palette** - The following colors must be available: `violet`, `emerald`, `blue`, `amber`, `sky`, `zinc`, `rose`, `orange`
+```bash
+claude mcp add --scope project arc -- npx -y @arach/arc-mcp
+# or: devin mcp add arc -- npx -y @arach/arc-mcp
+```
 
-If you're using a custom Tailwind config that restricts the color palette, ensure these colors are included.
+Tools include `validate_diagram`, `auto_layout`, `diff_diagram`, `render_svg`,
+`render_png`, `render_html`, `render_ascii`, `diagram_to_typescript`, and
+`editor_handoff` — plus the JSON Schema, generation skill, and LLM briefing as
+MCP resources.
+
+## Isometric diagrams
+
+`ArcDiagramIsometric` renders architecture in 3D isometric space — tiers,
+floors, and nodes on a grid instead of an x/y canvas. For non-React
+environments, [`@arach/arc-iso`](https://www.npmjs.com/package/@arach/arc-iso)
+provides the same renderer as vanilla JS.
+
+### Retro print material
+
+Set `material: 'retro-print'` on an isometric `DiagramConfig` for mineral inks,
+warm paper, and deterministic stipple. It works in the React diagram and static
+SVG renderer. Omit the option (or use `'standard'`) to keep the existing finish.
+React technical styles such as blueprint and cyanotype take precedence over
+the material setting.
+
+## Styling
+
+Arc ships a compiled stylesheet — import it once in your app entry:
+
+```ts
+import '@arach/arc/arc.css'
+```
+
+`react` and `react-dom` (18+) are the only peer dependencies; no Tailwind setup
+is required.
+
+## Packages
+
+- **`@arach/arc`** — this package: `<ArcDiagram />`, `<ArcDiagramIsometric />`, the studio, `arc` CLI, ASCII renderer
+- **[`@arach/arc-viewer`](https://www.npmjs.com/package/@arach/arc-viewer)** — native Mermaid sequence diagrams + Mermaid import for React
+- **[`@arach/arc-iso`](https://www.npmjs.com/package/@arach/arc-iso)** — standalone isometric renderer for vanilla JS and the browser
+- **[`@arach/arc-mcp`](https://www.npmjs.com/package/@arach/arc-mcp)** — MCP server: diagram tools for AI agents
 
 ## Tech Stack
 
@@ -278,12 +326,4 @@ If you're using a custom Tailwind config that restricts the color palette, ensur
 
 ## License
 
-MIT
-
-### Retro print material
-
-Set `material: 'retro-print'` on an isometric `DiagramConfig` for mineral inks,
-warm paper, and deterministic stipple. It works in the React diagram and static
-SVG renderer. Omit the option (or use `'standard'`) to keep the existing finish.
-React technical styles such as blueprint and cyanotype take precedence over
-the material setting.
+[MIT](./LICENSE)

@@ -130,4 +130,4 @@ See `docs/prompts/`:
 
 ## MCP
 
-Available via the `arc-mcp` bin on `@arach/arc`. See `docs/agent/mcp.agent.md`.
+Available via the `arc-mcp` bin on `@arach/arc-mcp`. See `docs/agent/mcp.agent.md`.

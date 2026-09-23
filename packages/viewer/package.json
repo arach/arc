@@ -40,20 +40,26 @@
   },
   "keywords": [
     "react",
+    "react-component",
     "diagram",
+    "diagrams-as-code",
     "architecture",
     "viewer",
+    "player",
     "svg",
     "declarative",
     "mermaid",
-    "sequence-diagram"
+    "sequence-diagram",
+    "sequence",
+    "flowchart",
+    "state-diagram"
   ],
-  "author": "arach",
+  "author": "Arach Tchoupani",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/arach/arc.git",
     "directory": "packages/viewer"
   },
-  "homepage": "https://github.com/arach/arc#readme"
+  "homepage": "https://arc.jdi.sh"
 }

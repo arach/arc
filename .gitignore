@@ -6,7 +6,6 @@ dist
 dist-*
 lib
 bin/arc.mjs
-bin/arc-mcp.mjs
 bundle-stats.html
 *.tsbuildinfo
 
