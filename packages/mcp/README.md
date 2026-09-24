@@ -73,8 +73,27 @@ devin mcp add arc -- npx -y @arach/arc-mcp
 | `arc://skill/diagrams` | Arc diagram-generation skill for agents |
 | `arc://docs/llm` | Dense LLM briefing |
 
-A hosted Streamable HTTP endpoint is also available at
-`https://arc-server.exe.xyz/mcp` for remote clients.
+## Self-hosting over HTTP
+
+The published bin runs over stdio, which is all a local client needs. To serve
+Arc to clients on other machines, run the Streamable HTTP server from a checkout
+of the repo:
+
+```bash
+git clone https://github.com/arach/arc && cd arc
+bun install
+ARC_MCP_HOST=127.0.0.1 ARC_MCP_PORT=5190 bun run mcp:http
+# MCP endpoint: http://127.0.0.1:5190/mcp · health: /health
+```
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `ARC_MCP_PORT` | `5190` | Port to listen on |
+| `ARC_MCP_HOST` | `0.0.0.0` | Interface to bind; use `127.0.0.1` unless it sits behind your own auth |
+| `ARC_EDITOR_URL` | `http://localhost:5188` | Studio base that `editor_handoff` links point to |
+
+Arc doesn't run a public MCP endpoint. If you need a hosted one, open an issue
+at [github.com/arach/arc](https://github.com/arach/arc/issues).
 
 ## Related packages
 

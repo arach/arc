@@ -2,7 +2,7 @@
  * Arc MCP HTTP server — Streamable HTTP transport for remote clients.
  *
  * Dev:  `bun run mcp:http`
- * Prod: `ARC_EDITOR_URL=https://arc-studio.exe.xyz bun packages/mcp/src/http-server.ts`
+ * Self-hosted: `ARC_MCP_HOST=127.0.0.1 ARC_EDITOR_URL=<your studio> bun packages/mcp/src/http-server.ts`
  */
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js'
 import { createArcMcpServer } from './server.ts'
