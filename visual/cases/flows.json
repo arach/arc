@@ -1,16 +1,16 @@
 {
-  "layout": { "width": 720, "height": 300 },
+  "layout": { "width": 720, "height": 310 },
   "nodes": {
-    "client": { "x": 40, "y": 110, "size": "m" },
-    "gateway": { "x": 280, "y": 110, "size": "m" },
-    "queue": { "x": 520, "y": 40, "size": "m" },
-    "worker": { "x": 520, "y": 180, "size": "m" }
+    "client": { "x": 40, "y": 115, "size": "m" },
+    "gateway": { "x": 290, "y": 115, "size": "m" },
+    "queue": { "x": 540, "y": 45, "size": "m" },
+    "worker": { "x": 540, "y": 190, "size": "m" }
   },
   "nodeData": {
-    "client": { "icon": "Monitor", "name": "Client", "color": "violet" },
-    "gateway": { "icon": "Shield", "name": "Gateway", "color": "blue", "shape": "chamfer" },
-    "queue": { "icon": "Package", "name": "Queue", "color": "emerald" },
-    "worker": { "icon": "Zap", "name": "Worker", "color": "amber" }
+    "client": { "kind": "frontend", "name": "Client" },
+    "gateway": { "kind": "gateway", "name": "Gateway", "shape": "chamfer" },
+    "queue": { "kind": "queue", "name": "Queue" },
+    "worker": { "kind": "service", "name": "Worker" }
   },
   "connectors": [
     { "id": "request", "from": "client", "to": "gateway", "fromAnchor": "right", "toAnchor": "left", "style": "request" },
@@ -18,7 +18,7 @@
     { "id": "work", "from": "gateway", "to": "worker", "fromAnchor": "right", "toAnchor": "left", "style": "job", "curve": "step" }
   ],
   "connectorStyles": {
-    "request": { "color": "blue", "strokeWidth": 2, "label": "HTTPS" },
+    "request": { "color": "sky", "strokeWidth": 2, "label": "HTTPS" },
     "event": { "color": "emerald", "strokeWidth": 2, "label": "event" },
     "job": { "color": "amber", "strokeWidth": 2, "label": "job", "dashed": true }
   },

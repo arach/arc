@@ -15,6 +15,8 @@ export interface FlowSvgOptions {
   themeColors?: Theme['light'] | Theme['dark'] | null
   /** Font family for flow captions. */
   fontFamily?: string
+  /** Canvas fill behind the layer; used as the label halo so captions stay legible. */
+  backgroundColor?: string
   /** Render a deterministic still at this route time instead of SMIL. */
   flowTime?: number
   /** Set false to omit SMIL and render the flow at `flowTime ?? 0`. */
@@ -140,18 +142,21 @@ function trailSpacing(flow: ResolvedFlow): number {
   return flow.trail === 'wake' ? Math.max(10, flow.size * 1.15) : Math.max(18, flow.size * 2.2)
 }
 
-function flowLabel(flow: ResolvedFlow, color: string, fontFamily: string): string {
+function flowLabel(flow: ResolvedFlow, color: string, fontFamily: string, backgroundColor?: string): string {
   if (!flow.flow.label) return ''
   const firstLeg = flow.legs[0]
   if (!firstLeg) return ''
-  const point = flowPointAtDistance(flow, firstLeg.routeStart + (firstLeg.routeEnd - firstLeg.routeStart) / 2)
+  // Sit early on the first leg and well off the line — connector labels own
+  // the midpoint, so the flow caption must not stack on top of them.
+  const point = flowPointAtDistance(flow, firstLeg.routeStart + (firstLeg.routeEnd - firstLeg.routeStart) * 0.28)
   if (!point) return ''
   const radians = (point.angle * Math.PI) / 180
   const nx = Math.sin(radians)
   const ny = -Math.cos(radians)
-  const x = point.x + nx * 14
-  const y = point.y + ny * 14
-  return `<text x="${x.toFixed(2)}" y="${y.toFixed(2)}" text-anchor="middle" fill="${color}" opacity="0.72" font-size="8.5" font-family="${escapeXml(fontFamily)}" letter-spacing="0.8">${escapeXml(flow.flow.label)}</text>`
+  const x = point.x + nx * 18
+  const y = point.y + ny * 18
+  const halo = backgroundColor ? ` stroke="${escapeXml(backgroundColor)}" stroke-width="3" paint-order="stroke" stroke-linejoin="round"` : ''
+  return `<text x="${x.toFixed(2)}" y="${y.toFixed(2)}" text-anchor="middle" fill="${color}" opacity="0.85" font-size="8.5" font-family="${escapeXml(fontFamily)}" letter-spacing="0.8"${halo}>${escapeXml(flow.flow.label)}</text>`
 }
 
 function wakePath(flow: ResolvedFlow, color: string): string {
@@ -172,7 +177,7 @@ function animatedFlow(flow: ResolvedFlow, data: ArcDiagramData, options: FlowSvg
     out += animatedMarker(flow, color, flow.marker, Math.max(1, flow.size * (1 - i * 0.12)), opacity, spacing * i)
   }
   out += animatedMarker(flow, color, flow.marker, flow.size, 0.95)
-  out += `${flowLabel(flow, color, options.fontFamily ?? 'ui-sans-serif, system-ui, sans-serif')}</g>`
+  out += `${flowLabel(flow, color, options.fontFamily ?? 'ui-sans-serif, system-ui, sans-serif', options.backgroundColor)}</g>`
   return out
 }
 
@@ -201,7 +206,7 @@ function staticFlow(flow: ResolvedFlow, data: ArcDiagramData, options: FlowSvgOp
     }
     out += staticMarkerAt(position, flow, color, flow.size, 1, time * 1.25)
   }
-  out += `${flowLabel(flow, color, options.fontFamily ?? 'ui-sans-serif, system-ui, sans-serif')}</g>`
+  out += `${flowLabel(flow, color, options.fontFamily ?? 'ui-sans-serif, system-ui, sans-serif', options.backgroundColor)}</g>`
   return out
 }
 

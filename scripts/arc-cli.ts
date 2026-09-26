@@ -332,7 +332,7 @@ function parseRenderArgs(args: string[]): {
   out?: string
   format: RenderFormat
   padding: number
-  backgroundColor: string
+  backgroundColor?: string
   includeGrid: boolean
   strict: boolean
   json: boolean
@@ -350,7 +350,9 @@ function parseRenderArgs(args: string[]): {
   let out: string | undefined
   let explicitFormat: RenderFormat | undefined
   let padding = 20
-  let backgroundColor = '#ffffff'
+  // Unset means "let the render layer decide" — themed diagrams need their
+  // theme canvas (e.g. a dark default mode), not a forced white page.
+  let backgroundColor: string | undefined
   let includeGrid = false
   let strict = false
   let json = false
@@ -436,7 +438,7 @@ function parseRenderArgs(args: string[]): {
   if (explicitFormat && inferred && explicitFormat !== inferred) {
     fail(`--out ends .${inferred} but --format is ${explicitFormat}`, 2)
   }
-  if (!/^(#[0-9a-fA-F]{3,8}|[a-zA-Z]+)$/.test(backgroundColor)) {
+  if (backgroundColor !== undefined && !/^(#[0-9a-fA-F]{3,8}|[a-zA-Z]+)$/.test(backgroundColor)) {
     fail('--background must be a hex or CSS named color', 2)
   }
   if (format === 'svg' && fps !== undefined) fail('--fps only applies to gif/mp4', 2)

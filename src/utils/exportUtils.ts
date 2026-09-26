@@ -368,6 +368,7 @@ export function generateSVG(diagram: any, options: any = {}) {
     svg += `  ${renderFlowLayer(diagram as ArcDiagramData, {
       themeColors,
       fontFamily,
+      backgroundColor,
       flowTime: options.flowTime,
       animate: options.animateFlows !== false,
     })}\n`
