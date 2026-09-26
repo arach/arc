@@ -158,6 +158,12 @@ function segmentAngleAt(segment: ConnectorPathSegment, t: number): number {
   return (Math.atan2(dy, dx) * 180) / Math.PI
 }
 
+function segmentLength(segment: ConnectorPathSegment): number {
+  return segment.kind === 'line'
+    ? Math.hypot(segment.to.x - segment.from.x, segment.to.y - segment.from.y)
+    : measureSegment(segment, 0).length
+}
+
 function measureSegment(segment: ConnectorPathSegment, start: number): MeasuredSegment {
   if (segment.kind === 'line') {
     const length = Math.hypot(segment.to.x - segment.from.x, segment.to.y - segment.from.y)
@@ -177,6 +183,53 @@ function reverseSegment(segment: ConnectorPathSegment): ConnectorPathSegment {
   if (segment.kind === 'line') return { kind: 'line', from: segment.to, to: segment.from }
   if (segment.kind === 'quadratic') return { kind: 'quadratic', from: segment.to, control: segment.control, to: segment.from }
   return { kind: 'cubic', from: segment.to, cp1: segment.cp2, cp2: segment.cp1, to: segment.from }
+}
+
+/** Connector route reused for a hidden transit between two nodes, or null. */
+function transitConnectorFor(
+  data: ArcDiagramData,
+  fromNode: string,
+  toNode: string,
+  preferred?: Connector,
+): { connector: Connector; direction: FlowDirection } | null {
+  const matches = data.connectors.filter(connector =>
+    (connector.from === fromNode && connector.to === toNode)
+    || (connector.from === toNode && connector.to === fromNode))
+  const connector = preferred && matches.includes(preferred) ? preferred : matches[0]
+  if (!connector) return null
+  return { connector, direction: connector.from === fromNode ? 'forward' : 'reverse' }
+}
+
+/** Segments bridging one leg's endpoint to the next leg's start. Same-node
+ *  hops ride a short line hidden under the node; cross-node hops retrace the
+ *  connector that links the nodes (preferring the connector just travelled)
+ *  so a return follows the same path it came in on. */
+function transitSegments(
+  data: ArcDiagramData,
+  from: Point,
+  fromNode: string,
+  to: Point,
+  toNode: string,
+  preferred?: Connector,
+): ConnectorPathSegment[] {
+  const segments: ConnectorPathSegment[] = []
+  const pushLine = (a: Point, b: Point) => {
+    if (Math.hypot(b.x - a.x, b.y - a.y) > EPSILON) segments.push({ kind: 'line', from: a, to: b })
+  }
+  if (fromNode === toNode) {
+    pushLine(from, to)
+    return segments
+  }
+  const transit = transitConnectorFor(data, fromNode, toNode, preferred)
+  const geometry = transit && connectorSegmentsForFlow(data, transit.connector, transit.direction)
+  if (!geometry) {
+    pushLine(from, to)
+    return segments
+  }
+  pushLine(from, geometry.start)
+  segments.push(...geometry.segments)
+  pushLine(geometry.end, to)
+  return segments
 }
 
 function connectorSegmentsForFlow(
@@ -285,9 +338,12 @@ export function flowTrailPositionsAt(flow: ResolvedFlow, time: number, spacing: 
 export function resolveDiagramFlow(data: ArcDiagramData, flow: DiagramFlow): ResolvedFlow | null {
   const legGeometries: Array<{
     leg: DiagramFlowLeg
+    connector: Connector
     connectorIndex: number
     connectorId?: string
     direction: FlowDirection
+    startNode: string
+    endNode: string
     segments: ConnectorPathSegment[]
     start: Point
     end: Point
@@ -302,9 +358,12 @@ export function resolveDiagramFlow(data: ArcDiagramData, flow: DiagramFlow): Res
     if (!geometry) return null
     legGeometries.push({
       leg,
+      connector: match.connector,
       connectorIndex: match.index,
       connectorId: match.connector.id,
       direction,
+      startNode: direction === 'forward' ? match.connector.from : match.connector.to,
+      endNode: direction === 'forward' ? match.connector.to : match.connector.from,
       ...geometry,
     })
   }
@@ -317,17 +376,14 @@ export function resolveDiagramFlow(data: ArcDiagramData, flow: DiagramFlow): Res
     const routeStart = routeCursor
     for (const segment of legGeometry.segments) {
       segments.push(segment)
-      routeCursor += segment.kind === 'line'
-        ? Math.hypot(segment.to.x - segment.from.x, segment.to.y - segment.from.y)
-        : measureSegment(segment, 0).length
+      routeCursor += segmentLength(segment)
     }
     const routeEnd = routeCursor
     if (index < legGeometries.length - 1) {
       const next = legGeometries[index + 1]
-      const transitLength = Math.hypot(next.start.x - legGeometry.end.x, next.start.y - legGeometry.end.y)
-      if (transitLength > EPSILON) {
-        segments.push({ kind: 'line', from: legGeometry.end, to: next.start })
-        routeCursor += transitLength
+      for (const segment of transitSegments(data, legGeometry.end, legGeometry.endNode, next.start, next.startNode, legGeometry.connector)) {
+        segments.push(segment)
+        routeCursor += segmentLength(segment)
       }
     }
     legRoutes.push({ routeStart, routeEnd, transitEnd: routeCursor })

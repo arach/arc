@@ -82,6 +82,20 @@ describe('flow route resolution', () => {
     expect(end.progress).toBeCloseTo(1)
   })
 
+  test('a return hop retraces the connector it arrived on', () => {
+    const hop = structuredClone(diagram)
+    hop.flows![0].legs = [{ id: 'c1' }, { id: 'c2' }, { id: 'c1', direction: 'reverse' }]
+    hop.flows![0].delay = 0
+    hop.flows![0].hold = 0
+    const flow = resolveDiagramFlow(hop, hop.flows![0])!
+    const kinds = flow.segments.map(item => item.segment.kind)
+    expect(kinds).toEqual(['cubic', 'line', 'cubic', 'cubic', 'line', 'cubic'])
+    const transits = flow.intervals.filter(span => span.transit)
+    expect(transits).toHaveLength(2)
+    const c2Length = flow.legs[1].routeEnd - flow.legs[1].routeStart
+    expect(transits[1].toDistance - transits[1].fromDistance).toBeGreaterThan(c2Length)
+  })
+
   test('indefinite repeats wrap while finite runs stop after their last pass', () => {
     const looping = structuredClone(diagram)
     looping.flows![0].repeat = 'indefinite'
