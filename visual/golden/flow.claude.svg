@@ -10,7 +10,7 @@
   <path d="M 460 157.5 C 510 157.5, 510 77.5, 560 77.5" fill="none" stroke="#5f7f4f" stroke-width="2"/>
   <polygon points="0,0 -8,-3 -8,3" fill="#5f7f4f" fill-opacity="0.88" transform="translate(560 77.5) rotate(0)"/>
   <text x="510" y="109.5" text-anchor="middle" fill="#5f7f4f" font-size="10" font-family="&#39;IBM Plex Mono&#39;, &#39;JetBrains Mono&#39;, ui-monospace, monospace">REST</text>
-  <path d="M 460 157.5 C 510 157.5, 510 237.5, 560 237.5" fill="none" stroke="#c47a2c" stroke-width="2" stroke-dasharray="6 3"/>
+  <path d="M 460 157.5 L 500 157.5 Q 510 157.5 510 167.5 L 510 227.5 Q 510 237.5 520 237.5 L 560 237.5" fill="none" stroke="#c47a2c" stroke-width="2" stroke-dasharray="6 3"/>
   <polygon points="0,0 -8,-3 -8,3" fill="#c47a2c" fill-opacity="0.88" transform="translate(560 237.5) rotate(0)"/>
   <text x="510" y="189.5" text-anchor="middle" fill="#c47a2c" font-size="10" font-family="&#39;IBM Plex Mono&#39;, &#39;JetBrains Mono&#39;, ui-monospace, monospace">SQL</text>
   <g opacity="0.98">

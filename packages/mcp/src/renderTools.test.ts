@@ -1,6 +1,8 @@
 import { afterAll, describe, expect, test } from 'bun:test'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
+import { mkdtempSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { ArcDiagramData } from '../../../src/types/diagram.ts'
 
@@ -45,10 +47,10 @@ afterAll(async () => {
 })
 
 describe('arc-mcp render tools', () => {
-  test('registers render_svg, render_png, and render_html', async () => {
+  test('registers render_svg, render_png, render_animation, and render_html', async () => {
     await ready
     const { tools } = await client.listTools()
-    expect(tools.map(tool => tool.name)).toEqual(expect.arrayContaining(['render_svg', 'render_png', 'render_html']))
+    expect(tools.map(tool => tool.name)).toEqual(expect.arrayContaining(['render_svg', 'render_png', 'render_animation', 'render_html']))
   })
 
   test('render_svg returns deterministic SVG text', async () => {
@@ -101,6 +103,21 @@ describe('arc-mcp render tools', () => {
     const result = await client.callTool({
       name: 'render_png',
       arguments: { diagram, scale: 1 },
+    })
+    expect(result.isError).toBe(true)
+    const text = result.content[0]?.type === 'text' ? result.content[0].text : '{}'
+    expect(JSON.parse(text)).toMatchObject({
+      ok: false,
+      error: { code: 'render/chrome-unavailable' },
+    })
+  })
+
+  test('render_animation reports a coded error when Chrome is unavailable', async () => {
+    await ready
+    const output = join(mkdtempSync(join(tmpdir(), 'arc-mcp-animation-')), 'flow.gif')
+    const result = await client.callTool({
+      name: 'render_animation',
+      arguments: { diagram, output, duration: 1, fps: 2 },
     })
     expect(result.isError).toBe(true)
     const text = result.content[0]?.type === 'text' ? result.content[0].text : '{}'

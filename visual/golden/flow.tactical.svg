@@ -10,7 +10,7 @@
   <path d="M 460 157.5 C 510 157.5, 510 77.5, 560 77.5" fill="none" stroke="#2dd4bf" stroke-width="2"/>
   <path d="M -7 -4 L 0 0 L -7 4" fill="none" stroke="#2dd4bf" stroke-width="1.5" stroke-linecap="square" transform="translate(560 77.5) rotate(0)"/>
   <text x="510" y="109.5" text-anchor="middle" fill="#2dd4bf" font-size="10" font-family="&#39;JetBrains Mono&#39;, ui-monospace, monospace" letter-spacing="1">REST</text>
-  <path d="M 460 157.5 C 510 157.5, 510 237.5, 560 237.5" fill="none" stroke="#e0a83d" stroke-width="2" stroke-dasharray="6 3"/>
+  <path d="M 460 157.5 L 500 157.5 Q 510 157.5 510 167.5 L 510 227.5 Q 510 237.5 520 237.5 L 560 237.5" fill="none" stroke="#e0a83d" stroke-width="2" stroke-dasharray="6 3"/>
   <path d="M -7 -4 L 0 0 L -7 4" fill="none" stroke="#e0a83d" stroke-width="1.5" stroke-linecap="square" transform="translate(560 237.5) rotate(0)"/>
   <text x="510" y="189.5" text-anchor="middle" fill="#e0a83d" font-size="10" font-family="&#39;JetBrains Mono&#39;, ui-monospace, monospace" letter-spacing="1">SQL</text>
   <g opacity="1">

@@ -1,6 +1,8 @@
 import { NODE_SIZES } from './constants'
 import type { AnchorPosition } from '../types/editor'
+import type { ArcDiagramData } from '../types/diagram'
 import { anchorOnNode, connectorEndAngle, connectorPath, connectorStartAngle } from './diagramHelpers'
+import { renderFlowLayer } from './flowSvg'
 import { resolveNodeColor, resolveNodeIcon } from './nodeKinds'
 import { resolveNodeDecor, resolveNodeShape, shapeCut, shapeFillPath } from './nodeShape'
 import { getTheme, resolveNodeRadius, themeCanvas, type BrandSpec, type Theme, type ThemeId } from './themes'
@@ -359,6 +361,16 @@ export function generateSVG(diagram: any, options: any = {}) {
       }
       svg += `  <text x="${lx}" y="${ly}" text-anchor="${anchor}" fill="${strokeColor}" font-size="10" font-family="${escapeXml(monoFamily)}"${brand?.upperLabels ? ' letter-spacing="1"' : ''}>${escapeXml(label)}</text>\n`
     }
+  }
+
+  // Flow markers ride above connectors but below node shells.
+  if (diagram.flows?.length) {
+    svg += `  ${renderFlowLayer(diagram as ArcDiagramData, {
+      themeColors,
+      fontFamily,
+      flowTime: options.flowTime,
+      animate: options.animateFlows !== false,
+    })}\n`
   }
 
   // Nodes

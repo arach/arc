@@ -171,26 +171,167 @@ export function connectorControlPoints(
   }
 }
 
-/** Smooth curved path between two anchor points. */
+/** One drawable piece of a connector route. Flow animation samples distance
+ *  along these instead of re-parsing SVG path text. */
+export type ConnectorPathSegment =
+  | { kind: 'line'; from: Point; to: Point }
+  | { kind: 'quadratic'; from: Point; control: Point; to: Point }
+  | { kind: 'cubic'; from: Point; cp1: Point; cp2: Point; to: Point }
+
+export interface ConnectorGeometry {
+  d: string
+  segments: ConnectorPathSegment[]
+  /** Direction the route leaves `from`, in canvas degrees. */
+  startAngle: number
+  /** Direction the route arrives at `to`, in canvas degrees. */
+  endAngle: number
+}
+
+/** Degrees of a → b. */
+export function angleBetween(a: Point, b: Point): number {
+  return (Math.atan2(b.y - a.y, b.x - a.x) * 180) / Math.PI
+}
+
+// Generate SVG path for straight line
+export function straightPath(from: Point, to: Point): string {
+  return `M ${from.x} ${from.y} L ${to.x} ${to.y}`
+}
+
+function segmentStartAngle(segment: ConnectorPathSegment): number {
+  const next = segment.kind === 'cubic' ? segment.cp1 : segment.kind === 'quadratic' ? segment.control : segment.to
+  const angle = angleBetween(segment.from, next)
+  return Number.isFinite(angle) ? angle : angleBetween(segment.from, segment.to)
+}
+
+function segmentEndAngle(segment: ConnectorPathSegment): number {
+  const prev = segment.kind === 'cubic' ? segment.cp2 : segment.kind === 'quadratic' ? segment.control : segment.from
+  const angle = angleBetween(prev, segment.to)
+  return Number.isFinite(angle) ? angle : angleBetween(segment.from, segment.to)
+}
+
+export function connectorSegmentsPath(segments: ConnectorPathSegment[]): string {
+  let d = ''
+  for (const segment of segments) {
+    if (d === '') d = `M ${segment.from.x} ${segment.from.y}`
+    if (segment.kind === 'line') {
+      d += ` L ${segment.to.x} ${segment.to.y}`
+    } else if (segment.kind === 'quadratic') {
+      d += ` Q ${segment.control.x} ${segment.control.y} ${segment.to.x} ${segment.to.y}`
+    } else {
+      d += ` C ${segment.cp1.x} ${segment.cp1.y}, ${segment.cp2.x} ${segment.cp2.y}, ${segment.to.x} ${segment.to.y}`
+    }
+  }
+  return d
+}
+
+function horizontalAnchor(a?: AnchorPosition): boolean {
+  return a === 'left' || a === 'right'
+}
+
+/** Polyline points for an orthogonal route ('step' curve). Corner anchors
+ *  (topLeft, bottomRight…) exit vertically. */
+export function elbowPolyline(
+  from: Point,
+  to: Point,
+  fromAnchor?: AnchorPosition,
+  toAnchor?: AnchorPosition,
+): Point[] {
+  const midX = (from.x + to.x) / 2
+  const midY = (from.y + to.y) / 2
+  const fH = horizontalAnchor(fromAnchor)
+  const tH = horizontalAnchor(toAnchor)
+  if (fH && tH) return [from, { x: midX, y: from.y }, { x: midX, y: to.y }, to]
+  if (!fH && !tH) return [from, { x: from.x, y: midY }, { x: to.x, y: midY }, to]
+  if (fH) return [from, { x: to.x, y: from.y }, to]
+  return [from, { x: from.x, y: to.y }, to]
+}
+
+/** Line/quadratic segments for `roundedPolylineD`, corners rounded by `radius`. */
+export function roundedPolylineSegments(pts: Point[], radius = 10): ConnectorPathSegment[] {
+  if (pts.length < 2) return []
+  if (pts.length === 2) return [{ kind: 'line', from: pts[0], to: pts[1] }]
+  const segments: ConnectorPathSegment[] = []
+  let cursor = pts[0]
+  for (let i = 1; i < pts.length - 1; i++) {
+    const prev = pts[i - 1]
+    const cur = pts[i]
+    const next = pts[i + 1]
+    const lenIn = Math.hypot(cur.x - prev.x, cur.y - prev.y)
+    const lenOut = Math.hypot(next.x - cur.x, next.y - cur.y)
+    const r = Math.min(radius, lenIn / 2, lenOut / 2)
+    if (r < 0.5 || lenIn === 0 || lenOut === 0) {
+      if (cur.x !== cursor.x || cur.y !== cursor.y) {
+        segments.push({ kind: 'line', from: cursor, to: cur })
+        cursor = cur
+      }
+      continue
+    }
+    const inPoint = {
+      x: cur.x - ((cur.x - prev.x) / lenIn) * r,
+      y: cur.y - ((cur.y - prev.y) / lenIn) * r,
+    }
+    const outPoint = {
+      x: cur.x + ((next.x - cur.x) / lenOut) * r,
+      y: cur.y + ((next.y - cur.y) / lenOut) * r,
+    }
+    if (inPoint.x !== cursor.x || inPoint.y !== cursor.y) {
+      segments.push({ kind: 'line', from: cursor, to: inPoint })
+    }
+    segments.push({ kind: 'quadratic', from: inPoint, control: cur, to: outPoint })
+    cursor = outPoint
+  }
+  const last = pts[pts.length - 1]
+  if (last.x !== cursor.x || last.y !== cursor.y) {
+    segments.push({ kind: 'line', from: cursor, to: last })
+  }
+  return segments
+}
+
+/** SVG path through polyline points, corners rounded by `radius`. */
+export function roundedPolylineD(pts: Point[], radius = 10): string {
+  return connectorSegmentsPath(roundedPolylineSegments(pts, radius))
+}
+
+/** Shared connector geometry used by the canvas, export, and flow animation. */
+export function connectorGeometry(
+  from: Point, to: Point, fromAnchor: AnchorPosition, toAnchor: AnchorPosition,
+  curve?: Connector['curve'], curveDepth = 40,
+): ConnectorGeometry {
+  let segments: ConnectorPathSegment[]
+  if (curve === 'direct') {
+    segments = [{ kind: 'line', from, to }]
+  } else if (curve === 'step') {
+    segments = roundedPolylineSegments(elbowPolyline(from, to, fromAnchor, toAnchor))
+  } else {
+    const { cp1, cp2 } = connectorControlPoints(from, to, fromAnchor, toAnchor, curve, curveDepth)
+    segments = [{ kind: 'cubic', from, cp1, cp2, to }]
+  }
+  const first = segments[0]
+  const last = segments[segments.length - 1]
+  const fallback = angleBetween(from, to)
+  return {
+    d: connectorSegmentsPath(segments),
+    segments,
+    startAngle: first ? segmentStartAngle(first) : fallback,
+    endAngle: last ? segmentEndAngle(last) : fallback,
+  }
+}
+
+/** Smooth curved or routed path between two anchor points. */
 export function connectorPath(
   from: Point, to: Point, fromAnchor: AnchorPosition, toAnchor: AnchorPosition,
   curve?: Connector['curve'], curveDepth = 40,
 ): string {
-  const { cp1, cp2 } = connectorControlPoints(from, to, fromAnchor, toAnchor, curve, curveDepth)
-  return `M ${from.x} ${from.y} C ${cp1.x} ${cp1.y}, ${cp2.x} ${cp2.y}, ${to.x} ${to.y}`
+  return connectorGeometry(from, to, fromAnchor, toAnchor, curve, curveDepth).d
 }
 
-/** Degrees the path arrives at `to` — the bezier's end tangent, for arrowhead
+/** Degrees the path arrives at `to` — the route's end tangent, for arrowhead
  *  orientation (the endpoint secant mis-rotates heads on curved paths). */
 export function connectorEndAngle(
   from: Point, to: Point, fromAnchor: AnchorPosition, toAnchor: AnchorPosition,
   curve?: Connector['curve'], curveDepth = 40,
 ): number {
-  const { cp2 } = connectorControlPoints(from, to, fromAnchor, toAnchor, curve, curveDepth)
-  const vx = to.x - cp2.x
-  const vy = to.y - cp2.y
-  if (vx === 0 && vy === 0) return Math.atan2(to.y - from.y, to.x - from.x) * (180 / Math.PI)
-  return Math.atan2(vy, vx) * (180 / Math.PI)
+  return connectorGeometry(from, to, fromAnchor, toAnchor, curve, curveDepth).endAngle
 }
 
 /** Degrees a bidirectional arrow at `from` points back into its node. */
@@ -198,17 +339,9 @@ export function connectorStartAngle(
   from: Point, to: Point, fromAnchor: AnchorPosition, toAnchor: AnchorPosition,
   curve?: Connector['curve'], curveDepth = 40,
 ): number {
-  const { cp1 } = connectorControlPoints(from, to, fromAnchor, toAnchor, curve, curveDepth)
-  const vx = from.x - cp1.x
-  const vy = from.y - cp1.y
-  if (vx === 0 && vy === 0) return Math.atan2(from.y - to.y, from.x - to.x) * (180 / Math.PI)
-  return Math.atan2(vy, vx) * (180 / Math.PI)
+  return connectorGeometry(from, to, fromAnchor, toAnchor, curve, curveDepth).startAngle + 180
 }
 
-// Generate SVG path for straight line
-export function straightPath(from: Point, to: Point): string {
-  return `M ${from.x} ${from.y} L ${to.x} ${to.y}`
-}
 
 // Curve direction type
 type CurveDirection = 'down' | 'up'
@@ -344,58 +477,4 @@ export function arrowShape(kind: ArrowHead, size: number): ArrowShape | null {
     default:
       return null
   }
-}
-
-/** Degrees of a → b. */
-export function angleBetween(a: Point, b: Point): number {
-  return (Math.atan2(b.y - a.y, b.x - a.x) * 180) / Math.PI
-}
-
-function horizontalAnchor(a?: AnchorPosition): boolean {
-  return a === 'left' || a === 'right'
-}
-
-/** Polyline points for an orthogonal route ('step' curve). Corner anchors
- *  (topLeft, bottomRight…) exit vertically. */
-export function elbowPolyline(
-  from: Point,
-  to: Point,
-  fromAnchor?: AnchorPosition,
-  toAnchor?: AnchorPosition,
-): Point[] {
-  const midX = (from.x + to.x) / 2
-  const midY = (from.y + to.y) / 2
-  const fH = horizontalAnchor(fromAnchor)
-  const tH = horizontalAnchor(toAnchor)
-  if (fH && tH) return [from, { x: midX, y: from.y }, { x: midX, y: to.y }, to]
-  if (!fH && !tH) return [from, { x: from.x, y: midY }, { x: to.x, y: midY }, to]
-  if (fH) return [from, { x: to.x, y: from.y }, to]
-  return [from, { x: from.x, y: to.y }, to]
-}
-
-/** SVG path through polyline points, corners rounded by `radius`. */
-export function roundedPolylineD(pts: Point[], radius = 10): string {
-  if (pts.length < 2) return ''
-  if (pts.length === 2) return straightPath(pts[0], pts[1])
-  let d = `M ${pts[0].x} ${pts[0].y}`
-  for (let i = 1; i < pts.length - 1; i++) {
-    const prev = pts[i - 1]
-    const cur = pts[i]
-    const next = pts[i + 1]
-    const lenIn = Math.hypot(cur.x - prev.x, cur.y - prev.y)
-    const lenOut = Math.hypot(next.x - cur.x, next.y - cur.y)
-    const r = Math.min(radius, lenIn / 2, lenOut / 2)
-    if (r < 0.5 || lenIn === 0 || lenOut === 0) {
-      d += ` L ${cur.x} ${cur.y}`
-      continue
-    }
-    const inX = cur.x - ((cur.x - prev.x) / lenIn) * r
-    const inY = cur.y - ((cur.y - prev.y) / lenIn) * r
-    const outX = cur.x + ((next.x - cur.x) / lenOut) * r
-    const outY = cur.y + ((next.y - cur.y) / lenOut) * r
-    d += ` L ${inX} ${inY} Q ${cur.x} ${cur.y} ${outX} ${outY}`
-  }
-  const last = pts[pts.length - 1]
-  d += ` L ${last.x} ${last.y}`
-  return d
 }

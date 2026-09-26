@@ -58,8 +58,9 @@ devin mcp add arc -- npx -y @arach/arc-mcp
 | `validate_diagram` | Coded diagnostics for `ArcDiagramData` — consume by `code`, apply a `supportedFixes` entry, re-validate |
 | `auto_layout` | Auto-layout a full diagram or minimal input (`nodeData` + `connectors` + `connectorStyles`) |
 | `diff_diagram` | Structural `DiagramDelta` — feed to `<ArcDiagram data={head} delta={delta} />` for a diff render |
-| `render_svg` | Deterministic SVG export — eleven themes, light/dark |
-| `render_png` | PNG raster via a local Chrome/Chromium binary (`ARC_CHROME` to override, `ARC_CHROME=none` to disable) |
+| `render_svg` | Deterministic SVG export — eleven themes, light/dark; authored flows animate via SMIL or sample at `flowTime` |
+| `render_png` | PNG raster via a local Chrome/Chromium binary (`ARC_CHROME` to override, `ARC_CHROME=none` to disable), sampled at `flowTime` |
+| `render_animation` | GIF/MP4 flow animation to an `output` path via Chrome frames + ffmpeg (`ARC_FFMPEG` to override) |
 | `render_html` | React component snippet, iframe embed, or standalone HTML page |
 | `render_ascii` | Unicode/ASCII box-art rendering for terminals and docs |
 | `diagram_to_typescript` | Emit a typed `ArcDiagramData` TypeScript module |

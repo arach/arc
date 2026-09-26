@@ -33,7 +33,8 @@ import type { Connector as EditorConnector } from '../types/editor'
 import type { NodeKind } from '../types/diagram'
 import { resolveNodeColor, resolveNodeIcon } from '../utils/nodeKinds'
 import type { DiagramDelta } from '../utils/diffDiagram'
-import type { DiagramSource, FileMeta, LegendMode } from '../types/diagram'
+import type { ArcDiagramData as CanonicalArcDiagramData, DiagramFlow, DiagramFlowLeg, DiagramSource, FileMeta, FlowDirection, FlowEasing, FlowMarker, FlowTrail, LegendMode } from '../types/diagram'
+import { renderFlowLayer } from '../utils/flowSvg'
 import { sourceLabel } from '../utils/sourceRef'
 import { isRtlLocale, isValidLocale } from '../utils/locale'
 
@@ -46,6 +47,7 @@ export type AnchorPosition = 'left' | 'right' | 'top' | 'bottom' | 'bottomLeft' 
 export type DiagramColor = 'violet' | 'emerald' | 'blue' | 'amber' | 'sky' | 'zinc' | 'rose' | 'orange'
 export type ViewMode = '2d' | 'isometric'
 export type { IsoStyleId }
+export type { DiagramFlow, DiagramFlowLeg, FlowDirection, FlowEasing, FlowMarker, FlowTrail }
 
 export interface NodePosition {
   x: number
@@ -242,6 +244,8 @@ export interface ArcDiagramData {
   connectorStyles: Record<string, ConnectorStyle>
   focusTargets?: Record<string, FocusTarget>
   views?: DiagramView[]
+  /** Animated message/packet routes across connectors. */
+  flows?: DiagramFlow[]
   groups?: GroupShape[]
 }
 
@@ -1925,6 +1929,11 @@ interface ArcDiagramProps {
    *  entries, ghosts removed ones and moved nodes' old positions. 2D only —
    *  ignored under `defaultViewMode="isometric"`. `data` stays the head truth. */
   delta?: DiagramDelta
+  /** Animate `data.flows` markers. Default: true. Set false for a still at
+   *  `flowTime` (or t=0). 2D only. */
+  animateFlows?: boolean
+  /** Deterministic flow still time in seconds; disables SMIL when set. */
+  flowTime?: number
 }
 
 export default function ArcDiagram({
@@ -1957,6 +1966,8 @@ export default function ArcDiagram({
   defaultViewMode = '2d',
   defaultIsoStyle = 'solid',
   delta,
+  animateFlows = true,
+  flowTime,
 }: ArcDiagramProps) {
   const isLight = mode === 'light'
   const containerRef = React.useRef<HTMLDivElement>(null)
@@ -2023,6 +2034,15 @@ export default function ArcDiagram({
   // Isometric projection — mirrors the editor canvas composition (origin at the
   // layout's bottom-center), but without selection state.
   const isIso = defaultViewMode === 'isometric'
+  const flowLayer = useMemo(() => {
+    if (isIso || !activeData.flows?.length) return ''
+    return renderFlowLayer(activeData as unknown as CanonicalArcDiagramData, {
+      themeColors,
+      fontFamily: brand?.fontFamily,
+      flowTime,
+      animate: animateFlows && flowTime === undefined,
+    })
+  }, [activeData, animateFlows, flowTime, isIso, themeColors, brand?.fontFamily])
   const isoStyle = getIsoStyle(defaultIsoStyle)
   const isoOriginX = layout.width / 2
   const isoOriginY = layout.height - 100
@@ -2400,6 +2420,18 @@ export default function ArcDiagram({
                 )
               })}
             </svg>
+
+            {/* Flow markers ride above connectors but below node shells, so a
+                marker crossing a node appears to pass through it. */}
+            {flowLayer && (
+              <svg
+                className="absolute inset-0 w-full h-full pointer-events-none"
+                viewBox={`0 0 ${layout.width} ${layout.height}`}
+                data-arc-flow-layer
+              >
+                <g dangerouslySetInnerHTML={{ __html: flowLayer }} />
+              </svg>
+            )}
 
             {/* Nodes */}
             {Object.entries(nodes).map(([nodeId, node]) => {

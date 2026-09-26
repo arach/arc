@@ -214,6 +214,7 @@ interface ArcDiagramData {
   connectors: Connector[]
   connectorStyles: Record<string, ConnectorStyle>
   focusTargets?: Record<string, FocusTarget>
+  flows?: DiagramFlow[]              // animated message routes — docs/api.md
   views?: DiagramView[]              // ordered guided chapters — docs/views.md
 }
 ```
@@ -268,6 +269,21 @@ interface ConnectorStyle {
   labelAlign?: 'left' | 'right' | 'center'
   dashed?: boolean
 }
+
+interface DiagramFlow {
+  id: string
+  legs: Array<{ id?: string; from?: string; to?: string; direction?: 'forward' | 'reverse'; pause?: number }>
+  direction?: 'forward' | 'reverse'
+  speed?: number                    // px/s; ignored when duration is set
+  duration?: number                 // total seconds including pauses
+  delay?: number; hold?: number
+  repeat?: number | 'indefinite'
+  easing?: 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out'
+  marker?: 'dot' | 'packet' | 'pulse' | 'arrow'
+  color?: DiagramColor
+  size?: number
+  trail?: 'none' | 'fade' | 'wake'
+}
 ```
 
 ## Themes
@@ -311,5 +327,6 @@ Arc uses Lucide React icons:
 
 - **JSON**: Full diagram configuration
 - **TypeScript**: Type-safe diagram constant
-- **SVG**: Vector graphic (light or dark)
-- **PNG**: Raster image
+- **SVG**: Vector graphic (light or dark; flows animate via SMIL)
+- **PNG**: Raster image sampled at `flowTime`
+- **GIF/MP4**: Animated flow artifacts via Chrome frames + ffmpeg

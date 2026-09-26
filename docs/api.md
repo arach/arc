@@ -28,6 +28,8 @@ interface ArcDiagramProps {
   showArcToggle?: boolean  // .arc source toggle (default: true)
   showFocusStory?: boolean // Caption + steps for the active focusTarget (default: false)
   showAutoLayout?: boolean // Auto-layout button (default: false)
+  animateFlows?: boolean   // SMIL flow animation layer (default: true)
+  flowTime?: number        // Sample flows at a deterministic second instead of animating
   label?: string           // Overrides data.id; pass '' to hide
   labelPosition?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
   frame?: BrandSpec['frame']    // Override the theme's edge treatment
@@ -58,6 +60,7 @@ interface ArcDiagramData {
   nodeData: Record<string, NodeData>            // Node display data by ID
   connectors: Connector[]                       // Connection definitions
   connectorStyles: Record<string, ConnectorStyle> // Style definitions
+  flows?: DiagramFlow[]                          // Animated message routes across connectors
 }
 ```
 
@@ -105,6 +108,44 @@ interface ConnectorStyle {
   dashed?: boolean      // Dashed line style
 }
 ```
+
+## Flow Animations
+
+`flows[]` sends a marker along an ordered connector route — for a request,
+event, or packet — without changing the connector itself:
+
+```typescript
+interface DiagramFlow {
+  id: string
+  label?: string
+  legs: DiagramFlowLeg[]                 // ordered connector refs
+  direction?: 'forward' | 'reverse'      // default direction for every leg
+  speed?: number                         // px/s; ignored when duration is set
+  duration?: number                      // total seconds, including leg pauses
+  delay?: number                         // seconds before the first run
+  hold?: number                          // seconds hidden at each run's end
+  repeat?: number | 'indefinite'         // default 'indefinite'
+  easing?: 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out'
+  marker?: 'dot' | 'packet' | 'pulse' | 'arrow'
+  color?: DiagramColor                   // defaults to the first leg's style color
+  size?: number                          // marker diameter in px (default 10)
+  trail?: 'none' | 'fade' | 'wake'
+}
+
+interface DiagramFlowLeg {
+  id?: string                            // preferred connector reference
+  from?: string; to?: string             // endpoint-pair fallback
+  direction?: 'forward' | 'reverse'
+  pause?: number                         // dwell before the next leg
+}
+```
+
+Standalone SVGs animate via SMIL by default. `<ArcDiagram />` and `render_svg`
+accept `flowTime` to sample a deterministic still and `animateFlows={false}` to
+suppress motion; `render_png` always samples `flowTime` (default `0`). GIF and
+MP4 exports are produced by deterministic frame capture in Chrome plus ffmpeg:
+`arc render diagram.json --out artifact.gif --duration 4 --fps 12`, or the MCP
+`render_animation` tool with an `output` path ending in `.gif` or `.mp4`.
 
 ## Themes
 
@@ -166,8 +207,9 @@ Arc uses Lucide React icons. Common architecture icons:
 
 ## Export Formats
 
-The Arc Editor can export diagrams as:
+The Arc Editor and CLI can export diagrams as:
 - **JSON**: Full diagram configuration
 - **TypeScript**: Type-safe diagram constant
-- **SVG**: Vector graphic (light or dark)
-- **PNG**: Raster image
+- **SVG**: Vector graphic (light or dark; flow animations are SMIL)
+- **PNG**: Raster image sampled at `flowTime`
+- **GIF / MP4**: Flow animations rendered from deterministic frames

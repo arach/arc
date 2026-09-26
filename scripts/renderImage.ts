@@ -15,6 +15,10 @@ export interface RenderSvgOptions {
   padding?: number
   theme?: string
   mode?: RenderMode
+  /** Render flow markers as a deterministic still at this time (seconds). */
+  flowTime?: number
+  /** Standalone SVG embeds animate flows by default; set false to omit SMIL. */
+  animateFlows?: boolean
 }
 
 export interface RenderedSvg {
@@ -115,6 +119,9 @@ export function renderDiagramSvg(diagram: ArcDiagramData, options: RenderSvgOpti
   const padding = assertPadding(options.padding)
   const theme = assertRenderTheme(options.theme)
   const mode = resolveRenderMode(theme, options.mode)
+  if (options.flowTime !== undefined && (!Number.isFinite(options.flowTime) || options.flowTime < 0)) {
+    throw new RenderError('render/invalid-option', 'flowTime must be a non-negative finite number', ['use seconds, e.g. --flow-time 1.25'])
+  }
   const themeBackground = theme ? themeCanvas(theme, mode ?? 'light') : undefined
   const backgroundColor = options.backgroundColor ?? themeBackground ?? '#ffffff'
   if (typeof backgroundColor !== 'string' || !/^(#[0-9a-fA-F]{3,8}|[a-zA-Z]+)$/.test(backgroundColor)) {
@@ -132,7 +139,7 @@ export function renderDiagramSvg(diagram: ArcDiagramData, options: RenderSvgOpti
   }
 }
 
-function executable(file: string | undefined): string | null {
+export function executable(file: string | undefined): string | null {
   if (!file) return null
   try {
     accessSync(file, constants.X_OK)
@@ -142,7 +149,7 @@ function executable(file: string | undefined): string | null {
   }
 }
 
-function findOnPath(command: string, env: Record<string, string | undefined>, platform: string): string | null {
+export function findOnPath(command: string, env: Record<string, string | undefined> = process.env, platform: string = process.platform): string | null {
   const pathValue = env.PATH ?? env.Path ?? ''
   const extensions = platform === 'win32'
     ? String(env.PATHEXT ?? '.EXE;.CMD;.BAT;.COM').split(';')
@@ -218,7 +225,10 @@ function captureFailure(message: string): RenderError {
   )
 }
 
-async function captureChromeScreenshot(executablePath: string, dir: string, url: string, width: number, height: number, scale: number): Promise<Buffer> {
+/** Capture a sequence of pages in one headless Chrome process. Frames are
+ *  navigated and screenshot deterministically, so callers can pre-render each
+ *  animation step as a separate document. */
+export async function captureChromeScreenshots(executablePath: string, dir: string, urls: string[], width: number, height: number, scale: number): Promise<Buffer[]> {
   if (typeof WebSocket !== 'function') {
     throw new RenderError('render/chrome-unavailable', 'WebSocket is required for Chrome PNG capture', ['run with Node 22+ or a Bun runtime with WebSocket'])
   }
@@ -319,27 +329,31 @@ async function captureChromeScreenshot(executablePath: string, dir: string, url:
     const target = await send('Target.createTarget', { url: 'about:blank' })
     const attached = await send('Target.attachToTarget', { targetId: target.targetId, flatten: true })
     const sessionId = String(attached.sessionId)
-    const loaded = waitForEvent('Page.loadEventFired')
     await send('Page.enable', {}, sessionId)
     await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: scale, mobile: false }, sessionId)
-    await send('Page.navigate', { url }, sessionId)
-    await Promise.race([
-      loaded,
-      new Promise<void>((_, reject) => setTimeout(() => reject(new RenderError('render/chrome-timeout', `Chrome did not finish loading within ${CHROME_TIMEOUT_MS}ms`, ['rerun the render'])), CHROME_TIMEOUT_MS)),
-    ])
-    // Webfonts fetch lazily once SVG text lays out — wait for them so branded
-    // faces land in the PNG. Bounded: an offline env still renders fallbacks.
-    await Promise.race([
-      send('Runtime.evaluate', { expression: 'document.fonts.ready.then(() => true)', awaitPromise: true, returnByValue: true }, sessionId).catch(() => undefined),
-      new Promise<void>((resolve) => setTimeout(resolve, 6000)),
-    ])
-    const screenshot = await send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false }, sessionId)
+    const frames: Buffer[] = []
+    for (const url of urls) {
+      const loaded = waitForEvent('Page.loadEventFired')
+      await send('Page.navigate', { url }, sessionId)
+      await Promise.race([
+        loaded,
+        new Promise<void>((_, reject) => setTimeout(() => reject(new RenderError('render/chrome-timeout', `Chrome did not finish loading within ${CHROME_TIMEOUT_MS}ms`, ['rerun the render'])), CHROME_TIMEOUT_MS)),
+      ])
+      // Webfonts fetch lazily once SVG text lays out — wait for them so branded
+      // faces land in the PNG. Bounded: an offline env still renders fallbacks.
+      await Promise.race([
+        send('Runtime.evaluate', { expression: 'document.fonts.ready.then(() => true)', awaitPromise: true, returnByValue: true }, sessionId).catch(() => undefined),
+        new Promise<void>((resolve) => setTimeout(resolve, 6000)),
+      ])
+      const screenshot = await send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false }, sessionId)
+      frames.push(Buffer.from(String(screenshot.data), 'base64'))
+    }
     try {
       ws.send(JSON.stringify({ id: ++nextId, method: 'Browser.close' }))
     } catch {
       // Browser.close races with the socket closing; killing below is the fallback.
     }
-    return Buffer.from(String(screenshot.data), 'base64')
+    return frames
   } finally {
     ws.close()
     if (child.exitCode === null) child.kill('SIGKILL')
@@ -347,7 +361,7 @@ async function captureChromeScreenshot(executablePath: string, dir: string, url:
 }
 
 export async function renderDiagramPng(diagram: ArcDiagramData, options: RenderPngOptions = {}): Promise<RenderedPng> {
-  const rendered = renderDiagramSvg(diagram, options)
+  const rendered = renderDiagramSvg(diagram, { ...options, animateFlows: false, flowTime: options.flowTime ?? 0 })
   const scale = assertScale(options.scale)
   const pixelCount = rendered.width * rendered.height * scale * scale
   if (pixelCount > MAX_PNG_PIXELS) {
@@ -403,7 +417,7 @@ export async function renderDiagramPng(diagram: ArcDiagramData, options: RenderP
           await options.runChrome!(chrome, args)
           return readFileSync(pngPath)
         })()
-      : await captureChromeScreenshot(chrome, dir, pathToFileURL(htmlPath).href, rendered.width, rendered.height, scale)
+      : (await captureChromeScreenshots(chrome, dir, [pathToFileURL(htmlPath).href], rendered.width, rendered.height, scale))[0]
     if (png.length < PNG_SIGNATURE.length || !png.subarray(0, PNG_SIGNATURE.length).equals(PNG_SIGNATURE)) {
       throw new RenderError(
         'render/png-empty',
