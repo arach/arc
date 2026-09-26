@@ -101,7 +101,8 @@
         "open",
         "dot",
         "diamond",
-        "bar"
+        "bar",
+        "dart"
       ],
       "type": "string"
     },

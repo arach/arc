@@ -1,7 +1,7 @@
 import { NODE_SIZES } from './constants'
 import type { AnchorPosition } from '../types/editor'
 import type { ArcDiagramData } from '../types/diagram'
-import { anchorOnNode, connectorEndAngle, connectorPath, connectorStartAngle } from './diagramHelpers'
+import { anchorOnNode, arrowShape, connectorEndAngle, connectorPath, connectorStartAngle } from './diagramHelpers'
 import { renderFlowLayer } from './flowSvg'
 import { resolveNodeColor, resolveNodeIcon } from './nodeKinds'
 import { resolveNodeDecor, resolveNodeShape, shapeCut, shapeFillPath } from './nodeShape'
@@ -329,9 +329,10 @@ export function generateSVG(diagram: any, options: any = {}) {
     // on the anchor — the endpoint secant mis-rotates them on curved runs.
     const showArrow = style.showArrow !== false
     if (themeColors) {
-      const head = (px: number, py: number, angle: number) => brand?.arrowhead === 'chevron'
-        ? `<path d="M -7 -4 L 0 0 L -7 4" fill="none" stroke="${strokeColor}" stroke-width="1.5" stroke-linecap="square" transform="translate(${px} ${py}) rotate(${angle})"/>`
-        : `<polygon points="0,0 -8,-3 -8,3" fill="${strokeColor}" fill-opacity="0.88" transform="translate(${px} ${py}) rotate(${angle})"/>`
+      const headShape = arrowShape(brand?.arrowhead === 'chevron' ? 'dart' : 'arrow', 8)
+      const head = (px: number, py: number, angle: number) => headShape?.d
+        ? `<path d="${headShape.d}" fill="${strokeColor}" fill-opacity="0.88" transform="translate(${px} ${py}) rotate(${angle})"/>`
+        : ''
       if (showArrow) {
         const angle = connectorEndAngle(fromPos, toPos, connector.fromAnchor, connector.toAnchor, connector.curve, curveDepth)
         svg += `  ${head(toPos.x, toPos.y, angle)}\n`

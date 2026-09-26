@@ -117,7 +117,7 @@ export interface Connector {
   toRole?: string
 }
 
-export type ArrowHead = 'none' | 'arrow' | 'open' | 'dot' | 'diamond' | 'bar'
+export type ArrowHead = 'none' | 'arrow' | 'open' | 'dot' | 'diamond' | 'bar' | 'dart'
 
 export type ConnectorLineStyle = 'solid' | 'dashed' | 'dotted'
 

@@ -468,6 +468,10 @@ export function arrowShape(kind: ArrowHead, size: number): ArrowShape | null {
       return { d: `M 0 0 L ${-s} ${-s / 2.6} L ${-s} ${s / 2.6} Z`, filled: true }
     case 'open':
       return { d: `M ${-s} ${-s / 2.4} L 0 0 L ${-s} ${s / 2.4}`, filled: false }
+    case 'dart':
+      // Filled swallowtail — reads crisply at small sizes where an open
+      // chevron washes out to a bare caret.
+      return { d: `M 0 0 L ${-s * 1.15} ${-s * 0.55} L ${-s * 0.7} 0 L ${-s * 1.15} ${s * 0.55} Z`, filled: true }
     case 'dot':
       return { circle: { cx: -s / 2, r: s / 2.8 }, filled: true }
     case 'diamond':

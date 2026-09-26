@@ -7,10 +7,10 @@
     "worker": { "x": 540, "y": 190, "size": "m" }
   },
   "nodeData": {
-    "client": { "kind": "frontend", "name": "Client" },
-    "gateway": { "kind": "gateway", "name": "Gateway", "shape": "chamfer" },
-    "queue": { "kind": "queue", "name": "Queue" },
-    "worker": { "kind": "service", "name": "Worker" }
+    "client": { "kind": "frontend", "name": "Client", "decor": "none" },
+    "gateway": { "kind": "gateway", "name": "Gateway", "shape": "chamfer", "decor": "none" },
+    "queue": { "kind": "queue", "name": "Queue", "decor": "none" },
+    "worker": { "kind": "service", "name": "Worker", "decor": "none" }
   },
   "connectors": [
     { "id": "request", "from": "client", "to": "gateway", "fromAnchor": "right", "toAnchor": "left", "style": "request" },

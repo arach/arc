@@ -83,7 +83,7 @@ export interface NodeData {
 
 export type ConnectorCurve = 'natural' | 'down' | 'up' | 'step' | 'direct'
 
-export type ArrowHead = 'none' | 'arrow' | 'open' | 'dot' | 'diamond' | 'bar'
+export type ArrowHead = 'none' | 'arrow' | 'open' | 'dot' | 'diamond' | 'bar' | 'dart'
 
 export type ConnectorLineStyle = 'solid' | 'dashed' | 'dotted'
 

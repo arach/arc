@@ -90,7 +90,7 @@ export interface NodeData {
 
 export type ConnectorCurve = 'natural' | 'down' | 'up' | 'step' | 'direct'
 
-export type ArrowHead = 'none' | 'arrow' | 'open' | 'dot' | 'diamond' | 'bar'
+export type ArrowHead = 'none' | 'arrow' | 'open' | 'dot' | 'diamond' | 'bar' | 'dart'
 
 export type ConnectorLineStyle = 'solid' | 'dashed' | 'dotted'
 
@@ -1000,8 +1000,9 @@ function ConnectorPath({ connector, connectorIndex, nodes, styles, themeColors, 
   const toArrow = connectorArrowAt(style, 'to')
 
   const renderEnd = (kind: ArrowHead, x: number, y: number, angle: number, arrowSize: number) => {
-    // 'chevron' brand turns the filled 'arrow' into an open chevron
-    const resolved = kind === 'arrow' && brand?.arrowhead === 'chevron' ? 'open' : kind
+    // 'chevron' brand turns the filled 'arrow' into a dart — a filled
+    // swallowtail that reads better than a bare caret at small sizes
+    const resolved = kind === 'arrow' && brand?.arrowhead === 'chevron' ? 'dart' : kind
     const shape = arrowShape(resolved, arrowSize)
     if (!shape) return null
     if (shape.circle) {

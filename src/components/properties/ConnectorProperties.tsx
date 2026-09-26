@@ -158,6 +158,7 @@ const ARROW_ENDS: { value: ArrowHead; label: string }[] = [
   { value: 'none', label: 'None' },
   { value: 'arrow', label: 'Arrow' },
   { value: 'open', label: 'Open arrow' },
+  { value: 'dart', label: 'Dart' },
   { value: 'dot', label: 'Dot' },
   { value: 'diamond', label: 'Diamond' },
   { value: 'bar', label: 'Bar' },

@@ -56,8 +56,9 @@ function EndGlyph({
   themeColors?: ResolvedThemeMode | null
   chevron?: boolean
 }) {
-  // 'chevron' brand turns the filled 'arrow' into an open chevron
-  const resolved = kind === 'arrow' && chevron ? 'open' : kind
+  // 'chevron' brand turns the filled 'arrow' into a dart — a filled
+  // swallowtail that reads better than a bare caret at small sizes
+  const resolved = kind === 'arrow' && chevron ? 'dart' : kind
   const shape = arrowShape(resolved, size)
   if (!shape) return null
   const stroke = resolveStrokeColor(color, themeColors)
