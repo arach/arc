@@ -83,7 +83,7 @@ export interface NodeData {
 
 export type ConnectorCurve = 'natural' | 'down' | 'up' | 'step' | 'direct'
 
-export type ArrowHead = 'none' | 'arrow' | 'open' | 'dot' | 'diamond' | 'bar'
+export type ArrowHead = 'none' | 'arrow' | 'open' | 'dot' | 'diamond' | 'bar' | 'dart'
 
 export type ConnectorLineStyle = 'solid' | 'dashed' | 'dotted'
 
@@ -183,6 +183,60 @@ export interface FocusConnectorRef {
   /** Endpoint-pair matching, used when `id` is absent. Ambiguous on parallel edges. */
   from?: string
   to?: string
+}
+
+/** Direction a flow leg traverses its connector. */
+export type FlowDirection = 'forward' | 'reverse'
+
+/** Per-interval animation easing for the moving marker. */
+export type FlowEasing = 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out'
+
+/** Marker shape riding a flow route. `packet` and `arrow` orient to travel. */
+export type FlowMarker = 'dot' | 'packet' | 'pulse' | 'arrow'
+
+/** Motion trail treatment. `fade` shows trailing ghosts; `wake` also traces the route. */
+export type FlowTrail = 'none' | 'fade' | 'wake'
+
+/** One connector leg in a flow route. `id` pins a connector; `from`/`to` match
+ *  an endpoint pair when no stable id exists. `direction` overrides the flow's
+ *  own direction for this leg; `pause` is seconds spent under the destination
+ *  node before continuing to the next leg. */
+export interface DiagramFlowLeg extends FocusConnectorRef {
+  direction?: FlowDirection
+  pause?: number
+}
+
+/** A message or packet travelling an ordered connector route. Renderers draw
+ *  the marker beneath nodes, so node-to-node handoffs read as a single trip. */
+export interface DiagramFlow {
+  /** Stable flow id for diagnostics and tooling. */
+  id: string
+  /** Optional caption shown near the route. */
+  label?: string
+  /** Ordered connector legs; each leg may travel a connector in reverse. */
+  legs: DiagramFlowLeg[]
+  /** Default leg direction (default: 'forward'). */
+  direction?: FlowDirection
+  /** Route pixels per second (default: 160). Ignored when `duration` is set. */
+  speed?: number
+  /** Total route seconds including inter-node pauses; overrides `speed`. */
+  duration?: number
+  /** Seconds before the first run (default: 0). */
+  delay?: number
+  /** Seconds hidden at the end of each run before repeating (default: 0). */
+  hold?: number
+  /** Repeat count, or 'indefinite' for a looping SVG/player (default). */
+  repeat?: number | 'indefinite'
+  /** Marker easing across each leg (default: 'linear'). */
+  easing?: FlowEasing
+  /** Marker treatment (default: 'dot'). */
+  marker?: FlowMarker
+  /** Palette color; defaults to the first connector's style color. */
+  color?: DiagramColor
+  /** Marker diameter in px (default: 10). */
+  size?: number
+  /** Motion trail treatment (default: 'none'). */
+  trail?: FlowTrail
 }
 
 export interface FocusStep {
@@ -309,6 +363,8 @@ export interface ArcDiagram {
   focusTargets?: Record<string, FocusTarget>
   /** Ordered guided views — the chapter rail in the player. */
   views?: DiagramView[]
+  /** Animated message/packet routes across connectors. */
+  flows?: DiagramFlow[]
   images?: DiagramImage[]
   exportZone?: ExportZone | null
 }
@@ -328,6 +384,8 @@ export interface ArcDiagramData {
   connectorStyles: Record<string, ConnectorStyle>
   focusTargets?: Record<string, FocusTarget>
   views?: DiagramView[]
+  /** Animated message/packet routes across connectors. */
+  flows?: DiagramFlow[]
   groups?: GroupShape[]
 }
 
@@ -344,6 +402,7 @@ export function toExportFormat(diagram: ArcDiagram): ArcDiagramData {
     connectorStyles: diagram.connectorStyles,
     focusTargets: diagram.focusTargets,
     views: diagram.views,
+    flows: diagram.flows,
     groups: diagram.groups,
   }
 }

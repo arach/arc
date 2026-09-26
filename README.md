@@ -8,8 +8,8 @@
 
 Arc turns typed, diffable config into clean, themeable architecture diagrams.
 Design in the visual studio, render with React, or export as **TypeScript, JSON,
-SVG, PNG, or crisp ASCII** — with a CLI, generated JSON Schema, Mermaid import,
-and an MCP server so AI agents can author diagrams too. The diagram lives with
+SVG, PNG, GIF, MP4, or crisp ASCII** — with a CLI, generated JSON Schema,
+Mermaid import, and an MCP server so AI agents can author diagrams too. The diagram lives with
 the system it describes.
 
 [![npm version](https://img.shields.io/npm/v/@arach/arc.svg?color=6d5efc&label=%40arach%2Farc)](https://www.npmjs.com/package/@arach/arc)
@@ -95,12 +95,13 @@ shareable link — and drop the result straight into `<ArcDiagram />`.
 - **Visual studio** - Drag-and-drop editor with anchors, connector styles, groups, images, and templates
 - **Typed schema** - `ArcDiagramData` TypeScript types plus a generated draft-07 JSON Schema with coded diagnostics
 - **Semantic node kinds** - `frontend`, `database`, `queue`, `gateway`… supply default icon + color
+- **Flow animations** - `flows[]` send directional packets across connectors; SVG animates via SMIL and the CLI/MCP can render deterministic GIF/MP4 artifacts
 - **CLI** - `arc check`, `arc diff`, `arc render`, `arc bench`, `arc schema`, and `arc-ascii`
 - **MCP server** - `@arach/arc-mcp` gives AI agents validate/layout/render/diff tools over stdio
 - **Mermaid** - Native sequence-diagram player and flowchart import via `@arach/arc-viewer`
 - **Isometric** - `ArcDiagramIsometric` for 3D diagrams, plus `@arach/arc-iso` for vanilla JS
 - **ASCII renderer** - The same document as precise box-drawing text for terminals and docs
-- **Exports** - TypeScript, JSON, SVG, PNG, ASCII, and shareable links
+- **Exports** - TypeScript, JSON, SVG, PNG, GIF, MP4, ASCII, and shareable links
 - **Zero runtime dependencies** - React is the only peer
 
 ## Native Mermaid Sequences
@@ -245,15 +246,18 @@ arc check diagram.json --json --strict  # machine output; fail on warnings too
 arc diff base.json head.json            # structural DiagramDelta JSON
 arc diff base.json head.json --summary  # human-readable counts
 arc render diagram.json --out diagram.svg --json
+arc render diagram.json --out flow.mp4 --duration 4 --fps 12
 arc bench benchmarks/                     # score outputs/ against each case's expect.json
 arc-ascii diagram.json --charset ascii --max-width 80
 ```
 
 `arc check` exits non-zero when error-severity diagnostics remain; `--strict`
 also fails on warnings. `arc diff` validates both inputs before diffing.
-`arc render` validates, writes the SVG to a temp file, atomically replaces the
-target, and emits a receipt with source/output SHA-256 hashes; invalid diagrams
-leave an existing artifact untouched. `arc bench` is the first-pass benchmark —
+`arc render` validates, writes SVG/PNG/GIF/MP4 to a temp file, atomically
+replaces the target, and emits a receipt with source/output SHA-256 hashes;
+invalid diagrams leave an existing artifact untouched. GIF/MP4 renders sample
+`flows` deterministically through Chrome and encode with ffmpeg (`ARC_CHROME` /
+`ARC_FFMPEG` override discovery). `arc bench` is the first-pass benchmark —
 see `benchmarks/README.md`; each case is a plain-language `prompt.md` plus an
 `expect.json` of required nodes/edges, and candidates are scored on validity,
 semantic coverage, direction, size, and renderability.
@@ -272,7 +276,7 @@ Cases and variants live in `visual/manifest.json` — see `visual/README.md`.
 
 [`@arach/arc-mcp`](https://www.npmjs.com/package/@arach/arc-mcp) exposes Arc's
 toolchain over the Model Context Protocol — AI agents can author, validate,
-lay out, render (ASCII/SVG/PNG/HTML), and diff diagrams from any MCP client:
+lay out, render (ASCII/SVG/PNG/GIF/MP4/HTML), and diff diagrams from any MCP client:
 
 ```bash
 claude mcp add --scope project arc -- npx -y @arach/arc-mcp
@@ -280,9 +284,9 @@ claude mcp add --scope project arc -- npx -y @arach/arc-mcp
 ```
 
 Tools include `validate_diagram`, `auto_layout`, `diff_diagram`, `render_svg`,
-`render_png`, `render_html`, `render_ascii`, `diagram_to_typescript`, and
-`editor_handoff` — plus the JSON Schema, generation skill, and LLM briefing as
-MCP resources.
+`render_png`, `render_animation`, `render_html`, `render_ascii`,
+`diagram_to_typescript`, and `editor_handoff` — plus the JSON Schema,
+generation skill, and LLM briefing as MCP resources.
 
 ## Isometric diagrams
 

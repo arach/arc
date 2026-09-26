@@ -1,0 +1,45 @@
+{
+  "layout": { "width": 720, "height": 310 },
+  "nodes": {
+    "client": { "x": 40, "y": 115, "size": "m" },
+    "gateway": { "x": 290, "y": 115, "size": "m" },
+    "queue": { "x": 540, "y": 45, "size": "m" },
+    "worker": { "x": 540, "y": 190, "size": "m" }
+  },
+  "nodeData": {
+    "client": { "kind": "frontend", "name": "Client", "decor": "none" },
+    "gateway": { "kind": "gateway", "name": "Gateway", "shape": "chamfer", "decor": "none" },
+    "queue": { "kind": "queue", "name": "Queue", "decor": "none" },
+    "worker": { "kind": "service", "name": "Worker", "decor": "none" }
+  },
+  "connectors": [
+    { "id": "request", "from": "client", "to": "gateway", "fromAnchor": "right", "toAnchor": "left", "style": "request" },
+    { "id": "enqueue", "from": "gateway", "to": "queue", "fromAnchor": "right", "toAnchor": "left", "style": "event" },
+    { "id": "work", "from": "gateway", "to": "worker", "fromAnchor": "right", "toAnchor": "left", "style": "job", "curve": "step" }
+  ],
+  "connectorStyles": {
+    "request": { "color": "sky", "strokeWidth": 2, "label": "HTTPS" },
+    "event": { "color": "emerald", "strokeWidth": 2, "label": "event" },
+    "job": { "color": "amber", "strokeWidth": 2, "label": "job", "dashed": true }
+  },
+  "flows": [
+    {
+      "id": "message",
+      "label": "Message",
+      "legs": [
+        { "id": "request" },
+        { "id": "enqueue", "pause": 0.35 },
+        { "id": "work" }
+      ],
+      "duration": 3.2,
+      "delay": 0.3,
+      "hold": 0.7,
+      "repeat": "indefinite",
+      "easing": "ease-in-out",
+      "marker": "packet",
+      "color": "emerald",
+      "size": 11,
+      "trail": "wake"
+    }
+  ]
+}

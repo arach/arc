@@ -27,6 +27,7 @@ interface ArcDiagramData {
   nodeData: Record<string, NodeData>
   connectors: Connector[]
   connectorStyles: Record<string, ConnectorStyle>
+  flows?: DiagramFlow[]
 }
 ```
 
@@ -140,7 +141,38 @@ Define connections between nodes:
 
 **Guided views:** when the diagram explains a flow a reader should follow in order, add `views[]` — `{id, title, node?, nodes?, connectors?, mode?, caption?, steps?}` per chapter. The player draws a chapter rail (`showViews`) and `/player/<session>?view=<id>` deep-links a chapter. A view anchored on `node` inherits that node's `focusTargets` story; declare `nodes`/`connectors`/`mode` to override it.
 
-### 5. Style Connectors
+### 5. Animate message flows
+
+Add `flows[]` when a message or packet should travel the diagram rather than a connector merely having motion styling:
+
+```json
+"flows": [
+  {
+    "id": "request",
+    "label": "Request",
+    "legs": [
+      { "id": "client-api" },
+      { "id": "api-db", "pause": 0.4 }
+    ],
+    "duration": 3,
+    "delay": 0.2,
+    "hold": 0.6,
+    "repeat": "indefinite",
+    "easing": "ease-in-out",
+    "marker": "packet",
+    "color": "emerald",
+    "size": 11,
+    "trail": "wake"
+  }
+]
+```
+
+- Each leg references a connector by stable `id` (preferred) or endpoint `{ "from": "...", "to": "..." }`; add `direction: "reverse"` to run a leg backwards and `pause` to dwell between hops.
+- Timing is deterministic: `speed` is px/s (default 160), `duration` is total route seconds including pauses and overrides `speed`, `delay`/`hold` are seconds, and `repeat` is a count or `"indefinite"`.
+- `marker` is `dot` (default), `packet`, `pulse`, or `arrow`; `trail` is `none`, `fade`, or `wake`; `color`/`size` tune the marker.
+- Standalone SVG animates via SMIL, `render_svg`/`render_png` can sample a still at `flowTime`, and `arc render --format gif|mp4` or MCP `render_animation` captures deterministic frames through Chrome and encodes with ffmpeg.
+
+### 6. Style Connectors
 
 Define appearance for each connector style:
 
@@ -228,9 +260,11 @@ Common codes:
 ## Preview and export
 
 - `render_ascii` previews a diagram in plain text without external dependencies.
-- `render_svg` returns deterministic SVG markup from the static export path.
-- `render_png` returns MCP image content when Chrome/Chromium is installed; set `ARC_CHROME` when it is not on `PATH`. If it returns `render/chrome-unavailable`, continue with ASCII/SVG or ask the user to install Chrome/Chromium.
+- `render_svg` returns deterministic SVG markup; authored `flows` animate via SMIL by default, `flowTime` samples a deterministic still, and `animateFlows: false` disables them.
+- `render_png` returns MCP image content when Chrome/Chromium is installed; set `ARC_CHROME` when it is not on `PATH`, and use `flowTime` to choose a deterministic animation frame. If it returns `render/chrome-unavailable`, continue with ASCII/SVG or ask the user to install Chrome/Chromium.
+- `render_animation` writes a GIF or MP4 for diagrams with `flows`; set `output` to a `.gif`/`.mp4` path, optionally `duration`, `fps`, `scale`, `theme`, and `mode`. It needs Chrome/Chromium plus ffmpeg (`ARC_CHROME`/`ARC_FFMPEG`).
 - `render_html` emits paste-ready output: `format=component` for a React TSX component, `format=iframe` for a studio embed tag, or `format=html` for a standalone SVG page.
+- The CLI equivalent is `arc render diagram.json --out artifact.gif --duration 4 --fps 12`.
 
 ## Output
 

@@ -34,6 +34,13 @@
           },
           "type": "array"
         },
+        "flows": {
+          "description": "Animated message/packet routes across connectors.",
+          "items": {
+            "$ref": "#/definitions/DiagramFlow"
+          },
+          "type": "array"
+        },
         "focusTargets": {
           "additionalProperties": {
             "$ref": "#/definitions/FocusTarget"
@@ -94,7 +101,8 @@
         "open",
         "dot",
         "diamond",
-        "bar"
+        "bar",
+        "dart"
       ],
       "type": "string"
     },
@@ -251,6 +259,108 @@
       ],
       "type": "string"
     },
+    "DiagramFlow": {
+      "additionalProperties": false,
+      "description": "A message or packet travelling an ordered connector route. Renderers draw the marker beneath nodes, so node-to-node handoffs read as a single trip.",
+      "properties": {
+        "color": {
+          "$ref": "#/definitions/DiagramColor",
+          "description": "Palette color; defaults to the first connector's style color."
+        },
+        "delay": {
+          "description": "Seconds before the first run (default: 0).",
+          "type": "number"
+        },
+        "direction": {
+          "$ref": "#/definitions/FlowDirection",
+          "description": "Default leg direction (default: 'forward')."
+        },
+        "duration": {
+          "description": "Total route seconds including inter-node pauses; overrides `speed`.",
+          "type": "number"
+        },
+        "easing": {
+          "$ref": "#/definitions/FlowEasing",
+          "description": "Marker easing across each leg (default: 'linear')."
+        },
+        "hold": {
+          "description": "Seconds hidden at the end of each run before repeating (default: 0).",
+          "type": "number"
+        },
+        "id": {
+          "description": "Stable flow id for diagnostics and tooling.",
+          "type": "string"
+        },
+        "label": {
+          "description": "Optional caption shown near the route.",
+          "type": "string"
+        },
+        "legs": {
+          "description": "Ordered connector legs; each leg may travel a connector in reverse.",
+          "items": {
+            "$ref": "#/definitions/DiagramFlowLeg"
+          },
+          "type": "array"
+        },
+        "marker": {
+          "$ref": "#/definitions/FlowMarker",
+          "description": "Marker treatment (default: 'dot')."
+        },
+        "repeat": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "const": "indefinite",
+              "type": "string"
+            }
+          ],
+          "description": "Repeat count, or 'indefinite' for a looping SVG/player (default)."
+        },
+        "size": {
+          "description": "Marker diameter in px (default: 10).",
+          "type": "number"
+        },
+        "speed": {
+          "description": "Route pixels per second (default: 160). Ignored when `duration` is set.",
+          "type": "number"
+        },
+        "trail": {
+          "$ref": "#/definitions/FlowTrail",
+          "description": "Motion trail treatment (default: 'none')."
+        }
+      },
+      "required": [
+        "id",
+        "legs"
+      ],
+      "type": "object"
+    },
+    "DiagramFlowLeg": {
+      "additionalProperties": false,
+      "description": "One connector leg in a flow route. `id` pins a connector; `from`/`to` match an endpoint pair when no stable id exists. `direction` overrides the flow's own direction for this leg; `pause` is seconds spent under the destination node before continuing to the next leg.",
+      "properties": {
+        "direction": {
+          "$ref": "#/definitions/FlowDirection"
+        },
+        "from": {
+          "description": "Endpoint-pair matching, used when `id` is absent. Ambiguous on parallel edges.",
+          "type": "string"
+        },
+        "id": {
+          "description": "Pins a specific connector by `Connector.id` — survives reordering and parallel edges.",
+          "type": "string"
+        },
+        "pause": {
+          "type": "number"
+        },
+        "to": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "DiagramLayout": {
       "additionalProperties": false,
       "properties": {
@@ -390,6 +500,43 @@
         }
       },
       "type": "object"
+    },
+    "FlowDirection": {
+      "description": "Direction a flow leg traverses its connector.",
+      "enum": [
+        "forward",
+        "reverse"
+      ],
+      "type": "string"
+    },
+    "FlowEasing": {
+      "description": "Per-interval animation easing for the moving marker.",
+      "enum": [
+        "linear",
+        "ease-in",
+        "ease-out",
+        "ease-in-out"
+      ],
+      "type": "string"
+    },
+    "FlowMarker": {
+      "description": "Marker shape riding a flow route. `packet` and `arrow` orient to travel.",
+      "enum": [
+        "dot",
+        "packet",
+        "pulse",
+        "arrow"
+      ],
+      "type": "string"
+    },
+    "FlowTrail": {
+      "description": "Motion trail treatment. `fade` shows trailing ghosts; `wake` also traces the route.",
+      "enum": [
+        "none",
+        "fade",
+        "wake"
+      ],
+      "type": "string"
     },
     "FocusConnectorRef": {
       "additionalProperties": false,

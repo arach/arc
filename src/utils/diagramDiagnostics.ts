@@ -17,6 +17,10 @@ import type {
   AnchorPosition,
   Connector,
   DiagramColor,
+  FlowDirection,
+  FlowEasing,
+  FlowMarker,
+  FlowTrail,
   NodeKind,
   NodePosition,
   NodeShape,
@@ -25,13 +29,14 @@ import type {
 import { NODE_SIZES } from './constants'
 import { NODE_SHAPES } from './nodeShape'
 import { NODE_KINDS, isNodeKind, suggestKind } from './nodeKinds'
+import { DEFAULT_FLOW_TRANSIT } from './flowAnimation'
 import { anchor, connectorControlPoints } from './diagramHelpers'
 import { validateDiagramShape } from './diagramValidation'
 
 export type DiagnosticSeverity = 'error' | 'warning'
 
 export interface DiagnosticSubject {
-  type: 'diagram' | 'node' | 'connector' | 'group' | 'style' | 'image'
+  type: 'diagram' | 'node' | 'connector' | 'group' | 'style' | 'image' | 'flow'
   id?: string
   index?: number
 }
@@ -58,6 +63,16 @@ export type Fix =
   | { kind: 'remove-source' }
   | { kind: 'set-legend'; legend: 'auto' | 'all' | 'hidden' }
   | { kind: 'remove-meta' }
+  | { kind: 'remove-flow' }
+  | { kind: 'set-flow-id'; id: string }
+  | { kind: 'set-flow-direction'; direction: FlowDirection }
+  | { kind: 'set-flow-easing'; easing: FlowEasing }
+  | { kind: 'set-flow-marker'; marker: FlowMarker }
+  | { kind: 'set-flow-trail'; trail: FlowTrail }
+  | { kind: 'set-flow-color'; color: DiagramColor }
+  | { kind: 'set-flow-timing'; field: 'speed' | 'duration' | 'delay' | 'hold' | 'pause' | 'size'; value: number }
+  | { kind: 'set-flow-repeat'; repeat: number | 'indefinite' }
+  | { kind: 'set-flow-leg-id'; id: string }
 
 export interface Diagnostic {
   code: string
@@ -130,6 +145,8 @@ function shapeDiagnostic(problem: string): Diagnostic {
       return { ...base, code: 'shape/invalid-groups', subject: { type: 'diagram' } }
     case '`images` must be an array':
       return { ...base, code: 'shape/invalid-images', subject: { type: 'diagram' } }
+    case '`flows` must be an array':
+      return { ...base, code: 'shape/invalid-flows', subject: { type: 'diagram' } }
     default: {
       const id = /entry for "([^"]+)"/.exec(problem)?.[1]
       return {
@@ -257,6 +274,7 @@ export function validateDiagram(value: unknown): Diagnostic[] {
   const connectors = Array.isArray(d.connectors) ? d.connectors : []
   const groups = Array.isArray(d.groups) ? d.groups : []
   const images = Array.isArray(d.images) ? d.images : []
+  const flows = Array.isArray(d.flows) ? d.flows : []
   const connectorStyles = isObject(d.connectorStyles) ? d.connectorStyles : null
 
   if (d.connectorStyles != null && !connectorStyles) {
@@ -637,6 +655,249 @@ export function validateDiagram(value: unknown): Diagnostic[] {
       })
     }
   }
+
+  // flows: typed routes over connectors. They reference connector ids when
+  // available, falling back to endpoint pairs only for documents without ids.
+  const FLOW_DIRECTIONS: FlowDirection[] = ['forward', 'reverse']
+  const FLOW_EASINGS: FlowEasing[] = ['linear', 'ease-in', 'ease-out', 'ease-in-out']
+  const FLOW_MARKERS: FlowMarker[] = ['dot', 'packet', 'pulse', 'arrow']
+  const FLOW_TRAILS: FlowTrail[] = ['none', 'fade', 'wake']
+  const seenFlowIds = new Map<string, number>()
+  const connectorMatches = (leg: Rec): { c: Rec; index: number }[] => {
+    if (typeof leg.id === 'string') {
+      return validConnectors.filter(({ c }) => c.id === leg.id)
+    }
+    if (typeof leg.from === 'string' && typeof leg.to === 'string') {
+      return validConnectors.filter(({ c }) => c.from === leg.from && c.to === leg.to)
+    }
+    return []
+  }
+
+  flows.forEach((raw, index) => {
+    const subject = { type: 'flow' as const, id: isObject(raw) && typeof raw.id === 'string' ? raw.id : undefined, index }
+    if (!isObject(raw)) {
+      push({ code: 'shape/invalid-flow', severity: 'error', subject, message: `Flow ${index} is not an object`, evidence: { value: raw }, supportedFixes: [{ kind: 'remove-flow' }] })
+      return
+    }
+    if (typeof raw.id !== 'string' || raw.id.length === 0) {
+      push({
+        code: 'shape/invalid-flow',
+        severity: 'error',
+        subject,
+        message: `Flow ${index} is missing a non-empty \`id\``,
+        supportedFixes: [{ kind: 'set-flow-id', id: `flow-${index + 1}` }],
+      })
+    } else {
+      const first = seenFlowIds.get(raw.id)
+      if (first !== undefined) {
+        push({
+          code: 'semantic/duplicate-flow-id',
+          severity: 'error',
+          subject,
+          message: `Flow id "${raw.id}" is used by both flows ${first} and ${index}`,
+          evidence: { id: raw.id, firstIndex: first },
+          supportedFixes: [{ kind: 'set-flow-id', id: `${raw.id}-2` }],
+        })
+      } else {
+        seenFlowIds.set(raw.id, index)
+      }
+    }
+    if (!Array.isArray(raw.legs) || raw.legs.length === 0) {
+      push({
+        code: 'shape/invalid-flow',
+        severity: 'error',
+        subject,
+        message: `Flow "${subject.id ?? index}" needs a non-empty \`legs\` array`,
+        supportedFixes: [{ kind: 'remove-flow' }],
+      })
+      return
+    }
+    const legs = raw.legs
+
+    for (const field of ['direction'] as const) {
+      const value = raw[field]
+      if (value !== undefined && !FLOW_DIRECTIONS.includes(value as FlowDirection)) {
+        const nearest = typeof value === 'string' ? closest(value, FLOW_DIRECTIONS) : undefined
+        push({
+          code: 'semantic/unknown-flow-direction',
+          severity: 'error',
+          subject,
+          message: `Flow "${subject.id ?? index}" uses unknown direction "${String(value)}"`,
+          evidence: { field, value, known: FLOW_DIRECTIONS },
+          supportedFixes: nearest ? [{ kind: 'set-flow-direction', direction: nearest }] : undefined,
+        })
+      }
+    }
+    const easing = raw.easing
+    if (easing !== undefined && !FLOW_EASINGS.includes(easing as FlowEasing)) {
+      const nearest = typeof easing === 'string' ? closest(easing, FLOW_EASINGS) : undefined
+      push({
+        code: 'semantic/unknown-flow-easing',
+        severity: 'error',
+        subject,
+        message: `Flow "${subject.id ?? index}" uses unknown easing "${String(easing)}"`,
+        evidence: { field: 'easing', value: easing, known: FLOW_EASINGS },
+        supportedFixes: nearest ? [{ kind: 'set-flow-easing', easing: nearest }] : undefined,
+      })
+    }
+    const marker = raw.marker
+    if (marker !== undefined && !FLOW_MARKERS.includes(marker as FlowMarker)) {
+      const nearest = typeof marker === 'string' ? closest(marker, FLOW_MARKERS) : undefined
+      push({
+        code: 'semantic/unknown-flow-marker',
+        severity: 'error',
+        subject,
+        message: `Flow "${subject.id ?? index}" uses unknown marker "${String(marker)}"`,
+        evidence: { field: 'marker', value: marker, known: FLOW_MARKERS },
+        supportedFixes: nearest ? [{ kind: 'set-flow-marker', marker: nearest }] : undefined,
+      })
+    }
+    const trail = raw.trail
+    if (trail !== undefined && !FLOW_TRAILS.includes(trail as FlowTrail)) {
+      const nearest = typeof trail === 'string' ? closest(trail, FLOW_TRAILS) : undefined
+      push({
+        code: 'semantic/unknown-flow-trail',
+        severity: 'error',
+        subject,
+        message: `Flow "${subject.id ?? index}" uses unknown trail "${String(trail)}"`,
+        evidence: { field: 'trail', value: trail, known: FLOW_TRAILS },
+        supportedFixes: nearest ? [{ kind: 'set-flow-trail', trail: nearest }] : undefined,
+      })
+    }
+    const color = raw.color
+    if (color !== undefined && (typeof color !== 'string' || !DIAGRAM_COLORS.includes(color as DiagramColor))) {
+      const nearest = typeof color === 'string' ? closest(color, DIAGRAM_COLORS) : undefined
+      push({
+        code: 'semantic/unknown-color',
+        severity: 'error',
+        subject,
+        message: `Flow "${subject.id ?? index}" uses unknown color "${String(color)}"`,
+        evidence: { field: 'color', value: color, known: DIAGRAM_COLORS },
+        supportedFixes: nearest ? [{ kind: 'set-flow-color', color: nearest }] : undefined,
+      })
+    }
+    const repeat = raw.repeat
+    if (repeat !== undefined && repeat !== 'indefinite' && (!Number.isInteger(repeat) || (repeat as number) < 1)) {
+      push({
+        code: 'semantic/invalid-flow-timing',
+        severity: 'error',
+        subject,
+        message: `Flow "${subject.id ?? index}" repeat must be a positive integer or "indefinite"`,
+        evidence: { field: 'repeat', value: repeat },
+        supportedFixes: [{ kind: 'set-flow-repeat', repeat: 'indefinite' }],
+      })
+    }
+    for (const field of ['speed', 'delay', 'hold', 'size'] as const) {
+      const value = raw[field]
+      if (value !== undefined && (typeof value !== 'number' || !Number.isFinite(value) || value < 0 || (field === 'speed' && value === 0) || (field === 'size' && value === 0))) {
+        push({
+          code: 'semantic/invalid-flow-timing',
+          severity: 'error',
+          subject,
+          message: `Flow "${subject.id ?? index}" \`${field}\` must be a non-negative finite number${field === 'speed' || field === 'size' ? ' greater than zero' : ''}`,
+          evidence: { field, value },
+          supportedFixes: [{ kind: 'set-flow-timing', field, value: field === 'speed' ? 160 : field === 'size' ? 10 : 0 }],
+        })
+      }
+    }
+    let pauseTotal = 0
+    legs.forEach((leg, legIndex) => {
+      if (!isObject(leg)) {
+        push({
+          code: 'shape/invalid-flow-leg',
+          severity: 'error',
+          subject,
+          message: `Flow "${subject.id ?? index}" leg ${legIndex} is not an object`,
+          evidence: { legIndex, value: leg },
+          supportedFixes: [{ kind: 'remove-ref' }],
+        })
+        return
+      }
+      if (leg.pause !== undefined) {
+        if (typeof leg.pause !== 'number' || !Number.isFinite(leg.pause) || leg.pause < 0) {
+          push({
+            code: 'semantic/invalid-flow-timing',
+            severity: 'error',
+            subject,
+            message: `Flow "${subject.id ?? index}" leg ${legIndex} pause must be a non-negative finite number`,
+            evidence: { legIndex, field: 'pause', value: leg.pause },
+            supportedFixes: [{ kind: 'set-flow-timing', field: 'pause', value: DEFAULT_FLOW_TRANSIT }],
+          })
+        } else {
+          pauseTotal += Math.max(0.02, leg.pause)
+        }
+      } else if (legIndex < legs.length - 1) {
+        pauseTotal += DEFAULT_FLOW_TRANSIT
+      }
+      if (leg.direction !== undefined && !FLOW_DIRECTIONS.includes(leg.direction as FlowDirection)) {
+        const nearest = typeof leg.direction === 'string' ? closest(leg.direction, FLOW_DIRECTIONS) : undefined
+        push({
+          code: 'semantic/unknown-flow-direction',
+          severity: 'error',
+          subject,
+          message: `Flow "${subject.id ?? index}" leg ${legIndex} uses unknown direction "${String(leg.direction)}"`,
+          evidence: { legIndex, field: 'direction', value: leg.direction, known: FLOW_DIRECTIONS },
+          supportedFixes: nearest ? [{ kind: 'set-flow-direction', direction: nearest }] : undefined,
+        })
+      }
+      const hasId = typeof leg.id === 'string' && leg.id.length > 0
+      const hasPair = typeof leg.from === 'string' && typeof leg.to === 'string'
+      if (!hasId && !hasPair) {
+        push({
+          code: 'semantic/invalid-flow-ref',
+          severity: 'error',
+          subject,
+          message: `Flow "${subject.id ?? index}" leg ${legIndex} needs either connector \`id\` or a \`from\`/\`to\` pair`,
+          evidence: { legIndex, leg },
+          supportedFixes: [{ kind: 'remove-ref' }],
+        })
+        return
+      }
+      const matches = connectorMatches(leg)
+      if (matches.length === 0) {
+        push({
+          code: 'semantic/flow-missing-connector',
+          severity: 'error',
+          subject,
+          message: `Flow "${subject.id ?? index}" leg ${legIndex} does not match a connector`,
+          evidence: { legIndex, leg },
+          supportedFixes: [{ kind: 'remove-ref' }, { kind: 'remove-flow' }],
+        })
+      } else if (matches.length > 1 && !hasId) {
+        const first = matches[0].c.id
+        push({
+          code: 'semantic/ambiguous-flow-connector',
+          severity: 'warning',
+          subject,
+          message: `Flow "${subject.id ?? index}" leg ${legIndex} matches ${matches.length} connectors by endpoint pair — pin a connector \`id\``,
+          evidence: { legIndex, matches: matches.map(match => match.index), connectorIds: matches.map(match => match.c.id).filter(Boolean) },
+          supportedFixes: typeof first === 'string' ? [{ kind: 'set-flow-leg-id', id: first }] : undefined,
+        })
+      }
+    })
+    const duration = raw.duration
+    if (duration !== undefined) {
+      if (typeof duration !== 'number' || !Number.isFinite(duration) || duration <= 0) {
+        push({
+          code: 'semantic/invalid-flow-timing',
+          severity: 'error',
+          subject,
+          message: `Flow "${subject.id ?? index}" duration must be a positive finite number`,
+          evidence: { field: 'duration', value: duration },
+          supportedFixes: [{ kind: 'set-flow-timing', field: 'duration', value: Math.max(1, pauseTotal + 1) }],
+        })
+      } else if (pauseTotal > 0 && duration <= pauseTotal) {
+        push({
+          code: 'semantic/invalid-flow-timing',
+          severity: 'error',
+          subject,
+          message: `Flow "${subject.id ?? index}" duration (${duration}s) must exceed its ${pauseTotal.toFixed(2)}s of leg pauses`,
+          evidence: { field: 'duration', value: duration, pauseTotal },
+          supportedFixes: [{ kind: 'set-flow-timing', field: 'duration', value: pauseTotal + 1 }],
+        })
+      }
+    }
+  })
 
   // focusTargets: keyed by the node that activates the story.
   const focusTargets = d.focusTargets

@@ -3,14 +3,10 @@ import {
   anchor,
   midPoint,
   arrowShape,
-  angleBetween,
   connectorArrowAt,
   connectorArrowSize,
-  connectorControlPoints,
+  connectorGeometry,
   connectorLineStyle,
-  elbowPolyline,
-  roundedPolylineD,
-  straightPath,
 } from '../../utils/diagramHelpers'
 import type { ArrowHead } from '../../types/editor'
 import type { BrandSpec, Theme } from '../../utils/themes'
@@ -60,8 +56,9 @@ function EndGlyph({
   themeColors?: ResolvedThemeMode | null
   chevron?: boolean
 }) {
-  // 'chevron' brand turns the filled 'arrow' into an open chevron
-  const resolved = kind === 'arrow' && chevron ? 'open' : kind
+  // 'chevron' brand turns the filled 'arrow' into a dart — a filled
+  // swallowtail that reads better than a bare caret at small sizes
+  const resolved = kind === 'arrow' && chevron ? 'dart' : kind
   const shape = arrowShape(resolved, size)
   if (!shape) return null
   const stroke = resolveStrokeColor(color, themeColors)
@@ -108,40 +105,19 @@ function EndpointDot({ x, y, color, size = 3, themeColors }: { x: number; y: num
 }
 
 // Generate path between two points, with the tangent angles at each end
-// (needed to orient inline arrowheads on curves and elbows). Beziers go
-// through connectorControlPoints so the canvas and the SVG export draw
-// identical curves for the same connector.
+// (needed to orient inline arrowheads on curves and elbows). All routes go
+// through connectorGeometry so canvas, SVG export, and flow animation share
+// identical geometry for the same connector.
 function generatePath(
   from: { x: number; y: number },
   to: { x: number; y: number },
-  fromAnchor: Parameters<typeof connectorControlPoints>[2],
-  toAnchor: Parameters<typeof connectorControlPoints>[3],
+  fromAnchor: Parameters<typeof connectorGeometry>[2],
+  toAnchor: Parameters<typeof connectorGeometry>[3],
   curve?: string,
   curveDepth = 40,
 ): { d: string; startAngle: number; endAngle: number } {
-  // Straight line
-  if (curve === 'direct') {
-    const a = angleBetween(from, to)
-    return { d: straightPath(from, to), startAngle: a, endAngle: a }
-  }
-
-  // Orthogonal elbow with rounded corners
-  if (curve === 'step') {
-    const pts = elbowPolyline(from, to, fromAnchor, toAnchor)
-    return {
-      d: roundedPolylineD(pts),
-      startAngle: angleBetween(pts[0], pts[1]),
-      endAngle: angleBetween(pts[pts.length - 2], pts[pts.length - 1]),
-    }
-  }
-
-  // Bezier — tangent at each end runs through the adjacent control point
-  const { cp1, cp2 } = connectorControlPoints(from, to, fromAnchor, toAnchor, curve as 'natural' | 'down' | 'up' | undefined, curveDepth)
-  return {
-    d: `M ${from.x} ${from.y} C ${cp1.x} ${cp1.y}, ${cp2.x} ${cp2.y}, ${to.x} ${to.y}`,
-    startAngle: angleBetween(from, cp1),
-    endAngle: angleBetween(cp2, to),
-  }
+  const geometry = connectorGeometry(from, to, fromAnchor, toAnchor, curve as Parameters<typeof connectorGeometry>[4], curveDepth)
+  return { d: geometry.d, startAngle: geometry.startAngle, endAngle: geometry.endAngle }
 }
 
 function EdgeHandle({

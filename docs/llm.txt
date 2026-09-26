@@ -79,6 +79,7 @@ interface ArcDiagramData {
   }>
   groups?: GroupShape[]
   focusTargets?: Record<string, FocusTarget>
+  flows?: DiagramFlow[]               // animated message routes across connectors
   legend?: 'auto' | 'all' | 'hidden'   // key policy; viewer `legend` prop overrides
   _meta?: FileMeta                    // viewer/editor state saved with the file; locale is BCP-47
   views?: DiagramView[]               // ordered guided chapters (docs/views.md)
@@ -101,6 +102,18 @@ absent or unknown (`semantic/unknown-kind`, fix `{kind:'set-kind',value}`).
 no `node` highlights exactly the declared set. Render with `showViews`; deep-link
 `/player/<session>?view=<id>`. `resolveViewFocus(view, connectors, focusTargets)`
 is the exported resolver.
+
+**Flows**: `flows[]` animates a marker along an ordered connector route —
+`{id, legs: [{id? | from,to, direction?, pause?}], label?, direction?, speed?,
+duration?, delay?, hold?, repeat?, easing?, marker?, color?, size?, trail?}`.
+Legs resolve by stable connector `id` first, otherwise by endpoint pair;
+`direction` may be `forward` or `reverse`; `speed` is px/s (default 160) while
+`duration` is total seconds including pauses and wins over `speed`; `repeat`
+is a count or `'indefinite'`. Markers are `dot` (default), `packet`, `pulse`,
+or `arrow`; `trail` is `none`, `fade`, or `wake`. Standalone SVG animates via
+SMIL by default; `flowTime` renders a deterministic still for PNG/frames, and
+GIF/MP4 artifacts come from Chrome frame capture plus ffmpeg.
+`resolveDiagramFlow()`/`flowPositionAt()` are the exported resolvers.
 
 **Node sizes** (`src/utils/constants.ts` NODE_SIZES):
 - `xs` 80×36 · `s` 110×48 · `m` 160×75 · `l` 220×90
@@ -238,9 +251,10 @@ curl "http://localhost:5188/capture/my-session" > out.png
 ## MCP
 
 `arc` bin on `@arach/arc` (`bun run build:cli` for publish) exposes `schema`, `check`, `diff`, `render`, and `bench`.
+`arc render` accepts `--format svg|png|gif|mp4`; GIF/MP4 require Chrome plus ffmpeg (`ARC_CHROME`/`ARC_FFMPEG` override lookup) and honor `--duration`, `--fps`, and `--scale`.
 `arc-mcp` bin on `@arach/arc-mcp` (`bun run mcp` in dev, `bun run build:mcp` → `packages/mcp/dist/arc-mcp.mjs` for publish).
-Tools: validate_diagram, diff_diagram, auto_layout, render_ascii, render_svg, render_png, render_html, diagram_to_typescript, editor_handoff.
-`render_svg`/`render_png`/`render_html` accept `theme` and `mode`; omitted modes use the theme default. `render_png` uses an installed Chrome/Chromium binary (`ARC_CHROME` overrides lookup); `render_html` emits component/iframe/html text.
+Tools: validate_diagram, diff_diagram, auto_layout, render_ascii, render_svg, render_png, render_animation, render_html, diagram_to_typescript, editor_handoff.
+`render_svg`/`render_png`/`render_html`/`render_animation` accept `theme` and `mode`; omitted modes use the theme default. `render_png` and `render_animation` use an installed Chrome/Chromium binary (`ARC_CHROME` overrides lookup); `render_html` emits component/iframe/html text. `render_svg` also accepts `flowTime` and `animateFlows`; `render_animation` writes a GIF or MP4 artifact to `output` and returns its metadata.
 See docs/agent/mcp.agent.md for remaining coverage gaps (Mermaid stays elsewhere).
 
 ## Critical Rules

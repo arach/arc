@@ -23,6 +23,7 @@ export function validateDiagramShape(value: unknown): string | null {
   if (d.connectors != null && !Array.isArray(d.connectors)) return '`connectors` must be an array'
   if (d.groups != null && !Array.isArray(d.groups)) return '`groups` must be an array'
   if (d.images != null && !Array.isArray(d.images)) return '`images` must be an array'
+  if (d.flows != null && !Array.isArray(d.flows)) return '`flows` must be an array'
 
   // A node with no matching nodeData entry renders as an unlabelled box, which
   // reads as a bug rather than as an edit in progress.

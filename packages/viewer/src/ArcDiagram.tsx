@@ -27,7 +27,7 @@ export interface NodeData {
   color: DiagramColor
 }
 
-export type ArrowHead = 'none' | 'arrow' | 'open' | 'dot' | 'diamond' | 'bar'
+export type ArrowHead = 'none' | 'arrow' | 'open' | 'dot' | 'diamond' | 'bar' | 'dart'
 
 export type ConnectorLineStyle = 'solid' | 'dashed' | 'dotted'
 
@@ -317,6 +317,7 @@ function arrowShapeFor(kind: ArrowHead, size: number): { d?: string; circle?: { 
   switch (kind) {
     case 'arrow':   return { d: `M 0 0 L ${-s} ${-s / 2.6} L ${-s} ${s / 2.6} Z`, filled: true }
     case 'open':    return { d: `M ${-s} ${-s / 2.4} L 0 0 L ${-s} ${s / 2.4}`, filled: false }
+    case 'dart':    return { d: `M 0 0 L ${-s * 1.15} ${-s * 0.55} L ${-s * 0.7} 0 L ${-s * 1.15} ${s * 0.55} Z`, filled: true }
     case 'dot':     return { circle: { cx: -s / 2, r: s / 2.8 }, filled: true }
     case 'diamond': return { d: `M 0 0 L ${-s * 0.5} ${-s * 0.3} L ${-s} 0 L ${-s * 0.5} ${s * 0.3} Z`, filled: true }
     case 'bar':     return { d: `M ${-s * 0.15} ${-s * 0.5} L ${-s * 0.15} ${s * 0.5}`, filled: false }

@@ -70,13 +70,16 @@ From a global install (after publish):
 | `diff_diagram` | Structural diff `{ base, head }` → `DiagramDelta` |
 | `auto_layout` | Sugiyama layout (full diagram or minimal input) |
 | `render_ascii` | Unicode/ASCII box-drawing output |
-| `render_svg` | Deterministic SVG markup from the static export path |
-| `render_png` | PNG image content via optional Chrome/Chromium rasterization |
+| `render_svg` | Deterministic SVG markup from the export path; flow animations are SMIL unless `flowTime`/`animateFlows` sample a still |
+| `render_png` | PNG image content via optional Chrome/Chromium rasterization, sampled at `flowTime` |
+| `render_animation` | GIF or MP4 artifact for diagrams with `flows`; requires Chrome/Chromium plus ffmpeg |
 | `render_html` | `component` TSX, `iframe` embed, or standalone `html` output |
 | `diagram_to_typescript` | Emit a typed TS module |
 | `editor_handoff` | Build `#data=` studio URL + session id; `view` adds a `playerUrl` deep-linked to a `views[]` chapter |
 
-`render_png` returns MCP `image` content (`mimeType: image/png`, base64 `data`) plus text metadata (`width`, `height`, `scale`, `bytes`, `chrome`, `theme`, `mode`). `render_svg`, `render_png`, and `render_html` accept Arc `theme`/`mode`; omit `mode` to use the theme's default (`claude` → light, `spacex`/`codex` → dark). Branded themes include their grid/frame by default; set `includeGrid: false` to suppress it. `render_html` returns paste-ready text: a React component for `format=component`, an iframe tag backed by the studio hash URL for `format=iframe`, or a standalone SVG HTML document for `format=html`.
+`render_png` returns MCP `image` content (`mimeType: image/png`, base64 `data`) plus text metadata (`width`, `height`, `scale`, `bytes`, `chrome`, `theme`, `mode`). `render_svg`, `render_png`, `render_animation`, and `render_html` accept Arc `theme`/`mode`; omit `mode` to use the theme's default (`claude` → light, `spacex`/`codex` → dark). Branded themes include their grid/frame by default; set `includeGrid: false` to suppress it. `render_html` returns paste-ready text: a React component for `format=component`, an iframe tag backed by the studio hash URL for `format=iframe`, or a standalone SVG HTML document for `format=html`.
+
+`render_animation` is file-producing rather than image-producing: pass `output` as a path ending in `.gif` or `.mp4`, optionally `duration`, `fps`, `scale`, `theme`, `mode`, and `background`. It captures deterministic `flowTime` frames in one Chrome session and encodes through ffmpeg (`ARC_FFMPEG`/`FFMPEG_PATH` override lookup), returning JSON metadata with `output`, `bytes`, `frames`, `fps`, `duration`, `width`, and `height`.
 
 ## Resources
 

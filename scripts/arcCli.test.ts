@@ -262,6 +262,16 @@ describe('arc CLI', () => {
     expect(payload.error.code).toBe('cli/usage-error')
   })
 
+  test('render infers animation formats from --out and rejects mismatches', () => {
+    const mismatch = run(['render', '-', '--out', 'x.gif', '--format', 'png', '--json'], JSON.stringify(valid))
+    expect(mismatch.status).toBe(2)
+    expect(JSON.parse(mismatch.stdout).error.message).toContain('--out ends .gif')
+
+    const wrongFlag = run(['render', '-', '--out', 'x.svg', '--fps', '12', '--json'], JSON.stringify(valid))
+    expect(wrongFlag.status).toBe(2)
+    expect(JSON.parse(wrongFlag.stdout).error.message).toContain('--fps only applies to gif/mp4')
+  })
+
   test('bench scores the committed reference suite and passes', () => {
     const result = run(['bench', join(import.meta.dir, '..', 'benchmarks'), '--json'])
     expect(result.status).toBe(0)

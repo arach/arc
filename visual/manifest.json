@@ -13,6 +13,15 @@
   ],
   "cases": [
     { "name": "flow", "diagram": "cases/flow.json" },
-    { "name": "platform", "diagram": "cases/platform.json" }
+    { "name": "platform", "diagram": "cases/platform.json" },
+    {
+      "name": "flow-animation",
+      "diagram": "cases/flows.json",
+      "variants": [
+        { "id": "light" },
+        { "id": "dark", "theme": "default", "mode": "dark" },
+        { "id": "spacex", "theme": "spacex" }
+      ]
+    }
   ]
 }
