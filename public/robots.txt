@@ -1,4 +1,0 @@
-User-agent: *
-Allow: /
-
-Sitemap: https://arc.jdi.sh/sitemap.xml

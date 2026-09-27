@@ -2,6 +2,7 @@ import { ArrowRight, ExternalLink, Sparkles } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import ArcMark from './ArcMark'
 import { useMeta } from '../hooks/useMeta'
+import { SITE_URL } from '../utils/site'
 import data from '../content/diagramSoftware.json'
 import '../agent-share.css'
 import '../software-list.css'
@@ -28,7 +29,7 @@ const jsonLd = {
   '@graph': [
     {
       '@type': 'WebPage',
-      '@id': `https://arc.jdi.sh/${data.slug}`,
+      '@id': `${SITE_URL}/${data.slug}`,
       name: data.metaTitle,
       description: data.metaDescription,
     },

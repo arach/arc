@@ -13,7 +13,7 @@
     "type": "git",
     "url": "git+https://github.com/arach/arc.git"
   },
-  "homepage": "https://arc.jdi.sh",
+  "homepage": "https://hudsonkit.com/arc",
   "bugs": {
     "url": "https://github.com/arach/arc/issues"
   },
@@ -101,7 +101,8 @@
     "generate:schema": "bun scripts/generate-schema.ts",
     "generate-og": "node scripts/generate-og.js",
     "check:dist": "attw --pack . --ignore-rules cjs-resolves-to-esm unexpected-module-syntax --exclude-entrypoints ./arc.css ./style.css && publint && node scripts/check-packlist.mjs",
-    "prepublishOnly": "bun run build:lib && bun run build:cli && bun run check:dist"
+    "prepublishOnly": "bun run build:lib && bun run build:cli && bun run check:dist",
+    "build:site": "bun run build:lib && bun run build"
   },
   "peerDependencies": {
     "react": "^18.0.0 || ^19.0.0",

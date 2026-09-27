@@ -16,6 +16,7 @@ import {
   type PromptParam,
 } from '@arach/dewey'
 import { ArcDiagram, type ArcDiagramData } from '@arach/arc'
+import { SITE_URL } from '../../utils/site'
 import RenderShowcase from './RenderShowcase'
 import Showcase from './Showcase'
 
@@ -560,10 +561,9 @@ function stripFrontmatter(content: string): string {
   return match ? content.slice(match[0].length) : content
 }
 
-// Replace {BASE_URL} with current origin
+// Replace {BASE_URL} with the site's canonical URL (origin + mount path)
 function withBaseUrl(content: string): string {
-  const origin = typeof window !== 'undefined' ? window.location.origin : ''
-  return content.replace(/\{BASE_URL\}/g, origin)
+  return content.replace(/\{BASE_URL\}/g, SITE_URL)
 }
 
 // Page tree - exact match to production docsNav

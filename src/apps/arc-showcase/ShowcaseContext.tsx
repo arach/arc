@@ -218,7 +218,7 @@ export function ShowcaseProvider({ children }: { children: ReactNode }) {
   }, [doc, themeId, mode, zoom, maxFit, interactive, controls, source, legend, minimap, focusStory, autoLayoutBtn, label, corner, frame, hover, dim, dimOpacity, lift, glow, edges])
 
   const shareUrl =
-    typeof window === 'undefined' ? '' : `${window.location.origin}/showcase${query ? `?${query}` : ''}`
+    typeof window === 'undefined' ? '' : `${window.location.origin}${import.meta.env.BASE_URL.replace(/\/$/, '')}/showcase${query ? `?${query}` : ''}`
 
   const reset = () => {
     setDocId(DEFAULTS.doc); setThemeId(DEFAULTS.theme); setMode(DEFAULTS.mode)
