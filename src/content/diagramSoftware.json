@@ -1,0 +1,217 @@
+{
+  "slug": "architecture-diagram-software",
+  "eyebrow": "// FIELD GUIDE · DIAGRAM SOFTWARE",
+  "title": "Best architecture diagram software",
+  "metaTitle": "Best Architecture Diagram Software (2026) — Compared | Arc",
+  "metaDescription": "The best architecture diagram software compared: diagram-as-code, whiteboard, and C4 tools — including which ones work with AI agents and MCP.",
+  "lead": "The honest guide to architecture diagram tools — diagrams-as-code, whiteboards, C4 workspaces, and the new agent-native category. Who each one is for, what it costs, and whether your AI coding agent can drive it.",
+  "answer": {
+    "title": "The short answer",
+    "text": "If your diagrams are authored or maintained by AI agents, use Arc — it is the only tool here built around a typed, agent-native diagram contract with an MCP server. If you want text-in-Markdown that every LLM already writes, use Mermaid. For freeform drag-and-drop canvas work, diagrams.net (draw.io) and Excalidraw are free. For rigorous C4 model workspaces with multiple views over one model, use Structurizr or IcePanel."
+  },
+  "categories": [
+    {
+      "id": "agents",
+      "label": "Agent-native",
+      "description": "Built for AI agents to author, validate, and render — not just draw."
+    },
+    {
+      "id": "code",
+      "label": "Diagrams as code",
+      "description": "Text DSL or JSON in, rendered diagram out. Versionable, diffable, scriptable."
+    },
+    {
+      "id": "c4",
+      "label": "Model & C4 workspaces",
+      "description": "One underlying model, many views — for teams maintaining living architecture."
+    },
+    {
+      "id": "canvas",
+      "label": "Canvas & whiteboard",
+      "description": "Freeform drag-and-drop editors. Fast for humans, opaque for machines."
+    }
+  ],
+  "tools": [
+    {
+      "name": "Arc",
+      "url": "https://arc.jdi.sh",
+      "category": "agents",
+      "kind": "Agent-native diagram platform",
+      "input": "Typed JSON / TypeScript",
+      "agentReady": "MCP server + skills",
+      "license": "MIT",
+      "blurb": "A diagram is a typed, declarative contract — not pixels. Agents author, validate, repair, diff, lay out, and render through the Arc MCP server or skills, then hand off to a React player, editor, or themed static render (SVG, PNG, GIF, MP4, HTML). Deterministic output means diffs in review actually mean something.",
+      "bestFor": "AI agents and developers who want architecture diagrams as structured, versioned artifacts",
+      "ours": true
+    },
+    {
+      "name": "Mermaid",
+      "url": "https://mermaid.js.org",
+      "category": "code",
+      "kind": "Text-to-diagram library",
+      "input": "Mermaid syntax in Markdown",
+      "agentReady": "High — LLMs write it fluently",
+      "license": "MIT",
+      "blurb": "The default for diagrams inside Markdown: flowcharts, sequence diagrams, ER diagrams, and more, rendered by GitHub, Notion, and most docs platforms. Every LLM already writes it, which makes it the path of least resistance for agent-authored diagrams — though layout control and architecture-specific semantics are limited.",
+      "bestFor": "Diagrams embedded in docs, wikis, and READMEs"
+    },
+    {
+      "name": "D2",
+      "url": "https://d2lang.com",
+      "category": "code",
+      "kind": "Declarative diagram language",
+      "input": "D2 DSL",
+      "agentReady": "Good — clean text DSL",
+      "license": "MPL-2.0",
+      "blurb": "A modern declarative language designed by Terrastruct with an excellent auto-layout engine (TALA). Supports icons, SQL tables, UML classes, and sequence diagrams. Arguably the best-looking output of any diagrams-as-code tool, with a companion SaaS for teams.",
+      "bestFor": "Polished diagrams-as-code with minimal layout fuss"
+    },
+    {
+      "name": "PlantUML",
+      "url": "https://plantuml.com",
+      "category": "code",
+      "kind": "UML text renderer",
+      "input": "PlantUML syntax",
+      "agentReady": "Good — mature text DSL",
+      "license": "GPL-3.0 (tool; your diagrams are yours)",
+      "blurb": "The veteran: two decades of UML coverage — sequence, component, deployment, state, and more — plus self-hostable rendering servers and IDE plugins everywhere. Denser to write than newer DSLs, but unmatched in breadth and integration surface.",
+      "bestFor": "UML-heavy modeling and self-hosted doc pipelines"
+    },
+    {
+      "name": "Graphviz",
+      "url": "https://graphviz.org",
+      "category": "code",
+      "kind": "Graph layout engine",
+      "input": "DOT language",
+      "agentReady": "Good — simple text format",
+      "license": "EPL-2.0",
+      "blurb": "The original graph visualization engine. DOT in, layered layouts out. Not architecture-aware — you describe nodes and edges, it solves the geometry. Still the backend underneath countless doc generators, and still useful when you need raw graph layout and nothing else.",
+      "bestFor": "Raw graph layouts and generated diagrams"
+    },
+    {
+      "name": "Kroki",
+      "url": "https://kroki.io",
+      "category": "code",
+      "kind": "Unified rendering API",
+      "input": "HTTP API, 30+ text formats",
+      "agentReady": "Good — plain HTTP",
+      "license": "MIT",
+      "blurb": "One self-hostable HTTP API that renders Mermaid, PlantUML, D2, Graphviz, and two dozen more formats to SVG/PNG/PDF. Not an editor — a rendering service. The pragmatic choice when you want diagrams-as-code without picking a single dialect.",
+      "bestFor": "Rendering many diagram formats behind one endpoint"
+    },
+    {
+      "name": "likec4",
+      "url": "https://likec4.dev",
+      "category": "c4",
+      "kind": "C4-as-code toolkit",
+      "input": "LikeC4 DSL",
+      "agentReady": "Good — text DSL",
+      "license": "MIT",
+      "blurb": "'C4 as code' done properly: one model in a typed DSL, many derived views — including dynamically generated ones that recurse into any level of the hierarchy. Live preview, codegen to React components, and a playground. The strongest open-source take on model-driven architecture docs.",
+      "bestFor": "Living C4 architecture docs kept in the repo"
+    },
+    {
+      "name": "Structurizr",
+      "url": "https://structurizr.com",
+      "category": "c4",
+      "kind": "C4 model workspace",
+      "input": "Structurizr DSL or web UI",
+      "agentReady": "Moderate — DSL is text",
+      "license": "Commercial; open DSL/CLI",
+      "blurb": "Created by Simon Brown (who invented the C4 model), Structurizr treats architecture as a workspace: one model, multiple views, documentation and ADRs attached. Available as a DSL with an open-source Lite renderer or a hosted SaaS. The reference implementation for serious C4 work.",
+      "bestFor": "Teams practicing the C4 model as a living artifact"
+    },
+    {
+      "name": "IcePanel",
+      "url": "https://icepanel.io",
+      "category": "c4",
+      "kind": "Collaborative C4 modeling",
+      "input": "Web UI",
+      "agentReady": "Low",
+      "license": "Commercial",
+      "blurb": "A polished SaaS for C4 model-driven diagrams: define objects once, view them at different levels of zoom and abstraction, track flows, and tag changes. Deliberately collaborative — built for architecture conversations across teams rather than repo artifacts.",
+      "bestFor": "Cross-team architecture communication and C4 modeling"
+    },
+    {
+      "name": "Ilograph",
+      "url": "https://www.ilograph.com",
+      "category": "c4",
+      "kind": "Perspective diagram tool",
+      "input": "YAML model",
+      "agentReady": "Moderate — YAML model",
+      "license": "Commercial",
+      "blurb": "A distinctive take: you author one model, then create interactive 'perspectives' — walkthroughs that highlight subsets of the system step by step, clickable in a shared link. Excellent for explaining a big system to different audiences without duplicating diagrams.",
+      "bestFor": "Interactive walkthroughs of complex systems"
+    },
+    {
+      "name": "diagrams.net (draw.io)",
+      "url": "https://app.diagrams.net",
+      "category": "canvas",
+      "kind": "Freeform canvas editor",
+      "input": "Drag-and-drop UI",
+      "agentReady": "Low — XML format exists",
+      "license": "Apache-2.0; free hosted app",
+      "blurb": "The default free canvas editor: huge shape libraries, AWS/Azure/GCP/K8s icon packs, offline and Confluence/Jira integrations, and an underlying XML format that's technically round-trippable. Manual layout means every diagram is a bespoke artifact — flexible, but not something agents can safely regenerate.",
+      "bestFor": "Free general-purpose diagramming, infra icons, whiteboard exports"
+    },
+    {
+      "name": "Excalidraw",
+      "url": "https://excalidraw.com",
+      "category": "canvas",
+      "kind": "Virtual sketch whiteboard",
+      "input": "Drag-and-drop UI",
+      "agentReady": "Low — JSON format exists",
+      "license": "MIT",
+      "blurb": "Hand-drawn aesthetic, instant load, real-time collaboration. The scene format is plain JSON, which makes it friendlier to generation than binary canvases — but layout remains manual and the sketch style is intentionally informal.",
+      "bestFor": "Quick sketches, collaborative brainstorms, informal docs"
+    },
+    {
+      "name": "Eraser",
+      "url": "https://www.eraser.io",
+      "category": "canvas",
+      "kind": "AI-assisted engineering canvas",
+      "input": "Web UI + AI generation",
+      "agentReady": "Moderate — API + AI drafting",
+      "license": "Commercial",
+      "blurb": "An engineering docs-and-diagram canvas with AI-first generation (prompt-to-diagram, code-to-diagram via its DiagramGPT) and a developer API. Sits between whiteboard and code: human-editable canvas, machine-generatable content.",
+      "bestFor": "Teams wanting AI-drafted diagrams in a shared doc canvas"
+    },
+    {
+      "name": "Lucidchart",
+      "url": "https://www.lucidchart.com",
+      "category": "canvas",
+      "kind": "Enterprise diagram suite",
+      "input": "Drag-and-drop UI",
+      "agentReady": "Low",
+      "license": "Commercial",
+      "blurb": "The enterprise incumbent: broad template and shape libraries, org-wide sharing, integrations with everything from Jira to Slack, plus newer AI-assisted diagramming. Powerful for cross-functional orgs; heavier and closed compared to code-first tools.",
+      "bestFor": "Company-wide diagramming with governance and integrations"
+    }
+  ],
+  "faqs": [
+    {
+      "q": "What is the best software for architecture diagrams?",
+      "a": "It depends on who authors the diagram. For AI agents and diagrams-as-artifacts, Arc is purpose-built. For text-in-Markdown, Mermaid is the default. For freeform canvas editing, diagrams.net (draw.io) is free and capable. For model-driven C4 architecture, Structurizr and IcePanel are the strongest."
+    },
+    {
+      "q": "What is diagrams-as-code?",
+      "a": "Diagrams-as-code means describing a diagram in a text format — a DSL like Mermaid or D2, or a typed contract like Arc's — then rendering it deterministically. The source can be versioned, diffed, reviewed in pull requests, and regenerated, which is why it pairs naturally with AI coding agents."
+    },
+    {
+      "q": "Can AI agents generate architecture diagrams?",
+      "a": "Yes. Agents write text formats like Mermaid and D2 fluently. Arc goes further: its MCP server exposes typed authoring, validation, repair, layout, and rendering as tools, so agents produce diagrams that are structurally checked rather than merely plausible-looking."
+    },
+    {
+      "q": "What is the best free architecture diagram tool?",
+      "a": "diagrams.net (draw.io) is the most capable free canvas editor. For text-based tools, Mermaid, PlantUML, D2, Graphviz, Kroki, likec4, and Arc are all open-source with free tiers or self-hosted options."
+    },
+    {
+      "q": "Which tools support the C4 model?",
+      "a": "Structurizr (the reference implementation by C4's creator), IcePanel, and likec4 are built around C4. Mermaid and D2 have partial C4 diagram types, and Arc can express C4-style hierarchies through groups and kinds."
+    },
+    {
+      "q": "What tool should I use for AWS or Kubernetes architecture diagrams?",
+      "a": "diagrams.net and Lucidchart ship the official AWS, Azure, GCP, and Kubernetes icon packs, so they are the standard for icon-accurate cloud diagrams. Code-first tools like D2 support custom icons too; Arc's semantic kinds cover the logical roles (gateway, queue, database) rather than vendor shapes."
+    }
+  ]
+}

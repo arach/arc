@@ -77,12 +77,63 @@ for (const [pattern, replacement] of agentsReplacements) {
 writeFileSync(path.join(agentsDir, 'index.html'), agentsHtml)
 console.log('✓ Generated dist/docs/agents/index.html with agents OG tags')
 
+// Software listicle page shares its data with src/components/SoftwareListPage.tsx
+// via this JSON file — keep titles/FAQs in sync there, not here.
+const softwareData = JSON.parse(
+  readFileSync(path.join(__dirname, '..', 'src', 'content', 'diagramSoftware.json'), 'utf-8')
+)
+const softwareJsonLd = JSON.stringify({
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'WebPage',
+      '@id': `https://arc.jdi.sh/${softwareData.slug}`,
+      name: softwareData.metaTitle,
+      description: softwareData.metaDescription,
+    },
+    {
+      '@type': 'ItemList',
+      name: softwareData.title,
+      itemListOrder: 'https://schema.org/ItemListUnordered',
+      numberOfItems: softwareData.tools.length,
+      itemListElement: softwareData.tools.map((tool, index) => ({
+        '@type': 'ListItem',
+        position: index + 1,
+        item: {
+          '@type': 'SoftwareApplication',
+          name: tool.name,
+          url: tool.url,
+          description: tool.blurb,
+          applicationCategory: 'DeveloperApplication',
+        },
+      })),
+    },
+    {
+      '@type': 'FAQPage',
+      mainEntity: softwareData.faqs.map((faq) => ({
+        '@type': 'Question',
+        name: faq.q,
+        acceptedAnswer: { '@type': 'Answer', text: faq.a },
+      })),
+    },
+  ],
+})
+
 const sharePages = [
   {
     path: 'mcp',
     title: 'Arc MCP | Diagram tools for AI agents',
     description: 'Give AI agents tools to validate, lay out, diff, render, and hand off architecture diagrams.',
     image: 'og-mcp.png',
+  },
+  {
+    path: softwareData.slug,
+    title: softwareData.metaTitle,
+    description: softwareData.metaDescription,
+    image: 'og-software.png',
+    extraHead:
+      `<link rel="canonical" href="https://arc.jdi.sh/${softwareData.slug}" />\n` +
+      `  <script type="application/ld+json">${softwareJsonLd}</script>`,
   },
   {
     path: 'skills',
@@ -127,6 +178,10 @@ for (const page of sharePages) {
 
   for (const [pattern, replacement] of pageReplacements) {
     pageHtml = pageHtml.replace(pattern, replacement)
+  }
+
+  if (page.extraHead) {
+    pageHtml = pageHtml.replace('</head>', `  ${page.extraHead}\n</head>`)
   }
 
   writeFileSync(path.join(pageDir, 'index.html'), pageHtml)
