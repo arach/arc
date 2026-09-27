@@ -4,6 +4,7 @@ import DiagramEditor from './components/editor/DiagramEditor'
 import LandingPage from './components/LandingPage'
 import ArcDocs from './components/docs/ArcDocs'
 import AgentSharePage from './components/AgentSharePage'
+import SoftwareListPage from './components/SoftwareListPage'
 import ArcDiagram from './components/ArcDiagram'
 import IsometricDemo from './components/IsometricDemo'
 import IsometricExamples from './components/IsometricExamples'
@@ -448,7 +449,7 @@ function InspirationPage() {
 
 function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
       <GoogleAnalytics />
       <Routes>
         <Route path="/" element={<LandingPageWrapper />} />
@@ -459,6 +460,7 @@ function App() {
         <Route path="/docs/:page" element={<DocsWrapper />} />
         <Route path="/mcp" element={<AgentSharePage kind="mcp" />} />
         <Route path="/skills" element={<AgentSharePage kind="skills" />} />
+        <Route path="/architecture-diagram-software" element={<SoftwareListPage />} />
         <Route path="/blog/native-mermaid-sequences" element={<NativeMermaidSequencesPost />} />
         <Route path="/iso-demo" element={<IsometricDemo />} />
         <Route path="/iso-examples" element={<IsometricExamples />} />

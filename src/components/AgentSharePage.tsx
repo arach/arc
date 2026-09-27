@@ -287,6 +287,7 @@ export default function AgentSharePage({ kind }: { kind: SharePageKind }) {
           <nav className="asp-nav" aria-label="Agent pages">
             <Link className={kind === 'mcp' ? 'is-active' : ''} to="/mcp">MCP</Link>
             <Link className={kind === 'skills' ? 'is-active' : ''} to="/skills">Skills</Link>
+            <Link to="/architecture-diagram-software">Software</Link>
             <Link to="/docs">Docs</Link>
             <a href="https://github.com/arach/arc" target="_blank" rel="noreferrer">GitHub ↗</a>
           </nav>

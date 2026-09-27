@@ -1436,7 +1436,7 @@ export default function IsometricExamples() {
 
         {/* Back link */}
         <div className="mt-6 text-center">
-          <a href="/iso-demo" style={{ fontFamily: MONO_FONT, fontSize: '11px', color: '#475569' }}>
+          <a href={`${import.meta.env.BASE_URL}iso-demo`} style={{ fontFamily: MONO_FONT, fontSize: '11px', color: '#475569' }}>
             ← interactive demo
           </a>
         </div>

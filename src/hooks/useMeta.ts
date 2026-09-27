@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { SITE_URL } from '../utils/site'
 
 interface MetaProps {
   title?: string
@@ -7,7 +8,7 @@ interface MetaProps {
   url?: string
 }
 
-const BASE_URL = 'https://arc.jdi.sh'
+const BASE_URL = SITE_URL
 
 export function useMeta({ title, description, image, url }: MetaProps) {
   useEffect(() => {

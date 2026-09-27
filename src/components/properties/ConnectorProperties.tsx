@@ -145,6 +145,7 @@ function EndGlyphIcon({ kind }: { kind: ArrowHead }) {
     dot: <circle cx="14" cy="6" r="2.4" fill="currentColor" />,
     diamond: <path d="M11.5 6 L14.2 3.6 L16.9 6 L14.2 8.4 Z" fill="currentColor" />,
     bar: <line x1="14.5" y1="2.8" x2="14.5" y2="9.2" stroke="currentColor" strokeWidth="1.6" />,
+    dart: <path d="M17 6 L12.4 3.3 L13.8 6 L12.4 8.7 Z" fill="currentColor" />,
   }
   return (
     <svg width="18" height="12" viewBox="0 0 18 12" aria-hidden="true">

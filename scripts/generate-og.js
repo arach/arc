@@ -339,6 +339,21 @@ const skillsCard = `
   </div>
 `
 
+const softwareCard = `
+  <div class="card">
+    <div class="card-bar">
+      <div class="dots"><i></i><i></i><i></i></div>
+      <span class="card-name">the-field-guide.html</span>
+    </div>
+    <div class="doc-list">
+      <div class="doc-row"><span class="doc-n">AGENTS</span><span class="doc-h">Arc — typed contract, MCP-native</span></div>
+      <div class="doc-row"><span class="doc-n">AS CODE</span><span class="doc-h">Mermaid · D2 · PlantUML · Graphviz</span></div>
+      <div class="doc-row"><span class="doc-n">C4</span><span class="doc-h">Structurizr · likec4 · IcePanel</span></div>
+      <div class="doc-row"><span class="doc-n">CANVAS</span><span class="doc-h">diagrams.net · Excalidraw · Lucidchart</span></div>
+    </div>
+  </div>
+`
+
 const editorCard = `
   <div class="card">
     <div class="card-bar">
@@ -421,6 +436,15 @@ const skillsOGHtml = plate({
   compactTitle: true,
 })
 
+const softwareOGHtml = plate({
+  eyebrow: '// FIELD GUIDE · DIAGRAM SOFTWARE',
+  title: 'Best architecture diagram software.',
+  lead: 'Diagrams-as-code, C4 workspaces, canvases, and the agent-native category — compared.',
+  spec: ['14 TOOLS', '4 CATEGORIES', 'AGENT-READY RATED'],
+  right: softwareCard,
+  compactTitle: true,
+})
+
 function docPageHtml(code, title, description) {
   return plate({
     eyebrow: `// DOCS · ${code}`,
@@ -466,6 +490,7 @@ async function main() {
   await generateOGImage(browser, docsOGHtml, 'og-docs.png')
   await generateOGImage(browser, mcpOGHtml, 'og-mcp.png')
   await generateOGImage(browser, skillsOGHtml, 'og-skills.png')
+  await generateOGImage(browser, softwareOGHtml, 'og-software.png')
 
   await generateOGImage(
     browser,

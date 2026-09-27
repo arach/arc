@@ -24,7 +24,9 @@ export default defineConfig(({ mode }) => {
   }
 
   return {
-    base: '/',
+    // Mount path for the site bundle — '/arc/' when vendored into
+    // hudsonkit.com, '/' when deployed standalone at arc.jdi.sh.
+    base: process.env.ARC_BASE || '/',
     plugins: [
       react(),
       tailwindcss(),

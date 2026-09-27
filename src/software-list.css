@@ -1,0 +1,284 @@
+.dsl-hero {
+  grid-template-columns: 1.2fr 0.8fr;
+}
+
+.dsl-answer {
+  align-self: center;
+  background: var(--asp-panel);
+  border: 1px solid var(--asp-line);
+  border-radius: 14px;
+  padding: 26px 28px;
+  box-shadow: 0 18px 50px -30px rgba(16, 21, 24, 0.28);
+}
+
+.dsl-answer-tag {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--asp-accent);
+  margin-bottom: 12px;
+}
+
+.dsl-answer-tag svg {
+  width: 14px;
+  height: 14px;
+}
+
+.dsl-answer p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--asp-ink-2);
+}
+
+.dsl-table-wrap {
+  margin: 10px 0 72px;
+  overflow-x: auto;
+  border: 1px solid var(--asp-line);
+  border-radius: 14px;
+  background: var(--asp-panel);
+}
+
+.dsl-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  min-width: 760px;
+}
+
+.dsl-table th,
+.dsl-table td {
+  text-align: left;
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--asp-line);
+  vertical-align: top;
+}
+
+.dsl-table thead th {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--asp-muted);
+  border-bottom: 1px solid var(--asp-line);
+  background: rgba(46, 95, 165, 0.04);
+}
+
+.dsl-table tbody tr:last-child th,
+.dsl-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.dsl-table tbody th {
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.dsl-table tbody th a {
+  color: var(--asp-ink);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.dsl-table tbody th a:hover {
+  color: var(--asp-accent);
+  text-decoration: underline;
+}
+
+.dsl-table td {
+  color: var(--asp-ink-2);
+}
+
+.dsl-table tr.is-ours {
+  background: rgba(46, 95, 165, 0.055);
+}
+
+.dsl-table tr.is-ours th a {
+  color: var(--asp-accent);
+}
+
+.dsl-ours-badge {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--asp-accent);
+  border: 1px solid rgba(46, 95, 165, 0.45);
+  border-radius: 99px;
+  padding: 2px 7px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+.dsl-category {
+  margin-bottom: 72px;
+}
+
+.dsl-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 18px;
+}
+
+.dsl-card {
+  background: var(--asp-panel);
+  border: 1px solid var(--asp-line);
+  border-radius: 14px;
+  padding: 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.dsl-card:hover {
+  border-color: rgba(46, 95, 165, 0.4);
+  transform: translateY(-2px);
+}
+
+.dsl-card.is-ours {
+  border-color: rgba(46, 95, 165, 0.55);
+  box-shadow: 0 18px 50px -34px rgba(46, 95, 165, 0.5);
+}
+
+.dsl-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.dsl-card-head h3 {
+  margin: 0;
+  font-size: 17px;
+  letter-spacing: -0.01em;
+  display: inline-flex;
+  align-items: center;
+}
+
+.dsl-card-link {
+  color: var(--asp-muted);
+  display: inline-flex;
+  transition: color 0.15s ease;
+}
+
+.dsl-card-link:hover {
+  color: var(--asp-accent);
+}
+
+.dsl-card-link svg {
+  width: 15px;
+  height: 15px;
+}
+
+.dsl-card > p {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--asp-ink-2);
+  flex: 1;
+}
+
+.dsl-card-meta {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  border-top: 1px solid var(--asp-line);
+  padding-top: 12px;
+}
+
+.dsl-card-meta div {
+  display: grid;
+  gap: 3px;
+}
+
+.dsl-card-meta dt {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--asp-faint);
+}
+
+.dsl-card-meta dd {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--asp-ink-2);
+}
+
+.dsl-card-best {
+  font-size: 12px;
+  color: var(--asp-muted);
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.dsl-card-best span {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--asp-accent);
+  flex-shrink: 0;
+}
+
+.dsl-faq h2 {
+  margin-top: 6px;
+}
+
+.dsl-faq-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  gap: 8px 40px;
+  margin-top: 26px;
+}
+
+.dsl-faq-list article {
+  padding: 16px 0;
+  border-top: 1px solid var(--asp-line);
+}
+
+.dsl-faq-list h3 {
+  margin: 0 0 8px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--asp-ink);
+}
+
+.dsl-faq-list p {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: var(--asp-ink-2);
+}
+
+@media (max-width: 900px) {
+  .dsl-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .dsl-answer {
+    margin-top: 8px;
+  }
+
+  .dsl-faq-list {
+    grid-template-columns: 1fr;
+  }
+
+  .dsl-card-meta {
+    grid-template-columns: 1fr 1fr;
+  }
+}

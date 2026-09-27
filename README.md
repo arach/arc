@@ -75,7 +75,7 @@ out of the box.
 
 Prefer to design visually? Arc ships a full drag-and-drop **studio** — infinite
 canvas, floating toolbar, reusable connector styles, live properties panel, and
-a minimap. Try the [hosted studio](https://arc.jdi.sh), or clone the repo and
+a minimap. Try the [hosted studio](https://hudsonkit.com/arc), or clone the repo and
 open it locally:
 
 ```bash
