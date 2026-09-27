@@ -9,6 +9,10 @@ import path from 'path'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const distDir = path.join(__dirname, '..', 'dist')
 
+// Canonical site URL for the build — hudsonkit.com/arc is the product home;
+// SITE_URL lets a standalone deploy (e.g. arc.jdi.sh) keep its own identity.
+const SITE_URL = (process.env.SITE_URL || 'https://hudsonkit.com/arc').replace(/\/$/, '')
+
 // Read the built index.html
 const indexPath = path.join(distDir, 'index.html')
 let html = readFileSync(indexPath, 'utf-8')
@@ -27,12 +31,12 @@ const replacements = [
   [/<meta property="twitter:description" content=".*?"/, '<meta property="twitter:description" content="Everything you need to create beautiful architecture diagrams with Arc."'],
 
   // URL
-  [/<meta property="og:url" content=".*?"/, '<meta property="og:url" content="https://arc.jdi.sh/docs"'],
-  [/<meta property="twitter:url" content=".*?"/, '<meta property="twitter:url" content="https://arc.jdi.sh/docs"'],
+  [/<meta property="og:url" content=".*?"/, `<meta property="og:url" content="${SITE_URL}/docs"`],
+  [/<meta property="twitter:url" content=".*?"/, `<meta property="twitter:url" content="${SITE_URL}/docs"`],
 
   // Image
-  [/<meta property="og:image" content=".*?"/, '<meta property="og:image" content="https://arc.jdi.sh/og-docs.png"'],
-  [/<meta property="twitter:image" content=".*?"/, '<meta property="twitter:image" content="https://arc.jdi.sh/og-docs.png"'],
+  [/<meta property="og:image" content=".*?"/, `<meta property="og:image" content="${SITE_URL}/og-docs.png"`],
+  [/<meta property="twitter:image" content=".*?"/, `<meta property="twitter:image" content="${SITE_URL}/og-docs.png"`],
 ]
 
 for (const [pattern, replacement] of replacements) {
@@ -64,10 +68,10 @@ const agentsReplacements = [
   [/<meta name="description" content=".*?"/, '<meta name="description" content="Agent-friendly documentation for AI-assisted diagram generation with Arc."'],
   [/<meta property="og:description" content=".*?"/, '<meta property="og:description" content="Agent-friendly documentation for AI-assisted diagram generation with Arc."'],
   [/<meta property="twitter:description" content=".*?"/, '<meta property="twitter:description" content="Agent-friendly documentation for AI-assisted diagram generation with Arc."'],
-  [/<meta property="og:url" content=".*?"/, '<meta property="og:url" content="https://arc.jdi.sh/docs/agents"'],
-  [/<meta property="twitter:url" content=".*?"/, '<meta property="twitter:url" content="https://arc.jdi.sh/docs/agents"'],
-  [/<meta property="og:image" content=".*?"/, '<meta property="og:image" content="https://arc.jdi.sh/og-docs-llm.png"'],
-  [/<meta property="twitter:image" content=".*?"/, '<meta property="twitter:image" content="https://arc.jdi.sh/og-docs-llm.png"'],
+  [/<meta property="og:url" content=".*?"/, `<meta property="og:url" content="${SITE_URL}/docs/agents"`],
+  [/<meta property="twitter:url" content=".*?"/, `<meta property="twitter:url" content="${SITE_URL}/docs/agents"`],
+  [/<meta property="og:image" content=".*?"/, `<meta property="og:image" content="${SITE_URL}/og-docs-llm.png"`],
+  [/<meta property="twitter:image" content=".*?"/, `<meta property="twitter:image" content="${SITE_URL}/og-docs-llm.png"`],
 ]
 
 for (const [pattern, replacement] of agentsReplacements) {
@@ -87,7 +91,7 @@ const softwareJsonLd = JSON.stringify({
   '@graph': [
     {
       '@type': 'WebPage',
-      '@id': `https://arc.jdi.sh/${softwareData.slug}`,
+      '@id': `${SITE_URL}/${softwareData.slug}`,
       name: softwareData.metaTitle,
       description: softwareData.metaDescription,
     },
@@ -132,7 +136,7 @@ const sharePages = [
     description: softwareData.metaDescription,
     image: 'og-software.png',
     extraHead:
-      `<link rel="canonical" href="https://arc.jdi.sh/${softwareData.slug}" />\n` +
+      `<link rel="canonical" href="${SITE_URL}/${softwareData.slug}" />\n` +
       `  <script type="application/ld+json">${softwareJsonLd}</script>`,
   },
   {
@@ -160,8 +164,8 @@ for (const page of sharePages) {
   mkdirSync(pageDir, { recursive: true })
 
   let pageHtml = readFileSync(indexPath, 'utf-8')
-  const pageUrl = `https://arc.jdi.sh/${page.path}`
-  const pageImage = `https://arc.jdi.sh/${page.image}`
+  const pageUrl = `${SITE_URL}/${page.path}`
+  const pageImage = `${SITE_URL}/${page.image}`
   const pageReplacements = [
     [/<title>.*?<\/title>/, `<title>${page.title}</title>`],
     [/<meta name="title" content=".*?"/, `<meta name="title" content="${page.title}"`],
@@ -187,3 +191,34 @@ for (const page of sharePages) {
   writeFileSync(path.join(pageDir, 'index.html'), pageHtml)
   console.log(`✓ Generated dist/${page.path}/index.html with share-page OG tags`)
 }
+
+// robots.txt + sitemap.xml are generated here so the URLs follow SITE_URL.
+const sitemapRoutes = [
+  ['/', '1.0'],
+  ['/' + softwareData.slug, '0.9'],
+  ['/mcp', '0.9'],
+  ['/skills', '0.9'],
+  ['/docs', '0.8'],
+  ['/docs/agents', '0.7'],
+  ['/docs/agent-mcp', '0.6'],
+  ['/docs/skills', '0.6'],
+  ['/editor', '0.5'],
+  ['/showcase', '0.5'],
+  ['/blog/native-mermaid-sequences', '0.4'],
+  ['/iso-demo', '0.3'],
+  ['/iso-examples', '0.3'],
+  ['/inspiration', '0.3'],
+]
+const sitemapXml =
+  '<?xml version="1.0" encoding="UTF-8"?>\n' +
+  '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
+  sitemapRoutes
+    .map(([route, priority]) => `  <url><loc>${SITE_URL}${route === '/' ? '/' : route}</loc><priority>${priority}</priority></url>`)
+    .join('\n') +
+  '\n</urlset>\n'
+writeFileSync(path.join(distDir, 'sitemap.xml'), sitemapXml)
+writeFileSync(
+  path.join(distDir, 'robots.txt'),
+  `User-agent: *\nAllow: /\n\nSitemap: ${SITE_URL}/sitemap.xml\n`
+)
+console.log(`✓ Generated dist/robots.txt + dist/sitemap.xml for ${SITE_URL}`)

@@ -34,7 +34,7 @@
   "tools": [
     {
       "name": "Arc",
-      "url": "https://arc.jdi.sh",
+      "url": "https://hudsonkit.com/arc",
       "category": "agents",
       "kind": "Agent-native diagram platform",
       "input": "Typed JSON / TypeScript",
