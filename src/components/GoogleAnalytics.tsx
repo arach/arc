@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 
-// Baked at build time from GA_MEASUREMENT_ID; arc.jdi.sh keeps the default.
-const GA_MEASUREMENT_ID = import.meta.env.GA_MEASUREMENT_ID || 'G-GSHDZPFRZG';
+// Baked at build time from GA_MEASUREMENT_ID; defaults to arc's GA4 property.
+const GA_MEASUREMENT_ID = import.meta.env.GA_MEASUREMENT_ID || 'G-SEDXMKVG9K';
 
 // Extend Window interface for gtag
 declare global {

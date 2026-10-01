@@ -28,9 +28,9 @@ export default defineConfig(({ mode }) => {
     // hudsonkit.com, '/' when deployed standalone at arc.jdi.sh.
     base: process.env.ARC_BASE || '/',
     define: {
-      // GA measurement id follows the deployment — the vendored build sets
-      // GA_MEASUREMENT_ID so hudsonkit.com/arc/ reports to its own property.
-      'import.meta.env.GA_MEASUREMENT_ID': JSON.stringify(process.env.GA_MEASUREMENT_ID || 'G-GSHDZPFRZG'),
+      // GA measurement id baked at build time — GA_MEASUREMENT_ID overrides
+      // per deployment; the default is arc's own GA4 property.
+      'import.meta.env.GA_MEASUREMENT_ID': JSON.stringify(process.env.GA_MEASUREMENT_ID || 'G-SEDXMKVG9K'),
     },
     plugins: [
       react(),
