@@ -17,6 +17,15 @@ const SITE_URL = (process.env.SITE_URL || 'https://hudsonkit.com/arc').replace(/
 const indexPath = path.join(distDir, 'index.html')
 let html = readFileSync(indexPath, 'utf-8')
 
+// Retag the root page itself when SITE_URL points at another origin —
+// index.html ships hudsonkit.com/arc URLs as the canonical default.
+const swept = html.replaceAll('https://hudsonkit.com/arc', SITE_URL)
+if (swept !== html) {
+  writeFileSync(indexPath, swept)
+  html = swept
+  console.log(`✓ Retagged dist/index.html for ${SITE_URL}`)
+}
+
 // Replace OG meta tags for docs
 const replacements = [
   // Title
@@ -31,6 +40,8 @@ const replacements = [
   [/<meta property="twitter:description" content=".*?"/, '<meta property="twitter:description" content="Everything you need to create beautiful architecture diagrams with Arc."'],
 
   // URL
+  // URL
+  [/<link rel="canonical" href=".*?"/, `<link rel="canonical" href="${SITE_URL}/docs"`],
   [/<meta property="og:url" content=".*?"/, `<meta property="og:url" content="${SITE_URL}/docs"`],
   [/<meta property="twitter:url" content=".*?"/, `<meta property="twitter:url" content="${SITE_URL}/docs"`],
 
@@ -68,6 +79,7 @@ const agentsReplacements = [
   [/<meta name="description" content=".*?"/, '<meta name="description" content="Agent-friendly documentation for AI-assisted diagram generation with Arc."'],
   [/<meta property="og:description" content=".*?"/, '<meta property="og:description" content="Agent-friendly documentation for AI-assisted diagram generation with Arc."'],
   [/<meta property="twitter:description" content=".*?"/, '<meta property="twitter:description" content="Agent-friendly documentation for AI-assisted diagram generation with Arc."'],
+  [/<link rel="canonical" href=".*?"/, `<link rel="canonical" href="${SITE_URL}/docs/agents"`],
   [/<meta property="og:url" content=".*?"/, `<meta property="og:url" content="${SITE_URL}/docs/agents"`],
   [/<meta property="twitter:url" content=".*?"/, `<meta property="twitter:url" content="${SITE_URL}/docs/agents"`],
   [/<meta property="og:image" content=".*?"/, `<meta property="og:image" content="${SITE_URL}/og-docs-llm.png"`],
@@ -136,8 +148,7 @@ const sharePages = [
     description: softwareData.metaDescription,
     image: 'og-software.png',
     extraHead:
-      `<link rel="canonical" href="${SITE_URL}/${softwareData.slug}" />\n` +
-      `  <script type="application/ld+json">${softwareJsonLd}</script>`,
+      `<script type="application/ld+json">${softwareJsonLd}</script>`,
   },
   {
     path: 'skills',
@@ -168,6 +179,7 @@ for (const page of sharePages) {
   const pageImage = `${SITE_URL}/${page.image}`
   const pageReplacements = [
     [/<title>.*?<\/title>/, `<title>${page.title}</title>`],
+    [/<link rel="canonical" href=".*?"/, `<link rel="canonical" href="${pageUrl}"`],
     [/<meta name="title" content=".*?"/, `<meta name="title" content="${page.title}"`],
     [/<meta property="og:title" content=".*?"/, `<meta property="og:title" content="${page.title}"`],
     [/<meta property="twitter:title" content=".*?"/, `<meta property="twitter:title" content="${page.title}"`],

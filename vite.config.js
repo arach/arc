@@ -27,6 +27,11 @@ export default defineConfig(({ mode }) => {
     // Mount path for the site bundle — '/arc/' when vendored into
     // hudsonkit.com, '/' when deployed standalone at arc.jdi.sh.
     base: process.env.ARC_BASE || '/',
+    define: {
+      // GA measurement id follows the deployment — the vendored build sets
+      // GA_MEASUREMENT_ID so hudsonkit.com/arc/ reports to its own property.
+      'import.meta.env.GA_MEASUREMENT_ID': JSON.stringify(process.env.GA_MEASUREMENT_ID || 'G-GSHDZPFRZG'),
+    },
     plugins: [
       react(),
       tailwindcss(),
