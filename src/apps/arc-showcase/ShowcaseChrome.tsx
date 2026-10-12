@@ -35,6 +35,10 @@ export function ShowcaseNavActions() {
         Docs
       </Link>
       <span className="arc-editor-divider" />
+      <Link to="/examples/connection-pool" className="arc-editor-btn-ghost" title="Explore a live connection pool">
+        Pool explainer
+      </Link>
+      <span className="arc-editor-divider" />
       <Link to="/editor" className="arc-editor-btn-ghost" title="Open the editor">
         Editor
       </Link>

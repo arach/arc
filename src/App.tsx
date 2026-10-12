@@ -10,6 +10,7 @@ import IsometricDemo from './components/IsometricDemo'
 import IsometricExamples from './components/IsometricExamples'
 import PlayerShowcase from './components/PlayerShowcase'
 import NativeMermaidSequencesPost from './components/blog/NativeMermaidSequencesPost'
+import ConnectionPoolExplainer from './components/explainers/ConnectionPoolExplainer'
 import architectureDiagram from './components/diagrams/architecture.diagram'
 import { getTheme, type ThemeId } from './utils/themes'
 import { GoogleAnalytics } from './components/GoogleAnalytics'
@@ -465,6 +466,7 @@ function App() {
         <Route path="/iso-demo" element={<IsometricDemo />} />
         <Route path="/iso-examples" element={<IsometricExamples />} />
         <Route path="/showcase" element={<PlayerShowcase />} />
+        <Route path="/examples/connection-pool" element={<ConnectionPoolExplainer />} />
         <Route path="/inspiration" element={<InspirationPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
