@@ -137,6 +137,12 @@ const softwareJsonLd = JSON.stringify({
 
 const sharePages = [
   {
+    path: 'examples/connection-pool',
+    title: 'How a connection pool works | Arc',
+    description: 'Borrow, wait, reuse. Explore a connection pool with a live, deterministic model.',
+    image: 'og-image.png',
+  },
+  {
     path: 'mcp',
     title: 'Arc MCP | Diagram tools for AI agents',
     description: 'Give AI agents tools to validate, lay out, diff, render, and hand off architecture diagrams.',
@@ -216,6 +222,7 @@ const sitemapRoutes = [
   ['/docs/skills', '0.6'],
   ['/editor', '0.5'],
   ['/showcase', '0.5'],
+  ['/examples/connection-pool', '0.5'],
   ['/blog/native-mermaid-sequences', '0.4'],
   ['/iso-demo', '0.3'],
   ['/iso-examples', '0.3'],
