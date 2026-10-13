@@ -181,6 +181,15 @@
 .tl-c-kw { color: var(--acc); }
 .tl-c-str { color: var(--tl-string); }
 
+/* ---- embed card ---- */
+.tl-embed {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 32px; margin-top: 30px;
+}
+.tl-embed .tl-section-p { max-width: 22em; }
+.tl-embed-card { flex: 0 0 376px; }
+.tl-embed-card .tl-code { padding: 14px 16px; }
+
 /* ---- tick ruler ---- */
 .tl-ruler {
   height: 18px; border-top: 1px solid var(--tl-line);
@@ -417,6 +426,8 @@
   .tl-nav { display: none; }
   .tl-sequence-head { align-items: flex-start; flex-direction: column; gap: 18px; }
   .tl-sequence-links { align-items: flex-start; flex-direction: column; gap: 8px; }
+  .tl-embed { flex-direction: column; align-items: stretch; }
+  .tl-embed .tl-section-p { max-width: none; }
 }
 @media (max-width: 560px) {
   .tl-brand-descriptor, .tl-brand-ver { display: none; }
