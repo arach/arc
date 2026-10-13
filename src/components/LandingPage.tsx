@@ -241,6 +241,24 @@ export default function LandingPage({ onLaunchEditor }: LandingPageProps) {
             <Link to={editorHandoff}>Edit this diagram in the editor →</Link>
             <Link to="/docs/views">How the chapter rail works →</Link>
           </div>
+          <div className="tl-embed">
+            <p className="tl-section-p" style={{ margin: 0 }}>
+              The same component renders in your app, your docs, or your README —
+              one typed config, zero runtime deps.
+            </p>
+            <div className="tl-card tl-embed-card">
+              <div className="tl-card-bar">
+                <div className="tl-dots"><span /><span /><span /></div>
+                <span className="tl-card-name">your-app.tsx</span>
+              </div>
+              <pre className="tl-code">
+<span className="tl-c-comment">// anywhere — app, docs, readme</span>{'\n'}
+npm i @arach/arc{'\n\n'}
+<span className="tl-c-kw">import</span> {'{ ArcDiagram }'} <span className="tl-c-kw">from</span> <span className="tl-c-str">'@arach/arc'</span>{'\n\n'}
+{'<'}ArcDiagram data={'{'}diagram{'}'} theme=<span className="tl-c-str">"cool"</span> {'/>'}
+              </pre>
+            </div>
+          </div>
         </section>
 
         {/* ISOMETRIC PLATES */}
