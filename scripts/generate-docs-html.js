@@ -174,6 +174,48 @@ const sharePages = [
     description: 'Reference for reusable Arc diagram authoring, repair, and export skills.',
     image: 'og-docs-llm.png',
   },
+  {
+    path: 'docs/examples',
+    title: 'Examples | Arc Docs',
+    description: 'Real-world Arc diagram examples.',
+    image: 'og-docs.png',
+  },
+  {
+    path: 'docs/views',
+    title: 'Guided Views | Arc Docs',
+    description: 'Turn a diagram into an ordered walkthrough with a chapter rail and deep links.',
+    image: 'og-docs.png',
+  },
+  {
+    path: 'docs/focus-stories',
+    title: 'Focus Stories | Arc Docs',
+    description: 'Explain an architecture path when a reader explores a node.',
+    image: 'og-docs.png',
+  },
+  {
+    path: 'docs/group-layout',
+    title: 'Group Layout | Arc Docs',
+    description: 'Keep architecture nodes aligned inside explicit system boundaries.',
+    image: 'og-docs.png',
+  },
+  {
+    path: 'docs/diff',
+    title: 'Diagram Diffs | Arc Docs',
+    description: 'Diff two diagrams and render the change set — added, removed, moved, changed.',
+    image: 'og-docs.png',
+  },
+  {
+    path: 'docs/agentic-loop',
+    title: 'The Agentic Loop | Arc Docs',
+    description: 'Diagrams maintained by the same agents that change the code.',
+    image: 'og-docs.png',
+  },
+  {
+    path: 'docs/mermaid-import',
+    title: 'Mermaid Import | Arc Docs',
+    description: 'Project Mermaid flowcharts and state diagrams into positioned Arc data.',
+    image: 'og-docs.png',
+  },
 ]
 
 for (const page of sharePages) {
@@ -218,6 +260,13 @@ const sitemapRoutes = [
   ['/skills', '0.9'],
   ['/docs', '0.8'],
   ['/docs/agents', '0.7'],
+  ['/docs/examples', '0.6'],
+  ['/docs/views', '0.6'],
+  ['/docs/focus-stories', '0.6'],
+  ['/docs/group-layout', '0.6'],
+  ['/docs/diff', '0.6'],
+  ['/docs/agentic-loop', '0.6'],
+  ['/docs/mermaid-import', '0.6'],
   ['/docs/agent-mcp', '0.6'],
   ['/docs/skills', '0.6'],
   ['/editor', '0.5'],

@@ -67,14 +67,14 @@ export function useMeta({ title, description, image, url }: MetaProps) {
       setMeta('twitter:url', fullUrl)
     }
 
-    // Cleanup: restore original values on unmount
+    // Cleanup: restore original values; drop tags this render created
     return () => {
       document.title = originalTitle
       Object.entries(originals).forEach(([property, content]) => {
-        if (content) {
-          const el = document.querySelector(`meta[property="${property}"]`) as HTMLMetaElement
-          if (el) el.content = content
-        }
+        const el = document.querySelector(`meta[property="${property}"]`) as HTMLMetaElement
+        if (!el) return
+        if (content) el.content = content
+        else el.remove()
       })
     }
   }, [title, description, image, url])

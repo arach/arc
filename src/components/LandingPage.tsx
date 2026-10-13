@@ -37,6 +37,36 @@ const archDiagram: ArcDiagramData = {
     publish: { color: 'sky',     strokeWidth: 2, label: 'publish' },
     export:  { color: 'emerald', strokeWidth: 2, label: 'export' },
   },
+  // Guided views turn the plate into a three-chapter walkthrough — the same
+  // `views` feature the docs describe, dogfooded on the landing itself.
+  views: [
+    {
+      id: 'overview',
+      title: 'Overview',
+      nodes: ['editor', 'templates', 'model', 'exporters', 'docs'],
+      caption: 'The whole pipeline on one plate.',
+    },
+    {
+      id: 'authoring',
+      title: 'Authoring',
+      nodes: ['editor', 'templates', 'model'],
+      connectors: [
+        { from: 'editor', to: 'model' },
+        { from: 'templates', to: 'model' },
+      ],
+      caption: 'The canvas and its themes feed one typed model.',
+    },
+    {
+      id: 'publishing',
+      title: 'Publishing',
+      nodes: ['model', 'docs', 'exporters'],
+      connectors: [
+        { from: 'model', to: 'docs' },
+        { from: 'model', to: 'exporters' },
+      ],
+      caption: 'The same model publishes to docs and static exports.',
+    },
+  ],
 }
 
 const features = [
@@ -51,6 +81,11 @@ const docs = [
   { n: 'DOC.02', h: 'Get up and running', p: 'Install, import, render your first diagram.', to: '/docs/quickstart' },
   { n: 'DOC.03', h: 'Data structure reference', p: 'Nodes, connectors, layout, and theming.', to: '/docs/diagram-format' },
   { n: 'DOC.04', h: 'Color palettes', p: 'default · warm · cool · mono, light & dark.', to: '/docs/themes' },
+  { n: 'GUIDE.01', h: 'Guided views', p: 'Ordered chapters and deep-linked walkthroughs.', to: '/docs/views' },
+  { n: 'GUIDE.02', h: 'Diagram diffs', p: 'Added, removed, moved, changed — rendered.', to: '/docs/diff' },
+  { n: 'EXP.01', h: 'Connection pool explainer', p: 'A live model of borrow, wait, reuse.', to: '/examples/connection-pool' },
+  { n: 'EXP.02', h: 'Player showcase', p: 'Every renderer option, live on the canvas.', to: '/showcase' },
+  { n: 'GUIDE.03', h: 'Field guide', p: 'How the architecture-diagram tools compare.', to: '/architecture-diagram-software' },
   { n: 'AGENT.01', h: 'MCP server', p: 'Give agents tools to validate, lay out, and render.', to: '/mcp' },
   { n: 'AGENT.02', h: 'Agent skills', p: 'Reusable diagram authoring and repair playbooks.', to: '/skills' },
 ]
@@ -175,6 +210,7 @@ export default function LandingPage({ onLaunchEditor }: LandingPageProps) {
                 maxFitZoom={1}
                 interactive={false}
                 hoverEffects={false}
+                showViews
                 label="arc.arch.001"
               />
             </div>
@@ -185,7 +221,7 @@ export default function LandingPage({ onLaunchEditor }: LandingPageProps) {
         <section id="isometric" className="tl-section">
           <div className="tl-pipeline-head">
             <div>
-              <div className="tl-tag">// 02b — ISOMETRIC VIEWS</div>
+              <div className="tl-tag">// 03 — ISOMETRIC VIEWS</div>
               <h2 className="tl-h2">The same model, on the drafting table.</h2>
               <p className="tl-section-p" style={{ marginTop: 16 }}>
                 One typed config in isometric view — toggle the ink between sepia
@@ -201,7 +237,7 @@ export default function LandingPage({ onLaunchEditor }: LandingPageProps) {
         <section id="sequence" className="tl-section tl-sequence-section">
           <div className="tl-sequence-head">
             <div>
-              <div className="tl-tag">// 03 — NATIVE MERMAID</div>
+              <div className="tl-tag">// 04 — NATIVE MERMAID</div>
               <h2 className="tl-h2">Interaction, rendered in sequence.</h2>
               <p className="tl-section-p">
                 Keep Mermaid as the reviewable source while Arc owns the typed interaction model,
@@ -219,7 +255,7 @@ export default function LandingPage({ onLaunchEditor }: LandingPageProps) {
 
         {/* DOCS */}
         <section id="docs" className="tl-section">
-          <div className="tl-tag">// 04 — DOCUMENTATION</div>
+          <div className="tl-tag">// 05 — DOCUMENTATION</div>
           <h2 className="tl-h2" style={{ marginBottom: 28 }}>Start reading.</h2>
           <div className="tl-doc-grid">
             {docs.map((d) => (
@@ -236,7 +272,7 @@ export default function LandingPage({ onLaunchEditor }: LandingPageProps) {
         <section className="tl-cta">
           <div className="tl-cta-card">
             <div>
-              <div className="tl-eyebrow" style={{ marginBottom: 16 }}>// 05 — GET STARTED</div>
+              <div className="tl-eyebrow" style={{ marginBottom: 16 }}>// 06 — GET STARTED</div>
               <h2 className="tl-h2" style={{ fontSize: 34, marginBottom: 14 }}>Ready to share the system story?</h2>
               <p className="tl-section-p" style={{ maxWidth: '34em', marginBottom: 28 }}>
                 Open the editor, design a diagram, and export it to the docs. Arc keeps diagrams living

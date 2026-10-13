@@ -12,7 +12,7 @@ import PlayerShowcase from './components/PlayerShowcase'
 import NativeMermaidSequencesPost from './components/blog/NativeMermaidSequencesPost'
 import ConnectionPoolExplainer from './components/explainers/ConnectionPoolExplainer'
 import architectureDiagram from './components/diagrams/architecture.diagram'
-import { getTheme, type ThemeId } from './utils/themes'
+import { getTheme, THEMES, type ThemeId } from './utils/themes'
 import { GoogleAnalytics } from './components/GoogleAnalytics'
 import { useMeta } from './hooks/useMeta'
 import { generateSessionId, deriveSessionId, saveDiagramSession, loadDiagramSession } from './utils/sessionStorage'
@@ -131,23 +131,6 @@ function resolveEditorSession(urlSessionId?: string) {
       ? deriveSessionId(hashPayload.sourceId)
       : generateSessionId()
     const mode = hashPayload.mode || 'light'
-
-    // Persist immediately so refresh works
-    saveDiagramSession(id, {
-      diagram: hashPayload.diagram,
-      originalDiagram: hashPayload.originalDiagram,
-      themeId: hashPayload.theme || null,
-      colorMode: mode,
-      diagramMeta: {
-        themeId: hashPayload.theme,
-        colorMode: mode,
-        viewport: hashPayload.viewport,
-        sourceId: hashPayload.sourceId,
-        isoStyle: hashPayload.isoStyle,
-        viewMode: hashPayload.viewMode,
-      },
-    })
-
     const diagramMeta = {
       themeId: hashPayload.theme,
       colorMode: mode,
@@ -156,6 +139,16 @@ function resolveEditorSession(urlSessionId?: string) {
       isoStyle: hashPayload.isoStyle,
       viewMode: hashPayload.viewMode,
     }
+
+    // Persist immediately so refresh works
+    saveDiagramSession(id, {
+      diagram: hashPayload.diagram,
+      originalDiagram: hashPayload.originalDiagram,
+      themeId: hashPayload.theme || null,
+      colorMode: mode,
+      diagramMeta,
+    })
+
     return { sessionId: id, initialData: hashPayload.diagram, originalDiagram: hashPayload.originalDiagram, themeId: hashPayload.theme || null, colorMode: mode, diagramMeta, needsRedirect: true }
   }
 
@@ -181,8 +174,9 @@ function EditorPage() {
   // Redirect to clean session URL if needed (hash import or fresh editor)
   useEffect(() => {
     if (resolved.needsRedirect) {
-      // Use window.history directly to avoid React Router unmount/remount
-      window.history.replaceState(null, '', `/editor/${resolved.sessionId}`)
+      // Use window.history directly to avoid React Router unmount/remount.
+      // BASE_URL keeps the mount path when the app is served under a base (e.g. /arc/).
+      window.history.replaceState(null, '', `${import.meta.env.BASE_URL}editor/${resolved.sessionId}`)
     }
   }, [resolved.needsRedirect, resolved.sessionId])
 
@@ -224,8 +218,13 @@ function Dead({ title, detail, actions }: { title: string; detail: string; actio
   )
 }
 
-function NotFoundPage() {
+/** Static pages render light-only — strip the editor's persisted dark mode. */
+function useLightMode() {
   useEffect(() => { document.documentElement.classList.remove('dark') }, [])
+}
+
+function NotFoundPage() {
+  useLightMode()
   useMeta({ title: 'Arc | Page not found', description: 'That URL is not routed.' })
   return (
     <Dead
@@ -293,6 +292,7 @@ function PlayerPage() {
     if (!diagramPath) return
     const sessionId = deriveSessionId(diagramPath)
     const interval = setInterval(() => {
+      if (document.hidden) return
       const current = loadDiagramSession(sessionId)
       if (current) {
         setSession(prev => {
@@ -307,7 +307,8 @@ function PlayerPage() {
 
   // URL params override session values
   const colorMode = urlOverrides.mode || session?.colorMode || 'dark'
-  const themeId = urlOverrides.theme || session?.themeId
+  const rawThemeId = urlOverrides.theme || session?.themeId
+  const themeId = rawThemeId && rawThemeId in THEMES ? (rawThemeId as ThemeId) : undefined
   const viewport = urlOverrides.viewport || session?.diagramMeta?.viewport
   const locale = urlOverrides.locale || session?.diagramMeta?.locale
 
@@ -350,7 +351,7 @@ function PlayerPage() {
         <ArcDiagram
           data={playerData}
           mode={colorMode}
-          theme={themeId as any}
+          theme={themeId}
           interactive={urlOverrides.chrome}
           defaultZoom="fit"
           showArcToggle={urlOverrides.chrome}
@@ -370,9 +371,7 @@ function LandingPageWrapper() {
   const navigate = useNavigate()
 
   // Ensure dark mode is removed on landing page
-  useEffect(() => {
-    document.documentElement.classList.remove('dark')
-  }, [])
+  useLightMode()
 
   return <LandingPage onLaunchEditor={() => navigate('/editor')} />
 }
@@ -381,9 +380,7 @@ function DocsWrapper() {
   const { page } = useParams<{ page?: string }>()
 
   // Ensure dark mode is removed on docs
-  useEffect(() => {
-    document.documentElement.classList.remove('dark')
-  }, [])
+  useLightMode()
 
   return <ArcDocs pageId={page || 'index'} />
 }
@@ -407,7 +404,7 @@ const FRAMES: { id: 'hairline' | 'inset' | 'brackets' | 'ticks' | 'cropmarks'; l
 ]
 
 function InspirationPage() {
-  useEffect(() => { document.documentElement.classList.remove('dark') }, [])
+  useLightMode()
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a0c', padding: '40px 24px', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
       <div style={{ maxWidth: 1000, margin: '0 auto' }}>
