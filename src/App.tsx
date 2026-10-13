@@ -1,22 +1,25 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import DiagramEditor from './components/editor/DiagramEditor'
 import LandingPage from './components/LandingPage'
-import ArcDocs from './components/docs/ArcDocs'
-import AgentSharePage from './components/AgentSharePage'
-import SoftwareListPage from './components/SoftwareListPage'
 import ArcDiagram from './components/ArcDiagram'
-import IsometricDemo from './components/IsometricDemo'
-import IsometricExamples from './components/IsometricExamples'
-import PlayerShowcase from './components/PlayerShowcase'
-import NativeMermaidSequencesPost from './components/blog/NativeMermaidSequencesPost'
-import ConnectionPoolExplainer from './components/explainers/ConnectionPoolExplainer'
 import architectureDiagram from './components/diagrams/architecture.diagram'
 import { getTheme, THEMES, type ThemeId } from './utils/themes'
 import { GoogleAnalytics } from './components/GoogleAnalytics'
 import { useMeta } from './hooks/useMeta'
 import { generateSessionId, deriveSessionId, saveDiagramSession, loadDiagramSession } from './utils/sessionStorage'
 import './landing.css'
+
+// Heavy surfaces load on demand — the landing shouldn't ship the editor,
+// CodeMirror, Dewey, or three.js to someone who never leaves the front page.
+const DiagramEditor = lazy(() => import('./components/editor/DiagramEditor'))
+const ArcDocs = lazy(() => import('./components/docs/ArcDocs'))
+const AgentSharePage = lazy(() => import('./components/AgentSharePage'))
+const SoftwareListPage = lazy(() => import('./components/SoftwareListPage'))
+const IsometricDemo = lazy(() => import('./components/IsometricDemo'))
+const IsometricExamples = lazy(() => import('./components/IsometricExamples'))
+const PlayerShowcase = lazy(() => import('./components/PlayerShowcase'))
+const NativeMermaidSequencesPost = lazy(() => import('./components/blog/NativeMermaidSequencesPost'))
+const ConnectionPoolExplainer = lazy(() => import('./components/explainers/ConnectionPoolExplainer'))
 
 interface HashPayload {
   diagram: any
@@ -449,6 +452,7 @@ function App() {
   return (
     <BrowserRouter basename={import.meta.env.BASE_URL}>
       <GoogleAnalytics />
+      <Suspense fallback={<div className="min-h-screen" />}>
       <Routes>
         <Route path="/" element={<LandingPageWrapper />} />
         <Route path="/editor" element={<EditorPage />} />
@@ -467,6 +471,7 @@ function App() {
         <Route path="/inspiration" element={<InspirationPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
+      </Suspense>
     </BrowserRouter>
   )
 }

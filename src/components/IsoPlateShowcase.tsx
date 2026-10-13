@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Check, Code2, Copy, Play } from 'lucide-react'
-import { ArcDiagram, type ArcDiagramData } from '@arach/arc'
+import ArcDiagram, { type ArcDiagramData } from './ArcDiagram'
 
 type IsoPlateId = 'blueprint' | 'cyanotype'
 
