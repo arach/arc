@@ -48,5 +48,5 @@ Arc publishes three npm packages:
 
 - **[Quickstart](/docs/quickstart)** - Get up and running in 5 minutes
 - **[Diagram Format](/docs/diagram-format)** - Learn the data structure
-- **[Templates](/docs/templates)** - Explore structural presets
+- **[Examples](/docs/examples)** - Real-world diagram examples
 - **[Themes](/docs/themes)** - Customize colors and styles

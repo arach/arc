@@ -1,11 +1,15 @@
+import { lazy, Suspense } from 'react'
 import { Link } from 'react-router-dom'
-import { ArcDiagram, type ArcDiagramData } from '@arach/arc'
+import ArcDiagram, { type ArcDiagramData } from './ArcDiagram'
 import { version } from '../../package.json'
 import { useMeta } from '../hooks/useMeta'
 import ArcMark from './ArcMark'
-import IsoPlateShowcase from './IsoPlateShowcase'
-import SequenceEngineShowcase from './SequenceEngineShowcase'
 import '../landing-technical.css'
+
+// Below-the-fold showcases load on demand — the mermaid engine and the second
+// ArcDiagram mount aren't worth blocking first paint on.
+const IsoPlateShowcase = lazy(() => import('./IsoPlateShowcase'))
+const SequenceEngineShowcase = lazy(() => import('./SequenceEngineShowcase'))
 
 // The pipeline diagram rendered in section 02 — the real ArcDiagram component.
 const archDiagram: ArcDiagramData = {
@@ -37,7 +41,49 @@ const archDiagram: ArcDiagramData = {
     publish: { color: 'sky',     strokeWidth: 2, label: 'publish' },
     export:  { color: 'emerald', strokeWidth: 2, label: 'export' },
   },
+  // Packet flows keep the plate in motion — the same `flows` feature used by
+  // animated exports, looping indefinitely on the landing.
+  flows: [
+    { id: 'author',  legs: [{ from: 'editor',    to: 'model' }],     marker: 'packet', color: 'blue',    duration: 3.2, repeat: 'indefinite' },
+    { id: 'style',   legs: [{ from: 'templates', to: 'model' }],     marker: 'packet', color: 'amber',   duration: 3.2, delay: 1.1, repeat: 'indefinite' },
+    { id: 'publish', legs: [{ from: 'model',     to: 'docs' }],      marker: 'packet', color: 'sky',     duration: 3.2, delay: 2.0, repeat: 'indefinite' },
+    { id: 'export',  legs: [{ from: 'model',     to: 'exporters' }], marker: 'packet', color: 'emerald', duration: 3.2, delay: 2.7, repeat: 'indefinite' },
+  ],
+  // Guided views turn the plate into a three-chapter walkthrough — the same
+  // `views` feature the docs describe, dogfooded on the landing itself.
+  views: [
+    {
+      id: 'overview',
+      title: 'Overview',
+      nodes: ['editor', 'templates', 'model', 'exporters', 'docs'],
+      caption: 'The whole pipeline on one plate.',
+    },
+    {
+      id: 'authoring',
+      title: 'Authoring',
+      nodes: ['editor', 'templates', 'model'],
+      connectors: [
+        { from: 'editor', to: 'model' },
+        { from: 'templates', to: 'model' },
+      ],
+      caption: 'The canvas and its themes feed one typed model.',
+    },
+    {
+      id: 'publishing',
+      title: 'Publishing',
+      nodes: ['model', 'docs', 'exporters'],
+      connectors: [
+        { from: 'model', to: 'docs' },
+        { from: 'model', to: 'exporters' },
+      ],
+      caption: 'The same model publishes to docs and static exports.',
+    },
+  ],
 }
+
+// The pipeline plate ships to the editor verbatim through the #data= handoff
+// the editor already parses — 'edit this diagram' is one link, not an export.
+const editorHandoff = `/editor#data=${btoa(JSON.stringify({ ...archDiagram, _theme: 'cool', _mode: 'light' }))}`
 
 const features = [
   { n: '01', h: 'Design with confidence', p: 'A real canvas for nodes, connections, groups, and images.' },
@@ -51,8 +97,19 @@ const docs = [
   { n: 'DOC.02', h: 'Get up and running', p: 'Install, import, render your first diagram.', to: '/docs/quickstart' },
   { n: 'DOC.03', h: 'Data structure reference', p: 'Nodes, connectors, layout, and theming.', to: '/docs/diagram-format' },
   { n: 'DOC.04', h: 'Color palettes', p: 'default · warm · cool · mono, light & dark.', to: '/docs/themes' },
+  { n: 'GUIDE.01', h: 'Guided views', p: 'Ordered chapters and deep-linked walkthroughs.', to: '/docs/views' },
+  { n: 'GUIDE.02', h: 'Diagram diffs', p: 'Added, removed, moved, changed — rendered.', to: '/docs/diff' },
+  { n: 'EXP.01', h: 'Connection pool explainer', p: 'A live model of borrow, wait, reuse.', to: '/examples/connection-pool' },
+  { n: 'EXP.02', h: 'Player showcase', p: 'Every renderer option, live on the canvas.', to: '/showcase' },
+  { n: 'GUIDE.03', h: 'Field guide', p: 'How the architecture-diagram tools compare.', to: '/architecture-diagram-software' },
   { n: 'AGENT.01', h: 'MCP server', p: 'Give agents tools to validate, lay out, and render.', to: '/mcp' },
   { n: 'AGENT.02', h: 'Agent skills', p: 'Reusable diagram authoring and repair playbooks.', to: '/skills' },
+]
+
+const loopBeats = [
+  { n: 'NUDGE', h: 'Updated in the loop', p: 'A changed file claims a diagram — the agent touches the *.arc.json in the same commit it edits the code.' },
+  { n: 'CHECK', h: 'Verified mechanically', p: 'arc check returns coded diagnostics with supportedFixes — an instruction list to converge on, not output to parse.' },
+  { n: 'DIFF', h: 'Reviewed as a delta', p: 'arc diff renders added, removed, moved, changed next to the code diff — drift becomes a review artifact.' },
 ]
 
 type LandingPageProps = { onLaunchEditor: () => void }
@@ -175,9 +232,14 @@ export default function LandingPage({ onLaunchEditor }: LandingPageProps) {
                 maxFitZoom={1}
                 interactive={false}
                 hoverEffects={false}
+                showViews
                 label="arc.arch.001"
               />
             </div>
+          </div>
+          <div className="tl-sequence-links">
+            <Link to={editorHandoff}>Edit this diagram in the editor →</Link>
+            <Link to="/docs/views">How the chapter rail works →</Link>
           </div>
         </section>
 
@@ -185,7 +247,7 @@ export default function LandingPage({ onLaunchEditor }: LandingPageProps) {
         <section id="isometric" className="tl-section">
           <div className="tl-pipeline-head">
             <div>
-              <div className="tl-tag">// 02b — ISOMETRIC VIEWS</div>
+              <div className="tl-tag">// 03 — ISOMETRIC VIEWS</div>
               <h2 className="tl-h2">The same model, on the drafting table.</h2>
               <p className="tl-section-p" style={{ marginTop: 16 }}>
                 One typed config in isometric view — toggle the ink between sepia
@@ -194,14 +256,16 @@ export default function LandingPage({ onLaunchEditor }: LandingPageProps) {
             </div>
             <div className="tl-pipeline-id">ARC.ARCH.001<br />viewMode: isometric</div>
           </div>
-          <IsoPlateShowcase data={archDiagram} />
+          <Suspense fallback={<div style={{ minHeight: 320 }} />}>
+            <IsoPlateShowcase data={archDiagram} />
+          </Suspense>
         </section>
 
         {/* NATIVE MERMAID SEQUENCE */}
         <section id="sequence" className="tl-section tl-sequence-section">
           <div className="tl-sequence-head">
             <div>
-              <div className="tl-tag">// 03 — NATIVE MERMAID</div>
+              <div className="tl-tag">// 04 — NATIVE MERMAID</div>
               <h2 className="tl-h2">Interaction, rendered in sequence.</h2>
               <p className="tl-section-p">
                 Keep Mermaid as the reviewable source while Arc owns the typed interaction model,
@@ -210,16 +274,47 @@ export default function LandingPage({ onLaunchEditor }: LandingPageProps) {
             </div>
             <div className="tl-pipeline-id">MERMAID.SEQUENCE.001<br />source → model → player</div>
           </div>
-          <SequenceEngineShowcase showSource />
+          <Suspense fallback={<div style={{ minHeight: 320 }} />}>
+            <SequenceEngineShowcase showSource />
+          </Suspense>
           <div className="tl-sequence-links">
             <Link to="/blog/native-mermaid-sequences">Read the build note →</Link>
             <Link to="/docs/mermaid-sequences">Open the implementation guide →</Link>
           </div>
         </section>
 
+        {/* AGENTIC LOOP */}
+        <section id="agentic" className="tl-section">
+          <div className="tl-pipeline-head">
+            <div>
+              <div className="tl-tag">// 05 — THE AGENTIC LOOP</div>
+              <h2 className="tl-h2">Diagrams maintained by the agents that change the code.</h2>
+              <p className="tl-section-p" style={{ marginTop: 16, maxWidth: '42em' }}>
+                The author is a model now. Typed JSON, coded diagnostics, and structural
+                diffs mean the agent that edits the system updates the picture in the
+                same commit — and review can check that it did.
+              </p>
+            </div>
+            <div className="tl-pipeline-id">AGENT.LOOP.001<br />edit → check → diff → review</div>
+          </div>
+          <div className="tl-feature-grid">
+            {loopBeats.map((f) => (
+              <div className="tl-feature" key={f.n}>
+                <div className="tl-feature-n">{f.n}</div>
+                <div className="tl-feature-h">{f.h}</div>
+                <div className="tl-feature-p">{f.p}</div>
+              </div>
+            ))}
+          </div>
+          <div className="tl-sequence-links">
+            <Link to="/docs/agentic-loop">Read the agentic loop →</Link>
+            <Link to="/mcp">MCP tools for agents →</Link>
+          </div>
+        </section>
+
         {/* DOCS */}
         <section id="docs" className="tl-section">
-          <div className="tl-tag">// 04 — DOCUMENTATION</div>
+          <div className="tl-tag">// 06 — DOCUMENTATION</div>
           <h2 className="tl-h2" style={{ marginBottom: 28 }}>Start reading.</h2>
           <div className="tl-doc-grid">
             {docs.map((d) => (
@@ -236,7 +331,7 @@ export default function LandingPage({ onLaunchEditor }: LandingPageProps) {
         <section className="tl-cta">
           <div className="tl-cta-card">
             <div>
-              <div className="tl-eyebrow" style={{ marginBottom: 16 }}>// 05 — GET STARTED</div>
+              <div className="tl-eyebrow" style={{ marginBottom: 16 }}>// 07 — GET STARTED</div>
               <h2 className="tl-h2" style={{ fontSize: 34, marginBottom: 14 }}>Ready to share the system story?</h2>
               <p className="tl-section-p" style={{ maxWidth: '34em', marginBottom: 28 }}>
                 Open the editor, design a diagram, and export it to the docs. Arc keeps diagrams living

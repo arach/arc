@@ -539,6 +539,12 @@ import agentsMd from '../../../docs/AGENTS.md?raw'
 import themesMd from '../../../docs/themes.md?raw'
 import exportsMd from '../../../docs/exports.md?raw'
 import mermaidSequencesMd from '../../../docs/mermaid-sequences.md?raw'
+import mermaidImportMd from '../../../docs/mermaid-import.md?raw'
+import viewsMd from '../../../docs/views.md?raw'
+import focusStoriesMd from '../../../docs/focus-stories.md?raw'
+import groupLayoutMd from '../../../docs/group-layout.md?raw'
+import diffMd from '../../../docs/diff.md?raw'
+import agenticLoopMd from '../../../docs/agentic-loop.md?raw'
 
 // Import agent-optimized markdown files
 import overviewAgentMd from '../../../docs/agent/overview.agent.md?raw'
@@ -574,6 +580,7 @@ const pageTree: PageNode[] = [
     children: [
       { type: 'page', id: 'overview', name: 'Overview', icon: 'Lightbulb', description: 'Introduction to Arc' },
       { type: 'page', id: 'quickstart', name: 'Quickstart', icon: 'ChevronRight', description: 'Get up and running' },
+      { type: 'page', id: 'examples', name: 'Examples', icon: 'Layers', description: 'Real-world diagram examples' },
     ],
   },
   {
@@ -586,16 +593,27 @@ const pageTree: PageNode[] = [
   },
   {
     type: 'folder',
+    name: 'Guides',
+    children: [
+      { type: 'page', id: 'views', name: 'Guided Views', icon: 'Presentation', description: 'Ordered chapters and deep links' },
+      { type: 'page', id: 'focus-stories', name: 'Focus Stories', icon: 'Focus', description: 'Explain a path on selection' },
+      { type: 'page', id: 'group-layout', name: 'Group Layout', icon: 'LayoutGrid', description: 'Align nodes inside boundaries' },
+      { type: 'page', id: 'diff', name: 'Diagram Diffs', icon: 'GitCompare', description: 'Added, removed, moved, changed' },
+      { type: 'page', id: 'agentic-loop', name: 'The Agentic Loop', icon: 'Repeat', description: 'Diagrams maintained by agents' },
+    ],
+  },
+  {
+    type: 'folder',
     name: 'Rendering Engines',
     children: [
       { type: 'page', id: 'mermaid-sequences', name: 'Mermaid Sequences', icon: 'GitBranch', description: 'Native sequence renderer & player' },
+      { type: 'page', id: 'mermaid-import', name: 'Mermaid Import', icon: 'Import', description: 'Project Mermaid into Arc data' },
     ],
   },
   {
     type: 'folder',
     name: 'Styling',
     children: [
-      { type: 'page', id: 'templates', name: 'Templates', icon: 'Layers', description: 'Structural styling' },
       { type: 'page', id: 'themes', name: 'Themes', icon: 'Palette', description: 'Color palettes' },
     ],
   },
@@ -961,7 +979,7 @@ Provide:
     description: 'How the Arc editor is built.',
     badge: 'Core Concepts',
   },
-  templates: {
+  examples: {
     content: stripFrontmatter(examplesMd),
     agentContent: stripFrontmatter(apiAgentMd),
     prompt: {
@@ -1029,9 +1047,45 @@ Return the complete config with:
 3. Layout fitting canvas dimensions
 4. Preserved nodeData and connectors (unless specifically changing them)`,
     },
-    title: 'Templates',
-    description: 'Structural presets that define box shapes, line styles, and layout behaviors.',
-    badge: 'Styling',
+    title: 'Examples',
+    description: 'Real-world diagram examples.',
+    badge: 'Getting Started',
+  },
+  views: {
+    content: stripFrontmatter(viewsMd),
+    title: 'Guided views',
+    description: 'Turn a diagram into an ordered walkthrough with a chapter rail and deep links.',
+    badge: 'Guides',
+  },
+  'focus-stories': {
+    content: stripFrontmatter(focusStoriesMd),
+    title: 'Focus stories',
+    description: 'Explain an architecture path when a reader explores a node.',
+    badge: 'Guides',
+  },
+  'group-layout': {
+    content: stripFrontmatter(groupLayoutMd),
+    title: 'Declarative group layout',
+    description: 'Keep architecture nodes aligned inside explicit system boundaries.',
+    badge: 'Guides',
+  },
+  diff: {
+    content: stripFrontmatter(diffMd),
+    title: 'Diagram diffs',
+    description: 'Diff two diagrams and render the change set — added, removed, moved, changed.',
+    badge: 'Guides',
+  },
+  'agentic-loop': {
+    content: stripFrontmatter(agenticLoopMd),
+    title: 'The agentic loop',
+    description: 'Diagrams maintained by the same agents that change the code.',
+    badge: 'Guides',
+  },
+  'mermaid-import': {
+    content: stripFrontmatter(mermaidImportMd),
+    title: 'Mermaid import',
+    description: 'Project Mermaid flowcharts and state diagrams into positioned Arc data.',
+    badge: 'Rendering Engines',
   },
   themes: {
     content: stripFrontmatter(themesMd),
