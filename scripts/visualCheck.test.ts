@@ -154,7 +154,7 @@ describe('runVisualCheck', () => {
     const dir = makeDir()
     writeCase(dir, { cases: [{ diagram: 'cases/flow.json' }] })
     await runVisualCheck(dir, { update: true })
-    const check = await runVisualCheck(dir, { png: true, env: { ARC_CHROME: '/nonexistent', CHROME_PATH: '', PUPPETEER_EXECUTABLE_PATH: '', PATH: '' } })
+    const check = await runVisualCheck(dir, { png: true, env: { ARC_CHROME: 'off' } })
     expect(check.ok).toBe(true)
     expect(check.results[0].png?.status).toBe('skipped')
   })

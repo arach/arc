@@ -1,4 +1,7 @@
 import { describe, expect, test } from 'bun:test'
+import { createElement } from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
+import ArcDiagram from '../src/components/ArcDiagram'
 import { writeFileSync } from 'node:fs'
 import type { ArcDiagramData } from '../src/types/diagram.ts'
 import { flowAnimationEnd, flowPositionAt, resolveDiagramFlow } from '../src/utils/flowAnimation.ts'
@@ -49,6 +52,18 @@ const diagram: ArcDiagramData = {
 }
 
 describe('flow route resolution', () => {
+  test('the React player draws the exact connector path used by sampled packets', () => {
+    for (const curve of [undefined, 'natural', 'step', 'direct', 'up', 'down'] as const) {
+      const fixture = structuredClone(diagram)
+      fixture.nodes.gateway = { x: 40, y: 260, size: 'm' }
+      fixture.connectors = [{ ...fixture.connectors[0], fromAnchor: 'left', toAnchor: 'left', curve, curveDepth: 25 }]
+      fixture.flows![0].legs = [{ id: 'c1' }]
+      const resolved = resolveDiagramFlow(fixture, fixture.flows![0])!
+      const markup = renderToStaticMarkup(createElement(ArcDiagram, { data: { ...fixture, flows: [] }, interactive: false }))
+      expect(markup).toContain(`d="${resolved.routePath}"`)
+      if (curve === 'natural') expect(flowPositionAt(resolved, 1)?.x).toBeLessThan(40)
+    }
+  })
   test('resolves connector ids into one route with deterministic timing', () => {
     const flow = resolveDiagramFlow(diagram, diagram.flows![0])!
     expect(flow.legs.map(leg => leg.connectorId)).toEqual(['c1', 'c2'])
