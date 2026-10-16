@@ -19,8 +19,7 @@ import {
   connectorArrowAt,
   connectorArrowSize,
   connectorLineStyle,
-  elbowPolyline,
-  roundedPolylineD,
+  connectorGeometry,
 } from '../utils/diagramHelpers'
 import { getIsoStyle, type IsoStyleId } from '../utils/isoStyles'
 import { isoContentBounds, isoPlateBounds, buildNodeIndex } from '../utils/isoBlueprint'
@@ -747,6 +746,7 @@ export function Node({ node, data, mode, themeColors, brand, hovered, dimmed, li
         </div>
         <div className="min-w-0">
           <div
+            data-arc-node-title
             className={`font-medium ${themeColors.text.primary} ${isLarge ? 'text-xs' : isSmall ? 'text-[9px]' : 'text-[11px]'}`}
             style={brand?.fontFamily ? { fontFamily: brand.fontFamily, letterSpacing: '-0.015em' } : undefined}
           >
@@ -754,6 +754,7 @@ export function Node({ node, data, mode, themeColors, brand, hovered, dimmed, li
           </div>
           {data.subtitle && (
             <div
+              data-arc-node-subtitle
               className={`${themeColors.text.muted} ${isSmall ? 'text-[8px]' : 'text-[9px]'}`}
               style={{
                 fontFamily: brand?.upperLabels ? brand.monoFamily : (brand?.fontFamily || undefined),
@@ -769,6 +770,7 @@ export function Node({ node, data, mode, themeColors, brand, hovered, dimmed, li
       </div>
       {data.description && !isSmall && (
         <div
+          data-arc-node-description
           className={`mt-1 ${themeColors.text.secondary} ${isLarge ? 'text-[9px]' : 'text-[9px]'}`}
           style={{ opacity: 0.65, letterSpacing: '0.01em' }}
         >
@@ -874,43 +876,13 @@ function getAnchorPoint(node: NodePosition, position: AnchorPosition): { x: numb
   return anchorOnNode({ x: node.x, y: node.y, width: size.width, height: size.height }, position)
 }
 
-// Calculate angle between two points for arrow rotation
-function getAngle(from: { x: number; y: number }, to: { x: number; y: number }): number {
-  return Math.atan2(to.y - from.y, to.x - from.x) * (180 / Math.PI)
-}
-
-// Path geometry between resolved anchor points — shared by ConnectorPath and
-// the delta overlay's ghost/halo strokes. Tangent angles at each end orient
-// the inline arrowheads on curves and elbows.
+// Lines, arrowheads, exports and time-sampled packets share the same route.
 function connectorPathGeometry(
   connector: Connector,
   from: { x: number; y: number },
   to: { x: number; y: number },
 ): { d: string; startAngle: number; endAngle: number } {
-  if (connector.curve === 'step') {
-    const pts = elbowPolyline(from, to, connector.fromAnchor, connector.toAnchor)
-    return {
-      d: roundedPolylineD(pts),
-      startAngle: getAngle(pts[0], pts[1]),
-      endAngle: getAngle(pts[pts.length - 2], pts[pts.length - 1]),
-    }
-  }
-  if (connector.curve === 'natural') {
-    const dx = to.x - from.x
-    const dy = to.y - from.y
-    const tension = ((connector.curveDepth ?? 50) / 50) * 0.4
-    const cp1x = from.x + dx * tension
-    const cp1y = from.y + dy * 0.1
-    const cp2x = to.x - dx * tension
-    const cp2y = to.y - dy * 0.1
-    return {
-      d: `M ${from.x} ${from.y} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${to.x} ${to.y}`,
-      startAngle: getAngle(from, { x: cp1x, y: cp1y }),
-      endAngle: getAngle({ x: cp2x, y: cp2y }, to),
-    }
-  }
-  const a = getAngle(from, to)
-  return { d: `M ${from.x} ${from.y} L ${to.x} ${to.y}`, startAngle: a, endAngle: a }
+  return connectorGeometry(from, to, connector.fromAnchor, connector.toAnchor, connector.curve, connector.curveDepth ?? 40)
 }
 
 function connectorPathD(connector: Connector, from: { x: number; y: number }, to: { x: number; y: number }): string {
@@ -1883,6 +1855,9 @@ interface ArcDiagramProps {
   defaultZoom?: number | 'fit'
   /** Max zoom when defaultZoom='fit'. E.g., 0.85 caps fit at 85%. Default: 1 */
   maxFitZoom?: number
+  /** Explicit fit inset per edge in CSS pixels. Replaces the legacy content/chrome margins.
+   *  Ensure layout bounds include any connector excursions when using a tight inset. */
+  fitPadding?: number
   /** Custom zoom level steps. Default: [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2] */
   zoomLevels?: number[]
   /** Show the .arc source toggle button. Default: true */
@@ -1964,6 +1939,7 @@ export default function ArcDiagram({
   onNodeHover,
   titleBlock,
   maxFitZoom = 1,
+  fitPadding,
   defaultViewMode = '2d',
   defaultIsoStyle = 'solid',
   delta,
@@ -2054,16 +2030,16 @@ export default function ArcDiagram({
     }
     const bounds = isoContentBounds(nodes, nodeData, isoOriginX, isoOriginY)
     if (!bounds) return null
-    const pad = 60
+    const pad = fitPadding === undefined ? 60 : 0
     return { minX: bounds.minX - pad, minY: bounds.minY - pad, maxX: bounds.maxX + pad, maxY: bounds.maxY + pad }
-  }, [isIso, isoStyle.technical, nodes, nodeData, isoOriginX, isoOriginY, layout])
+  }, [isIso, isoStyle.technical, nodes, nodeData, isoOriginX, isoOriginY, layout, fitPadding])
 
   // 2D drawings are positioned in canvas coordinates and can spill outside the
   // layout rect (negative or oversized node coords). Fit and centre the union
   // of the layout rect and the real content bounds so nothing clips at the
   // edges — the iso path above already does this for the projected drawing.
   const contentBounds = useMemo(() => {
-    const pad = 60
+    const pad = fitPadding === undefined ? 60 : 0
     const content = getContentBounds(nodes, groups)
     return {
       minX: Math.min(0, (content?.minX ?? 0) - pad),
@@ -2071,7 +2047,7 @@ export default function ArcDiagram({
       maxX: Math.max(layout.width, (content?.maxX ?? layout.width) + pad),
       maxY: Math.max(layout.height, (content?.maxY ?? layout.height) + pad),
     }
-  }, [nodes, groups, layout.width, layout.height])
+  }, [nodes, groups, layout.width, layout.height, fitPadding])
 
   // Inject the brand font stylesheet once (only for themes that set a fontImport).
   React.useEffect(() => {
@@ -2095,7 +2071,7 @@ export default function ArcDiagram({
     const containerWidth = container.clientWidth
     const containerHeight = container.clientHeight
     // Add padding for chrome (zoom controls, label)
-    const padding = 40
+    const padding = fitPadding === undefined ? 40 : Math.max(0, fitPadding) * 2
     // Isometric drawings spill outside the 2D layout rect — fit the projected bounds.
     if (isIso && isoBounds) {
       const boundsWidth = isoBounds.maxX - isoBounds.minX
@@ -2108,7 +2084,7 @@ export default function ArcDiagram({
     const fitY = (containerHeight - padding) / (contentBounds.maxY - contentBounds.minY)
     // Use the smaller ratio to fit both dimensions, cap at maxFitZoom
     return Math.min(fitX, fitY, maxFitZoom)
-  }, [isIso, isoBounds, contentBounds, maxFitZoom])
+  }, [isIso, isoBounds, contentBounds, maxFitZoom, fitPadding])
 
   // Determine initial zoom
   const getInitialZoom = useCallback(() => {
@@ -2147,6 +2123,19 @@ export default function ArcDiagram({
       setInitialized(true)
     }
   }, [initialized, getInitialZoom, isIso, isoBounds, contentBounds, centreOnBounds])
+
+  React.useEffect(() => {
+    if (interactive || defaultZoom !== 'fit' || !containerRef.current) return
+    const fit = () => {
+      const nextZoom = calculateFitZoom()
+      setZoom(nextZoom)
+      centreOnBounds(isIso && isoBounds ? isoBounds : contentBounds, nextZoom)
+    }
+    const observer = new ResizeObserver(fit)
+    observer.observe(containerRef.current)
+    fit()
+    return () => observer.disconnect()
+  }, [interactive, defaultZoom, calculateFitZoom, centreOnBounds, isIso, isoBounds, contentBounds])
 
   // Numeric defaultZoom skips the init effect above, so centre the drawing
   // separately (the iso projection spreads around the bottom-centre origin

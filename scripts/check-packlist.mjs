@@ -3,14 +3,19 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 
 const root = process.cwd()
-const pack = JSON.parse(
+const packageJson = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8'))
+const packOutput = JSON.parse(
   execFileSync('npm', ['pack', '--dry-run', '--ignore-scripts', '--json'], {
     cwd: root,
     encoding: 'utf8',
   }),
-)[0]
+)
+// npm 12 keys results by package name; npm 11 and earlier return an array.
+const pack = Array.isArray(packOutput) ? packOutput[0] : packOutput[packageJson.name]
+if (!pack || !Array.isArray(pack.files)) {
+  throw new Error('npm pack returned no file list for ' + packageJson.name)
+}
 const packedFiles = new Set(pack.files.map(({ path: file }) => file))
-const packageJson = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8'))
 const productionDependencies = Object.keys(packageJson.dependencies ?? {})
 
 if (productionDependencies.length > 0) {

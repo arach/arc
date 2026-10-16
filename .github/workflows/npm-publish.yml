@@ -10,6 +10,14 @@ on:
         description: 'Version to publish (e.g., 0.1.0)'
         required: true
         type: string
+      package:
+        description: 'Package scope'
+        required: false
+        type: choice
+        options:
+          - all
+          - arc
+        default: all
       dry_run:
         description: 'Dry run (no actual publish)'
         required: false
@@ -45,9 +53,11 @@ jobs:
         run: bun run build:lib
 
       - name: Build viewer
+        if: github.event_name != 'workflow_dispatch' || inputs.package != 'arc'
         run: bun run --filter '@arach/arc-viewer' build
 
       - name: Build isometric
+        if: github.event_name != 'workflow_dispatch' || inputs.package != 'arc'
         run: |
           bun run build:iso
           mkdir -p packages/iso/dist
@@ -55,6 +65,7 @@ jobs:
           cp dist-iso/*.d.ts packages/iso/dist/ 2>/dev/null || true
 
       - name: Build MCP server
+        if: github.event_name != 'workflow_dispatch' || inputs.package != 'arc'
         run: bun run --filter '@arach/arc-mcp' build
 
       - name: Get version from tag
@@ -107,7 +118,7 @@ jobs:
           fi
 
       - name: Publish @arach/arc-viewer (manual)
-        if: github.event_name == 'workflow_dispatch'
+        if: github.event_name == 'workflow_dispatch' && inputs.package != 'arc'
         working-directory: packages/viewer
         run: |
           npm version ${{ inputs.version }} --no-git-tag-version --allow-same-version --workspaces=false
@@ -119,7 +130,7 @@ jobs:
           fi
 
       - name: Publish @arach/arc-iso (manual)
-        if: github.event_name == 'workflow_dispatch'
+        if: github.event_name == 'workflow_dispatch' && inputs.package != 'arc'
         working-directory: packages/iso
         run: |
           npm version ${{ inputs.version }} --no-git-tag-version --allow-same-version --workspaces=false
@@ -131,7 +142,7 @@ jobs:
           fi
 
       - name: Publish @arach/arc-mcp (manual)
-        if: github.event_name == 'workflow_dispatch'
+        if: github.event_name == 'workflow_dispatch' && inputs.package != 'arc'
         working-directory: packages/mcp
         run: |
           npm version ${{ inputs.version }} --no-git-tag-version --allow-same-version --workspaces=false
