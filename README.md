@@ -1,114 +1,248 @@
 <div align="center">
 
-<img src="https://raw.githubusercontent.com/arach/arc/main/public/arc-mark.svg" alt="Arc" width="52" height="52" />
+<h1><img src="https://raw.githubusercontent.com/arach/arc/main/public/arc-mark.svg" alt="" width="40" height="40" /> Arc</h1>
 
-# Arc
+### Build explanations people can explore.
 
-### Architecture diagrams as code.
-
-Arc turns typed, diffable config into clean, themeable architecture diagrams.
-Design in the visual studio, render with React, or export as **TypeScript, JSON,
-SVG, PNG, GIF, MP4, or crisp ASCII** — with a CLI, generated JSON Schema,
-Mermaid import, and an MCP server so AI agents can author diagrams too. The diagram lives with
-the system it describes.
+**A visual explanation toolkit for software systems.**<br />
+Build interactive maps, playable sequences, and spatial views with a visual
+studio and developer tools. Bring them into your app or documentation.
 
 [![npm version](https://img.shields.io/npm/v/@arach/arc.svg?color=6d5efc&label=%40arach%2Farc)](https://www.npmjs.com/package/@arach/arc)
 [![license](https://img.shields.io/npm/l/@arach/arc.svg?color=41b883)](./LICENSE)
 [![types](https://img.shields.io/npm/types/@arach/arc.svg?color=3b82f6)](./src/types/diagram.ts)
 
-![A microservices architecture rendered by Arc's ArcDiagram component in the Engineering theme](https://raw.githubusercontent.com/arach/arc/main/public/hero.png)
-
-<sub>Not a screenshot of a drawing tool — that's the config in <a href="#example-output">Example Output</a>, rendered by <code>&lt;ArcDiagram /&gt;</code> in the Engineering theme.</sub>
+[Explore Arc](https://arc.jdi.sh/) · [Try a live explainer](https://arc.jdi.sh/examples/connection-pool/) · [Start building](#get-started) · [Documentation](./docs/overview.md)
 
 </div>
 
----
+Trace a request, play an exchange between services, or open up the layers of
+an architecture. Build an onboarding walkthrough, interactive article, or
+design review that lets people explore how the system works. Author on the
+canvas, in code, or with an agent, and keep the source alongside your software.
 
-## Install
+## Turn the map into a walkthrough
+
+Start with services, databases, queues, and the connections between them. Arc
+provides semantic node kinds, icons, groups, relationship styles, and automatic
+layout to give the system a clear structure. Then make that structure explorable.
+
+![An Arc architecture diagram in the light Engineering theme](./public/readme-architecture.png)
+
+- **Focus on the path that matters.** Hover or select a component to reveal its
+  relationships. Author a focus story with a caption and steps to explain a
+  whole request path, boundary, or workflow.
+- **Guide the reader through chapters.** Named views frame the relevant region
+  and highlight its nodes and connections. Readers can step through the story
+  or leave it to explore on their own.
+- **Put requests in motion.** Send packets along multi-step routes, pause at a
+  service, follow the return path, and show trails. Set timing and repeats, or
+  control the exact instant with `flowTime`.
+
+Pan, zoom, fit, minimaps, and legends keep the system navigable. Chapters,
+focus stories, and animated routes are authored data that can be edited and
+reviewed alongside the drawing.
+
+[Guided views](./docs/views.md) · [Focus stories](./docs/focus-stories.md) · [Flow API](./docs/api.md) · [Source for the image](#example-output)
+
+## Play the conversation
+
+Arc's **native Mermaid sequence player** makes an exchange something you can
+follow one message at a time. Actors, lifelines, self-calls, notes, branches,
+and loops retain their place in the story. Play the sequence, step backward or
+forward, focus a participant, or open it fullscreen.
+
+![Arc's native sequence player showing the route from a Scout message to a direct reply or delegated work](./public/readme-sequence.png)
+
+Mermaid text stays the source. Arc owns the typed sequence model, layout,
+SVG rendering, and playback. You can customize theme tokens and replace
+individual visual parts to fit your application. Mermaid.js is not required
+at runtime.
+
+Existing Mermaid flowcharts and state diagrams have a separate import path
+into Arc's architecture format.
+
+[Native sequence guide](./docs/mermaid-sequences.md) · [Supported Mermaid imports](./docs/mermaid-import.md)
+
+## Give the system depth
+
+Use isometric views to make layers, boundaries, and hierarchy visible. Project
+an architecture into spatial blocks, or compose a tiered scene with elevated
+floors, staggered layers, translucent components, and pillars. Hover a layer
+to lift it out of the stack; use node and layer callbacks to connect the view
+to your application.
+
+[![An example agent fleet with readable callouts for its agent, project, and runtime layers](./public/agent-fleet.png)](./public/agent-fleet.png)
+
+Choose shaded solids, hatched blueprint linework, cyanotype plates, or a
+retro-print material with mineral inks and deterministic stipple. The tiered
+renderer has React and static SVG APIs, including a vanilla JavaScript embed.
+
+[Isometric types and options](./src/iso/types.ts) · [Example fleet composition](./scripts/agent-fleet-iso.ts)
+
+## Let readers operate the explanation
+
+Turn up demand in the [connection-pool explainer](https://arc.jdi.sh/examples/connection-pool/).
+All four database connections fill, and requests start waiting. Step through a
+handoff to see which request gets the next connection. Stop arrivals and watch
+the queue drain.
+
+[![The connection-pool explainer with four busy connections, waiting requests, and demand controls](./public/readme-connection-pool.png)](https://arc.jdi.sh/examples/connection-pool/)
+
+The queue, leases, counts, and handoffs come from the same deterministic model.
+This working example combines a custom mechanism view with an Arc diagram
+projection. It shows how to build an explanation that responds to the reader's
+actions and makes cause and effect visible.
+
+[Operate the pool](https://arc.jdi.sh/examples/connection-pool/) · [Read the model](./src/components/explainers/connectionPoolModel.ts) · [See the Arc projection](./src/components/explainers/connectionPoolDiagram.ts)
+
+## Create on the canvas. Refine in code.
+
+The studio puts the drawing and its source side by side. Drag components into
+place, connect their anchors, shape groups, and refine the result in the
+inspector. Edit the JSON and the canvas updates. Move a node and the source
+updates with it.
+
+![The Arc Studio with its canvas and diagram properties](https://raw.githubusercontent.com/arach/arc/main/public/studio.png)
+
+Multi-selection, keyboard shortcuts, undo/redo, templates, image layers,
+custom dimensions, connector routing, and export crops give you control over
+the finished composition. Switch between 2D and isometric editing. Save to a
+file, restore a local browser session, or copy a typed module into your app.
+
+The editor's React components, context, and hooks are available for embedding.
+The player showcase lets you tune a viewer's appearance and controls, then
+copy the matching JSX.
+
+Open the studio from [Arc](https://arc.jdi.sh/), or [run it locally](#development).
+
+## Give the drawing a visual identity
+
+Eleven themes shape typography, node silhouettes, grids, frames, decoration,
+and title blocks as well as color. Choose an engineering plate, a quiet
+workbench, a tactical map, or a mission console. Every theme has light and
+dark modes; individual nodes and relationships can carry their own styling.
+
+<details>
+<summary>See the same architecture in three visual languages</summary>
+
+![Engineering: graph grid, drawing-sheet border, and title block](https://raw.githubusercontent.com/arach/arc/main/public/theme-engineering.png)
+
+![Workbench: dot grid, hairline frame, and soft corners](https://raw.githubusercontent.com/arach/arc/main/public/theme-workbench.png)
+
+![Tactical: crosshair grid, corner brackets, and hard edges](https://raw.githubusercontent.com/arach/arc/main/public/theme-tactical.png)
+
+</details>
+
+The themes are `default`, `warm`, `cool`, `mono`, `engineering`, `workbench`,
+`tactical`, `command`, `spacex`, `claude`, and `codex`. Studio shell skins and
+interface density are configurable independently of the diagram.
+
+[Theme guide](./docs/themes.md)
+
+## Build with agents. Review with people.
+
+Arc gives agents a concrete authoring loop: write the document, arrange it,
+check it, render it, and revise it. Typed data and a closed JSON Schema define
+the format. Coded diagnostics identify problems such as dangling connections,
+overlaps, and invalid routes, with suggested fixes an agent can act on.
+
+Together, the CLI and MCP server provide validation, automatic layout, rendering, diffs,
+and a handoff into the visual studio. A person can inspect the result and
+refine the drawing directly.
+
+Attach repository paths, line ranges, and commits to the nodes they describe.
+Review structural changes on the diagram itself: highlight additions, ghost
+removed elements, and show where components moved.
+
+```tsx
+import { ArcDiagram, diffDiagram } from '@arach/arc'
+
+<ArcDiagram data={head} delta={diffDiagram(base, head)} />
+```
+
+That gives a code review both the changed source and a visual explanation of
+the changed structure.
+
+[Structural diffs](./docs/diff.md) · [Agent guide](./docs/agent/quickstart.agent.md) · [Authoring benchmarks](./benchmarks/README.md)
+
+## Take the explanation where it belongs
+
+| Destination | What you can use |
+| --- | --- |
+| Your product or documentation | Interactive React diagrams, sequence players, and editor components. |
+| A design review | Guided views, source references, and structural diff overlays. |
+| A page, document, or deck | SVG, PNG, or standalone HTML with the rendered drawing. |
+| A demo or announcement | Animated SVG, GIF, or MP4 from authored flow routes. |
+| A terminal or Markdown file | ASCII and Unicode diagrams. |
+| An agent's workspace | CLI, MCP, schema, authoring skill, and machine-readable diagnostics. |
+
+Flow timing is deterministic. Display an exact instant, export it as a still,
+or render a repeatable sequence of frames. The studio also copies source and
+creates URLs carrying diagram data; browser session links reopen work stored
+in that browser.
+
+[Export guide](./docs/exports.md)
+
+## Get started
+
+**Try the experience:** open [Arc](https://arc.jdi.sh/) or
+[operate the connection pool](https://arc.jdi.sh/examples/connection-pool/).
+
+**Build with React:** install the main package in a React 18 or 19 project.
 
 ```bash
 npm install @arach/arc
-# or:  bun add @arach/arc  ·  pnpm add @arach/arc  ·  yarn add @arach/arc
 ```
 
-`react` and `react-dom` are peer dependencies. Arc bundles its icon renderer and
-has no production dependencies of its own.
-
-## Quick Start
-
-Render any diagram config as a polished, interactive component:
+Import the stylesheet once and give the diagram a container with a height.
+This complete example renders a request traveling from an app through an API
+to a database:
 
 ```tsx
-import { ArcDiagram } from '@arach/arc'
-import type { ArcDiagramData } from '@arach/arc'
+import { ArcDiagram, type ArcDiagramData } from '@arach/arc'
+import '@arach/arc/arc.css'
+
+const diagram: ArcDiagramData = {
+  layout: { width: 640, height: 240 },
+  nodes: {
+    app: { x: 40, y: 80, size: 'm' },
+    api: { x: 250, y: 80, size: 'm' },
+    db:  { x: 460, y: 80, size: 'm' },
+  },
+  nodeData: {
+    app: { name: 'Web app', kind: 'frontend' },
+    api: { name: 'API', kind: 'service' },
+    db:  { name: 'Database', kind: 'database' },
+  },
+  connectors: [
+    { id: 'request', from: 'app', to: 'api', fromAnchor: 'right', toAnchor: 'left', style: 'data' },
+    { id: 'query', from: 'api', to: 'db', fromAnchor: 'right', toAnchor: 'left', style: 'data' },
+  ],
+  connectorStyles: {
+    data: { color: 'blue', strokeWidth: 2 },
+  },
+  flows: [
+    { id: 'load', legs: [{ id: 'request' }, { id: 'query' }], duration: 2, marker: 'packet' },
+  ],
+}
 
 export function Architecture() {
   return (
-    <ArcDiagram
-      data={diagram}      // your ArcDiagramData (see below)
-      theme="default"     // eleven themes, each with light & dark
-      mode="dark"         // light · dark
-      defaultZoom="fit"   // auto-fit to the container
-    />
+    <div style={{ height: 360 }}>
+      <ArcDiagram data={diagram} theme="engineering" mode="dark" defaultZoom="fit" />
+    </div>
   )
 }
 ```
 
-You get pan/zoom, hover highlighting, light/dark modes, and eleven color themes
-out of the box.
+Arc bundles its other runtime code and CSS. No Tailwind configuration is
+required. Use `flowTime={1.25}` to inspect a specific instant, or add `views`
+and `showViews` to turn the diagram into a guided walkthrough.
 
-### Key props
+### Start with a Mermaid sequence
 
-| Prop | Type | Notes |
-|------|------|-------|
-| `data` | `ArcDiagramData` | The diagram config (required) — see [Example Output](#example-output). |
-| `theme` | `'default' \| 'warm' \| 'cool' \| 'mono' \| 'engineering' \| 'workbench' \| 'tactical' \| 'command' \| 'spacex' \| 'claude' \| 'codex'` | Palette + drafting grammar (grid, frame, type). |
-| `mode` | `'light' \| 'dark'` | Appearance. |
-| `frame` | `'hairline' \| 'inset' \| 'brackets' \| 'ticks' \| 'cropmarks' \| 'corners' \| 'sheet' \| 'none'` | Override the theme's edge treatment. |
-| `interactive` | `boolean` | Pan/zoom controls. |
-| `defaultZoom` | `number \| 'fit'` | Initial zoom, or `'fit'` to auto-fit (`maxFitZoom` caps it). |
-| `showControls` / `showMinimap` | `boolean` | Zoom controls / minimap for read-only chrome. |
-| `hoverEffects` | `boolean \| { dim, lift, glow, highlightEdges }` | Hover highlighting (granular). |
-| `label` | `string` | Override the bottom-left label. |
-
-## The Studio
-
-Prefer to design visually? Arc ships a full drag-and-drop **studio** — infinite
-canvas, floating toolbar, reusable connector styles, live properties panel, and
-a minimap. Try the [hosted studio](https://hudsonkit.com/arc), or clone the repo and
-open it locally:
-
-```bash
-git clone https://github.com/arach/arc && cd arc
-bun install && bun dev      # → http://localhost:5188/editor
-```
-
-![The Arc Studio — a drag-and-drop editor for architecture diagrams](https://raw.githubusercontent.com/arach/arc/main/public/studio.png)
-
-Design on the canvas, then **Export** to TypeScript, JSON, SVG, PNG, or a
-shareable link — and drop the result straight into `<ArcDiagram />`.
-
-## Features
-
-- **`<ArcDiagram />` player** - Interactive React renderer with pan/zoom, hover highlighting, minimap, and light/dark modes
-- **Eleven themes** - Drafting grammars (grid, frame, type, geometry), each with light & dark palettes
-- **Visual studio** - Drag-and-drop editor with anchors, connector styles, groups, images, and templates
-- **Typed schema** - `ArcDiagramData` TypeScript types plus a generated draft-07 JSON Schema with coded diagnostics
-- **Semantic node kinds** - `frontend`, `database`, `queue`, `gateway`… supply default icon + color
-- **Flow animations** - `flows[]` send directional packets across connectors; SVG animates via SMIL and the CLI/MCP can render deterministic GIF/MP4 artifacts
-- **CLI** - `arc check`, `arc diff`, `arc render`, `arc bench`, `arc schema`, and `arc-ascii`
-- **MCP server** - `@arach/arc-mcp` gives AI agents validate/layout/render/diff tools over stdio
-- **Mermaid** - Native sequence-diagram player and flowchart import via `@arach/arc-viewer`
-- **Isometric** - `ArcDiagramIsometric` for 3D diagrams, plus `@arach/arc-iso` for vanilla JS
-- **ASCII renderer** - The same document as precise box-drawing text for terminals and docs
-- **Exports** - TypeScript, JSON, SVG, PNG, GIF, MP4, ASCII, and shareable links
-- **Zero runtime dependencies** - React is the only peer
-
-## Native Mermaid Sequences
-
-`@arach/arc-viewer` turns canonical Mermaid `sequenceDiagram` source into a
-typed Arc document and a native, interactive React player—without embedding the
-generic Mermaid runtime.
+Install `@arach/arc-viewer` for the native sequence player:
 
 ```bash
 npm install @arach/arc-viewer
@@ -123,52 +257,96 @@ const source = `sequenceDiagram
   App->>API: Load architecture
   API-->>App: Typed diagram`
 
-export function Sequence() {
+export function RequestStory() {
   return <ArcMermaidPlayer source={source} mode="light" />
 }
 ```
 
-Existing Mermaid flowcharts and state diagrams can also be projected into
-`ArcDiagramData`:
+### Connect an agent
 
-```ts
-import { importMermaid } from '@arach/arc-viewer'
+Add the MCP server to a client that supports stdio:
 
-const { diagram, warnings, unsupported } = importMermaid(source)
+```json
+{
+  "mcpServers": {
+    "arc": {
+      "command": "npx",
+      "args": ["-y", "@arach/arc-mcp"]
+    }
+  }
+}
 ```
 
-This compatibility adapter is intentionally lossy. Use the native Mermaid APIs
-above when sequence semantics must remain intact. See
-[Mermaid architecture projection](./docs/mermaid-import.md) for the supported
-grammar and diagnostic contract.
+The repository's server provides ten tools: validation, structural diff,
+automatic layout, ASCII/SVG/PNG/animation/HTML rendering, TypeScript generation,
+and editor handoff. It also serves the schema, authoring skill, and LLM guide
+as resources. Packages are versioned separately; use `bun run mcp` to run the
+server from this checkout, or `bun run mcp:http` for self-hosted HTTP transport.
 
-## Themes
+[MCP setup and tool reference](./packages/mcp/README.md)
 
-One diagram, several drafting grammars. The nodes and palette stay the same —
-what changes is the grid system, edge treatment, type, and geometry. Here's
-Arc's own architecture rendered three ways:
+### Use the terminal
 
-<div align="center">
-  <img src="https://raw.githubusercontent.com/arach/arc/main/public/theme-engineering.png" alt="Arc's architecture in the Engineering theme" width="840" />
-  <br/>
-  <sub><strong>Engineering</strong> — graph grid, drawing-sheet border, title block, uppercase mono</sub>
-  <br/><br/>
-  <img src="https://raw.githubusercontent.com/arach/arc/main/public/theme-workbench.png" alt="Arc's architecture in the Workbench theme" width="840" />
-  <br/>
-  <sub><strong>Workbench</strong> — dot grid, hairline frame, soft corners</sub>
-  <br/><br/>
-  <img src="https://raw.githubusercontent.com/arach/arc/main/public/theme-tactical.png" alt="Arc's architecture in the Tactical theme" width="840" />
-  <br/>
-  <sub><strong>Tactical</strong> — crosshair grid, corner brackets, hard edges</sub>
-</div>
+The CLI requires Node.js 22 or newer. Run these commands in a project with
+`@arach/arc` installed:
 
-Plus `default`, `warm`, `cool`, `mono`, `command`, `spacex`, `claude`, and
-`codex` — eleven in all, each with light and dark modes.
+```bash
+npx arc check diagram.json --json --strict
+npx arc diff base.json head.json --summary
+npx arc render diagram.json --out diagram.svg
+npx arc render diagram.json --out flow.mp4 --duration 4 --fps 12
+npx arc schema
+npx arc-ascii diagram.json --charset ascii --max-width 80
+```
 
-## Example Output
+`arc check` reports format, semantic, and composition problems. `--strict` also
+fails on warnings. Render receipts include source and output hashes.
+CLI PNG rendering needs Chrome or Chromium; GIF and MP4 also need ffmpeg.
+Use `ARC_CHROME` and `ARC_FFMPEG` to select executables.
 
-Arc stores diagrams as plain, typed data — the same config that renders the
-diagram at the top of this README:
+## Choose your package
+
+| Package | What it provides |
+| --- | --- |
+| [`@arach/arc`](https://www.npmjs.com/package/@arach/arc) | Main React renderer and editor components, themes, layout, validation, structural diffs, flow helpers, ASCII rendering, and the `arc` CLI. |
+| [`@arach/arc-viewer`](https://www.npmjs.com/package/@arach/arc-viewer) | Lightweight architecture viewer, native Mermaid sequence renderer/player, and Mermaid import. |
+| [`@arach/arc-iso`](https://www.npmjs.com/package/@arach/arc-iso) | Tiered isometric rendering with React and vanilla JavaScript/static SVG APIs. |
+| [`@arach/arc-mcp`](https://www.npmjs.com/package/@arach/arc-mcp) | Diagram tools and resources for MCP clients. |
+
+Architecture uses `ArcDiagramData`; native sequences use `ArcSequenceDocument`;
+tiered isometric scenes use `DiagramConfig`. Each model preserves the structure
+its renderer needs. Animated flow markers, guided camera framing, and visual
+delta overlays currently render in 2D. The [sequence guide](./docs/mermaid-sequences.md)
+and [import guide](./docs/mermaid-import.md) document supported Mermaid syntax.
+
+## Explore the API
+
+| Area | Reference |
+| --- | --- |
+| Nodes, relationships, groups, player controls, and flow timing | [Component and CLI API](./docs/api.md) |
+| Ordered walkthroughs and node-triggered explanations | [Views](./docs/views.md) · [Focus stories](./docs/focus-stories.md) |
+| Automatic placement and group layout | [Group layout](./docs/group-layout.md) |
+| Native sequence playback and Mermaid migration | [Sequences](./docs/mermaid-sequences.md) · [Import](./docs/mermaid-import.md) |
+| Tiered scenes, materials, and spatial interaction | [Isometric API](./src/iso/types.ts) |
+| Visual identity and output formats | [Themes](./docs/themes.md) · [Exports](./docs/exports.md) |
+| Source references, diagnostics, and change review | [Schema](./schemas/arc-diagram.schema.json) · [Diffs](./docs/diff.md) |
+| Agent authoring and verification | [MCP](./packages/mcp/README.md) · [Benchmarks](./benchmarks/README.md) |
+
+## Where we're going
+
+We want the agents changing a system to maintain its visual explanation in the
+same workflow. Arc already provides the format, source references, validation,
+rendering, and structural review. Automatic impact discovery and drift
+notifications are the next part of that loop.
+
+[The agent workflow and roadmap](./docs/agentic-loop.md)
+
+## Example output
+
+The source of the microservices diagram in the walkthrough section:
+
+<details>
+<summary>View the full typed diagram</summary>
 
 ```typescript
 const diagram: ArcDiagramData = {
@@ -205,128 +383,32 @@ const diagram: ArcDiagramData = {
 }
 ```
 
-## ASCII Renderer
+</details>
 
-The same diagram renders as precise monospace text — for READMEs, CLI output, or anywhere you can't embed a React component:
+## Development
 
-```
-                                                     ┌──────────────────┐
-                                                     │ ◆ Auth           │
-                                                   ┌▶│ JWT              │
-                                                   │ └──────────────────┘
-                                                   │
-┌──────────────────┐   ╔═════════════════════════╗ │
-│ ◆ Client         │   ║ ◆ API Gateway           ║ │ ┌──────────────────┐       ┌──────────────────┐
-│ React App        │─┐ ║ Express                 ║ │ │ ◆ API            │ SQL   │ ◆ PostgreSQL     │
-│                  │ └▶║ Load balanced           ║─┴▶│ REST             │──────▶│ Primary          │
-└──────────────────┘   ║                         ║╌┐ └──────────────────┘       └──────────────────┘
-                       ╚═════════════════════════╝ ╎
-                                                   ╎
-                                                   ╎ ┌───────────┐
-                                                   └▶│ ◆ Cache   │
-                                                     └───────────┘
-```
-
-### Programmatic
-
-```typescript
-import { renderAscii } from '@arach/arc'
-
-const ascii = renderAscii(diagram)                          // Unicode box-drawing
-const plain = renderAscii(diagram, { charset: 'ascii' })    // +-- style
-const narrow = renderAscii(diagram, { maxWidth: 80 })       // Auto-scale to 80 cols
-```
-
-### CLI
+The repository uses Bun, React, TypeScript, and Vite.
 
 ```bash
-arc schema                              # generated draft-07 JSON Schema
-arc check diagram.json                  # coded diagnostics, human-readable
-arc check diagram.json --json --strict  # machine output; fail on warnings too
-arc diff base.json head.json            # structural DiagramDelta JSON
-arc diff base.json head.json --summary  # human-readable counts
-arc render diagram.json --out diagram.svg --json
-arc render diagram.json --out flow.mp4 --duration 4 --fps 12
-arc bench benchmarks/                     # score outputs/ against each case's expect.json
-arc-ascii diagram.json --charset ascii --max-width 80
+git clone https://github.com/arach/arc
+cd arc
+bun install
+bun dev
 ```
 
-`arc check` exits non-zero when error-severity diagnostics remain; `--strict`
-also fails on warnings. `arc diff` validates both inputs before diffing.
-`arc render` validates, writes SVG/PNG/GIF/MP4 to a temp file, atomically
-replaces the target, and emits a receipt with source/output SHA-256 hashes;
-invalid diagrams leave an existing artifact untouched. GIF/MP4 renders sample
-`flows` deterministically through Chrome and encode with ffmpeg (`ARC_CHROME` /
-`ARC_FFMPEG` override discovery). `arc bench` is the first-pass benchmark —
-see `benchmarks/README.md`; each case is a plain-language `prompt.md` plus an
-`expect.json` of required nodes/edges, and candidates are scored on validity,
-semantic coverage, direction, size, and renderability.
-
-### Visual regression
+Open [localhost:5188/editor](http://localhost:5188/editor) for the studio.
+The local site also includes `/showcase`, `/iso-examples`, and
+`/examples/connection-pool` for exploring the players and examples.
 
 ```bash
-bun run visual              # compare renders to visual/golden/ (exit 1 on diff)
-bun run visual:update       # rewrite goldens after an intentional render change
-bun run visual -- --png     # also compare Chrome-rasterized PNGs (non-strict)
+bun run typecheck
+bun test scripts
+bun run visual       # compare the SVG fixtures
+bun run build:site   # build the library, site, and documentation pages
 ```
 
-Cases and variants live in `visual/manifest.json` — see `visual/README.md`.
-
-## MCP server
-
-[`@arach/arc-mcp`](https://www.npmjs.com/package/@arach/arc-mcp) exposes Arc's
-toolchain over the Model Context Protocol — AI agents can author, validate,
-lay out, render (ASCII/SVG/PNG/GIF/MP4/HTML), and diff diagrams from any MCP client:
-
-```bash
-claude mcp add --scope project arc -- npx -y @arach/arc-mcp
-# or: devin mcp add arc -- npx -y @arach/arc-mcp
-```
-
-Tools include `validate_diagram`, `auto_layout`, `diff_diagram`, `render_svg`,
-`render_png`, `render_animation`, `render_html`, `render_ascii`,
-`diagram_to_typescript`, and `editor_handoff` — plus the JSON Schema,
-generation skill, and LLM briefing as MCP resources.
-
-## Isometric diagrams
-
-`ArcDiagramIsometric` renders architecture in 3D isometric space — tiers,
-floors, and nodes on a grid instead of an x/y canvas. For non-React
-environments, [`@arach/arc-iso`](https://www.npmjs.com/package/@arach/arc-iso)
-provides the same renderer as vanilla JS.
-
-### Retro print material
-
-Set `material: 'retro-print'` on an isometric `DiagramConfig` for mineral inks,
-warm paper, and deterministic stipple. It works in the React diagram and static
-SVG renderer. Omit the option (or use `'standard'`) to keep the existing finish.
-React technical styles such as blueprint and cyanotype take precedence over
-the material setting.
-
-## Styling
-
-Arc ships a compiled stylesheet — import it once in your app entry:
-
-```ts
-import '@arach/arc/arc.css'
-```
-
-`react` and `react-dom` (18+) are the only peer dependencies; no Tailwind setup
-is required.
-
-## Packages
-
-- **`@arach/arc`** — this package: `<ArcDiagram />`, `<ArcDiagramIsometric />`, the studio, `arc` CLI, ASCII renderer
-- **[`@arach/arc-viewer`](https://www.npmjs.com/package/@arach/arc-viewer)** — native Mermaid sequence diagrams + Mermaid import for React
-- **[`@arach/arc-iso`](https://www.npmjs.com/package/@arach/arc-iso)** — standalone isometric renderer for vanilla JS and the browser
-- **[`@arach/arc-mcp`](https://www.npmjs.com/package/@arach/arc-mcp)** — MCP server: diagram tools for AI agents
-
-## Tech Stack
-
-- React 19
-- Vite 7
-- TailwindCSS 4
-- Lucide React (icons)
+See the [visual regression guide](./visual/README.md) for fixture updates and
+optional PNG comparisons.
 
 ## License
 
